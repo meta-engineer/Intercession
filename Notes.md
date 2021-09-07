@@ -12,7 +12,14 @@ add_library() creates a library for the passed source (like add_executable)
 target_link_libraries() links to a library created elsewhere by add_library()
 target_include_directories() makes headers accessable (and other files) by the root source.
 
+# Using git submodules
+$ git submodule add GIT_URL PATH
+downloads and adds the submodule to .gitmodules
 
-# using opengl/glfw
+now the user can run
+$ git submodule update --init --recursive
+to get the external libraries
+
+# Using opengl/glfw
 
 https://learnopengl.com/
