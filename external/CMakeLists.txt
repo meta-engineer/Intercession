@@ -1,6 +1,6 @@
 # Manage inclusion of external sources
 
-# download libraries before including
+# download submodule libraries before including
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     option(GIT_SUBMODULE "Check submodules during build" ON)
@@ -15,11 +15,12 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-# TODO: set variable for all external libraries to add
+# TODO: set variable for all external libraries, and ust one target_link_libraries
 
-# check, build, link, and include header for glfw
+# GLFW
+# check, build, link, and include header
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/CMakeLists.txt")
-    message(FATAL_ERROR "The glfw submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
+    message(FATAL_ERROR "The GLFW submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
 endif()
 
 add_subdirectory(glfw)
@@ -31,3 +32,10 @@ set(GLFW_BUILD_DOCS OFF)
 set(GLFW_BUILD_TESTS OFF)
 set(GLFW_BUILD_EXAMPLES OFF)
 
+
+# GLAD
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glad/src/glad.c")
+    message(FATAL_ERROR "The GLAD sis not available! Please see external/README.md to regenerate it.")
+endif()
+
+target_include_directories(${PROJECT_NAME} PUBLIC glad/include)

@@ -17,4 +17,14 @@ namespace view_manager
         glfwGetVersion(&major, &minor, &rev);
         return major;
     }
+
+    bool init_window()
+    {
+        return true;
+    }
+
+    bool run_window()
+    {
+        return true;
+    }
 }
