@@ -39,3 +39,12 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glad/src/glad.c")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC glad/include)
+
+# GLM
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glm/CMakeLists.txt")
+    message(FATAL_ERROR "The GLM submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
+endif()
+
+add_subdirectory(glm)
+target_link_libraries(${PROJECT_NAME} glm)
+target_include_directories(${PROJECT_NAME} PUBLIC glm)
