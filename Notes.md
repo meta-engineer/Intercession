@@ -63,13 +63,15 @@ target_link_options(${PROJECT_NAME}
 
 https://learnopengl.com/
 
-Shader: a "small" program for one step of the graphics pipeline
+Some useful definitions.
 
-Vertex Shader: ingests a single vertex, transform 3D to 2D, process vertex attributes
-Primitive assembly: ingests verticies that form a chosen primitive (point/line/triangle) and groups them accordingly
-geometry shader: ingests a primitive (and all verticies within), generates new shapes and verticies to form new/other primitives
-rasterization: ingests a primitive, maps to the corresponding pixels creating a fragment.
+1. Shader: a "small" program for one step of the graphics pipeline
+2. Vertex Shader: ingests a single vertex, transform 3D to 2D, process vertex attributes
+3. Primitive assembly: ingests verticies that form a chosen primitive (point/line/triangle) and groups them accordingly
+4. geometry shader: ingests a primitive (and all verticies within), generates new shapes and verticies to form new/other primitives
+5. rasterization: ingests a primitive, maps to the corresponding pixels creating a fragment.
     *Fragment: a single mapped pixel and the primitive data required to determine its rendering 
-fragment shader: ingests a fragment, outputs the final color of the pixel
-alhpa test/blending: ingests the final object of pixels, checks depth of fragments/ alpha of graments and blends/discards the color values into the final buffer.
-shader program: linked version of multiple shaders combined. inputs and outputs of consecutive shaders must match.
+6. fragment shader: ingests a fragment, outputs the final color of the pixel
+7. alpha test/blending: ingests the final object of pixels, checks depth of fragments/ alpha of graments and blends/discards the color values into the final buffer.
+8. shader program: linked version of multiple shaders combined. inputs and outputs of consecutive shaders must match.
+9. uniform: pass data from app (cpu) to shaders (gpu)
