@@ -10,6 +10,9 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION // must define before include?
+#include <stb_image.h>
+
 // internal
 #include "build_config.h"
 #ifdef USE_VIEW_MANAGER
@@ -97,10 +100,11 @@ int main(int argc, char** argv) {
 
     // rendering data
     float vertices[] = {
-         0.5f,  0.45f,  0.0f, 1.0f, 0.0f, 0.0f,
-        -0.5f,  0.45f,  0.0f, 1.0f, 1.0f, 0.0f,
-        -0.5f, -0.45f,  0.0f, 0.0f, 1.0f, 1.0f,
-         0.5f, -0.45f,  0.0f, 0.0f, 0.0f, 1.0f
+        // coordinates          // color            // texture coordinates
+         0.5f,  0.45f,  0.0f,   1.0f, 0.0f, 0.0f,   1.5f, 1.5f,
+        -0.5f,  0.45f,  0.0f,   1.0f, 1.0f, 0.0f,   -0.5f, 1.5f,
+        -0.5f, -0.45f,  0.0f,   0.0f, 1.0f, 1.0f,   -0.5f, -0.5f,
+         0.5f, -0.45f,  0.0f,   0.0f, 0.0f, 1.0f,   1.5f, -0.5f
     };
     unsigned int indicies[] = {
         0,3,1,
@@ -131,8 +135,8 @@ int main(int argc, char** argv) {
 
     // use ShaderManifest to build shader program from filenames
     ShaderManifest sm(
-        "source/shaders/color_basic.vs", 
-        "source/shaders/color_basic.fs"
+        "source/shaders/texture_basic.vs", 
+        "source/shaders/mix_textures.fs"
     );
 
     // Set the interpretation of our VBO structure for the vertex shader input
@@ -144,19 +148,80 @@ int main(int argc, char** argv) {
     //  normalize data?
     //  stride (space between consecutive attributes)
     //  offset of data in the buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6* sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    // texture object
+    unsigned int texture_ID;
+    glGenTextures(1, &texture_ID);
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    // color for non-mapped surface (using GL_CLAMP_TO_BORDER)
+    float borderColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    // texture mapping options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texturing data
+    int texWidth, texHeight, texChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *texData = stbi_load("resources/awesomeface.png", &texWidth, &texHeight, &texChannels, 0);
+    if (texData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(texData);
+
+    //texture object 2
+    unsigned int texture_2_ID;
+    glGenTextures(1, &texture_2_ID);
+    glBindTexture(GL_TEXTURE_2D, texture_2_ID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // texture mapping options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texturing data
+    int tex2Width, tex2Height, tex2Channels;
+    unsigned char *tex2Data = stbi_load("resources/wall.jpg", &tex2Width, &tex2Height, &tex2Channels, 0);
+    if (texData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex2Width, tex2Height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex2Data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(tex2Data);
 
     // clear binds
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glUseProgram(0);
 
 
     // render loop
+    sm.activate();
+    sm.setInt("texture1", 0);
+    sm.setInt("texture2", 1);
+
     float lastTimeVal = 0;
     float FPS = 60;
     float frameTimeDelta = 1.0/FPS;
@@ -172,18 +237,20 @@ int main(int argc, char** argv) {
         glClearColor(0.2f, 0.4f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        sm.activate();
-
         //update shader uniform
         float alphaVal = sin(timeVal) / 2.0f + 0.5f;
         sm.setFloat("globalAlpha", alphaVal);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture_ID);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture_2_ID);
+
         glBindVertexArray(VAO_ID);
         //glDrawArrays(GL_TRIANGLES, 0, 3); // from attribute 0 to (0+3)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(VAO_ID);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -191,6 +258,9 @@ int main(int argc, char** argv) {
 
     std::cout << "Stopped rendering, terminating..." << std::endl;
     // cleanup
+    glDeleteVertexArrays(1, &VAO_ID);
+    glDeleteBuffers(1, &VBO_ID);
+    glDeleteBuffers(1, &EBO_ID);
     glfwTerminate();
     return 0;
 }

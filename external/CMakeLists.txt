@@ -48,3 +48,6 @@ endif()
 add_subdirectory(glm)
 target_link_libraries(${PROJECT_NAME} glm)
 target_include_directories(${PROJECT_NAME} PUBLIC glm)
+
+# STB_IMAGE
+target_include_directories(${PROJECT_NAME} PUBLIC stb_image)
