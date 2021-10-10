@@ -3,6 +3,9 @@
 #define SHADER_MANIFEST_H
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <string>
 #include <fstream>
@@ -22,6 +25,7 @@ class ShaderManifest
     void setBool(const std::string &name, bool value) const;  
     void setInt(const std::string &name, int value) const;   
     void setFloat(const std::string &name, float value) const;
+    void setMat4(const std::string &name, glm::mat4 matrix) const;
 
   private:
     // read and return as string, check for stream errors
@@ -65,6 +69,10 @@ void ShaderManifest::setInt(const std::string &name, int value) const
 void ShaderManifest::setFloat(const std::string &name, float value) const
 { 
     glUniform1f(glGetUniformLocation(SP_ID, name.c_str()), value); 
+}
+void ShaderManifest::setMat4(const std::string &name, glm::mat4 matrix) const
+{
+    glUniformMatrix4fv(glGetUniformLocation(SP_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 

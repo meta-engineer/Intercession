@@ -22,9 +22,9 @@ add_subdirectory(external)
 
 # Properties
 # disable the console window (will have to have x-platform checks for this)
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    LINK_FLAGS "/ENTRY:mainCRTStartup /SUBSYSTEM:WINDOWS"
-)
+#set_target_properties(${PROJECT_NAME} PROPERTIES
+#    LINK_FLAGS "/ENTRY:mainCRTStartup /SUBSYSTEM:WINDOWS"
+#)
 
 
 # cmake install
