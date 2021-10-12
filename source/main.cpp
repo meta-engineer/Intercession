@@ -18,46 +18,65 @@
 // internal
 #include "build_config.h"
 #ifdef USE_VIEW_MANAGER
-#include "view_manager/view_manager.h"
+#include "view_manager.h"
 #endif
 
 #include "test.h"
-#include "shader_manifest.h"
+#include "shader_manager.h"
+#include "camera_manager.h"
 
-float view_height = 1075;
-float view_width = 450;
+CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
 // TODO: move these
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    view_height = height;
-    view_width = width;
+    cm.set_view_height(height);
+    cm.set_view_width(width);
+    // should viewport be controlled by camera manager...? TBD
     glViewport(0, 0, width, height);
 }
 
-void process_input(GLFWwindow *window)
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    static float lastX = -1;
+    static float lastY = -1;
+    const float sensitivity = 0.05f;
+
+    float xoffset = lastX == -1 ? 0 : xpos - lastX;
+    float yoffset = lastY == -1 ? 0 : lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    cm.turn_yaw(xoffset * sensitivity);
+    cm.turn_pitch(yoffset * sensitivity);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    cm.set_view_fov(cm.get_view_fov() - (float)yoffset);
+}
+
+void process_input(GLFWwindow *window, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
-}
 
-std::string load_shader_string(std::string filename)
-{
-    std::string ret_str;
-    std::ifstream fs(filename, std::ios::in);
-    if(!fs.is_open()) {
-        std::cerr << "Could not read file " << filename << ". File does not exist." << std::endl;
-        return "";
-    }
-    std::string line = "";
-    while(!fs.eof()) {
-        std::getline(fs, line);
-        ret_str.append(line + "\n");
-    }
-    fs.close();
-    return ret_str;
+    const float spd = 2.5f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cm.move_foreward(spd);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cm.move_foreward(-spd);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cm.move_horizontal(-spd);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cm.move_horizontal(spd);
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+        cm.move_global_vertical(-spd);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        cm.move_global_vertical(spd);
 }
 
 
@@ -72,6 +91,7 @@ int main(int argc, char** argv) {
     std::cout << glfwGetVersionString() << std::endl << std::endl;
     
 #ifdef USE_VIEW_MANAGER
+    std::cout << "Using view_manager library" << std:: endl;
     std::cout << view_manager::get_context_id() << std::endl;
     std::cout << view_manager::get_glfw_version_major() << std::endl;
 #endif
@@ -81,7 +101,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(view_height, view_width, "OpenGL_2021", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(cm.get_view_width(), cm.get_view_height(), "OpenGL_2021", NULL, NULL);
     if (!window)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -100,10 +120,17 @@ int main(int argc, char** argv) {
     }
 
     // GLFW "window" equal to the gl "viewport"
-    glViewport(0, 0, view_height, view_width);
+    glViewport(0, 0, cm.get_view_width(), cm.get_view_height());
 
     // on window resize callback
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    // process_input is just a plain function called in render loop
+    // on mouse move callback
+    glfwSetCursorPosCallback(window, mouse_callback);
+    // set mouse capture mode
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // on mouse scroll callback
+    glfwSetScrollCallback(window, scroll_callback);
 
     // rendering data
     float vertices[] = {
@@ -129,12 +156,10 @@ int main(int argc, char** argv) {
         glm::vec3( 1.5f,  0.2f, -1.5f), 
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
+
+    cm.set_target(glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4 model_to_world = glm::mat4(1.0f);
     model_to_world = glm::rotate(model_to_world, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4 world_to_view = glm::mat4(1.0f);
-    world_to_view = glm::translate(world_to_view, glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), view_height/view_width, 0.1f, 100.0f);
-    //glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -4.0f, 6.0f, 0.1f, 100.0f);
 
     // GL "Objects"
     // store attribute calls and VBO reference
@@ -157,12 +182,6 @@ int main(int argc, char** argv) {
     // feed in index data
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_ID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-
-    // use ShaderManifest to build shader program from filenames
-    ShaderManifest sm(
-        "source/shaders/projection_basic.vs", 
-        "source/shaders/mix_textures.fs"
-    );
 
     // Set the interpretation of our VBO structure for the vertex shader input
     //  (glVertexAttribPointer takes data from the currently bound vbo)
@@ -241,22 +260,28 @@ int main(int argc, char** argv) {
     glBindTexture(GL_TEXTURE_2D, 0);
     glUseProgram(0);
 
+    // use ShaderManager to build shader program from filenames
+    ShaderManager sm(
+        "source/shaders/projection_basic.vs", 
+        "source/shaders/mix_textures.fs"
+    );
     // shader uniforms
     sm.activate();
     sm.setInt("texture1", 0);
     sm.setInt("texture2", 1);
 
     float lastTimeVal = 0;
-    float FPS = 60;
+    float FPS = 100;
     float frameTimeDelta = 1.0/FPS;
     // render loop
     while(!glfwWindowShouldClose(window))
     {
-        process_input(window);
-
         float timeVal = glfwGetTime();
-        if (timeVal - lastTimeVal < frameTimeDelta) continue;
+        float deltaTime = timeVal - lastTimeVal;
+        if (deltaTime < frameTimeDelta) continue;
+
         std::cout << "FPS: " << 1.0/(timeVal - lastTimeVal) << "\r" << std::flush;
+        process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
         glClearColor(0.2f, 0.4f, 0.5f, 1.0f);
@@ -281,8 +306,9 @@ int main(int argc, char** argv) {
             model_to_world = glm::translate(model_to_world, positions[i]);
             model_to_world = glm::rotate(model_to_world, (float)glfwGetTime() * glm::radians(i * 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             sm.setMat4("model_to_world", model_to_world);
-            sm.setMat4("world_to_view", world_to_view);
-            sm.setMat4("projection", projection);
+
+            sm.setMat4("world_to_view", cm.get_lookAt());
+            sm.setMat4("projection", cm.get_projection());
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
         //glDrawArrays(GL_TRIANGLES, 0, 3); // from attribute 0 to (0+3)

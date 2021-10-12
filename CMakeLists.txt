@@ -8,12 +8,15 @@ include(source/source_files.cmake)
 include(external/source_files.cmake)
 add_executable(${PROJECT_NAME} ${ALL_SOURCE_FILES} ${ALL_EXTERNAL_SOURCE_FILES} config/AppIcon.rc)
 
-# config gets generated to binary directory's source
-configure_file(config/build_config.h.in source/build_config.h)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
 
 # link to internal source and libraries
 add_subdirectory(source)
+
+# define config after variables from source tree have been set
+configure_file(config/build_config.h.in source/build_config.h)
+# config gets generated to binary directory's source
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
+
 
 # link to external libraries (submodule)
 # external will download git submodules before including

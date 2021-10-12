@@ -1,6 +1,6 @@
 
-#ifndef SHADER_MANIFEST_H
-#define SHADER_MANIFEST_H
+#ifndef SHADER_MANAGER_H
+#define SHADER_MANAGER_H
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -12,12 +12,12 @@
 #include <sstream>
 #include <iostream>
 
-class ShaderManifest
+class ShaderManager
 {
   public:
     unsigned int SP_ID; // Shader Program ID
 
-    ShaderManifest(const char* vertexPath, const char* fragmentPath);
+    ShaderManager(const char* vertexPath, const char* fragmentPath);
 
     void activate();
 
@@ -36,47 +36,47 @@ class ShaderManifest
     unsigned int build_shader_program(unsigned int VS_ID, unsigned int FS_ID);
 };
 
-ShaderManifest::ShaderManifest(const char* vertexPath, const char* fragmentPath)
+ShaderManager::ShaderManager(const char* vertexPath, const char* fragmentPath)
 {
-    std::string VS_str = ShaderManifest::load_shader_file(vertexPath);
-    std::string FS_str = ShaderManifest::load_shader_file(fragmentPath);
+    std::string VS_str = ShaderManager::load_shader_file(vertexPath);
+    std::string FS_str = ShaderManager::load_shader_file(fragmentPath);
     const char* VS_src = VS_str.c_str();
     const char* FS_src = FS_str.c_str();
 
-    unsigned int VS_ID = ShaderManifest::build_vertex_shader(VS_src);
-    unsigned int FS_ID = ShaderManifest::build_fragment_shader(FS_src);
+    unsigned int VS_ID = ShaderManager::build_vertex_shader(VS_src);
+    unsigned int FS_ID = ShaderManager::build_fragment_shader(FS_src);
 
-    this->SP_ID = ShaderManifest::build_shader_program(VS_ID, FS_ID);
+    this->SP_ID = ShaderManager::build_shader_program(VS_ID, FS_ID);
 
     // cleanup
     glDeleteShader(VS_ID);
     glDeleteShader(FS_ID);
 }
 
-void ShaderManifest::activate()
+void ShaderManager::activate()
 {
     glUseProgram(SP_ID);
 }
 
-void ShaderManifest::setBool(const std::string &name, bool value) const
+void ShaderManager::setBool(const std::string &name, bool value) const
 {         
     glUniform1i(glGetUniformLocation(SP_ID, name.c_str()), (int)value); 
 }
-void ShaderManifest::setInt(const std::string &name, int value) const
+void ShaderManager::setInt(const std::string &name, int value) const
 { 
     glUniform1i(glGetUniformLocation(SP_ID, name.c_str()), value); 
 }
-void ShaderManifest::setFloat(const std::string &name, float value) const
+void ShaderManager::setFloat(const std::string &name, float value) const
 { 
     glUniform1f(glGetUniformLocation(SP_ID, name.c_str()), value); 
 }
-void ShaderManifest::setMat4(const std::string &name, glm::mat4 matrix) const
+void ShaderManager::setMat4(const std::string &name, glm::mat4 matrix) const
 {
     glUniformMatrix4fv(glGetUniformLocation(SP_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 
-std::string ShaderManifest::load_shader_file(const char* filePath)
+std::string ShaderManager::load_shader_file(const char* filePath)
 {
     std::string shader_string;
     std::ifstream shader_file;
@@ -100,7 +100,7 @@ std::string ShaderManifest::load_shader_file(const char* filePath)
     return shader_string;
 }
 
-unsigned int ShaderManifest::build_vertex_shader(const char* src)
+unsigned int ShaderManager::build_vertex_shader(const char* src)
 {
     unsigned int VS_ID = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(VS_ID, 1, &src, NULL);
@@ -119,7 +119,7 @@ unsigned int ShaderManifest::build_vertex_shader(const char* src)
     return VS_ID;
 }
  
-unsigned int ShaderManifest::build_fragment_shader(const char* src)
+unsigned int ShaderManager::build_fragment_shader(const char* src)
 {
     unsigned int FS_ID = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(FS_ID, 1, &src, NULL);
@@ -138,7 +138,7 @@ unsigned int ShaderManifest::build_fragment_shader(const char* src)
     return FS_ID;
 }
 
-unsigned int ShaderManifest::build_shader_program(unsigned int VS_ID, unsigned int FS_ID)
+unsigned int ShaderManager::build_shader_program(unsigned int VS_ID, unsigned int FS_ID)
 {
     unsigned int SP_ID = glCreateProgram();
     glAttachShader(SP_ID, VS_ID);
@@ -158,4 +158,4 @@ unsigned int ShaderManifest::build_shader_program(unsigned int VS_ID, unsigned i
     return SP_ID;
 }
 
-#endif // SHADER_MANIFEST_H
+#endif // SHADER_MANAGER_H
