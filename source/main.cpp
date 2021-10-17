@@ -25,6 +25,9 @@
 #include "shader_manager.h"
 #include "camera_manager.h"
 
+#include "cube_mesh.h"
+#include "plane_mesh.h"
+
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
 // TODO: move these
@@ -77,6 +80,9 @@ void process_input(GLFWwindow *window, float deltaTime)
         cm.move_global_vertical(-spd);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         cm.move_global_vertical(spd);
+
+    if (glfwGetKey(window, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
+        cm.set_use_perspective(!cm.get_use_perspective());
 }
 
 
@@ -122,6 +128,8 @@ int main(int argc, char** argv) {
     // GLFW "window" equal to the gl "viewport"
     glViewport(0, 0, cm.get_view_width(), cm.get_view_height());
 
+    cm.set_target(glm::vec3(0.0f, 0.0f, 0.0f));
+
     // on window resize callback
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     // process_input is just a plain function called in render loop
@@ -132,18 +140,8 @@ int main(int argc, char** argv) {
     // on mouse scroll callback
     glfwSetScrollCallback(window, scroll_callback);
 
-    // rendering data
-    float vertices[] = {
-        // coordinates          // color            // texture coordinates
-         0.5f,  0.45f,  0.0f,   1.0f, 0.0f, 0.0f,   1.5f, 1.5f,
-        -0.5f,  0.45f,  0.0f,   1.0f, 1.0f, 0.0f,   -0.5f, 1.5f,
-        -0.5f, -0.45f,  0.0f,   0.0f, 1.0f, 1.0f,   -0.5f, -0.5f,
-         0.5f, -0.45f,  0.0f,   0.0f, 0.0f, 1.0f,   1.5f, -0.5f
-    };
-    unsigned int indicies[] = {
-        0,3,1,
-        3,2,1
-    };
+    // store all VAO info in objects
+    CubeMesh default_cubes[10];
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -156,48 +154,16 @@ int main(int argc, char** argv) {
         glm::vec3( 1.5f,  0.2f, -1.5f), 
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
+    for (int i = 0; i < 10; i++)
+    {
+        default_cubes[i].set_origin(positions[i]);
+    }
 
-    cm.set_target(glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4 model_to_world = glm::mat4(1.0f);
-    model_to_world = glm::rotate(model_to_world, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    // GL "Objects"
-    // store attribute calls and VBO reference
-    unsigned int VAO_ID;
-    glGenVertexArrays(1, &VAO_ID);
-    glBindVertexArray(VAO_ID);
-
-    // store our verticies
-    unsigned int VBO_ID;
-    glGenBuffers(1, &VBO_ID);
-
-    // feed in vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_ID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // store the vertex indexing
-    unsigned int EBO_ID;
-    glGenBuffers(1, &EBO_ID);
-
-    // feed in index data
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_ID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-
-    // Set the interpretation of our VBO structure for the vertex shader input
-    //  (glVertexAttribPointer takes data from the currently bound vbo)
-    //  Arguments:
-    //  Attrbute to configure (referenced in shader)
-    //  size of attribute
-    //  type of contained data
-    //  normalize data?
-    //  stride (space between consecutive attributes)
-    //  offset of data in the buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6* sizeof(float)));
-    glEnableVertexAttribArray(2);
+    CubeMesh light_source;
+    glm::vec3 lightPos(0.0f, 2.0f, 0.8f);
+    light_source.set_origin(lightPos);
+    light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
+    light_source.set_scale(0.2f);
 
     // texture object
     unsigned int texture_ID;
@@ -254,21 +220,28 @@ int main(int argc, char** argv) {
     stbi_image_free(tex2Data);
 
     // clear binds
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
+
+    glm::vec3 staticColor(0.8f, 1.0f, 0.7f);
 
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
-        "source/shaders/projection_basic.vs", 
-        "source/shaders/mix_textures.fs"
+        "source/shaders/projection_lighting.vs", 
+        "source/shaders/texture_lighting.fs"
     );
     // shader uniforms
     sm.activate();
-    sm.setInt("texture1", 0);
-    sm.setInt("texture2", 1);
+    sm.setInt("texture", 1);
+    sm.setVec3("lightColor", staticColor);
+    sm.setVec3("lightPos", lightPos);
+
+    ShaderManager light_sm(
+        "source/shaders/projection_basic.vs",
+        "source/shaders/light_source.fs"
+    );
+
+    light_sm.activate();
+    light_sm.setVec3("lightColor", staticColor);
 
     float lastTimeVal = 0;
     float FPS = 100;
@@ -289,7 +262,8 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //update shader uniforms
-        float alphaVal = sin(timeVal) / 2.0f + 0.5f;
+        sm.activate();
+        float alphaVal = 0.5;//sin(timeVal) / 2.0f + 0.5f;
         sm.setFloat("globalAlpha", alphaVal);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -299,29 +273,28 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture_2_ID);
 
-        glBindVertexArray(VAO_ID);
         for (unsigned int i = 0; i < 10; i++)
         {
-            glm::mat4 model_to_world = glm::mat4(1.0f);
-            model_to_world = glm::translate(model_to_world, positions[i]);
-            model_to_world = glm::rotate(model_to_world, (float)glfwGetTime() * glm::radians(i * 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
-            sm.setMat4("model_to_world", model_to_world);
-
+            default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
+            
+            sm.activate();
+            sm.setMat4("model_to_world", default_cubes[i].get_model_transform());
             sm.setMat4("world_to_view", cm.get_lookAt());
             sm.setMat4("projection", cm.get_projection());
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            default_cubes[i].invoke_draw();
         }
-        //glDrawArrays(GL_TRIANGLES, 0, 3); // from attribute 0 to (0+3)
+
+        light_sm.activate();
+        light_sm.setMat4("model_to_world", light_source.get_model_transform());
+        light_sm.setMat4("world_to_view", cm.get_lookAt());
+        light_sm.setMat4("projection", cm.get_projection());
+        light_source.invoke_draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     std::cout << "Stopped rendering, terminating..." << std::endl;
-    // cleanup
-    glDeleteVertexArrays(1, &VAO_ID);
-    glDeleteBuffers(1, &VBO_ID);
-    glDeleteBuffers(1, &EBO_ID);
     glfwTerminate();
     return 0;
 }

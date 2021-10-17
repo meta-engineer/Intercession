@@ -41,6 +41,7 @@ class CameraManager
     void set_view_fov(float degrees);
     float get_view_fov();
     void set_use_perspective(bool enable);
+    bool get_use_perspective();
 
   public:
     const glm::vec3 GLOBAL_UP = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -171,6 +172,10 @@ float CameraManager::get_view_fov()
 void CameraManager::set_use_perspective(bool enable)
 {
     use_perspective = enable;
+}
+bool CameraManager::get_use_perspective()
+{
+    return use_perspective;
 }
 
 

@@ -26,6 +26,7 @@ class ShaderManager
     void setInt(const std::string &name, int value) const;   
     void setFloat(const std::string &name, float value) const;
     void setMat4(const std::string &name, glm::mat4 matrix) const;
+    void setVec3(const std::string &name, glm::vec3 vec) const;
 
   private:
     // read and return as string, check for stream errors
@@ -73,6 +74,11 @@ void ShaderManager::setFloat(const std::string &name, float value) const
 void ShaderManager::setMat4(const std::string &name, glm::mat4 matrix) const
 {
     glUniformMatrix4fv(glGetUniformLocation(SP_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+void ShaderManager::setVec3(const std::string &name, glm::vec3 vec) const
+{
+    glUniform3f(glGetUniformLocation(SP_ID, name.c_str()), vec.x, vec.y, vec.z);
 }
 
 
