@@ -24,6 +24,7 @@ class CameraManager
     glm::mat4 get_projection();
 
     void set_position(glm::vec3 pos);
+    glm::vec3 get_position();
     void set_direction(glm::vec3 dir);
     void set_target(glm::vec3 targ);
     void move_foreward(float displace);
@@ -99,6 +100,10 @@ glm::mat4 CameraManager::get_projection()
 void CameraManager::set_position(glm::vec3 pos)
 {
     position = pos;
+}
+glm::vec3 CameraManager::get_position()
+{
+    return position;
 }
 void CameraManager::set_direction(glm::vec3 dir)
 {
