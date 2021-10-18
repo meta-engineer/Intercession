@@ -26,7 +26,7 @@
 #include "camera_manager.h"
 
 #include "cube_mesh.h"
-#include "plane_mesh.h"
+#include "cube_2_mesh.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     glfwSetScrollCallback(window, scroll_callback);
 
     // store all VAO info in objects
-    CubeMesh default_cubes[10];
+    Cube2Mesh default_cubes[10];
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
     sm.setVec3("lightPos", lightPos);
 
     ShaderManager light_sm(
-        "source/shaders/projection_basic.vs",
+        "source/shaders/projection_lighting.vs",
         "source/shaders/light_source.fs"
     );
 
@@ -268,6 +268,8 @@ int main(int argc, char** argv) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        float lightStrength = sin(timeVal) * 5 + 5;
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_ID);
         glActiveTexture(GL_TEXTURE1);
@@ -281,6 +283,7 @@ int main(int argc, char** argv) {
             sm.setMat4("model_to_world", default_cubes[i].get_model_transform());
             sm.setMat4("world_to_view", cm.get_lookAt());
             sm.setMat4("projection", cm.get_projection());
+            sm.setFloat("lightStrength", lightStrength);
             default_cubes[i].invoke_draw();
         }
 
@@ -288,6 +291,7 @@ int main(int argc, char** argv) {
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
         light_sm.setMat4("world_to_view", cm.get_lookAt());
         light_sm.setMat4("projection", cm.get_projection());
+        light_sm.setFloat("lightStrength", lightStrength);
         light_source.invoke_draw();
 
         glfwSwapBuffers(window);
