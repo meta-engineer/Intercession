@@ -77,7 +77,7 @@ CameraManager::CameraManager(
     , view_fov(45.0f)
     , use_perspective(true)
 {
-    _set_and_match_euler(euler);
+    _set_and_match_euler(ang);
 }
 
 glm::mat4 CameraManager::get_lookAt()

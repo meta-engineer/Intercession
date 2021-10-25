@@ -16,6 +16,7 @@ class Mesh
 
     glm::mat4 get_model_transform();
     void set_origin(glm::vec3 coord);
+    glm::vec3 get_origin();
     void translate(glm::vec3 displace);
     void rotate(float rads, glm::vec3 axis);
     void set_scale(float factor);
@@ -76,9 +77,9 @@ Mesh::Mesh(float* verticies, unsigned int size_verticies, unsigned int* indicies
 
     for (int i = 0; i < num_attribs; i++)
     {
+        glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, attribs[i], GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset * sizeof(float)));
         offset += attribs[i];
-        glEnableVertexAttribArray(i);
     }
 
     // clear binds
@@ -105,6 +106,10 @@ glm::mat4 Mesh::get_model_transform()
 void Mesh::set_origin(glm::vec3 coord)
 {
     origin = coord;
+}
+glm::vec3 Mesh::get_origin()
+{
+    return origin;
 }
 
 void Mesh::translate(glm::vec3 displace)

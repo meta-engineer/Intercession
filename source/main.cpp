@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
     glViewport(0, 0, cm.get_view_width(), cm.get_view_height());
 
     cm.set_target(glm::vec3(0.0f, 0.0f, 0.0f));
+    cm.move_vertical(1.0f);
 
     // on window resize callback
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -160,8 +161,8 @@ int main(int argc, char** argv) {
     }
 
     CubeMesh light_source;
-    glm::vec3 lightPos(0.0f, 2.0f, 0.8f);
-    light_source.set_origin(lightPos);
+    glm::vec3 staticColor(0.8f, 1.0f, 0.9f);
+    light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_scale(0.2f);
 
@@ -222,18 +223,18 @@ int main(int argc, char** argv) {
     // clear binds
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glm::vec3 staticColor = 3.0f * glm::vec3(0.8f, 1.0f, 0.7f);
-
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs", 
-        "source/shaders/texture_lighting.fs"
+        "source/shaders/materials.fs"
     );
     // shader uniforms
     sm.activate();
     sm.setInt("texture", 1);
-    sm.setVec3("lightColor", staticColor);
-    sm.setVec3("lightPos", lightPos);
+    sm.setVec3("light.position", light_source.get_origin()); 
+    sm.setVec3("light.ambient",  staticColor * 0.2f);
+    sm.setVec3("light.diffuse",  staticColor * 0.8f);
+    sm.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f)); 
 
     ShaderManager light_sm(
         "source/shaders/projection_lighting.vs",
@@ -257,7 +258,7 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        glClearColor(0.2f, 0.4f, 0.5f, 1.0f);
+        glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -273,15 +274,19 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture_2_ID);
 
+        sm.activate();
+        sm.setVec3("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
+        sm.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
+        sm.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+        sm.setFloat("material.shininess", 32.0f);
+        sm.setVec3("viewPos", cm.get_position());
+        sm.setMat4("world_to_view", cm.get_lookAt());
+        sm.setMat4("projection", cm.get_projection());
         for (unsigned int i = 0; i < 10; i++)
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
-            
-            sm.activate();
+
             sm.setMat4("model_to_world", default_cubes[i].get_model_transform());
-            sm.setMat4("world_to_view", cm.get_lookAt());
-            sm.setMat4("projection", cm.get_projection());
-            sm.setVec3("viewPos", cm.get_position());
             default_cubes[i].invoke_draw();
         }
 
