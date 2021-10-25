@@ -19,7 +19,7 @@ class Mesh
     glm::vec3 get_origin();
     void translate(glm::vec3 displace);
     void rotate(float rads, glm::vec3 axis);
-    void set_scale(float factor);
+    void set_uniform_scale(float factor);
     void invoke_draw();
 
   private:
@@ -122,7 +122,7 @@ void Mesh::rotate(float rads, glm::vec3 axis)
     rotation = glm::rotate(rotation, rads, axis);
 }
 
-void Mesh::set_scale(float factor)
+void Mesh::set_uniform_scale(float factor)
 {
     scale = glm::mat4(factor);
     scale[3][3] = 1.0f;

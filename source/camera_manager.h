@@ -26,6 +26,7 @@ class CameraManager
     void set_position(glm::vec3 pos);
     glm::vec3 get_position();
     void set_direction(glm::vec3 dir);
+    glm::vec3 get_direction();
     void set_target(glm::vec3 targ);
     void move_foreward(float displace);
     void move_vertical(float displace);
@@ -108,6 +109,10 @@ glm::vec3 CameraManager::get_position()
 void CameraManager::set_direction(glm::vec3 dir)
 {
     _set_and_match_direction(dir);
+}
+glm::vec3 CameraManager::get_direction()
+{
+    return direction;
 }
 void CameraManager::set_target(glm::vec3 targ)
 {

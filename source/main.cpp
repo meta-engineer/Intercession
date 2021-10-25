@@ -203,19 +203,32 @@ int main(int argc, char** argv) {
     glm::vec3 staticColor(0.8f, 0.9f, 0.6f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
-    light_source.set_scale(0.2f);
+    light_source.set_uniform_scale(0.1f);
 
     // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs", 
-        "source/shaders/material_maps.fs"
+        "source/shaders/better_lighting.fs"
     );
     sm.activate();
-    sm.setVec3("light.position", light_source.get_origin()); 
-    sm.setVec3("light.ambient",  staticColor * 0.1f);
-    sm.setVec3("light.diffuse",  staticColor * 1.0f);
-    sm.setVec3("light.specular", staticColor * 1.0f); 
+    //sm.setVec3("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
+    sm.setVec3("pLight.position", light_source.get_origin());
+    sm.setVec3("pLight.attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    sm.setVec3("pLight.ambient",  staticColor * 0.1f);
+    sm.setVec3("pLight.diffuse",  staticColor * 1.0f);
+    sm.setVec3("pLight.specular", staticColor * 1.0f);
+
+    glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
+    sm.setVec3("sLight.position", cm.get_position());
+    sm.setVec3("sLight.direction", cm.get_direction());
+    sm.setVec3("sLight.attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    sm.setFloat("sLight.innerCos", 0.99f);
+    sm.setFloat("sLight.outerCos", 0.92f);
+    sm.setVec3("sLight.ambient",  spotColor * 0.1f);
+    sm.setVec3("sLight.diffuse",  spotColor * 1.0f);
+    sm.setVec3("sLight.specular", spotColor * 1.0f);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -259,6 +272,8 @@ int main(int argc, char** argv) {
         sm.setInt("material.diffuse", 0); // texture "unit" id not object id
         sm.setInt("material.specular", 1);
         sm.setFloat("material.shininess", 32.0f);
+        sm.setVec3("sLight.position", cm.get_position());
+        sm.setVec3("sLight.direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("world_to_view", cm.get_lookAt());
         sm.setMat4("projection", cm.get_projection());
