@@ -5,15 +5,15 @@
 #include "mesh.h"
 
 float cube_verticies[] = {
-    // coordinates         // normal             // color            // texture coordinates
-    -0.5f,  0.5f, -0.5f,  -1.0f,  1.0f, -1.0f,   1.0f, 0.0f, 0.0f,   1.5f,  1.5f,
-    -0.5f,  0.5f,  0.5f,  -1.0f,  1.0f,  1.0f,   1.0f, 1.0f, 0.0f,  -0.5f,  1.5f,
-     0.5f,  0.5f,  0.5f,   1.0f,  1.0f,  1.0f,   0.0f, 1.0f, 1.0f,  -0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,   1.0f,  1.0f, -1.0f,   0.0f, 0.0f, 1.0f,   1.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,  -1.0f, -1.0f, -1.0f,   1.0f, 0.0f, 0.0f,   1.5f, -0.5f,
-    -0.5f, -0.5f,  0.5f,  -1.0f, -1.0f,  1.0f,   1.0f, 1.0f, 0.0f,   1.5f,  1.5f,
-     0.5f, -0.5f,  0.5f,   1.0f, -1.0f,  1.0f,   0.0f, 1.0f, 1.0f,  -0.5f,  1.5f,
-     0.5f, -0.5f, -0.5f,   1.0f, -1.0f, -1.0f,   0.0f, 0.0f, 1.0f,  -0.5f, -0.5f
+    // coordinates         // normal             // texture coordinates
+    -0.5f,  0.5f, -0.5f,  -1.0f,  1.0f, -1.0f,    1.5f,  1.5f,
+    -0.5f,  0.5f,  0.5f,  -1.0f,  1.0f,  1.0f,   -0.5f,  1.5f,
+     0.5f,  0.5f,  0.5f,   1.0f,  1.0f,  1.0f,   -0.5f, -0.5f,
+     0.5f,  0.5f, -0.5f,   1.0f,  1.0f, -1.0f,    1.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,  -1.0f, -1.0f, -1.0f,    1.5f, -0.5f,
+    -0.5f, -0.5f,  0.5f,  -1.0f, -1.0f,  1.0f,    1.5f,  1.5f,
+     0.5f, -0.5f,  0.5f,   1.0f, -1.0f,  1.0f,   -0.5f,  1.5f,
+     0.5f, -0.5f, -0.5f,   1.0f, -1.0f, -1.0f,   -0.5f, -0.5f
 };
 unsigned int cube_indicies[] = {
     0,1,2,
@@ -30,7 +30,7 @@ unsigned int cube_indicies[] = {
     4,7,6
 };
 unsigned int cube_attribs[] = {
-    3,3,3,2
+    3,3,2
 };
 
 class CubeMesh : public Mesh

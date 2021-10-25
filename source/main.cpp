@@ -85,6 +85,44 @@ void process_input(GLFWwindow *window, float deltaTime)
         cm.set_use_perspective(!cm.get_use_perspective());
 }
 
+int loadGLTexture(const char* path)
+{
+    unsigned int texture_ID;
+    glGenTextures(1, &texture_ID);
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+
+    // wrapping options?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    // color for non-mapped surface (using GL_CLAMP_TO_BORDER)
+    //float borderColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    // texture mapping options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texturing data
+    int texWidth, texHeight, texChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *texData = stbi_load(path, &texWidth, &texHeight, &texChannels, 0);
+    if (texData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load texture: " << path << std::endl;
+    }
+    stbi_image_free(texData);
+
+    return texture_ID;
+}
+
 
 int main(int argc, char** argv) {
     std::cout << argv[0] << " Version " << BUILD_VERSION_MAJOR << "." << BUILD_VERSION_MINOR << std::endl;
@@ -141,6 +179,7 @@ int main(int argc, char** argv) {
     // on mouse scroll callback
     glfwSetScrollCallback(window, scroll_callback);
 
+    // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
     Cube2Mesh default_cubes[10];
     glm::vec3 positions[] = {
@@ -161,99 +200,47 @@ int main(int argc, char** argv) {
     }
 
     CubeMesh light_source;
-    glm::vec3 staticColor(0.8f, 1.0f, 0.9f);
+    glm::vec3 staticColor(0.8f, 0.9f, 0.6f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_scale(0.2f);
 
-    // texture object
-    unsigned int texture_ID;
-    glGenTextures(1, &texture_ID);
-    glBindTexture(GL_TEXTURE_2D, texture_ID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    // color for non-mapped surface (using GL_CLAMP_TO_BORDER)
-    float borderColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    // texture mapping options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // texturing data
-    int texWidth, texHeight, texChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *texData = stbi_load("resources/awesomeface.png", &texWidth, &texHeight, &texChannels, 0);
-    if (texData)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cerr << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(texData);
-
-    //texture object 2
-    unsigned int texture_2_ID;
-    glGenTextures(1, &texture_2_ID);
-    glBindTexture(GL_TEXTURE_2D, texture_2_ID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // texture mapping options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // texturing data
-    int tex2Width, tex2Height, tex2Channels;
-    unsigned char *tex2Data = stbi_load("resources/wall.jpg", &tex2Width, &tex2Height, &tex2Channels, 0);
-    if (texData)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex2Width, tex2Height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex2Data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cerr << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(tex2Data);
-
-    // clear binds
-    glBindTexture(GL_TEXTURE_2D, 0);
-
+    // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs", 
-        "source/shaders/materials.fs"
+        "source/shaders/material_maps.fs"
     );
-    // shader uniforms
     sm.activate();
-    sm.setInt("texture", 1);
     sm.setVec3("light.position", light_source.get_origin()); 
-    sm.setVec3("light.ambient",  staticColor * 0.2f);
-    sm.setVec3("light.diffuse",  staticColor * 0.8f);
-    sm.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f)); 
+    sm.setVec3("light.ambient",  staticColor * 0.1f);
+    sm.setVec3("light.diffuse",  staticColor * 1.0f);
+    sm.setVec3("light.specular", staticColor * 1.0f); 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // texture object to be bound later
+    unsigned int box_texture_ID = loadGLTexture("resources/container2.png");
+    unsigned int box_specular_ID= loadGLTexture("resources/container2_specular.png");
 
     ShaderManager light_sm(
         "source/shaders/projection_lighting.vs",
         "source/shaders/light_source.fs"
     );
-
     light_sm.activate();
     light_sm.setVec3("lightColor", staticColor);
 
+
+    // ******************** Render Loop *************************
     float lastTimeVal = 0;
     float FPS = 100;
     float frameTimeDelta = 1.0/FPS;
-    // render loop
+    
     while(!glfwWindowShouldClose(window))
     {
         float timeVal = glfwGetTime();
         float deltaTime = timeVal - lastTimeVal;
         if (deltaTime < frameTimeDelta) continue;
-
         std::cout << "FPS: " << 1.0/(timeVal - lastTimeVal) << "\r" << std::flush;
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
@@ -262,22 +249,15 @@ int main(int argc, char** argv) {
         glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //update shader uniforms
-        sm.activate();
-        float alphaVal = 0.5;//sin(timeVal) / 2.0f + 0.5f;
-        sm.setFloat("globalAlpha", alphaVal);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+        // bind to texture "unit" 0
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture_ID);
+        glBindTexture(GL_TEXTURE_2D, box_texture_ID);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture_2_ID);
+        glBindTexture(GL_TEXTURE_2D, box_specular_ID);
 
         sm.activate();
-        sm.setVec3("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
-        sm.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
-        sm.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+        sm.setInt("material.diffuse", 0); // texture "unit" id not object id
+        sm.setInt("material.specular", 1);
         sm.setFloat("material.shininess", 32.0f);
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("world_to_view", cm.get_lookAt());
