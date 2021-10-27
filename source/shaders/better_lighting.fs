@@ -39,50 +39,99 @@ struct SpotLight {
     vec3 specular;
 };
 
+uniform vec3 viewPos;
 uniform Material material;
 
-uniform SpotLight sLight;
-uniform PointLight pLight;
-uniform vec3 viewPos;
+#define MAX_RAY_LIGHTS 1
+uniform int num_ray_lights;
+uniform RayLight rLights[MAX_RAY_LIGHTS];
+
+#define MAX_POINT_LIGHTS 4
+uniform int num_point_lights;
+uniform PointLight pLights[MAX_POINT_LIGHTS];
+
+#define MAX_SPOT_LIGHTS 2
+uniform int num_spot_lights;
+uniform SpotLight sLights[MAX_SPOT_LIGHTS];
+
+vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample);
+vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample);
+vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample);
 
 void main()
+{
+    // pre-calculate parameters
+    vec3 norm = normalize(Normal);
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 textureDiffuse = vec3(texture(material.diffuse, TexCoord));
+    vec3 textureSpecular= vec3(texture(material.specular, TexCoord));
+
+    // clamp ambient to highest single ambient source?
+    vec3 outColor = vec3(0.0);
+
+    for (int i = 0; i < min(num_ray_lights, MAX_RAY_LIGHTS); i++)
+        outColor += CalcRayLight(rLights[i], norm, viewDir, textureDiffuse, textureSpecular);
+    for (int i = 0; i < min(num_point_lights, MAX_POINT_LIGHTS); i++)
+        outColor += CalcPointLight(pLights[i], norm, viewDir, textureDiffuse, textureSpecular);
+    for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
+        outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular);
+
+    FragColor = vec4(outColor, 1.0);
+}
+
+vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample)
+{
+    // no attenuation needed
+    vec3 ambient = rLight.ambient * diffuseSample;
+
+    vec3 lightDir = normalize(-rLight.direction);
+
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = rLight.diffuse * diff * diffuseSample;
+
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = rLight.specular * spec * specularSample;
+
+    return (ambient + diffuse + specular);
+}
+
+vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample)
 {
     // distance factor
     float dist = length(pLight.position - FragPos);
     float falloff = 1 / (pLight.attenuation.x + pLight.attenuation.y * dist + pLight.attenuation.z * (dist*dist));
 
     // ambient (using light ambient but material diffuse)
-    vec3 ambient = pLight.ambient * vec3(texture(material.diffuse, TexCoord)) * falloff;
-
+    vec3 ambient = pLight.ambient * diffuseSample * falloff;
+    
     // diffuse (using diffuse map)
-    vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(pLight.position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = pLight.diffuse * diff * vec3(texture(material.diffuse, TexCoord)) * falloff;
+    vec3 diffuse = pLight.diffuse * diff * diffuseSample * falloff;
 
     // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = pLight.specular * spec * vec3(texture(material.specular, TexCoord)) * falloff;
+    vec3 specular = pLight.specular * spec * specularSample * falloff;
 
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    return (ambient + diffuse + specular);
+}
 
-    // spotlight
-    // Better way to add additional lights?
-    dist = length(sLight.position - FragPos);
-    falloff = 1;//1 / (sLight.attenuation.x + sLight.attenuation.y * dist + sLight.attenuation.z * (dist*dist));
+vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample)
+{
+    float dist = length(sLight.position - FragPos);
+    float falloff = 1 / (sLight.attenuation.x + sLight.attenuation.y * dist + sLight.attenuation.z * (dist*dist));
 
-    // clamp ambient to highest single ambient source?
-    ambient = sLight.ambient * vec3(texture(material.diffuse, TexCoord)) * falloff;
+    vec3 ambient = sLight.ambient * diffuseSample * falloff;
 
-    lightDir = normalize(sLight.position - FragPos);
-    diff = max(dot(norm, lightDir), 0.0);
-    diffuse = sLight.diffuse * diff * vec3(texture(material.diffuse, TexCoord)) * falloff;
+    vec3 lightDir = normalize(sLight.position - FragPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = sLight.diffuse * diff * diffuseSample * falloff;
 
-    reflectDir = reflect(-lightDir, norm);
-    spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    specular = sLight.specular * spec * vec3(texture(material.specular, TexCoord)) * falloff;
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = sLight.specular * spec * specularSample * falloff;
 
     // spotlight mask
     float theta = dot(lightDir, normalize(-sLight.direction));
@@ -91,5 +140,5 @@ void main()
     diffuse *= intensity;
     specular *= intensity;
 
-    FragColor += vec4(ambient + diffuse + specular, 1.0);
+    return (ambient + diffuse + specular);
 }

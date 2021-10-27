@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <assimp/scene.h>
 
 #define STB_IMAGE_IMPLEMENTATION // must define before include?
 #include <stb_image.h>
@@ -200,7 +201,7 @@ int main(int argc, char** argv) {
     }
 
     CubeMesh light_source;
-    glm::vec3 staticColor(0.8f, 0.9f, 0.6f);
+    glm::vec3 staticColor(0.6f, 0.6f, 0.9f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
@@ -212,22 +213,30 @@ int main(int argc, char** argv) {
         "source/shaders/better_lighting.fs"
     );
     sm.activate();
-    //sm.setVec3("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
-    sm.setVec3("pLight.position", light_source.get_origin());
-    sm.setVec3("pLight.attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
-    sm.setVec3("pLight.ambient",  staticColor * 0.1f);
-    sm.setVec3("pLight.diffuse",  staticColor * 1.0f);
-    sm.setVec3("pLight.specular", staticColor * 1.0f);
+    sm.setInt("num_ray_lights", 1);
+    sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
+    sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
+    sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
+    sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
+    sm.setInt("num_point_lights", 1);
+    sm.setVec3("pLights[0].position", light_source.get_origin());
+    sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
+    sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
+    sm.setVec3("pLights[0].specular", staticColor * 1.0f);
+
+    sm.setInt("num_spot_lights", 1);
     glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
-    sm.setVec3("sLight.position", cm.get_position());
-    sm.setVec3("sLight.direction", cm.get_direction());
-    sm.setVec3("sLight.attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
-    sm.setFloat("sLight.innerCos", 0.99f);
-    sm.setFloat("sLight.outerCos", 0.92f);
-    sm.setVec3("sLight.ambient",  spotColor * 0.1f);
-    sm.setVec3("sLight.diffuse",  spotColor * 1.0f);
-    sm.setVec3("sLight.specular", spotColor * 1.0f);
+    sm.setVec3("sLights[0].position", cm.get_position());
+    sm.setVec3("sLights[0].direction", cm.get_direction());
+    sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    sm.setFloat("sLights[0].innerCos", 0.99f);
+    sm.setFloat("sLights[0].outerCos", 0.92f);
+    sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
+    sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
+    sm.setVec3("sLights[0].specular", spotColor * 1.0f);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -272,8 +281,8 @@ int main(int argc, char** argv) {
         sm.setInt("material.diffuse", 0); // texture "unit" id not object id
         sm.setInt("material.specular", 1);
         sm.setFloat("material.shininess", 32.0f);
-        sm.setVec3("sLight.position", cm.get_position());
-        sm.setVec3("sLight.direction", cm.get_direction());
+        sm.setVec3("sLights[0].position", cm.get_position());
+        sm.setVec3("sLights[0].direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("world_to_view", cm.get_lookAt());
         sm.setMat4("projection", cm.get_projection());

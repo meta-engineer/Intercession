@@ -51,3 +51,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC glm)
 
 # STB_IMAGE
 target_include_directories(${PROJECT_NAME} PUBLIC stb_image)
+
+# ASSIMP
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/assimp/CMakeLists.txt")
+message(FATAL_ERROR "The assimp submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
+endif()
+
+add_subdirectory(assimp)
+target_link_libraries(${PROJECT_NAME} Assimp)
+target_include_directories(${PROJECT_NAME} PUBLIC assimp/include)
