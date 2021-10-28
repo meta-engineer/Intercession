@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
     }
 
     CubeVertexGroup light_source;
-    glm::vec3 staticColor(0.8f, 0.9f, 0.3f);
+    glm::vec3 staticColor(0.2f, 0.3f, 0.5f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);

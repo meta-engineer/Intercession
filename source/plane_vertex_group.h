@@ -4,14 +4,14 @@
 
 #include "vertex_group.h"
 
-float plane_verticies[] = {
+float plane_vertices[] = {
     // coordinates          // color            // texture coordinates
      0.5f,  0.45f,  0.0f,   1.0f, 0.0f, 0.0f,    1.5f,  1.5f,
     -0.5f,  0.45f,  0.0f,   1.0f, 1.0f, 0.0f,   -0.5f,  1.5f,
     -0.5f, -0.45f,  0.0f,   0.0f, 1.0f, 1.0f,   -0.5f, -0.5f,
      0.5f, -0.45f,  0.0f,   0.0f, 0.0f, 1.0f,    1.5f, -0.5f
 };
-unsigned int plane_indicies[] = {
+unsigned int plane_indices[] = {
     0,3,1,
     3,2,1
 };
@@ -23,8 +23,8 @@ class PlaneVertexGroup : public VertexGroup
 {
   public:
     PlaneVertexGroup()
-        : VertexGroup(plane_verticies, sizeof(plane_verticies), 
-            plane_indicies, sizeof(plane_indicies), 
+        : VertexGroup(plane_vertices, sizeof(plane_vertices), 
+            plane_indices, sizeof(plane_indices), 
             plane_attribs, sizeof(plane_attribs))
     {}
 };

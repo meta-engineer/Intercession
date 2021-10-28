@@ -4,7 +4,7 @@
 
 #include "vertex_group.h"
 
-float cube2_verticies[] = {
+float cube2_vertices[] = {
     // coordinates         // normal              // texture coordinates
     -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,
     -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   -0.5f,  1.5f,
@@ -36,7 +36,7 @@ float cube2_verticies[] = {
     -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f, -0.5f,
      0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f, -0.5f,   // back
 };
-unsigned int cube2_indicies[] = {
+unsigned int cube2_indices[] = {
     0,1,2,
     0,2,3,
 
@@ -63,8 +63,8 @@ class Cube2VertexGroup : public VertexGroup
 {
   public:
     Cube2VertexGroup()
-        : VertexGroup(cube2_verticies, sizeof(cube2_verticies), // These are SIZE of the arrays data (bytes)
-            cube2_indicies, sizeof(cube2_indicies),
+        : VertexGroup(cube2_vertices, sizeof(cube2_vertices), // These are SIZE of the arrays data (bytes)
+            cube2_indices, sizeof(cube2_indices),
             cube2_attribs, sizeof(cube2_attribs))
     {}
 };
