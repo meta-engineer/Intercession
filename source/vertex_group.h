@@ -1,6 +1,6 @@
 
-#ifndef MESH_H
-#define MESH_H
+#ifndef VERTEX_GROUP_H
+#define VERTEX_GROUP_H
 
 #include <iostream>
 
@@ -8,11 +8,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class Mesh
+class VertexGroup
 {
   public:
-    Mesh(float* verticies, unsigned int size_verticies, unsigned int* indicies, unsigned int size_indicies, unsigned int* attribs, unsigned int size_attribs);
-    ~Mesh();
+    VertexGroup(float* verticies, unsigned int size_verticies, unsigned int* indicies, unsigned int size_indicies, unsigned int* attribs, unsigned int size_attribs);
+    ~VertexGroup();
 
     glm::mat4 get_model_transform();
     void set_origin(glm::vec3 coord);
@@ -41,7 +41,7 @@ class Mesh
     unsigned int EBO_ID;
 };
 
-Mesh::Mesh(float* verticies, unsigned int size_verticies, unsigned int* indicies, unsigned int size_indicies, unsigned int* attribs, unsigned int size_attribs)
+VertexGroup::VertexGroup(float* verticies, unsigned int size_verticies, unsigned int* indicies, unsigned int size_indicies, unsigned int* attribs, unsigned int size_attribs)
     : origin(0.0f)
     , rotation(1.0f)
     , scale(1.0f)
@@ -88,14 +88,14 @@ Mesh::Mesh(float* verticies, unsigned int size_verticies, unsigned int* indicies
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-Mesh::~Mesh()
+VertexGroup::~VertexGroup()
 {
     glDeleteBuffers(1, &EBO_ID);
     glDeleteBuffers(1, &VBO_ID);
     glDeleteVertexArrays(1, &VAO_ID);
 }
 
-glm::mat4 Mesh::get_model_transform()
+glm::mat4 VertexGroup::get_model_transform()
 {
     glm::mat4 model_to_world = glm::mat4(1.0f);
     model_to_world = glm::translate(model_to_world, origin);
@@ -103,36 +103,36 @@ glm::mat4 Mesh::get_model_transform()
     return model_to_world;
 }
 
-void Mesh::set_origin(glm::vec3 coord)
+void VertexGroup::set_origin(glm::vec3 coord)
 {
     origin = coord;
 }
-glm::vec3 Mesh::get_origin()
+glm::vec3 VertexGroup::get_origin()
 {
     return origin;
 }
 
-void Mesh::translate(glm::vec3 displace)
+void VertexGroup::translate(glm::vec3 displace)
 {
     origin += displace;
 }
 
-void Mesh::rotate(float rads, glm::vec3 axis)
+void VertexGroup::rotate(float rads, glm::vec3 axis)
 {
     rotation = glm::rotate(rotation, rads, axis);
 }
 
-void Mesh::set_uniform_scale(float factor)
+void VertexGroup::set_uniform_scale(float factor)
 {
     scale = glm::mat4(factor);
     scale[3][3] = 1.0f;
 }
 
-void Mesh::invoke_draw()
+void VertexGroup::invoke_draw()
 {
     glBindVertexArray(VAO_ID);
     glDrawElements(GL_TRIANGLES, num_indicies, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
-#endif // MESH_H
+#endif // VERTEX_GROUP_H

@@ -1,8 +1,8 @@
 
-#ifndef PLACE_MESH_H
-#define PLACE_MESH_H
+#ifndef PLANE_VERTEX_GROUP_H
+#define PLANE_VERTEX_GROUP_H
 
-#include "mesh.h"
+#include "vertex_group.h"
 
 float plane_verticies[] = {
     // coordinates          // color            // texture coordinates
@@ -19,14 +19,14 @@ unsigned int plane_attribs[] = {
     3,3,2
 };
 
-class PlaneMesh : public Mesh
+class PlaneVertexGroup : public VertexGroup
 {
   public:
-    PlaneMesh()
-        : Mesh(plane_verticies, sizeof(plane_verticies), 
+    PlaneVertexGroup()
+        : VertexGroup(plane_verticies, sizeof(plane_verticies), 
             plane_indicies, sizeof(plane_indicies), 
             plane_attribs, sizeof(plane_attribs))
     {}
 };
 
-#endif // PLACE_MESH_H
+#endif // PLANE_VERTEX_GROUP_H

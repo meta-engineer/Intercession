@@ -58,5 +58,5 @@ message(FATAL_ERROR "The assimp submodule was not downloaded! GIT_SUBMODULE was 
 endif()
 
 add_subdirectory(assimp)
-target_link_libraries(${PROJECT_NAME} Assimp)
+target_link_libraries(${PROJECT_NAME} assimp)
 target_include_directories(${PROJECT_NAME} PUBLIC assimp/include)

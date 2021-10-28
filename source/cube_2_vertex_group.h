@@ -1,8 +1,8 @@
 
-#ifndef CUBE_2_MESH_H
-#define CUBE_2_MESH_H
+#ifndef CUBE_2_VERTEX_GROUP_H
+#define CUBE_2_VERTEX_GROUP_H
 
-#include "mesh.h"
+#include "vertex_group.h"
 
 float cube2_verticies[] = {
     // coordinates         // normal              // texture coordinates
@@ -59,14 +59,14 @@ unsigned int cube2_attribs[] = {
     3,3,2
 };
 
-class Cube2Mesh : public Mesh
+class Cube2VertexGroup : public VertexGroup
 {
   public:
-    Cube2Mesh()
-        : Mesh(cube2_verticies, sizeof(cube2_verticies), // These are SIZE of the arrays data (bytes)
+    Cube2VertexGroup()
+        : VertexGroup(cube2_verticies, sizeof(cube2_verticies), // These are SIZE of the arrays data (bytes)
             cube2_indicies, sizeof(cube2_indicies),
             cube2_attribs, sizeof(cube2_attribs))
     {}
 };
 
-#endif // CUBE_2_MESH_H
+#endif // CUBE_2_VERTEX_GROUP_H

@@ -26,8 +26,8 @@
 #include "shader_manager.h"
 #include "camera_manager.h"
 
-#include "cube_mesh.h"
-#include "cube_2_mesh.h"
+#include "cube_vertex_group.h"
+#include "cube_2_vertex_group.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
 
     // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
-    Cube2Mesh default_cubes[10];
+    Cube2VertexGroup default_cubes[10];
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -200,8 +200,8 @@ int main(int argc, char** argv) {
         default_cubes[i].set_origin(positions[i]);
     }
 
-    CubeMesh light_source;
-    glm::vec3 staticColor(0.6f, 0.6f, 0.9f);
+    CubeVertexGroup light_source;
+    glm::vec3 staticColor(0.8f, 0.9f, 0.3f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
