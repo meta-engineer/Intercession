@@ -20,19 +20,32 @@ struct Vertex
     glm::vec2 tex_coord;
 };
 
-#define ENUM_TO_STR(ENUM) std::string(#ENUM)
-// thses will be used as the prefix for shader Material struct members
+// these will be used as the prefix for shader Material struct members
 enum TextureType
 {
     diffuse_map,
     specular_map,
     normal_map
 };
+// TODO: find an elegant was to convert enum to string
+std::string ENUM_TO_STR(TextureType t)
+{
+    switch(t)
+    {
+        case (TextureType::diffuse_map):
+            return "diffuse_map";
+        case (TextureType::specular_map):
+            return "specular_map";
+        default:
+            return "error_unmapped_texture_type";
+    }
+}
 
 struct Texture
 {
     unsigned int id;
     TextureType type;
+    std::string path; // location where file was loaded from
 };
 
 // Only stores rendering data, no object data related to world space

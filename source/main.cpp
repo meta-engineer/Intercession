@@ -13,7 +13,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <assimp/scene.h>
 
-#define STB_IMAGE_IMPLEMENTATION // must define before include?
+//#define STB_IMAGE_IMPLEMENTATION // must define before include?
 #include <stb_image.h>
 
 // internal
@@ -28,6 +28,8 @@
 
 #include "cube_vertex_group.h"
 #include "cube_2_vertex_group.h"
+
+#include "model.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
@@ -103,7 +105,7 @@ int loadGLTexture(const char* path)
     //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     // texture mapping options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // texturing data
@@ -201,10 +203,16 @@ int main(int argc, char** argv) {
     }
 
     CubeVertexGroup light_source;
-    glm::vec3 staticColor(0.2f, 0.3f, 0.5f);
+    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
+
+    Model frog("resources/12268_banjofrog_v1_L3.obj");
+    CubeVertexGroup frog_proxy;
+    frog_proxy.set_origin(glm::vec3(0, 0.5, 0));
+    frog_proxy.set_uniform_scale(0.2f);
+    frog_proxy.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
     // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
@@ -254,6 +262,13 @@ int main(int argc, char** argv) {
 
 
     // ******************** Render Loop *************************
+    glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    // culling (with correct index orientation)
+    //glEnable(GL_CULL_FACE);
+    // wireframe
+    //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+
     float lastTimeVal = 0;
     float FPS = 100;
     float frameTimeDelta = 1.0/FPS;
@@ -267,19 +282,17 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-        glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // bind to texture "unit" 0
+        // bind to texture "unit" 0 and 1
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, box_texture_ID);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, box_specular_ID);
 
         sm.activate();
-        sm.setInt("material.diffuse", 0); // texture "unit" id not object id
-        sm.setInt("material.specular", 1);
+        sm.setInt("material.diffuse_map_0", 0); // texture "unit" id not object id
+        sm.setInt("material.specular_map_0", 1);
         sm.setFloat("material.shininess", 32.0f);
         sm.setVec3("sLights[0].position", cm.get_position());
         sm.setVec3("sLights[0].direction", cm.get_direction());
@@ -293,6 +306,10 @@ int main(int argc, char** argv) {
             sm.setMat4("model_to_world", default_cubes[i].get_model_transform());
             default_cubes[i].invoke_draw();
         }
+        
+        sm.activate();
+        sm.setMat4("model_to_world", frog_proxy.get_model_transform());
+        frog.invokeDraw(sm);
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());

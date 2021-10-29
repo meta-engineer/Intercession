@@ -4,9 +4,11 @@ in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
 
+// All textures must be in the single Material instance "material"
+// and use this TYPE_map_X format
 struct Material {
-    sampler2D   diffuse;
-    sampler2D   specular;
+    sampler2D   diffuse_map_0;
+    sampler2D   specular_map_0;
     float       shininess;
 };
 
@@ -63,8 +65,8 @@ void main()
     // pre-calculate parameters
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 textureDiffuse = vec3(texture(material.diffuse, TexCoord));
-    vec3 textureSpecular= vec3(texture(material.specular, TexCoord));
+    vec3 textureDiffuse = vec3(texture(material.diffuse_map_0, TexCoord));
+    vec3 textureSpecular= vec3(texture(material.specular_map_0, TexCoord));
 
     // clamp ambient to highest single ambient source?
     vec3 outColor = vec3(0.0);

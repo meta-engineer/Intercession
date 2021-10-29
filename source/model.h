@@ -8,6 +8,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#define STB_IMAGE_IMPLEMENTATION // must define before include?
+#include <stb_image.h>
 
 #include "mesh.h"
 
@@ -15,18 +17,22 @@ class Model
 {
   public:
     Model(char* path);
+    // shader must be activated before calling invokeDraw() !!!!
     void invokeDraw(ShaderManager& sm);
 
-  private:
+  //private:
     // TODO: heirarchy of meshes is not preserved
     std::vector<Mesh> meshes;
     std::string directory;
+    // shoudl this be static so all model instances share it?
+    std::vector<Texture> textures_loaded;
 
     void loadModel(std::string path);
     // recursively process from scene->mRootNode
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
+    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType);
+    int loadGLTexture(const char* filename, const std::string& path);
 };
 
 Model::Model(char* path)
@@ -82,28 +88,144 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex;
-        ...
+        // we have to manually "cast" the assimp types
+        // vertex coordinates
+        vertex.position.x = mesh->mVertices[i].x;
+        vertex.position.y = mesh->mVertices[i].y;
+        vertex.position.z = mesh->mVertices[i].z;
+
+        // normals
+        if (mesh->HasNormals())
+        {
+            vertex.normal.x = mesh->mNormals[i].x;
+            vertex.normal.y = mesh->mNormals[i].y;
+            vertex.normal.z = mesh->mNormals[i].z;
+        }
+
+        // testure coordinates
+        if (mesh->mTextureCoords[0])
+        {
+            // Assuming we only use 1 set of texture coords (up to 8)
+            vertex.tex_coord.x = mesh->mTextureCoords[0][i].x;
+            vertex.tex_coord.y = mesh->mTextureCoords[0][i].y;
+        }
+        else
+        {
+            vertex.tex_coord = glm::vec2(0.0f, 0.0f);
+        }
+
         vertices.push_back(vertex);
     }
 
     // indices
-    ...
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace tri = mesh->mFaces[i];
+        for (unsigned int j = 0; j < tri.mNumIndices; j++)
+            indices.push_back(tri.mIndices[j]);
+    }
 
     // material textures
     if (mesh->mMaterialIndex >= 0)
     {
-        ...
-    }
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
+        std::vector<Texture> diffuse_maps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::diffuse_map);
+        textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
+
+        std::vector<Texture> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::specular_map);
+        textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
+
+        // for later :)
+        //std::vector<Texture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::normal_map);
+        //textures.insert(textures.end(), height_maps.begin(), height_maps.end());
+    }
+    
     return Mesh(vertices, indices, textures);
 }
 
 
-std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
+std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType)
 {
     std::vector<Texture> textures;
+    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+    {
+        aiString str;
+        mat->GetTexture(type, i, &str);
+
+        // check if already loaded
+        bool is_new_texture = true;
+        for (unsigned int j = 0; j < textures_loaded.size(); j++)
+        {
+            if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
+            {
+                textures.push_back(textures_loaded[j]);
+                is_new_texture = false;
+                break;
+            }
+        }
+        if (is_new_texture)
+        {
+            Texture texture;
+            texture.id = loadGLTexture(str.C_Str(), directory);
+            texture.type = tType;
+            texture.path = str.C_Str();
+            textures.push_back(texture);
+            textures_loaded.push_back(texture);
+        }
+    }
 
     return textures;
+}
+
+int Model::loadGLTexture(const char* filename, const std::string& path)
+{
+    std::string filepath = std::string(filename);
+    filepath = path + '/' + filepath;
+
+    unsigned int texture_ID;
+    glGenTextures(1, &texture_ID);
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+
+    // wrapping options?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    // color for non-mapped surface (using GL_CLAMP_TO_BORDER)
+    //float borderColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    // texture mapping options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texturing data
+    int texWidth, texHeight, texChannels;
+    // the aiProcess_FlipUVs option to aiImporter.ReadFile() already does this?
+    //stbi_set_flip_vertically_on_load(true);
+    unsigned char *texData = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, 0);
+    if (texData)
+    {
+        GLenum format;
+        if (texChannels == 3)
+            format = GL_RGB;
+        else if (texChannels == 4)
+            format = GL_RGBA;
+        else // if (texChannels == 1)
+            format = GL_RED;
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, texData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "MODEL::loadGLTexture Failed to load texture: " << filepath << std::endl;
+    }
+    stbi_image_free(texData);
+
+    return texture_ID;
 }
 
 #endif // MODEL_H
