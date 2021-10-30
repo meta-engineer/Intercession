@@ -245,9 +245,6 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
     sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // texture object to be bound later
     unsigned int box_texture_ID = loadGLTexture("resources/container2.png");
@@ -260,14 +257,19 @@ int main(int argc, char** argv) {
     light_sm.activate();
     light_sm.setVec3("lightColor", staticColor);
 
-
-    // ******************** Render Loop *************************
+    // rendering options
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     // culling (with correct index orientation)
     //glEnable(GL_CULL_FACE);
     // wireframe
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // enable stencil operations
+    glEnable(GL_STENCIL_TEST);
+
+    // ******************** Render Loop *************************
 
     float lastTimeVal = 0;
     float FPS = 100;
@@ -282,7 +284,7 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // bind to texture "unit" 0 and 1
         glActiveTexture(GL_TEXTURE0);
