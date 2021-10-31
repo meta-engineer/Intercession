@@ -9,10 +9,10 @@
 class CubeBody: public Body
 {
   public:
-    CubeBody();
+    CubeBody(std::string diffuse_path = "", std::string specular_path = "");
 };
 
-CubeBody::CubeBody()
+CubeBody::CubeBody(std::string diffuse_path, std::string specular_path)
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -65,20 +65,20 @@ CubeBody::CubeBody()
         0,1,2,
         0,2,3,
 
-        4,5,6,
-        4,6,7,
+        4,6,5,
+        4,7,6,
 
-        8,9,10,
+        8,10,9,
         9,10,11,
 
-        12,13,14,
+        12,14,13,
         13,14,15,
 
-        16,17,18,
+        16,18,17,
         17,18,19,
 
         20,21,23,
-        20,22,23
+        20,23,22
     };
     for (unsigned int i = 0; i < sizeof(cube2_indices); i++)
     {
@@ -86,10 +86,17 @@ CubeBody::CubeBody()
     }
 
     // hijack model's texture loading
-    unsigned int tex_diffuse_id = Model::loadGLTexture("container2.png", "resources");
-    unsigned int tex_specular_id = Model::loadGLTexture("container2_specular.png", "resources");
-    textures.push_back(Texture{tex_diffuse_id, TextureType::diffuse_map, ""});
-    textures.push_back(Texture{tex_specular_id, TextureType::specular_map, ""});
+    // mesh.invoke_draw() will use all black if none exist
+    if (!diffuse_path.empty())
+    {
+        unsigned int diffuse_tex_id = Model::loadGLTexture(diffuse_path);
+        textures.push_back(Texture{diffuse_tex_id, TextureType::diffuse_map, ""});
+    }
+    if (!specular_path.empty())
+    {
+        unsigned int specular_tex_id = Model::loadGLTexture(specular_path);
+        textures.push_back(Texture{specular_tex_id, TextureType::specular_map, ""});
+    }
 
     Mesh cube_mesh(vertices, indices, textures);
 

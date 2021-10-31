@@ -9,10 +9,10 @@
 class QuadBody: public Body
 {
   public:
-    QuadBody();
+    QuadBody(std::string diffuse_path = "", std::string specular_path = "");
 };
 
-QuadBody::QuadBody()
+QuadBody::QuadBody(std::string diffuse_path, std::string specular_path)
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -37,7 +37,7 @@ QuadBody::QuadBody()
     }
 
     unsigned int quad_indices[] = {
-        0,1,2,
+        0,2,1,
         1,2,3,
     };
     for (unsigned int i = 0; i < sizeof(quad_indices); i++)
@@ -46,10 +46,17 @@ QuadBody::QuadBody()
     }
 
     // hijack model's texture loading
-    unsigned int tex_diffuse_id = Model::loadGLTexture("grass.png", "resources");
-    unsigned int tex_specular_id = Model::loadGLTexture("grass.png", "resources");
-    textures.push_back(Texture{tex_diffuse_id, TextureType::diffuse_map, ""});
-    textures.push_back(Texture{tex_specular_id, TextureType::specular_map, ""});
+    // mesh.invoke_draw() will use all black if none exist
+    if (!diffuse_path.empty())
+    {
+        unsigned int diffuse_tex_id = Model::loadGLTexture(diffuse_path);
+        textures.push_back(Texture{diffuse_tex_id, TextureType::diffuse_map, ""});
+    }
+    if (!specular_path.empty())
+    {
+        unsigned int specular_tex_id = Model::loadGLTexture(specular_path);
+        textures.push_back(Texture{specular_tex_id, TextureType::specular_map, ""});
+    }
 
     Mesh quad_mesh(vertices, indices, textures);
 

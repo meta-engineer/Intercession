@@ -24,7 +24,6 @@ class Body
     glm::vec3 get_origin();
     void translate(glm::vec3 displace);
     // should euler angles be maintained for some use?
-    //void set_rotate(glm::mat4);
     void rotate(float rads, glm::vec3 axis);
     void set_uniform_scale(float factor);
 

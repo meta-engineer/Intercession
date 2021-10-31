@@ -26,9 +26,6 @@
 #include "shader_manager.h"
 #include "camera_manager.h"
 
-#include "cube_vertex_group.h"
-#include "cube_2_vertex_group.h"
-
 #include "body.h"
 #include "model.h"
 #include "cube_body.h"
@@ -148,7 +145,7 @@ int main(int argc, char** argv) {
 
     // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
-    CubeBody default_cubes[10];
+    std::vector<CubeBody> default_cubes;
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -163,11 +160,11 @@ int main(int argc, char** argv) {
     };
     for (int i = 0; i < 10; i++)
     {
+        default_cubes.push_back(CubeBody("resources/container2.png", "resources/container2_specular.png"));
         default_cubes[i].set_origin(positions[i]);
     }
 
-    CubeVertexGroup light_source;
-    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
+    CubeBody light_source;
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
@@ -178,7 +175,7 @@ int main(int argc, char** argv) {
     frog.set_uniform_scale(0.2f);
     frog.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    QuadBody grass;
+    QuadBody grass("resources/grass.png");
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
 
     // ******************** Shading Objects *************************
@@ -187,8 +184,9 @@ int main(int argc, char** argv) {
         "source/shaders/projection_lighting.vs", 
         "source/shaders/better_lighting.fs"
     );
+    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
     sm.activate();
-    //sm.setInt("num_ray_lights", 1);
+    sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -202,7 +200,7 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
-    //sm.setInt("num_spot_lights", 1);
+    sm.setInt("num_spot_lights", 1);
     glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
@@ -224,7 +222,8 @@ int main(int argc, char** argv) {
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     // culling (with correct index orientation)
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
     // wireframe
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_BLEND);
@@ -255,20 +254,21 @@ int main(int argc, char** argv) {
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("world_to_view", cm.get_lookAt());
         sm.setMat4("projection", cm.get_projection());
+
         for (unsigned int i = 0; i < 10; i++)
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             default_cubes[i].invoke_draw(sm);
         }
-        
         frog.invoke_draw(sm);
-        grass.invoke_draw(sm);
+        grass.invoke_draw(sm);  // partial transparent object need to be rendered in order
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
         light_sm.setMat4("world_to_view", cm.get_lookAt());
         light_sm.setMat4("projection", cm.get_projection());
-        light_source.invoke_draw();
+
+        light_source.invoke_draw(light_sm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

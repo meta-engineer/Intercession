@@ -26,7 +26,7 @@ class Model
     void invoke_draw(ShaderManager& sm);
 
     // for use as
-    static int loadGLTexture(const char* filename, const std::string& path);
+    static int loadGLTexture(std::string filename, const std::string& path = "");
 
   private:
     // TODO: heirarchy of meshes is not preserved
@@ -85,7 +85,6 @@ void Model::processNode(aiNode *node, const aiScene *scene)
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        // TODO: heirarchy of meshes is not preserved
         meshes.push_back(processMesh(mesh, scene));
     }
     // recurse to children
@@ -195,18 +194,23 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-int Model::loadGLTexture(const char* filename, const std::string& path)
+int Model::loadGLTexture(std::string filename, const std::string& path)
 {
-    std::string filepath = std::string(filename);
-    filepath = path + '/' + filepath;
+    std::string filepath = filename;
+    if (!path.empty())
+        filepath = path + '/' + filepath;
 
     unsigned int texture_ID;
     glGenTextures(1, &texture_ID);
     glBindTexture(GL_TEXTURE_2D, texture_ID);
 
-    // wrapping options?
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    // TODO: passing wrapping options?
+    // GL_REPEAT tiles the texture
+    // GL_MIRRORED_REPEAT tiles the texture 
+    // GL_CLAMP_TO_BORDER uses border parameter (or transparency) outside texture bounds
+    // GL_CLAMP_TO_EDGE uses last tex value outside texture bounds
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);

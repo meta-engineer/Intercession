@@ -112,7 +112,8 @@ void Mesh::invoke_draw(ShaderManager& sm)
     // set as many texture units as available
     unsigned int diffuse_index = 0;
     unsigned int specular_index = 0;
-    for (unsigned int i = 0; i < textures.size(); i++)
+    unsigned int i = 0;
+    for (; i < textures.size(); i++)
     {
         glActiveTexture(GL_TEXTURE0 + i); // gl addresses can do pointer arithmatic
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
@@ -134,6 +135,16 @@ void Mesh::invoke_draw(ShaderManager& sm)
         // we set all textures as material.TYPE_X
         // so shader will have to use all textures in this form
         sm.setInt("material." + ENUM_TO_STR(textures[i].type) + "_" + number, i);
+    }
+    // TODO: if a model has less than usual textures (no specular) it will use the last bound one. Implement global defaults for visibility (just using 0 here)
+    i++;
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, 0); // texture_id 0 should be black
+    if (diffuse_index == 0) {
+        sm.setInt("material." + ENUM_TO_STR(TextureType::diffuse_map) + "_0", i);
+    }
+    if (specular_index == 0) {
+        sm.setInt("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
     }
 
     glBindVertexArray(VAO_ID);
