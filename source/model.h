@@ -16,15 +16,24 @@
 class Model
 {
   public:
+    // use assimp to load from file
     Model(char* path);
-    // shader must be activated before calling invokeDraw() !!!!
-    void invokeDraw(ShaderManager& sm);
+    // pass pre-constructed meshes
+    Model(std::vector<Mesh> meshes);
+    // to use a single pre-constructed mesh
+    Model(Mesh mesh);
+    // shader must be activated before calling invoke_draw() !!!!
+    void invoke_draw(ShaderManager& sm);
 
-  //private:
+    // for use as
+    static int loadGLTexture(const char* filename, const std::string& path);
+
+  private:
     // TODO: heirarchy of meshes is not preserved
     std::vector<Mesh> meshes;
+    // to find associated files
     std::string directory;
-    // shoudl this be static so all model instances share it?
+    // should this be static so all model instances share it?
     std::vector<Texture> textures_loaded;
 
     void loadModel(std::string path);
@@ -32,7 +41,6 @@ class Model
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType);
-    int loadGLTexture(const char* filename, const std::string& path);
 };
 
 Model::Model(char* path)
@@ -40,10 +48,19 @@ Model::Model(char* path)
     loadModel(path);
 }
 
-void Model::invokeDraw(ShaderManager& sm)
+Model::Model(std::vector<Mesh> meshes)
+    : meshes(meshes)
+{}
+
+Model::Model(Mesh mesh)
+{
+    meshes.push_back(mesh);
+}
+
+void Model::invoke_draw(ShaderManager& sm)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
-        meshes[i].invokeDraw(sm);
+        meshes[i].invoke_draw(sm);
 }
 
 void Model::loadModel(std::string path)
@@ -188,8 +205,8 @@ int Model::loadGLTexture(const char* filename, const std::string& path)
     glBindTexture(GL_TEXTURE_2D, texture_ID);
 
     // wrapping options?
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);

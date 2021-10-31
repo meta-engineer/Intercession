@@ -75,3 +75,9 @@ Some useful definitions.
 7. alpha test/blending: ingests the final object of pixels, checks depth of fragments/ alpha of graments and blends/discards the color values into the final buffer.
 8. shader program: linked version of multiple shaders combined. inputs and outputs of consecutive shaders must match.
 9. uniform: pass data from app (cpu) to shaders (gpu)
+
+Stencil functions:
+glEnable(GL_STENCIL_TEST)
+glStencilMask(0x00) aplies a bitmask to the value written into the buffer, 0x00 is used to disable writing
+glStencilFunc(action, value, mask) use action to compare (mask & fragment's stencil value) with (mask & given value)
+glStencilOp(sfail, dpfail, pass) output of stencilFunc is used to determine operation to use. one if it fails, one if it passed but depth fails, and one if both stencil and depth pass. operation changes (or not) the stencil buffer at the location of the frag

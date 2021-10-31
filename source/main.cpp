@@ -29,7 +29,10 @@
 #include "cube_vertex_group.h"
 #include "cube_2_vertex_group.h"
 
+#include "body.h"
 #include "model.h"
+#include "cube_body.h"
+#include "quad_body.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
@@ -88,45 +91,6 @@ void process_input(GLFWwindow *window, float deltaTime)
         cm.set_use_perspective(!cm.get_use_perspective());
 }
 
-int loadGLTexture(const char* path)
-{
-    unsigned int texture_ID;
-    glGenTextures(1, &texture_ID);
-    glBindTexture(GL_TEXTURE_2D, texture_ID);
-
-    // wrapping options?
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-    // color for non-mapped surface (using GL_CLAMP_TO_BORDER)
-    //float borderColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-    // texture mapping options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // texturing data
-    int texWidth, texHeight, texChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *texData = stbi_load(path, &texWidth, &texHeight, &texChannels, 0);
-    if (texData)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cerr << "Failed to load texture: " << path << std::endl;
-    }
-    stbi_image_free(texData);
-
-    return texture_ID;
-}
-
-
 int main(int argc, char** argv) {
     std::cout << argv[0] << " Version " << BUILD_VERSION_MAJOR << "." << BUILD_VERSION_MINOR << std::endl;
 #if defined(_DEBUG)
@@ -184,7 +148,7 @@ int main(int argc, char** argv) {
 
     // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
-    Cube2VertexGroup default_cubes[10];
+    CubeBody default_cubes[10];
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -208,11 +172,14 @@ int main(int argc, char** argv) {
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
 
-    Model frog("resources/12268_banjofrog_v1_L3.obj");
-    CubeVertexGroup frog_proxy;
-    frog_proxy.set_origin(glm::vec3(0, 0.5, 0));
-    frog_proxy.set_uniform_scale(0.2f);
-    frog_proxy.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    Body frog;
+    frog.graphical_model.reset(new Model("resources/12268_banjofrog_v1_L3.obj"));
+    frog.set_origin(glm::vec3(0, 0.5, 0));
+    frog.set_uniform_scale(0.2f);
+    frog.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    QuadBody grass;
+    grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
 
     // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
@@ -221,7 +188,7 @@ int main(int argc, char** argv) {
         "source/shaders/better_lighting.fs"
     );
     sm.activate();
-    sm.setInt("num_ray_lights", 1);
+    //sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -235,7 +202,7 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
-    sm.setInt("num_spot_lights", 1);
+    //sm.setInt("num_spot_lights", 1);
     glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
@@ -245,10 +212,6 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
     sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
-    
-    // texture object to be bound later
-    unsigned int box_texture_ID = loadGLTexture("resources/container2.png");
-    unsigned int box_specular_ID= loadGLTexture("resources/container2_specular.png");
 
     ShaderManager light_sm(
         "source/shaders/projection_lighting.vs",
@@ -286,16 +249,7 @@ int main(int argc, char** argv) {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        // bind to texture "unit" 0 and 1
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, box_texture_ID);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, box_specular_ID);
-
         sm.activate();
-        sm.setInt("material.diffuse_map_0", 0); // texture "unit" id not object id
-        sm.setInt("material.specular_map_0", 1);
-        sm.setFloat("material.shininess", 32.0f);
         sm.setVec3("sLights[0].position", cm.get_position());
         sm.setVec3("sLights[0].direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
@@ -304,14 +258,11 @@ int main(int argc, char** argv) {
         for (unsigned int i = 0; i < 10; i++)
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
-
-            sm.setMat4("model_to_world", default_cubes[i].get_model_transform());
-            default_cubes[i].invoke_draw();
+            default_cubes[i].invoke_draw(sm);
         }
         
-        sm.activate();
-        sm.setMat4("model_to_world", frog_proxy.get_model_transform());
-        frog.invokeDraw(sm);
+        frog.invoke_draw(sm);
+        grass.invoke_draw(sm);
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());

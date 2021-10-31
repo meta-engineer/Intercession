@@ -59,7 +59,7 @@ class Mesh {
 
     // Send texture info to shader and draw (with my VAO)
     // Transform matricies/lighting must be sent before this
-    void invokeDraw(ShaderManager& sm);
+    void invoke_draw(ShaderManager& sm);
 
   private:
     unsigned int VAO_ID, VBO_ID, EBO_ID;
@@ -107,7 +107,7 @@ void Mesh::setup()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void Mesh::invokeDraw(ShaderManager& sm)
+void Mesh::invoke_draw(ShaderManager& sm)
 {
     // set as many texture units as available
     unsigned int diffuse_index = 0;
