@@ -26,7 +26,7 @@ class Model
     void invoke_draw(ShaderManager& sm);
 
     // for use as
-    static int loadGLTexture(std::string filename, const std::string& path = "");
+    static unsigned int loadGLTexture(std::string filename, const std::string& path = "");
 
   private:
     // TODO: heirarchy of meshes is not preserved
@@ -194,7 +194,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-int Model::loadGLTexture(std::string filename, const std::string& path)
+unsigned int Model::loadGLTexture(std::string filename, const std::string& path)
 {
     std::string filepath = filename;
     if (!path.empty())

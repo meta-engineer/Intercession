@@ -6,10 +6,10 @@
 
 float plane_vertices[] = {
     // coordinates          // color            // texture coordinates
-     0.5f,  0.45f,  0.0f,   1.0f, 0.0f, 0.0f,    1.5f,  1.5f,
-    -0.5f,  0.45f,  0.0f,   1.0f, 1.0f, 0.0f,   -0.5f,  1.5f,
-    -0.5f, -0.45f,  0.0f,   0.0f, 1.0f, 1.0f,   -0.5f, -0.5f,
-     0.5f, -0.45f,  0.0f,   0.0f, 0.0f, 1.0f,    1.5f, -0.5f
+     0.5f,  0.5f,  0.0f,   1.0f, 0.0f, 0.0f,    1.5f,  1.5f,
+    -0.5f,  0.5f,  0.0f,   1.0f, 1.0f, 0.0f,   -0.5f,  1.5f,
+    -0.5f, -0.5f,  0.0f,   0.0f, 1.0f, 1.0f,   -0.5f, -0.5f,
+     0.5f, -0.5f,  0.0f,   0.0f, 0.0f, 1.0f,    1.5f, -0.5f
 };
 unsigned int plane_indices[] = {
     0,3,1,

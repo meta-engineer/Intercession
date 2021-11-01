@@ -33,6 +33,8 @@
 
 #include "vertex_group.h"
 #include "screen_plane_vertex_group.h"
+#include "skybox_vertex_group.h"
+#include "cube_vertex_group.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
@@ -89,6 +91,51 @@ void process_input(GLFWwindow *window, float deltaTime)
 
     if (glfwGetKey(window, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
         cm.set_use_perspective(!cm.get_use_perspective());
+}
+
+unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames)
+{
+    unsigned int texture_ID;
+    glGenTextures(1, &texture_ID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_ID);
+
+    // options for cubemaps
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    // data
+    int texWidth, texHeight, texChannels;
+    for (unsigned int i = 0; i < filenames.size(); i++)
+    {
+        unsigned char *texData = stbi_load(filenames[i].c_str(), &texWidth, &texHeight, &texChannels, 0);
+        if (texData)
+        {
+            GLenum format;
+            if (texChannels == 3)
+                format = GL_RGB;
+            else if (texChannels == 4)
+                format = GL_RGBA;
+            else // if (texChannels == 1)
+                format = GL_RED;
+
+            glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, texData
+            );
+        }
+        else
+        {
+            std::cerr << "MODEL::loadGLTexture Failed to load texture: " << filenames[i] << std::endl;
+        }
+        stbi_image_free(texData);
+    }
+
+    // clear
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    return texture_ID;
 }
 
 int main(int argc, char** argv) {
@@ -189,7 +236,7 @@ int main(int argc, char** argv) {
     );
     glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
     sm.activate();
-    //sm.setInt("num_ray_lights", 1);
+    sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -234,23 +281,38 @@ int main(int argc, char** argv) {
     // enable stencil operations
     glEnable(GL_STENCIL_TEST);
 
+    // skybox cubemap
+    ShaderManager skybox_sm(
+        "source/shaders/skybox.vs",
+        "source/shaders/skybox.fs"
+    );
+    // order (as defined by opengl) is right, left, top, bottom, back, front
+    std::vector<std::string> skybox_filenames{
+        "resources/lake_skybox/right.jpg",
+        "resources/lake_skybox/left.jpg",
+        "resources/lake_skybox/top.jpg",
+        "resources/lake_skybox/bottom.jpg",
+        "resources/lake_skybox/front.jpg",
+        "resources/lake_skybox/back.jpg"
+    };
+    unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
+    CubeVertexGroup skybox;
 
+    // finally framebuffers!
     ShaderManager screen_texture_sm(
         "source/shaders/screen_texture.vs",
         "source/shaders/convolutions.fs"
     );
     ScreenPlaneVertexGroup screen_plane;
 
-
-    // finally framebuffers!
     unsigned int FBO_ID;
     glGenFramebuffers(1, &FBO_ID);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
     // render to a texture...
-    unsigned int rendered_texture_id;
-    glGenTextures(1, &rendered_texture_id);
-    glBindTexture(GL_TEXTURE_2D, rendered_texture_id);
+    unsigned int rendered_texture_ID;
+    glGenTextures(1, &rendered_texture_ID);
+    glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
     // allocate memory for buffer, NULL data
     // should probably use a unique cm
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cm.get_view_width(), cm.get_view_height(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -258,7 +320,7 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0); // clear
     // attach buffers (with type information) to the framebuffer object
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture_id, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture_ID, 0);
 
     // render to a RenderBuffer (this used for depth/stencil buffer)
     unsigned int RBO_ID;
@@ -276,7 +338,6 @@ int main(int argc, char** argv) {
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
-    //glDeleteFrambuffers(1, &FBO_ID);
 
 
     // ******************** Render Loop *************************
@@ -293,7 +354,7 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        //glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
         glClearColor(0.9f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -311,7 +372,6 @@ int main(int argc, char** argv) {
             default_cubes[i].invoke_draw(sm);
         }
         frog.invoke_draw(sm);
-        grass.invoke_draw(sm);  // partial transparent object need to be rendered in order
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
@@ -321,22 +381,40 @@ int main(int argc, char** argv) {
         light_source.invoke_draw(light_sm);
 
         // finished drawing to framebuffer
-    
+        /*
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         screen_texture_sm.activate();
         glClearColor(0.1f, 0.9f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, rendered_texture_id);
+        glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
         screen_texture_sm.setInt("screenTexture", 0);
         screen_plane.invoke_draw();
+        */
+
+        // skybox
+        glDepthFunc(GL_LEQUAL); // so skybox is always furthest (test always passes)
+        skybox_sm.activate();
+        // cut out top-left 3x3 matrix (ommiting translation)
+        skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
+        skybox_sm.setMat4("projection", cm.get_projection());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        skybox_sm.setInt("skybox_texture", 0);
+        skybox.invoke_draw();
+        // reset depth buffer
+        glDepthFunc(GL_LESS);
+        
+        // objects with alpha have to be drawn at the end and in order of depth
+        grass.invoke_draw(sm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     std::cout << "Stopped rendering, terminating..." << std::endl;
+    //glDeleteFrambuffers(1, &FBO_ID);
     glfwTerminate();
     return 0;
 }

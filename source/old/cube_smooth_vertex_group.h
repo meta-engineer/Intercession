@@ -1,10 +1,10 @@
 
-#ifndef CUBE_VERTEX_GROUP_H
-#define CUBE_VERTEX_GROUP_H
+#ifndef CUBE_SMOOTH_VERTEX_GROUP_H
+#define CUBE_SMOOTH_VERTEX_GROUP_H
 
 #include "vertex_group.h"
 
-float cube_vertices[] = {
+float cube_smooth_vertices[] = {
     // coordinates         // normal             // texture coordinates
     -0.5f,  0.5f, -0.5f,  -1.0f,  1.0f, -1.0f,    1.5f,  1.5f,
     -0.5f,  0.5f,  0.5f,  -1.0f,  1.0f,  1.0f,   -0.5f,  1.5f,
@@ -15,7 +15,7 @@ float cube_vertices[] = {
      0.5f, -0.5f,  0.5f,   1.0f, -1.0f,  1.0f,   -0.5f,  1.5f,
      0.5f, -0.5f, -0.5f,   1.0f, -1.0f, -1.0f,   -0.5f, -0.5f
 };
-unsigned int cube_indices[] = {
+unsigned int cube_smooth_indices[] = {
     0,1,2,
     0,2,3,
     0,1,4,
@@ -29,18 +29,18 @@ unsigned int cube_indices[] = {
     4,5,6,
     4,7,6
 };
-unsigned int cube_attribs[] = {
+unsigned int cube_smooth_attribs[] = {
     3,3,2
 };
 
-class CubeVertexGroup : public VertexGroup
+class CubeSmoothVertexGroup : public VertexGroup
 {
   public:
-    CubeVertexGroup()
-        : VertexGroup(cube_vertices, sizeof(cube_vertices), // These are SIZE of the arrays data (bytes)
-            cube_indices, sizeof(cube_indices),
-            cube_attribs, sizeof(cube_attribs))
+    CubeSmoothVertexGroup()
+        : VertexGroup(cube_smooth_vertices, sizeof(cube_smooth_vertices), // These are SIZE of the arrays data (bytes)
+            cube_smooth_indices, sizeof(cube_smooth_indices),
+            cube_smooth_attribs, sizeof(cube_smooth_attribs))
     {}
 };
 
-#endif // CUBE_VERTEX_GROUP_H
+#endif // CUBE_SMOOTH_VERTEX_GROUP_H
