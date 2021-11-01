@@ -74,7 +74,7 @@ void main()
     
     // no shininess from model imports so we'll generate a makeshift one for now
     // + 1 to avoid zeroing FragColor. color of (0.5, 0.5, 0.5) should be about 32? so factor of 15?
-    float textureGloss = textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 15;
+    float textureGloss = 32;//textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 15;
 
     // clamp ambient to highest single ambient source?
     vec3 outColor = vec3(0.0);

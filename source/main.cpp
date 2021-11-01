@@ -31,6 +31,9 @@
 #include "cube_body.h"
 #include "quad_body.h"
 
+#include "vertex_group.h"
+#include "screen_plane_vertex_group.h"
+
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 
 // TODO: move these
@@ -186,7 +189,7 @@ int main(int argc, char** argv) {
     );
     glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
     sm.activate();
-    sm.setInt("num_ray_lights", 1);
+    //sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -200,7 +203,7 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
-    sm.setInt("num_spot_lights", 1);
+    //sm.setInt("num_spot_lights", 1);
     glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
@@ -222,8 +225,8 @@ int main(int argc, char** argv) {
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     // culling (with correct index orientation)
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    //glEnable(GL_CULL_FACE);
+    //glCullFace(GL_FRONT);
     // wireframe
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_BLEND);
@@ -231,8 +234,52 @@ int main(int argc, char** argv) {
     // enable stencil operations
     glEnable(GL_STENCIL_TEST);
 
-    // ******************** Render Loop *************************
 
+    ShaderManager screen_texture_sm(
+        "source/shaders/screen_texture.vs",
+        "source/shaders/convolutions.fs"
+    );
+    ScreenPlaneVertexGroup screen_plane;
+
+
+    // finally framebuffers!
+    unsigned int FBO_ID;
+    glGenFramebuffers(1, &FBO_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+
+    // render to a texture...
+    unsigned int rendered_texture_id;
+    glGenTextures(1, &rendered_texture_id);
+    glBindTexture(GL_TEXTURE_2D, rendered_texture_id);
+    // allocate memory for buffer, NULL data
+    // should probably use a unique cm
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cm.get_view_width(), cm.get_view_height(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0); // clear
+    // attach buffers (with type information) to the framebuffer object
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture_id, 0);
+
+    // render to a RenderBuffer (this used for depth/stencil buffer)
+    unsigned int RBO_ID;
+    glGenRenderbuffers(1, &RBO_ID);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO_ID);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
+    glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO_ID);
+
+    // check frambuffer
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "New Framebuffer was not complete, rebinding to default" << std::endl;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+    //glDeleteFrambuffers(1, &FBO_ID);
+
+
+    // ******************** Render Loop *************************
     float lastTimeVal = 0;
     float FPS = 100;
     float frameTimeDelta = 1.0/FPS;
@@ -246,7 +293,10 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        glClearColor(0.9f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
         sm.activate();
         sm.setVec3("sLights[0].position", cm.get_position());
@@ -269,6 +319,18 @@ int main(int argc, char** argv) {
         light_sm.setMat4("projection", cm.get_projection());
 
         light_source.invoke_draw(light_sm);
+
+        // finished drawing to framebuffer
+    
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        screen_texture_sm.activate();
+        glClearColor(0.1f, 0.9f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, rendered_texture_id);
+        screen_texture_sm.setInt("screenTexture", 0);
+        screen_plane.invoke_draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
