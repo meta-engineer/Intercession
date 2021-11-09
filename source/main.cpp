@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 // external
 #include <glad/glad.h>
@@ -108,7 +109,7 @@ unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames)
 
     // data
     int texWidth, texHeight, texChannels;
-    for (unsigned int i = 0; i < filenames.size(); i++)
+    for (unsigned int i = 0; i < std::min(filenames.size(), (size_t)6); i++)
     {
         unsigned char *texData = stbi_load(filenames[i].c_str(), &texWidth, &texHeight, &texChannels, 0);
         if (texData)
@@ -297,11 +298,6 @@ int main(int argc, char** argv) {
     };
     unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
     CubeVertexGroup skybox;
-
-    ShaderManager mirror_sm(
-        "source/shaders/projection_lighting.vs",
-        "source/shaders/skybox_map.fs"
-    );
 
 
     // finally framebuffers! ************************************
