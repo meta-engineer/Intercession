@@ -298,7 +298,13 @@ int main(int argc, char** argv) {
     unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
     CubeVertexGroup skybox;
 
-    // finally framebuffers!
+    ShaderManager mirror_sm(
+        "source/shaders/projection_lighting.vs",
+        "source/shaders/skybox_map.fs"
+    );
+
+
+    // finally framebuffers! ************************************
     ShaderManager screen_texture_sm(
         "source/shaders/screen_texture.vs",
         "source/shaders/convolutions.fs"
@@ -365,6 +371,9 @@ int main(int argc, char** argv) {
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("world_to_view", cm.get_lookAt());
         sm.setMat4("projection", cm.get_projection());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        //sm.setInt("skybox_texture", 0);
 
         for (unsigned int i = 0; i < 10; i++)
         {
@@ -380,7 +389,21 @@ int main(int argc, char** argv) {
 
         light_source.invoke_draw(light_sm);
 
+        // skybox
+        glDepthFunc(GL_LEQUAL); // so skybox only passes if there is nothing else in buffer
+        skybox_sm.activate();
+        // cut out top-left 3x3 matrix (ommiting translation)
+        skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
+        skybox_sm.setMat4("projection", cm.get_projection());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        skybox_sm.setInt("skybox_texture", 0);
+        skybox.invoke_draw();
+        // reset depth buffer
+        glDepthFunc(GL_LESS);
+
         // finished drawing to framebuffer
+        // post processing
         /*
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         screen_texture_sm.activate();
@@ -392,19 +415,6 @@ int main(int argc, char** argv) {
         screen_texture_sm.setInt("screenTexture", 0);
         screen_plane.invoke_draw();
         */
-
-        // skybox
-        glDepthFunc(GL_LEQUAL); // so skybox is always furthest (test always passes)
-        skybox_sm.activate();
-        // cut out top-left 3x3 matrix (ommiting translation)
-        skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
-        skybox_sm.setMat4("projection", cm.get_projection());
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
-        skybox_sm.setInt("skybox_texture", 0);
-        skybox.invoke_draw();
-        // reset depth buffer
-        glDepthFunc(GL_LESS);
         
         // objects with alpha have to be drawn at the end and in order of depth
         grass.invoke_draw(sm);

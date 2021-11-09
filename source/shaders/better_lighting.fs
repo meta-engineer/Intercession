@@ -43,6 +43,7 @@ struct SpotLight {
 
 uniform vec3 viewPos;
 uniform Material material;
+uniform samplerCube skybox_texture;
 
 #define MAX_RAY_LIGHTS 1
 uniform int num_ray_lights;
@@ -59,6 +60,7 @@ uniform SpotLight sLights[MAX_SPOT_LIGHTS];
 vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
 vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
 vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 CalcSkyboxReflection(vec3 reflectSample);
 
 void main()
 {
@@ -85,8 +87,22 @@ void main()
         outColor += CalcPointLight(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
         outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    
+    outColor += CalcSkyboxReflection(textureSpecular);
 
     FragColor = vec4(outColor, textureDiffuse4.a);
+}
+
+vec3 CalcSkyboxReflection(vec3 reflectSample)
+{
+    vec3 I = normalize(FragPos - viewPos);
+    // reflection
+    vec3 R = reflect(I, normalize(Normal));
+    // refraction
+    //vec3 R = refract(I, normalize(Normal), 1.00/1.52); // air to glass ratio
+
+    return vec4(texture(skybox_texture, R).xyz, 1.0) * (reflectSample.x + reflectSample.y, reflectSample.z);
+
 }
 
 vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
