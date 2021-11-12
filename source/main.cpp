@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
     // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
-        "source/shaders/projection_lighting.vs", 
+        "source/shaders/projection_block.vs", 
         "source/shaders/better_lighting.fs"
     );
     glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
@@ -268,6 +268,20 @@ int main(int argc, char** argv) {
     );
     light_sm.activate();
     light_sm.setVec3("lightColor", staticColor);
+
+    // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
+    unsigned int UBO_ID;
+    glGenBuffers(1, &UBO_ID);
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+    // set buffer to bind point 0
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, UBO_ID, 0, 2 * sizeof(glm::mat4));
+
+    // bind sm's view_transform to 0
+    sm.activate();
+    glUniformBlockBinding(sm.SP_ID, glGetUniformBlockIndex(sm.SP_ID, "view_transforms"), 0);
+    //light_sm.activate();
+    //glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transform"), 0);
 
     // rendering options
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
@@ -361,12 +375,18 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
+        // set uniform buffers for all shaders
+        glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &(cm.get_lookAt()));
+        // could optimize further by only resetting projection if fov changes
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &(cm.get_projection()));
+
         sm.activate();
         sm.setVec3("sLights[0].position", cm.get_position());
         sm.setVec3("sLights[0].direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
-        sm.setMat4("world_to_view", cm.get_lookAt());
-        sm.setMat4("projection", cm.get_projection());
+        //sm.setMat4("world_to_view", cm.get_lookAt());
+        //sm.setMat4("projection", cm.get_projection());
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
         //sm.setInt("skybox_texture", 0);
