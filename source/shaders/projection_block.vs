@@ -13,16 +13,19 @@ layout (std140) uniform view_transforms
 };
 uniform mat4 model_to_world;
 
-out vec3 FragPos;
-out vec3 Normal;
-out vec2 TexCoord;
+// interface block to be in'd by geometryShader
+out VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec2 TexCoord;
+} vs_out;
 
 void main()
 {
     // gl_Position is predefined as the shader's output?
     gl_Position = projection * world_to_view * model_to_world * vec4(aPos, 1.0);
-    FragPos = vec3(model_to_world * vec4(aPos, 1.0));
+    vs_out.FragPos = vec3(model_to_world * vec4(aPos, 1.0));
 
-    Normal = mat3(transpose(inverse(model_to_world))) * aNorm;
-    TexCoord = aTexCoord;
+    vs_out.Normal = mat3(transpose(inverse(model_to_world))) * aNorm;
+    vs_out.TexCoord = aTexCoord;
 }

@@ -3,13 +3,16 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNorm;
 layout (location = 2) in vec2 aTexCoord;
 
+layout (std140) uniform view_transforms
+{
+    mat4 world_to_view;     // offset  0 bytes, size 64 bytes
+    mat4 projection;        // offset 64 bytes, size 64 bytes
+};
+uniform mat4 model_to_world;
+
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoord;
-
-uniform mat4 model_to_world;
-uniform mat4 world_to_view;
-uniform mat4 projection;
 
 void main()
 {

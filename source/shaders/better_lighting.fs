@@ -101,7 +101,7 @@ vec3 CalcSkyboxReflection(vec3 reflectSample)
     // refraction
     //vec3 R = refract(I, normalize(Normal), 1.00/1.52); // air to glass ratio
 
-    return vec4(texture(skybox_texture, R).xyz, 1.0) * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
+    return texture(skybox_texture, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
 
 }
 

@@ -18,6 +18,7 @@ class ShaderManager
     unsigned int SP_ID; // Shader Program ID
 
     ShaderManager(const char* vertexPath, const char* fragmentPath);
+    ShaderManager(const char* vertexPath, const char* geometryPath, const char* fragmentPath);
 
     void activate();
 
@@ -33,8 +34,9 @@ class ShaderManager
     std::string load_shader_file(const char* filePath);
     // create, compile and return gl object id (or 0 if compilation fails)
     unsigned int build_vertex_shader(const char* src);
+    unsigned int build_geometry_shader(const char* src);
     unsigned int build_fragment_shader(const char* src);
-    unsigned int build_shader_program(unsigned int VS_ID, unsigned int FS_ID);
+    unsigned int build_shader_program(unsigned int* Shader_IDs, unsigned int num_shaders);
 };
 
 ShaderManager::ShaderManager(const char* vertexPath, const char* fragmentPath)
@@ -47,10 +49,33 @@ ShaderManager::ShaderManager(const char* vertexPath, const char* fragmentPath)
     unsigned int VS_ID = ShaderManager::build_vertex_shader(VS_src);
     unsigned int FS_ID = ShaderManager::build_fragment_shader(FS_src);
 
-    this->SP_ID = ShaderManager::build_shader_program(VS_ID, FS_ID);
+    unsigned int Shader_IDs[] = {VS_ID, FS_ID};
+    this->SP_ID = ShaderManager::build_shader_program(Shader_IDs, 2);
 
     // cleanup
     glDeleteShader(VS_ID);
+    glDeleteShader(FS_ID);
+}
+
+ShaderManager::ShaderManager(const char* vertexPath, const char* geometryPath, const char* fragmentPath)
+{
+    std::string VS_str = ShaderManager::load_shader_file(vertexPath);
+    std::string GS_str = ShaderManager::load_shader_file(geometryPath);
+    std::string FS_str = ShaderManager::load_shader_file(fragmentPath);
+    const char* VS_src = VS_str.c_str();
+    const char* GS_src = GS_str.c_str();
+    const char* FS_src = FS_str.c_str();
+
+    unsigned int VS_ID = ShaderManager::build_vertex_shader(VS_src);
+    unsigned int GS_ID = ShaderManager::build_geometry_shader(GS_src);
+    unsigned int FS_ID = ShaderManager::build_fragment_shader(FS_src);
+
+    unsigned int Shader_IDs[] = {VS_ID, GS_ID, FS_ID};
+    this->SP_ID = ShaderManager::build_shader_program(Shader_IDs, 3);
+
+    // cleanup
+    glDeleteShader(VS_ID);
+    glDeleteShader(GS_ID);
     glDeleteShader(FS_ID);
 }
 
@@ -124,6 +149,25 @@ unsigned int ShaderManager::build_vertex_shader(const char* src)
     }
     return VS_ID;
 }
+
+unsigned int ShaderManager::build_geometry_shader(const char* src)
+{
+    unsigned int GS_ID = glCreateShader(GL_GEOMETRY_SHADER);
+    glShaderSource(GS_ID, 1, &src, NULL);
+    glCompileShader(GS_ID);
+
+    // check compile errors
+    int success;
+    char infoLog[512];
+    glGetShaderiv(GS_ID, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(GS_ID, 512, NULL, infoLog);
+        std::cerr << "Geometry shader compilation failed\n" << infoLog << std::endl;
+        return 0;
+    }
+    return GS_ID;
+}
  
 unsigned int ShaderManager::build_fragment_shader(const char* src)
 {
@@ -144,24 +188,26 @@ unsigned int ShaderManager::build_fragment_shader(const char* src)
     return FS_ID;
 }
 
-unsigned int ShaderManager::build_shader_program(unsigned int VS_ID, unsigned int FS_ID)
+unsigned int ShaderManager::build_shader_program(unsigned int* Shader_IDs, unsigned int num_shaders)
 {
-    unsigned int SP_ID = glCreateProgram();
-    glAttachShader(SP_ID, VS_ID);
-    glAttachShader(SP_ID, FS_ID);
-    glLinkProgram(SP_ID);
+    unsigned int new_SP_ID = glCreateProgram();
+    for (unsigned int i = 0; i < num_shaders; ++i)
+    {
+        glAttachShader(new_SP_ID, Shader_IDs[i]);
+    }
+    glLinkProgram(new_SP_ID);
 
     //check for linking errors
     int success;
     char infoLog[512];
-    glGetProgramiv(SP_ID, GL_LINK_STATUS, &success);
+    glGetProgramiv(new_SP_ID, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(SP_ID, 512, NULL, infoLog);
+        glGetProgramInfoLog(new_SP_ID, 512, NULL, infoLog);
         std::cerr << "Shader Program linking failed\n" << infoLog << std::endl;
         return 0;
     }
-    return SP_ID;
+    return new_SP_ID;
 }
 
 #endif // SHADER_MANAGER_H

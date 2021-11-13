@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
     // ******************** Shading Objects *************************
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
-        "source/shaders/projection_block.vs", 
+        "source/shaders/projection_lighting.vs",
         "source/shaders/better_lighting.fs"
     );
     glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
@@ -261,6 +261,12 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
     sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
+
+    ShaderManager normal_visualizer_sm(
+        "source/shaders/viewspace_normal.vs",
+        "source/shaders/vertex_normals.gs",
+        "source/shaders/fixed_color.fs"
+    );
 
     ShaderManager light_sm(
         "source/shaders/projection_lighting.vs",
@@ -395,8 +401,10 @@ int main(int argc, char** argv) {
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             default_cubes[i].invoke_draw(sm);
+            default_cubes[i].invoke_draw(normal_visualizer_sm);
         }
         frog.invoke_draw(sm);
+        frog.invoke_draw(normal_visualizer_sm);
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
