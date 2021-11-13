@@ -25,7 +25,8 @@ class Model
     // shader must be activated before calling invoke_draw() !!!!
     void invoke_draw(ShaderManager& sm);
 
-    // for use as
+    void reset_all_environment_maps(unsigned int new_environment_map_id = 0);
+
     static unsigned int loadGLTexture(std::string filename, const std::string& path = "");
 
   private:
@@ -61,6 +62,12 @@ void Model::invoke_draw(ShaderManager& sm)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].invoke_draw(sm);
+}
+
+void Model::reset_all_environment_maps(unsigned int new_environment_map_id)
+{
+    for(unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].reset_environment_map(new_environment_map_id);
 }
 
 void Model::loadModel(std::string path)

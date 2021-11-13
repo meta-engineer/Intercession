@@ -100,7 +100,7 @@ unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames)
     glGenTextures(1, &texture_ID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_ID);
 
-    // options for cubemaps
+    // options for cube_maps
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -317,8 +317,17 @@ int main(int argc, char** argv) {
         "resources/lake_skybox/back.jpg"
     };
     unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
+    skybox_sm.activate();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+    skybox_sm.setInt("cube_map", 0);
     CubeVertexGroup skybox;
 
+    frog.graphical_model->reset_all_environment_maps(skybox_texture_ID);
+    for (int i = 0; i < default_cubes.size(); i++)
+    {
+        default_cubes[i].graphical_model->reset_all_environment_maps(skybox_texture_ID);
+    }
 
     // finally framebuffers! ************************************
     ShaderManager screen_texture_sm(
@@ -393,11 +402,8 @@ int main(int argc, char** argv) {
         sm.setVec3("viewPos", cm.get_position());
         //sm.setMat4("world_to_view", cm.get_lookAt());
         //sm.setMat4("projection", cm.get_projection());
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
-        //sm.setInt("skybox_texture", 0);
 
-        for (unsigned int i = 0; i < 10; i++)
+        for (unsigned int i = 0; i < default_cubes.size(); i++)
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             default_cubes[i].invoke_draw(sm);
@@ -419,9 +425,6 @@ int main(int argc, char** argv) {
         // cut out top-left 3x3 matrix (ommiting translation)
         skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
         skybox_sm.setMat4("projection", cm.get_projection());
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
-        skybox_sm.setInt("skybox_texture", 0);
         skybox.invoke_draw();
         // reset depth buffer
         glDepthFunc(GL_LESS);
@@ -448,7 +451,9 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Stopped rendering, terminating..." << std::endl;
-    //glDeleteFrambuffers(1, &FBO_ID);
+
+    glDeleteFramebuffers(1, &FBO_ID);
+    glDeleteTextures(1, &rendered_texture_ID);
     glfwTerminate();
     return 0;
 }

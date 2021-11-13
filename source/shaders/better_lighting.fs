@@ -43,7 +43,10 @@ struct SpotLight {
 
 uniform vec3 viewPos;
 uniform Material material;
-uniform samplerCube skybox_texture;
+
+#define MAX_CUBE_MAPS 1
+uniform int num_cube_maps;
+uniform samplerCube cube_map;
 
 #define MAX_RAY_LIGHTS 1
 uniform int num_ray_lights;
@@ -88,7 +91,10 @@ void main()
     for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
         outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     
-    outColor += CalcSkyboxReflection(textureSpecular);
+    if (num_cube_maps > 0 && num_cube_maps <= MAX_CUBE_MAPS)
+    {
+        outColor += CalcSkyboxReflection(textureSpecular);
+    }
 
     FragColor = vec4(outColor, textureDiffuse4.a);
 }
@@ -101,7 +107,7 @@ vec3 CalcSkyboxReflection(vec3 reflectSample)
     // refraction
     //vec3 R = refract(I, normalize(Normal), 1.00/1.52); // air to glass ratio
 
-    return texture(skybox_texture, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
+    return texture(cube_map, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
 
 }
 

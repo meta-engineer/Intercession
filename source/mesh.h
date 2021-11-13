@@ -25,6 +25,7 @@ enum TextureType
 {
     diffuse_map,
     specular_map,
+    cube_map,
     normal_map
 };
 // TODO: find an elegant was to convert enum to string
@@ -36,6 +37,8 @@ std::string ENUM_TO_STR(TextureType t)
             return "diffuse_map";
         case (TextureType::specular_map):
             return "specular_map";
+        case (TextureType::cube_map):
+            return "cube_map";
         default:
             return "error_unmapped_texture_type";
     }
@@ -54,12 +57,18 @@ class Mesh {
     std::vector<Vertex>       vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture>      textures;
+    // TODO: better texture managing to avoid blindly using a vector of different types
+    Texture                   environment_map;
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+    ~Mesh();
 
     // Send texture info to shader and draw (with my VAO)
     // Transform matricies/lighting must be sent before this
     void invoke_draw(ShaderManager& sm);
+
+    // set to 0 to ignore environment_map
+    void reset_environment_map(unsigned int new_cube_map_id = 0);
 
   private:
     unsigned int VAO_ID, VBO_ID, EBO_ID;
@@ -75,6 +84,29 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     , textures(textures)
 {
     setup();
+    environment_map.id = 0;
+}
+
+Mesh::~Mesh()
+{
+    glDeleteBuffers(1, &EBO_ID);
+    glDeleteBuffers(1, &VBO_ID);
+    glDeleteBuffers(1, &VAO_ID);
+
+    // TODO: who owns the textures and who owns the environment_map??
+    //while (textures.size() > 0)
+    //{
+    //    glDeleteTextures(1, &(textures.back().id));
+    //    std::cout << "Deleting texture " << textures.back().id << std::endl;
+    //    textures.pop_back();
+    //}
+//
+    //if (environment_map.id > 0)
+    //{
+    //    std::cout << "Deleting environment_map " << environment_map.id << std::endl;
+    //    glDeleteTextures(1, &(environment_map.id));
+    //    environment_map.id = 0;
+    //}
 }
 
 void Mesh::setup()
@@ -128,7 +160,7 @@ void Mesh::invoke_draw(ShaderManager& sm)
                 number = std::to_string(specular_index++);
                 break;
             default:
-                std::cerr << "Mesh texture type " << ENUM_TO_STR(textures[i].type) << " not recognised; Ignoring..." << std::endl;
+                std::cerr << "Mesh texture type " << ENUM_TO_STR(textures[i].type) << " not implemented; Ignoring..." << std::endl;
                 return;
         }
 
@@ -136,6 +168,7 @@ void Mesh::invoke_draw(ShaderManager& sm)
         // so shader will have to use all textures in this form
         sm.setInt("material." + ENUM_TO_STR(textures[i].type) + "_" + number, i);
     }
+
     // TODO: if a model has less than usual textures (no specular) it will use the last bound one. Implement global defaults for visibility (just using 0 here)
     i++;
     glActiveTexture(GL_TEXTURE0 + i);
@@ -147,9 +180,34 @@ void Mesh::invoke_draw(ShaderManager& sm)
         sm.setInt("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
     }
 
+    // use explicit environment map if id is not default
+    if (environment_map.id != 0 && environment_map.type == TextureType::cube_map)
+    {
+        i++;
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map.id);
+        sm.setInt(ENUM_TO_STR(TextureType::cube_map), i);
+        sm.setInt("num_cube_maps", 1);
+    }
+    else
+    {
+        sm.setInt("num_cube_maps", 0);
+    }
+
     glBindVertexArray(VAO_ID);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+}
+
+void Mesh::reset_environment_map(unsigned int new_cube_map_id)
+{
+    // TODO: who owns the environment map?
+    //if (environment_map.id != 0)
+    //{
+    //    glDeleteTextures(1, &(environment_map.id));
+    //}
+    environment_map.type = TextureType::cube_map;
+    environment_map.id = new_cube_map_id;
 }
 
 #endif // MESH_H
