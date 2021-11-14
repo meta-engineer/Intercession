@@ -16,12 +16,13 @@
 class Model
 {
   public:
-    // use assimp to load from file
-    Model(char* path);
-    // pass pre-constructed meshes
-    Model(std::vector<Mesh> meshes);
-    // to use a single pre-constructed mesh
-    Model(Mesh mesh);
+    Model(char* path);                  // use assimp to load from file
+    Model(std::vector<Mesh> meshes);    // pass pre-constructed meshes
+    Model(Mesh mesh);                   // to use a single pre-constructed mesh
+
+    // I am responsable for my meshes GPU memory!!
+    ~Model();
+
     // shader must be activated before calling invoke_draw() !!!!
     void invoke_draw(ShaderManager& sm);
 
@@ -32,15 +33,17 @@ class Model
   private:
     // TODO: heirarchy of meshes is not preserved
     std::vector<Mesh> meshes;
-    // to find associated files
+    // maintain location to find associated files
     std::string directory;
-    // should this be static so all model instances share it?
+    // should loaded textures be static so all model instances share equivalent textures?
     std::vector<Texture> textures_loaded;
 
     void loadModel(std::string path);
+
     // recursively process from scene->mRootNode
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType);
 };
 
@@ -56,6 +59,26 @@ Model::Model(std::vector<Mesh> meshes)
 Model::Model(Mesh mesh)
 {
     meshes.push_back(mesh);
+}
+
+Model::~Model()
+{
+    // Free my meshes GPU memory before deleting them
+    // My meshes should be unique, and their textures should be unique
+    //   (between models, not necessarily inside a model)
+    // IF textures/meshes become shared across models this must be smart deletion
+    for (int i = 0; i < meshes.size(); i++)
+    {
+        while (meshes[i].textures.size() > 0)
+        {
+            glDeleteTextures(1, &(meshes[i].textures.back().id));
+            meshes[i].textures.pop_back();
+        }
+        
+        // cube maps are shared between skybox and model reflections so we can't delete it...
+        //glDeleteTextures(1, &(meshes[i].environment_map.id));
+        //meshes[i].environment_map.id = 0;
+    }
 }
 
 void Model::invoke_draw(ShaderManager& sm)

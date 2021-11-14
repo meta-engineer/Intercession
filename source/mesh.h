@@ -57,10 +57,11 @@ class Mesh {
     std::vector<Vertex>       vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture>      textures;
-    // TODO: better texture managing to avoid blindly using a vector of different types
+    // TODO: better texture managing to for different types (once all types are better understood)
     Texture                   environment_map;
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+    // Mesh is not responsible for texture GPU memory! Caller is!
     ~Mesh();
 
     // Send texture info to shader and draw (with my VAO)
@@ -92,21 +93,6 @@ Mesh::~Mesh()
     glDeleteBuffers(1, &EBO_ID);
     glDeleteBuffers(1, &VBO_ID);
     glDeleteBuffers(1, &VAO_ID);
-
-    // TODO: who owns the textures and who owns the environment_map??
-    //while (textures.size() > 0)
-    //{
-    //    glDeleteTextures(1, &(textures.back().id));
-    //    std::cout << "Deleting texture " << textures.back().id << std::endl;
-    //    textures.pop_back();
-    //}
-//
-    //if (environment_map.id > 0)
-    //{
-    //    std::cout << "Deleting environment_map " << environment_map.id << std::endl;
-    //    glDeleteTextures(1, &(environment_map.id));
-    //    environment_map.id = 0;
-    //}
 }
 
 void Mesh::setup()
@@ -169,7 +155,8 @@ void Mesh::invoke_draw(ShaderManager& sm)
         sm.setInt("material." + ENUM_TO_STR(textures[i].type) + "_" + number, i);
     }
 
-    // TODO: if a model has less than usual textures (no specular) it will use the last bound one. Implement global defaults for visibility (just using 0 here)
+    // If a model has less than usual textures (i.e.no specular) it will use the last bound one.
+    // Instead we'll just use 0 (all black). We could implement a global null texture for visibility
     i++;
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, 0); // texture_id 0 should be black
@@ -201,11 +188,7 @@ void Mesh::invoke_draw(ShaderManager& sm)
 
 void Mesh::reset_environment_map(unsigned int new_cube_map_id)
 {
-    // TODO: who owns the environment map?
-    //if (environment_map.id != 0)
-    //{
-    //    glDeleteTextures(1, &(environment_map.id));
-    //}
+    // We don't own the gpu memory. No need to free.
     environment_map.type = TextureType::cube_map;
     environment_map.id = new_cube_map_id;
 }

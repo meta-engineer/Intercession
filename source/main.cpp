@@ -454,6 +454,8 @@ int main(int argc, char** argv) {
 
     glDeleteFramebuffers(1, &FBO_ID);
     glDeleteTextures(1, &rendered_texture_ID);
+    glDeleteTextures(1, &skybox_texture_ID);
+
     glfwTerminate();
     return 0;
 }
