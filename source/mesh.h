@@ -52,7 +52,8 @@ struct Texture
 };
 
 // Only stores rendering data, no object data related to world space
-class Mesh {
+class Mesh
+{
   public:
     std::vector<Vertex>       vertices;
     std::vector<unsigned int> indices;
@@ -71,11 +72,13 @@ class Mesh {
     // set to 0 to ignore environment_map
     void reset_environment_map(unsigned int new_cube_map_id = 0);
 
-  private:
+  protected:
     unsigned int VAO_ID, VBO_ID, EBO_ID;
 
     // Store struct member data into GL objects and retain IDs
     void setup();
+
+    void set_textures(ShaderManager& sm);
 };
 
 
@@ -126,6 +129,15 @@ void Mesh::setup()
 }
 
 void Mesh::invoke_draw(ShaderManager& sm)
+{
+    set_textures(sm);
+
+    glBindVertexArray(VAO_ID);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+void Mesh::set_textures(ShaderManager& sm)
 {
     // set as many texture units as available
     unsigned int diffuse_index = 0;
@@ -180,10 +192,6 @@ void Mesh::invoke_draw(ShaderManager& sm)
     {
         sm.setInt("num_cube_maps", 0);
     }
-
-    glBindVertexArray(VAO_ID);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 }
 
 void Mesh::reset_environment_map(unsigned int new_cube_map_id)

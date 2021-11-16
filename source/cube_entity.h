@@ -1,18 +1,18 @@
 
-#ifndef CUBE_BODY_H
-#define CUBE_BODY_H
+#ifndef CUBE_ENTITY_H
+#define CUBE_ENTITY_H
 
-#include "body.h"
+#include "entity.h"
 #include "model.h"
-// hardcoded generation of cube into body class
+// hardcoded generation of cube into entity class
 
-class CubeBody: public Body
+class CubeEntity: public Entity
 {
   public:
-    CubeBody(std::string diffuse_path = "", std::string specular_path = "");
+    CubeEntity(std::string diffuse_path = "", std::string specular_path = "");
 };
 
-CubeBody::CubeBody(std::string diffuse_path, std::string specular_path)
+CubeEntity::CubeEntity(std::string diffuse_path, std::string specular_path)
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -105,4 +105,4 @@ CubeBody::CubeBody(std::string diffuse_path, std::string specular_path)
 }
 
 
-#endif // CUBE_BODY_H
+#endif // CUBE_ENTITY_H

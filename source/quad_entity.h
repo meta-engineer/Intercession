@@ -1,18 +1,18 @@
 
-#ifndef QUAD_BODY_H
-#define QUAD_BODY_H
+#ifndef QUAD_ENTITY_H
+#define QUAD_ENTITY_H
 
-#include "body.h"
+#include "entity.h"
 #include "model.h"
-// hardcoded generation of cube into body class
+// hardcoded generation of cube into entity class
 
-class QuadBody: public Body
+class QuadEntity: public Entity
 {
   public:
-    QuadBody(std::string diffuse_path = "", std::string specular_path = "");
+    QuadEntity(std::string diffuse_path = "", std::string specular_path = "");
 };
 
-QuadBody::QuadBody(std::string diffuse_path, std::string specular_path)
+QuadEntity::QuadEntity(std::string diffuse_path, std::string specular_path)
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -65,4 +65,4 @@ QuadBody::QuadBody(std::string diffuse_path, std::string specular_path)
 }
 
 
-#endif // QUAD_BODY_H
+#endif // QUAD_ENTITY_H

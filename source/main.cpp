@@ -27,10 +27,10 @@
 #include "shader_manager.h"
 #include "camera_manager.h"
 
-#include "body.h"
+#include "entity.h"
 #include "model.h"
-#include "cube_body.h"
-#include "quad_body.h"
+#include "cube_entity.h"
+#include "quad_entity.h"
 
 #include "vertex_group.h"
 #include "screen_plane_vertex_group.h"
@@ -196,37 +196,37 @@ int main(int argc, char** argv) {
 
     // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
-    std::vector<CubeBody> default_cubes;
+    std::vector<CubeEntity> default_cubes;
     glm::vec3 positions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f), 
-        glm::vec3(-1.5f, -2.2f, -2.5f),  
-        glm::vec3(-3.8f, -2.0f, -12.3f),  
-        glm::vec3( 2.4f, -0.4f, -3.5f),  
-        glm::vec3(-1.7f,  3.0f, -7.5f),  
-        glm::vec3( 1.3f, -2.0f, -2.5f),  
-        glm::vec3( 1.5f,  2.0f, -2.5f), 
-        glm::vec3( 1.5f,  0.2f, -1.5f), 
-        glm::vec3(-1.3f,  1.0f, -1.5f)  
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
     };
     for (int i = 0; i < 10; i++)
     {
-        default_cubes.push_back(CubeBody("resources/container2.png", "resources/container2_specular.png"));
+        default_cubes.push_back(CubeEntity("resources/container2.png", "resources/container2_specular.png"));
         default_cubes[i].set_origin(positions[i]);
     }
 
-    CubeBody light_source;
+    CubeEntity light_source;
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
 
-    Body frog;
+    Entity frog;
     frog.graphical_model.reset(new Model("resources/12268_banjofrog_v1_L3.obj"));
     frog.set_origin(glm::vec3(0, 0.5, 0));
     frog.set_uniform_scale(0.2f);
     frog.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    QuadBody grass("resources/grass.png");
+    QuadEntity grass("resources/grass.png");
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
 
     // ******************** Shading Objects *************************
@@ -407,10 +407,9 @@ int main(int argc, char** argv) {
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             default_cubes[i].invoke_draw(sm);
-            default_cubes[i].invoke_draw(normal_visualizer_sm);
         }
         frog.invoke_draw(sm);
-        frog.invoke_draw(normal_visualizer_sm);
+        //frog.invoke_draw(normal_visualizer_sm);
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());

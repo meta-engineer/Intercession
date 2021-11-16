@@ -1,6 +1,6 @@
 
-#ifndef BODY_H
-#define BODY_H
+#ifndef ENTITY_H
+#define ENTITY_H
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -11,11 +11,11 @@
 #include "shader_manager.h"
 
 // Collection of physical/graphical elements of a world object
-class Body
+class Entity
 {
   public:
     // init with null members, methods should null check and fail safe
-    Body();
+    Entity();
     // Feeds model transforms and material info and then draws model meshes. Camera/Lighting/reflection/scene information should already be set.
     bool invoke_draw(ShaderManager& sm);
     glm::mat4 get_model_transform();
@@ -40,17 +40,17 @@ class Body
     glm::mat4 scale;
 };
 
-Body::Body()
+Entity::Entity()
     : origin(0.0f)
     , rotation(1.0f)
     , scale(1.0f)
 {}
 
-bool Body::invoke_draw(ShaderManager& sm)
+bool Entity::invoke_draw(ShaderManager& sm)
 {
     if (!graphical_model)
     {
-        std::cerr << "Tried to invoke_draw on Body with no Model." << std::endl;
+        std::cerr << "Tried to invoke_draw on Entity with no Model." << std::endl;
         return false;
     }
 
@@ -61,7 +61,7 @@ bool Body::invoke_draw(ShaderManager& sm)
     return true;
 }
 
-glm::mat4 Body::get_model_transform()
+glm::mat4 Entity::get_model_transform()
 {
     glm::mat4 model_to_world = glm::mat4(1.0f);
     model_to_world = glm::translate(model_to_world, origin);
@@ -69,31 +69,31 @@ glm::mat4 Body::get_model_transform()
     return model_to_world;
 }
 
-void Body::set_origin(glm::vec3 coord)
+void Entity::set_origin(glm::vec3 coord)
 {
     origin = coord;
 }
 
-glm::vec3 Body::get_origin()
+glm::vec3 Entity::get_origin()
 {
     return origin;
 }
 
-void Body::translate(glm::vec3 displace)
+void Entity::translate(glm::vec3 displace)
 {
     origin += displace;
 }
 
-void Body::rotate(float rads, glm::vec3 axis)
+void Entity::rotate(float rads, glm::vec3 axis)
 {
     rotation = glm::rotate(rotation, rads, axis);
 }
 
-void Body::set_uniform_scale(float factor)
+void Entity::set_uniform_scale(float factor)
 {
     scale = glm::mat4(factor);
     scale[3][3] = 1.0f;
 }
 
 
-#endif // BODY_H
+#endif // ENTITY_H
