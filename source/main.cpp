@@ -28,9 +28,10 @@
 #include "camera_manager.h"
 
 #include "entity.h"
+#include "collective_entity.h"
 #include "model.h"
-#include "cube_entity.h"
-#include "quad_entity.h"
+#include "cube_model.h"
+#include "quad_model.h"
 
 #include "vertex_group.h"
 #include "screen_plane_vertex_group.h"
@@ -196,7 +197,7 @@ int main(int argc, char** argv) {
 
     // ******************** Vertex Data Objects *************************
     // store all VAO info in objects
-    std::vector<CubeEntity> default_cubes;
+    std::vector<Entity> default_cubes;
     glm::vec3 positions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f),
         glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -211,31 +212,76 @@ int main(int argc, char** argv) {
     };
     for (int i = 0; i < 10; i++)
     {
-        default_cubes.push_back(CubeEntity("resources/container2.png", "resources/container2_specular.png"));
+        Entity cb(create_cube_model_ptr("resources/container2.png", "resources/container2_specular.png"));
+        default_cubes.push_back(std::move(cb));
         default_cubes[i].set_origin(positions[i]);
     }
 
-    CubeEntity light_source;
+    Entity light_source(create_cube_model_ptr());
     light_source.set_origin(glm::vec3(0.0f, 2.0f, 0.8f));
     light_source.rotate(glm::radians(55.0f), glm::vec3(1.0, 0.0, 1.0));
     light_source.set_uniform_scale(0.1f);
 
-    Entity frog;
-    frog.graphical_model.reset(new Model("resources/12268_banjofrog_v1_L3.obj"));
+    // NOTE: models passed as moved or temporary pointers to give entity exclusive control
+    Entity frog(std::make_unique<Model>("resources/12268_banjofrog_v1_L3.obj"));
+
+    // Example for resetting model afterward
+    //std::unique_ptr<Model> frog_model = std::make_unique<Model>("resources/12268_banjofrog_v1_L3.obj");
+    //frog.reset_graphics_model(std::move(frog_model));
+    // OR
+    //frog.reset_graphics_model(create_cube_model_ptr("resources/12268_banjofrog_diffuse.jpg"));
+
     frog.set_origin(glm::vec3(0, 0.5, 0));
     frog.set_uniform_scale(0.2f);
     frog.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    QuadEntity grass("resources/grass.png");
+    Entity grass(create_quad_model_ptr("resources/grass.png"));
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
 
+    //CollectiveEntity grasses = CollectiveEntity(create_quad_model_ptr("resources/grass.png"));
+    CollectiveEntity grasses = CollectiveEntity(create_cube_model_ptr("resources/qhd.jpg"));
+
+    // Fun
+    unsigned int num_blades = 100000;
+    std::vector<glm::mat4> grass_transforms;
+    srand(glfwGetTime());
+    float radius = 15.0;
+    float offset = 3.0f;
+    for (unsigned int i = 0; i < num_blades; i++)
+    {
+        glm::mat4 transform = glm::mat4(1.0f);
+        float angle = (float)i / (float)num_blades * 360.0f;
+        float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float y = displacement * 0.4f; // keep height of field smaller compared to width of x and z
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float z = cos(angle) * radius + displacement;
+        transform = glm::translate(transform, glm::vec3(x, y, z));
+
+        // 2. scale: scale between 0.05 and 0.25f
+        float scale = (rand() % 20) / 100.0f + 0.05;
+        transform = glm::scale(transform, glm::vec3(scale));
+
+        // 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+        float rotAngle = (rand() % 360);
+        transform = glm::rotate(transform, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+        grass_transforms.push_back(transform);
+    }
+    grasses.set_instance_transforms(grass_transforms);
+
+
     // ******************** Shading Objects *************************
+    
+    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
+    glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
+
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs",
         "source/shaders/better_lighting.fs"
     );
-    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
     sm.activate();
     sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
@@ -252,7 +298,6 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
     //sm.setInt("num_spot_lights", 1);
-    glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
     sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
@@ -261,6 +306,26 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
     sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
+
+    ShaderManager instances_sm(
+        "source/shaders/projection_instances.vs",
+        "source/shaders/better_lighting.fs"
+    );
+    
+    instances_sm.activate();
+    instances_sm.setInt("num_ray_lights", 1);
+    instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
+    instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
+    instances_sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
+    instances_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
+
+    instances_sm.setInt("num_point_lights", 1);
+    instances_sm.setVec3("pLights[0].position", light_source.get_origin());
+    instances_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
+    instances_sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
+    instances_sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
     ShaderManager normal_visualizer_sm(
         "source/shaders/viewspace_normal.vs",
@@ -323,10 +388,10 @@ int main(int argc, char** argv) {
     skybox_sm.setInt("cube_map", 0);
     CubeVertexGroup skybox;
 
-    frog.graphical_model->reset_all_environment_maps(skybox_texture_ID);
+    frog.reset_graphics_model_environment_maps(skybox_texture_ID);
     for (int i = 0; i < default_cubes.size(); i++)
     {
-        default_cubes[i].graphical_model->reset_all_environment_maps(skybox_texture_ID);
+        default_cubes[i].reset_graphics_model_environment_maps(skybox_texture_ID);
     }
 
     // finally framebuffers! ************************************
@@ -444,6 +509,9 @@ int main(int argc, char** argv) {
         
         // objects with alpha have to be drawn at the end and in order of depth
         grass.invoke_draw(sm);
+
+        // draw all available instances
+        grasses.invoke_instanced_draw(instances_sm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

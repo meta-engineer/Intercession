@@ -1,18 +1,10 @@
+#ifndef QUAD_MODEL_H
+#define QUAD_MODEL_H
 
-#ifndef QUAD_ENTITY_H
-#define QUAD_ENTITY_H
-
-#include "entity.h"
 #include "model.h"
-// hardcoded generation of cube into entity class
 
-class QuadEntity: public Entity
-{
-  public:
-    QuadEntity(std::string diffuse_path = "", std::string specular_path = "");
-};
-
-QuadEntity::QuadEntity(std::string diffuse_path, std::string specular_path)
+// Build Model with standard quad buffer data
+std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std::string specular_path = "")
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -59,10 +51,7 @@ QuadEntity::QuadEntity(std::string diffuse_path, std::string specular_path)
     }
 
     Mesh quad_mesh(vertices, indices, textures);
-
-    // build my graphics_model
-    graphical_model.reset(new Model(quad_mesh));
+    return std::unique_ptr<Model>(new Model(quad_mesh));
 }
 
-
-#endif // QUAD_ENTITY_H
+#endif // QUAD_MODEL_H

@@ -10,12 +10,23 @@
 #include "model.h"
 #include "shader_manager.h"
 
+struct Orientation
+{
+    glm::vec3 origin;
+    glm::mat4 rotation;
+    glm::mat4 scale;
+};
+
 // Collection of physical/graphical elements of a world object
 class Entity
 {
   public:
     // init with null members, methods should null check and fail safe
     Entity();
+    // Caller must std::move pointer to entity or use temp instance.
+    // Once Entity owns a model caller loses direct access.
+    Entity(std::unique_ptr<Model> init_model);
+
     // Feeds model transforms and material info and then draws model meshes. Camera/Lighting/reflection/scene information should already be set.
     bool invoke_draw(ShaderManager& sm);
     glm::mat4 get_model_transform();
@@ -23,17 +34,21 @@ class Entity
     void set_origin(glm::vec3 coord);
     glm::vec3 get_origin();
     void translate(glm::vec3 displace);
-    // should euler angles be maintained for some use?
-    void rotate(float rads, glm::vec3 axis);
+    void rotate(float rads, glm::vec3 axis);    // should euler angles be maintained for some use?
     void set_uniform_scale(float factor);
 
-    // full access to members?
-    std::unique_ptr<Model> graphical_model;
+    // Caller must std::move pointer to entity or use temp instance.
+    // Once Entity owns a model caller loses direct access.
+    void reset_graphics_model(std::unique_ptr<Model> new_graphics_model);
+    bool reset_graphics_model_environment_maps(unsigned int new_environment_map_id = 0);
 
-  private:
-    //Collider physical_model;
+  protected:
+    void init_orientation();
 
-    // all bodies, regardless of physics, graphics, or lack thereof will have basic stats
+    std::unique_ptr<Model> graphics_model;
+    //Collider physics_model;
+
+    // all entities, regardless of physics, graphics, or lack thereof will have basic stats
     // graphics and physics models will have to calibrate to this origin
     glm::vec3 origin;
     glm::mat4 rotation;
@@ -41,22 +56,34 @@ class Entity
 };
 
 Entity::Entity()
-    : origin(0.0f)
-    , rotation(1.0f)
-    , scale(1.0f)
-{}
+{
+    init_orientation();
+}
+
+Entity::Entity(std::unique_ptr<Model> init_model) :
+    graphics_model(std::move(init_model))
+{
+    init_orientation();
+}
+
+void Entity::init_orientation()
+{
+    origin = glm::vec3(0.0f);
+    rotation = glm::mat4(1.0f);
+    scale = glm::mat4(1.0f);
+}
 
 bool Entity::invoke_draw(ShaderManager& sm)
 {
-    if (!graphical_model)
+    if (!graphics_model)
     {
-        std::cerr << "Tried to invoke_draw on Entity with no Model." << std::endl;
+        std::cerr << "Cannot invoke_draw on Entity with no Model." << std::endl;
         return false;
     }
 
     sm.activate();
     sm.setMat4("model_to_world", get_model_transform());
-    graphical_model->invoke_draw(sm);
+    graphics_model->invoke_draw(sm);
 
     return true;
 }
@@ -95,5 +122,21 @@ void Entity::set_uniform_scale(float factor)
     scale[3][3] = 1.0f;
 }
 
+void Entity::reset_graphics_model(std::unique_ptr<Model> new_graphics_model)
+{
+    graphics_model = std::move(new_graphics_model);
+}
+
+bool Entity::reset_graphics_model_environment_maps(unsigned int new_environment_map_id)
+{
+    if (!graphics_model)
+    {
+        std::cerr << "Cannot modelfy environment maps on null Model." << std::endl;
+        return false;
+    }
+
+    graphics_model->reset_all_environment_maps(new_environment_map_id);
+    return true;
+}
 
 #endif // ENTITY_H

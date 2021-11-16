@@ -68,12 +68,19 @@ class Mesh
     // Send texture info to shader and draw (with my VAO)
     // Transform matricies/lighting must be sent before this
     void invoke_draw(ShaderManager& sm);
+    void invoke_instanced_draw(ShaderManager& sm, unsigned int amount);
 
     // set to 0 to ignore environment_map
     void reset_environment_map(unsigned int new_cube_map_id = 0);
+    void buffer_instancing_data(std::vector<glm::mat4> instance_transforms);
+    bool update_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset);
 
-  protected:
+  private:
+    // Array Buffer Object, Vertex Buffer Object, Element Buffer Object
     unsigned int VAO_ID, VBO_ID, EBO_ID;
+    // Instancing Buffer Object (only used for invoke_instanced_draw);
+    unsigned int IBO_ID;
+    unsigned int num_instances;
 
     // Store struct member data into GL objects and retain IDs
     void setup();
@@ -89,6 +96,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
 {
     setup();
     environment_map.id = 0;
+
+    num_instances = 0;
 }
 
 Mesh::~Mesh()
@@ -134,6 +143,16 @@ void Mesh::invoke_draw(ShaderManager& sm)
 
     glBindVertexArray(VAO_ID);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+void Mesh::invoke_instanced_draw(ShaderManager& sm, unsigned int amount)
+{
+    if (amount == 0) return;
+    set_textures(sm);
+
+    glBindVertexArray(VAO_ID);
+    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, amount);
     glBindVertexArray(0);
 }
 
@@ -199,6 +218,52 @@ void Mesh::reset_environment_map(unsigned int new_cube_map_id)
     // We don't own the gpu memory. No need to free.
     environment_map.type = TextureType::cube_map;
     environment_map.id = new_cube_map_id;
+}
+
+void Mesh::buffer_instancing_data(std::vector<glm::mat4> instance_transforms)
+{
+    glBindVertexArray(VAO_ID);
+    glBindBuffer(GL_ARRAY_BUFFER, IBO_ID);
+    glDeleteBuffers(1, &IBO_ID);
+
+    glGenBuffers(1, &IBO_ID);
+    glBindBuffer(GL_ARRAY_BUFFER, IBO_ID);
+    glBufferData(GL_ARRAY_BUFFER, instance_transforms.size() * sizeof(glm::mat4), instance_transforms.data(), GL_STATIC_DRAW);
+
+    // Meshes already use 0(positions), 1(normals), 2(texture coords)
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribDivisor(6, 1);
+
+    glBindVertexArray(0);
+    num_instances = instance_transforms.size();
+}
+
+// if current buffer size has room simply buffer subdata (total amount unchanged)
+// TODO: if current buffer is too small, extend buffer and buffer subdata (keep current data where not overridden)
+bool Mesh::update_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset)
+{
+    if (instance_transforms.size() + offset > num_instances)
+    {
+        std::cerr << "Cannot update instance transforms " << offset << " to " << instance_transforms.size() + offset << " for buffer size " << num_instances << ". Ignoring..." << std::endl;
+        return false;
+    }
+
+    glBindVertexArray(VAO_ID);
+    glBindBuffer(GL_ARRAY_BUFFER, IBO_ID);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, instance_transforms.size(), instance_transforms.data());
+
+    return true;
 }
 
 #endif // MESH_H

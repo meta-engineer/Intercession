@@ -16,7 +16,7 @@
 class Model
 {
   public:
-    Model(char* path);                  // use assimp to load from file
+    Model(std::string path);                  // use assimp to load from file
     Model(std::vector<Mesh> meshes);    // pass pre-constructed meshes
     Model(Mesh mesh);                   // to use a single pre-constructed mesh
 
@@ -25,8 +25,11 @@ class Model
 
     // shader must be activated before calling invoke_draw() !!!!
     void invoke_draw(ShaderManager& sm);
+    void invoke_instanced_draw(ShaderManager& sm, unsigned int amount);
 
     void reset_all_environment_maps(unsigned int new_environment_map_id = 0);
+    void buffer_all_instancing_data(std::vector<glm::mat4> instance_transforms);
+    void update_all_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset);
 
     static unsigned int loadGLTexture(std::string filename, const std::string& path = "");
 
@@ -47,9 +50,9 @@ class Model
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType);
 };
 
-Model::Model(char* path)
+Model::Model(std::string path)
 {
-    loadModel(path);
+    loadModel(path.c_str());
 }
 
 Model::Model(std::vector<Mesh> meshes)
@@ -87,11 +90,30 @@ void Model::invoke_draw(ShaderManager& sm)
         meshes[i].invoke_draw(sm);
 }
 
+void Model::invoke_instanced_draw(ShaderManager& sm, unsigned int amount)
+{
+    for(unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].invoke_instanced_draw(sm, amount);
+}
+
 void Model::reset_all_environment_maps(unsigned int new_environment_map_id)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].reset_environment_map(new_environment_map_id);
 }
+
+void Model::buffer_all_instancing_data(std::vector<glm::mat4> instance_transforms)
+{
+    for(unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].buffer_instancing_data(instance_transforms);
+}
+
+void Model::update_all_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset)
+{
+    for(unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].update_instancing_data(instance_transforms, offset);
+}
+
 
 void Model::loadModel(std::string path)
 {
