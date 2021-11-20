@@ -25,11 +25,10 @@ class Model
 
     // shader must be activated before calling invoke_draw() !!!!
     void invoke_draw(ShaderManager& sm);
-    void invoke_instanced_draw(ShaderManager& sm, unsigned int amount);
+    void invoke_instanced_draw(ShaderManager& sm, size_t amount);
 
     void reset_all_environment_maps(unsigned int new_environment_map_id = 0);
-    void buffer_all_instancing_data(std::vector<glm::mat4> instance_transforms);
-    void update_all_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset);
+    void setup_all_instance_transform_attrib_arrays(unsigned int offset);
 
     static unsigned int loadGLTexture(std::string filename, const std::string& path = "");
 
@@ -90,7 +89,7 @@ void Model::invoke_draw(ShaderManager& sm)
         meshes[i].invoke_draw(sm);
 }
 
-void Model::invoke_instanced_draw(ShaderManager& sm, unsigned int amount)
+void Model::invoke_instanced_draw(ShaderManager& sm, size_t amount)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].invoke_instanced_draw(sm, amount);
@@ -102,16 +101,10 @@ void Model::reset_all_environment_maps(unsigned int new_environment_map_id)
         meshes[i].reset_environment_map(new_environment_map_id);
 }
 
-void Model::buffer_all_instancing_data(std::vector<glm::mat4> instance_transforms)
+void Model::setup_all_instance_transform_attrib_arrays(unsigned int offset)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
-        meshes[i].buffer_instancing_data(instance_transforms);
-}
-
-void Model::update_all_instancing_data(std::vector<glm::mat4> instance_transforms, unsigned int offset)
-{
-    for(unsigned int i = 0; i < meshes.size(); i++)
-        meshes[i].update_instancing_data(instance_transforms, offset);
+        meshes[i].setup_instance_transform_attrib_array(offset);
 }
 
 

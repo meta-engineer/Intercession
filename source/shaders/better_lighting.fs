@@ -44,8 +44,9 @@ struct SpotLight {
 uniform vec3 viewPos;
 uniform Material material;
 
-#define MAX_CUBE_MAPS 1
-uniform int num_cube_maps;
+// NVIDIA throws if there is an uninitialized cubemap
+// so assume only ever 1 environment map
+uniform bool use_cube_map;
 uniform samplerCube cube_map;
 
 #define MAX_RAY_LIGHTS 1
@@ -91,7 +92,7 @@ void main()
     for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
         outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     
-    if (num_cube_maps > 0 && num_cube_maps <= MAX_CUBE_MAPS)
+    if (use_cube_map == true)
     {
         outColor += CalcSkyboxReflection(textureSpecular);
     }

@@ -239,13 +239,15 @@ int main(int argc, char** argv) {
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
 
     //CollectiveEntity grasses = CollectiveEntity(create_quad_model_ptr("resources/grass.png"));
-    CollectiveEntity grasses = CollectiveEntity(create_cube_model_ptr("resources/qhd.jpg"));
+    CollectiveEntity grasses = CollectiveEntity(create_cube_model_ptr("resources/blending_transparent_window.png"));
+    grasses.set_origin(glm::vec3(0.0f, 3.0f, -1.0f));
+    grasses.rotate(glm::radians(90.0f), glm::vec3(0,0,1));
 
     // Fun
-    unsigned int num_blades = 100000;
+    unsigned int num_blades = 10000;
     std::vector<glm::mat4> grass_transforms;
     srand(glfwGetTime());
-    float radius = 15.0;
+    float radius = 10.0;
     float offset = 3.0f;
     for (unsigned int i = 0; i < num_blades; i++)
     {
@@ -326,6 +328,15 @@ int main(int argc, char** argv) {
     instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
     instances_sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
     instances_sm.setVec3("pLights[0].specular", staticColor * 1.0f);
+    
+    instances_sm.setVec3("sLights[0].position", cm.get_position());
+    instances_sm.setVec3("sLights[0].direction", cm.get_direction());
+    instances_sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    instances_sm.setFloat("sLights[0].innerCos", 0.99f);
+    instances_sm.setFloat("sLights[0].outerCos", 0.92f);
+    instances_sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
+    instances_sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
+    instances_sm.setVec3("sLights[0].specular", spotColor * 1.0f);
 
     ShaderManager normal_visualizer_sm(
         "source/shaders/viewspace_normal.vs",
@@ -348,9 +359,16 @@ int main(int argc, char** argv) {
     // set buffer to bind point 0
     glBindBufferRange(GL_UNIFORM_BUFFER, 0, UBO_ID, 0, 2 * sizeof(glm::mat4));
 
-    // bind sm's view_transform to 0
+    // bind Shader's global uniform block view_transform to 0
     sm.activate();
     glUniformBlockBinding(sm.SP_ID, glGetUniformBlockIndex(sm.SP_ID, "view_transforms"), 0);
+
+    normal_visualizer_sm.activate();
+    glUniformBlockBinding(normal_visualizer_sm.SP_ID, glGetUniformBlockIndex(normal_visualizer_sm.SP_ID, "view_transforms"), 0);
+
+    instances_sm.activate();
+    glUniformBlockBinding(instances_sm.SP_ID, glGetUniformBlockIndex(instances_sm.SP_ID, "view_transforms"), 0);
+
     //light_sm.activate();
     //glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transform"), 0);
 
@@ -451,7 +469,7 @@ int main(int argc, char** argv) {
         lastTimeVal = timeVal;
 
         //glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
-        glClearColor(0.9f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.63f, 0.74f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -507,11 +525,15 @@ int main(int argc, char** argv) {
         screen_plane.invoke_draw();
         */
         
-        // objects with alpha have to be drawn at the end and in order of depth
-        grass.invoke_draw(sm);
-
+        instances_sm.activate();
+        instances_sm.setVec3("sLights[0].position", cm.get_position());
+        instances_sm.setVec3("sLights[0].direction", cm.get_direction());
+        instances_sm.setVec3("viewPos", cm.get_position());
         // draw all available instances
         grasses.invoke_instanced_draw(instances_sm);
+
+        // objects with alpha have to be drawn at the end and in order of depth
+        grass.invoke_draw(sm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
