@@ -11,10 +11,24 @@ const float offset = 1.0 / 400.0;
 void main()
 {
     // gaussian blur kernel
+    //float kernel[9] = float[](
+    //    -1, -1, -1,
+    //    -1,  8, -1,
+    //    -1, -1, -1
+    //);
+
+    // sobel vertical edge kernel
+    //float kernel[9] = float[](
+    //    1, 0, -1,
+    //    2, 0, -2,
+    //    1, 0, -1
+    //);
+
+    // edge detection kernel
     float kernel[9] = float[](
-        -1, -1, -1,
-        -1,  8, -1,
-        -1, -1, -1
+        1,  1,  1,
+        1, -8,  1,
+        1,  1,  1
     );
 
     vec2 offsets[9] = vec2[](

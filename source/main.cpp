@@ -160,6 +160,8 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // MSAA buffer done by glfw
+    //glfwWindowHint(GLFW_SAMPLES, 4);
 
     GLFWwindow* window = glfwCreateWindow(cm.get_view_width(), cm.get_view_height(), "OpenGL_2021", NULL, NULL);
     if (!window)
@@ -178,6 +180,9 @@ int main(int argc, char** argv) {
         std::cout << "Failed to init GLAD" << std::endl;
         return -1;
     }
+
+    // MSAA enable
+    //glEnable(GL_MULTISAMPLE); 
 
     // GLFW "window" equal to the gl "viewport"
     glViewport(0, 0, cm.get_view_width(), cm.get_view_height());
@@ -223,7 +228,7 @@ int main(int argc, char** argv) {
     light_source.set_uniform_scale(0.1f);
 
     // NOTE: models passed as moved or temporary pointers to give entity exclusive control
-    Entity frog(std::make_unique<Model>("resources/12268_banjofrog_v1_L3.obj"));
+    Entity frog(std::make_unique<Model>("resources/normal_frog.obj"));
 
     // Example for resetting model afterward
     //std::unique_ptr<Model> frog_model = std::make_unique<Model>("resources/12268_banjofrog_v1_L3.obj");
@@ -233,7 +238,6 @@ int main(int argc, char** argv) {
 
     frog.set_origin(glm::vec3(0, 0.5, 0));
     frog.set_uniform_scale(0.2f);
-    frog.rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
     Entity grass(create_quad_model_ptr("resources/grass.png"));
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
@@ -468,7 +472,9 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
+        // enable framebuffer for post-processing
         //glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+
         glClearColor(0.63f, 0.74f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -510,9 +516,19 @@ int main(int argc, char** argv) {
         skybox.invoke_draw();
         // reset depth buffer
         glDepthFunc(GL_LESS);
+        
+        instances_sm.activate();
+        instances_sm.setVec3("sLights[0].position", cm.get_position());
+        instances_sm.setVec3("sLights[0].direction", cm.get_direction());
+        instances_sm.setVec3("viewPos", cm.get_position());
+        // draw all available instances
+        grasses.invoke_instanced_draw(instances_sm);
 
-        // finished drawing to framebuffer
-        // post processing
+        // objects with alpha have to be drawn at the end and in order of depth
+        grass.invoke_draw(sm);
+
+        
+        // finished drawing to framebuffer, do post processing
         /*
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         screen_texture_sm.activate();
@@ -524,16 +540,6 @@ int main(int argc, char** argv) {
         screen_texture_sm.setInt("screenTexture", 0);
         screen_plane.invoke_draw();
         */
-        
-        instances_sm.activate();
-        instances_sm.setVec3("sLights[0].position", cm.get_position());
-        instances_sm.setVec3("sLights[0].direction", cm.get_direction());
-        instances_sm.setVec3("viewPos", cm.get_position());
-        // draw all available instances
-        grasses.invoke_instanced_draw(instances_sm);
-
-        // objects with alpha have to be drawn at the end and in order of depth
-        grass.invoke_draw(sm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
