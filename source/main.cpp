@@ -277,6 +277,11 @@ int main(int argc, char** argv) {
     }
     grasses.set_instance_transforms(grass_transforms);
 
+    Entity floor(create_quad_model_ptr("resources/wall.jpg", "resources/wall.jpg"));
+    floor.set_origin(glm::vec3(0.0f, -1.5f, 0.0));
+    floor.rotate(glm::radians(-70.0f), glm::vec3(1.0, 0.0, 0.0));
+    floor.set_uniform_scale(10.0f);
+
 
     // ******************** Shading Objects *************************
     
@@ -286,10 +291,11 @@ int main(int argc, char** argv) {
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs",
-        "source/shaders/better_lighting.fs"
+        "source/shaders/advanced_lighting.fs"
     );
     sm.activate();
     sm.setInt("num_ray_lights", 1);
+    sm.setFloat("rLights[0].intensity", 0.8f);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -297,6 +303,7 @@ int main(int argc, char** argv) {
     sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
     sm.setInt("num_point_lights", 1);
+    sm.setFloat("pLights[0].intensity", 1.0f);
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -304,6 +311,7 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
     //sm.setInt("num_spot_lights", 1);
+    sm.setFloat("sLights[0].intensity", 1.8f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
     sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
@@ -315,11 +323,12 @@ int main(int argc, char** argv) {
 
     ShaderManager instances_sm(
         "source/shaders/projection_instances.vs",
-        "source/shaders/better_lighting.fs"
+        "source/shaders/advanced_lighting.fs"
     );
     
     instances_sm.activate();
     instances_sm.setInt("num_ray_lights", 1);
+    instances_sm.setFloat("rLights[0].intensity", 0.8f);
     instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -327,20 +336,12 @@ int main(int argc, char** argv) {
     instances_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
     instances_sm.setInt("num_point_lights", 1);
+    instances_sm.setFloat("pLights[0].intensity", 1.0f);
     instances_sm.setVec3("pLights[0].position", light_source.get_origin());
     instances_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
     instances_sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
     instances_sm.setVec3("pLights[0].specular", staticColor * 1.0f);
-    
-    instances_sm.setVec3("sLights[0].position", cm.get_position());
-    instances_sm.setVec3("sLights[0].direction", cm.get_direction());
-    instances_sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
-    instances_sm.setFloat("sLights[0].innerCos", 0.99f);
-    instances_sm.setFloat("sLights[0].outerCos", 0.92f);
-    instances_sm.setVec3("sLights[0].ambient",  spotColor * 0.1f);
-    instances_sm.setVec3("sLights[0].diffuse",  spotColor * 1.0f);
-    instances_sm.setVec3("sLights[0].specular", spotColor * 1.0f);
 
     ShaderManager normal_visualizer_sm(
         "source/shaders/viewspace_normal.vs",
@@ -499,7 +500,7 @@ int main(int argc, char** argv) {
         // enable framebuffer for post-processing
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
-        glClearColor(0.63f, 0.74f, 0.9f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -531,13 +532,16 @@ int main(int argc, char** argv) {
 
         light_source.invoke_draw(light_sm);
 
+        sm.activate();
+        floor.invoke_draw(sm);
+
         // skybox
         glDepthFunc(GL_LEQUAL); // so skybox only passes if there is nothing else in buffer
         skybox_sm.activate();
         // cut out top-left 3x3 matrix (ommiting translation)
         skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
         skybox_sm.setMat4("projection", cm.get_projection());
-        skybox.invoke_draw();
+        //skybox.invoke_draw();
         // reset depth buffer
         glDepthFunc(GL_LESS);
         
