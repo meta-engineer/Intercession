@@ -373,10 +373,12 @@ int main(int argc, char** argv) {
     instances_sm.activate();
     glUniformBlockBinding(instances_sm.SP_ID, glGetUniformBlockIndex(instances_sm.SP_ID, "view_transforms"), 0);
 
+    // keep light_sm without universal uniforms
     //light_sm.activate();
     //glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transform"), 0);
 
     // rendering options
+    sm.activate();
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     // culling (with correct index orientation)
@@ -427,7 +429,8 @@ int main(int argc, char** argv) {
     glGenFramebuffers(1, &FBO_ID);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
-    // render to a texture...
+    /*
+    // render to a texture... (This is used for color)
     unsigned int rendered_texture_ID;
     glGenTextures(1, &rendered_texture_ID);
     glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
@@ -447,6 +450,27 @@ int main(int argc, char** argv) {
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
     glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO_ID);
+    */
+
+    // use a multisample texture instead
+    unsigned int MSAA_render_texture_ID;
+    glGenTextures(1, &MSAA_render_texture_ID);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4 /*samples*/, GL_RGB, cm.get_view_width(), cm.get_view_height(), GL_TRUE);
+    // GL_TRUE -> use identical sample locations and the same number of subsamples for each texel
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    // attach to framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID, 0);
+
+    // use a multisampled renderbuffer instead
+    unsigned int MSAA_RBO_ID;
+    glGenRenderbuffers(1, &MSAA_RBO_ID);
+    glBindRenderbuffer(GL_RENDERBUFFER, MSAA_RBO_ID);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4 /*samples*/, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
+    glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, MSAA_RBO_ID);
 
     // check frambuffer
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -473,7 +497,7 @@ int main(int argc, char** argv) {
         lastTimeVal = timeVal;
 
         // enable framebuffer for post-processing
-        //glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
         glClearColor(0.63f, 0.74f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
@@ -541,6 +565,11 @@ int main(int argc, char** argv) {
         screen_plane.invoke_draw();
         */
 
+        // Instead we just "blit" the FBO with multisampled attachments to the base FBO
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO_ID);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0,0,cm.get_view_width(),cm.get_view_height(), 0,0,cm.get_view_width(),cm.get_view_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -548,7 +577,8 @@ int main(int argc, char** argv) {
     std::cout << "Stopped rendering, terminating..." << std::endl;
 
     glDeleteFramebuffers(1, &FBO_ID);
-    glDeleteTextures(1, &rendered_texture_ID);
+    glDeleteTextures(1, &MSAA_render_texture_ID);
+    glDeleteRenderbuffers(1, &MSAA_RBO_ID);
     glDeleteTextures(1, &skybox_texture_ID);
 
     glfwTerminate();
