@@ -95,7 +95,7 @@ void process_input(GLFWwindow *window, float deltaTime)
         cm.set_use_perspective(!cm.get_use_perspective());
 }
 
-unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames)
+unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames, bool gamma_correction = true)
 {
     unsigned int texture_ID;
     glGenTextures(1, &texture_ID);
@@ -115,17 +115,26 @@ unsigned int loadGLCubeMapTexture(std::vector<std::string> filenames)
         unsigned char *texData = stbi_load(filenames[i].c_str(), &texWidth, &texHeight, &texChannels, 0);
         if (texData)
         {
-            GLenum format;
+            GLenum internal_format;
+            GLenum data_format;
             if (texChannels == 3)
-                format = GL_RGB;
+            {
+                internal_format = gamma_correction ? GL_SRGB : GL_RGB;
+                data_format = GL_RGB;
+            }
             else if (texChannels == 4)
-                format = GL_RGBA;
+            {
+                internal_format = gamma_correction ? GL_SRGB_ALPHA : GL_RGBA;
+                data_format = GL_RGBA;
+            }
             else // if (texChannels == 1)
-                format = GL_RED;
+            {
+                internal_format = data_format = GL_RED;
+            }
 
             glTexImage2D(
                 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-                0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, texData
+                0, internal_format, texWidth, texHeight, 0, data_format, GL_UNSIGNED_BYTE, texData
             );
         }
         else
@@ -277,10 +286,20 @@ int main(int argc, char** argv) {
     }
     grasses.set_instance_transforms(grass_transforms);
 
-    Entity floor(create_quad_model_ptr("resources/wall.jpg", "resources/wall.jpg"));
-    floor.set_origin(glm::vec3(0.0f, -1.5f, 0.0));
-    floor.rotate(glm::radians(-70.0f), glm::vec3(1.0, 0.0, 0.0));
-    floor.set_uniform_scale(10.0f);
+    CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall.jpg"));
+    floor.set_origin(glm::vec3(0.0f, -1.0f, 0.0));
+    floor.rotate(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
+    std::vector<glm::mat4> floor_transforms;
+    for (float i = 0; i < 5; i++)
+    {
+        for (float j = 0; j < 5; j++)
+        {
+            glm::mat4 transform = glm::mat4(1.0f);
+            transform = glm::translate(transform, glm::vec3(i-2, j-2, 0.0));
+            floor_transforms.push_back(transform);
+        }
+    }
+    floor.set_instance_transforms(floor_transforms);
 
 
     // ******************** Shading Objects *************************
@@ -291,10 +310,11 @@ int main(int argc, char** argv) {
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/projection_lighting.vs",
-        "source/shaders/advanced_lighting.fs"
+        "source/shaders/gamma_lighting.fs"
     );
     sm.activate();
-    sm.setInt("num_ray_lights", 1);
+    //sm.setFloat("gamma", 2.2f);
+    sm.setInt("num_ray_lights", 0);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -320,11 +340,11 @@ int main(int argc, char** argv) {
 
     ShaderManager instances_sm(
         "source/shaders/projection_instances.vs",
-        "source/shaders/advanced_lighting.fs"
+        "source/shaders/gamma_lighting.fs"
     );
     
     instances_sm.activate();
-    instances_sm.setInt("num_ray_lights", 1);
+    instances_sm.setInt("num_ray_lights", 0);
     instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -390,7 +410,7 @@ int main(int argc, char** argv) {
     // skybox cubemap
     ShaderManager skybox_sm(
         "source/shaders/skybox.vs",
-        "source/shaders/skybox.fs"
+        "source/shaders/skybox_gamma.fs"
     );
     // order (as defined by opengl) is right, left, top, bottom, back, front
     std::vector<std::string> skybox_filenames{
@@ -528,7 +548,7 @@ int main(int argc, char** argv) {
         light_source.invoke_draw(light_sm);
 
         sm.activate();
-        floor.invoke_draw(sm);
+        floor.invoke_instanced_draw(instances_sm);
 
         // skybox
         glDepthFunc(GL_LEQUAL); // so skybox only passes if there is nothing else in buffer
@@ -536,7 +556,7 @@ int main(int argc, char** argv) {
         // cut out top-left 3x3 matrix (ommiting translation)
         skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
         skybox_sm.setMat4("projection", cm.get_projection());
-        //skybox.invoke_draw();
+        skybox.invoke_draw();
         // reset depth buffer
         glDepthFunc(GL_LESS);
         

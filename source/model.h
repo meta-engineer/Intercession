@@ -30,7 +30,7 @@ class Model
     void reset_all_environment_maps(unsigned int new_environment_map_id = 0);
     void setup_all_instance_transform_attrib_arrays(unsigned int offset);
 
-    static unsigned int loadGLTexture(std::string filename, const std::string& path = "");
+    static unsigned int loadGLTexture(std::string filename, const std::string& path = "", bool gamma_correction = true);
 
   private:
     // TODO: heirarchy of meshes is not preserved
@@ -239,7 +239,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-unsigned int Model::loadGLTexture(std::string filename, const std::string& path)
+unsigned int Model::loadGLTexture(std::string filename, const std::string& path, bool gamma_correction)
 {
     std::string filepath = filename;
     if (!path.empty())
@@ -274,15 +274,24 @@ unsigned int Model::loadGLTexture(std::string filename, const std::string& path)
     unsigned char *texData = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, 0);
     if (texData)
     {
-        GLenum format;
+        GLenum internal_format;
+        GLenum data_format;
         if (texChannels == 3)
-            format = GL_RGB;
+        {
+            internal_format = gamma_correction ? GL_SRGB : GL_RGB;
+            data_format = GL_RGB;
+        }
         else if (texChannels == 4)
-            format = GL_RGBA;
+        {
+            internal_format = gamma_correction ? GL_SRGB_ALPHA : GL_RGBA;
+            data_format = GL_RGBA;
+        }
         else // if (texChannels == 1)
-            format = GL_RED;
+        {
+            internal_format = data_format = GL_RED;
+        }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, texData);
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, texWidth, texHeight, 0, data_format, GL_UNSIGNED_BYTE, texData);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
