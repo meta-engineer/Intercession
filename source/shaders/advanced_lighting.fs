@@ -13,7 +13,6 @@ struct Material {
 };
 
 struct PointLight {
-    float intensity;
     vec3 position;
     vec3 attenuation;
   
@@ -23,7 +22,6 @@ struct PointLight {
 };
 
 struct RayLight {
-    float intensity;
     vec3 direction;
   
     vec3 ambient;
@@ -32,7 +30,6 @@ struct RayLight {
 };
 
 struct SpotLight {
-    float intensity;
     vec3 position;
     vec3 direction;
     vec3 attenuation;
@@ -83,7 +80,8 @@ void main()
     
     // no shininess from model imports so we'll generate a makeshift one for now
     // + 1 to avoid zeroing FragColor. color of (0.5, 0.5, 0.5) should be about 32? so factor of 15?
-    float textureGloss = 32;//textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 20;
+    float blinn_ratio = 8;
+    float textureGloss = 16 * blinn_ratio;//textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 20;
 
     // clamp ambient to highest single ambient source?
     vec3 outColor = vec3(0.0);
@@ -130,7 +128,7 @@ vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, 
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample );
     vec3 specular = rLight.specular * spec * specularSample;
 
-    return (ambient + diffuse + specular) * rLight.intensity;
+    return (ambient + diffuse + specular);
 }
 
 vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
@@ -153,7 +151,7 @@ vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSamp
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample ); //material.shininess);
     vec3 specular = pLight.specular * spec * specularSample * falloff;
 
-    return (ambient + diffuse + specular) * pLight.intensity;
+    return (ambient + diffuse + specular);
 }
 
 vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
@@ -179,5 +177,5 @@ vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample
     diffuse *= intensity;
     specular *= intensity;
 
-    return (ambient + diffuse + specular) * sLight.intensity;
+    return (ambient + diffuse + specular);
 }

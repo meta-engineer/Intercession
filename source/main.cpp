@@ -295,7 +295,6 @@ int main(int argc, char** argv) {
     );
     sm.activate();
     sm.setInt("num_ray_lights", 1);
-    sm.setFloat("rLights[0].intensity", 0.8f);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -303,7 +302,6 @@ int main(int argc, char** argv) {
     sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
     sm.setInt("num_point_lights", 1);
-    sm.setFloat("pLights[0].intensity", 1.0f);
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -311,7 +309,6 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
     //sm.setInt("num_spot_lights", 1);
-    sm.setFloat("sLights[0].intensity", 1.8f);
     sm.setVec3("sLights[0].position", cm.get_position());
     sm.setVec3("sLights[0].direction", cm.get_direction());
     sm.setVec3("sLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
@@ -328,7 +325,6 @@ int main(int argc, char** argv) {
     
     instances_sm.activate();
     instances_sm.setInt("num_ray_lights", 1);
-    instances_sm.setFloat("rLights[0].intensity", 0.8f);
     instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
@@ -336,7 +332,6 @@ int main(int argc, char** argv) {
     instances_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
     instances_sm.setInt("num_point_lights", 1);
-    instances_sm.setFloat("pLights[0].intensity", 1.0f);
     instances_sm.setVec3("pLights[0].position", light_source.get_origin());
     instances_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
