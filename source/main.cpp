@@ -39,6 +39,7 @@
 #include "cube_vertex_group.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
+CameraManager sun_cm(glm::vec3(0.0f));
 
 // TODO: move these
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -287,15 +288,15 @@ int main(int argc, char** argv) {
     grasses.set_instance_transforms(grass_transforms);
 
     CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall.jpg"));
-    floor.set_origin(glm::vec3(0.0f, -1.0f, 0.0));
-    floor.rotate(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
+    floor.set_origin(glm::vec3(0.0f, 10.0f, 0.0));
+    floor.rotate(glm::radians(-80.0f), glm::vec3(1.0, 0.0, 0.0));
     std::vector<glm::mat4> floor_transforms;
-    for (float i = 0; i < 5; i++)
+    for (float i = 0; i < 21; i++)
     {
-        for (float j = 0; j < 5; j++)
+        for (float j = 0; j < 21; j++)
         {
             glm::mat4 transform = glm::mat4(1.0f);
-            transform = glm::translate(transform, glm::vec3(i-2, j-2, 0.0));
+            transform = glm::translate(transform, glm::vec3(i-10, j-10, 0.0));
             floor_transforms.push_back(transform);
         }
     }
@@ -309,19 +310,19 @@ int main(int argc, char** argv) {
 
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
-        "source/shaders/projection_lighting.vs",
-        "source/shaders/gamma_lighting.fs"
+        "source/shaders/single_shadow_ubo.vs",
+        "source/shaders/single_shadow.fs"
     );
     sm.activate();
     //sm.setFloat("gamma", 2.2f);
-    sm.setInt("num_ray_lights", 0);
+    sm.setInt("num_ray_lights", 1);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
     sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
     sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
-    sm.setInt("num_point_lights", 1);
+    sm.setInt("num_point_lights", 0);
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -339,19 +340,19 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
 
     ShaderManager instances_sm(
-        "source/shaders/projection_instances.vs",
-        "source/shaders/gamma_lighting.fs"
+        "source/shaders/single_shadow_instances_ubo.vs",
+        "source/shaders/single_shadow.fs"
     );
     
     instances_sm.activate();
-    instances_sm.setInt("num_ray_lights", 0);
+    instances_sm.setInt("num_ray_lights", 1);
     instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
     instances_sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
     instances_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
-    instances_sm.setInt("num_point_lights", 1);
+    instances_sm.setInt("num_point_lights", 0);
     instances_sm.setVec3("pLights[0].position", light_source.get_origin());
     instances_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -365,38 +366,16 @@ int main(int argc, char** argv) {
     );
 
     ShaderManager light_sm(
-        "source/shaders/projection_lighting.vs",
+        "source/shaders/projection_ubo.vs",
         "source/shaders/light_source.fs"
     );
     light_sm.activate();
     light_sm.setVec3("lightColor", staticColor);
 
-    // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
-    unsigned int UBO_ID;
-    glGenBuffers(1, &UBO_ID);
-    glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
-    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
-    // set buffer to bind point 0
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, UBO_ID, 0, 2 * sizeof(glm::mat4));
-
-    // bind Shader's global uniform block view_transform to 0
-    sm.activate();
-    glUniformBlockBinding(sm.SP_ID, glGetUniformBlockIndex(sm.SP_ID, "view_transforms"), 0);
-
-    normal_visualizer_sm.activate();
-    glUniformBlockBinding(normal_visualizer_sm.SP_ID, glGetUniformBlockIndex(normal_visualizer_sm.SP_ID, "view_transforms"), 0);
-
-    instances_sm.activate();
-    glUniformBlockBinding(instances_sm.SP_ID, glGetUniformBlockIndex(instances_sm.SP_ID, "view_transforms"), 0);
-
-    // keep light_sm without universal uniforms
-    //light_sm.activate();
-    //glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transform"), 0);
-
     // rendering options
     sm.activate();
     glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);  // this is managed during render loop (for skybox, etc)
     // culling (with correct index orientation)
     //glEnable(GL_CULL_FACE);
     //glCullFace(GL_FRONT);
@@ -421,7 +400,7 @@ int main(int argc, char** argv) {
         "resources/lake_skybox/front.jpg",
         "resources/lake_skybox/back.jpg"
     };
-    unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
+    unsigned int skybox_texture_ID = 0;//loadGLCubeMapTexture(skybox_filenames);
     skybox_sm.activate();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
@@ -434,10 +413,56 @@ int main(int argc, char** argv) {
         default_cubes[i].reset_graphics_model_environment_maps(skybox_texture_ID);
     }
 
-    // finally framebuffers! ************************************
+    ShaderManager shadow_map_sm(
+        "source/shaders/projection_lighting.vs",
+        "source/shaders/empty.fs"   // there is no attached color to draw to
+    );
+    ShaderManager shadow_map_instances_sm(
+        "source/shaders/projection_instances.vs",
+        "source/shaders/empty.fs"   // there is no attached color to draw to
+    );
+    sun_cm.set_use_perspective(false);
+    glm::vec3 lPos = glm::vec3(4.0f, 20.0f, 6.0f);
+    sun_cm.set_position(lPos);
+    sun_cm.set_target(glm::vec3(0.0f));
+    sun_cm.set_view_fov(20.0);
+
+    cm.set_position(lPos);
+    cm.set_target(glm::vec3(0.0f));
+
+
+
+    // ***************** Uniform buffer for all shaders ************************
+      // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
+    unsigned int UBO_ID;
+    glGenBuffers(1, &UBO_ID);
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+    // set buffer to bind point 0
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, UBO_ID, 0, 2 * sizeof(glm::mat4));
+
+    // bind Shader's global uniform block view_transform to 0
+    sm.activate();
+    glUniformBlockBinding(sm.SP_ID, glGetUniformBlockIndex(sm.SP_ID, "view_transforms"), 0);
+
+    normal_visualizer_sm.activate();
+    glUniformBlockBinding(normal_visualizer_sm.SP_ID, glGetUniformBlockIndex(normal_visualizer_sm.SP_ID, "view_transforms"), 0);
+
+    instances_sm.activate();
+    glUniformBlockBinding(instances_sm.SP_ID, glGetUniformBlockIndex(instances_sm.SP_ID, "view_transforms"), 0);
+
+    light_sm.activate();
+    glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transform"), 0);
+
+
+    // ******************************finally framebuffers! ************************************
     ShaderManager screen_texture_sm(
         "source/shaders/screen_texture.vs",
-        "source/shaders/convolutions.fs"
+        "source/shaders/screen_texture.fs"
+    );
+    ShaderManager screen_texture_depth_sm(
+        "source/shaders/screen_texture.vs",
+        "source/shaders/depth_texture.fs"
     );
     ScreenPlaneVertexGroup screen_plane;
 
@@ -445,7 +470,6 @@ int main(int argc, char** argv) {
     glGenFramebuffers(1, &FBO_ID);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
-    /*
     // render to a texture... (This is used for color)
     unsigned int rendered_texture_ID;
     glGenTextures(1, &rendered_texture_ID);
@@ -466,36 +490,70 @@ int main(int argc, char** argv) {
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
     glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO_ID);
-    */
 
     // use a multisample texture instead
-    unsigned int MSAA_render_texture_ID;
-    glGenTextures(1, &MSAA_render_texture_ID);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4 /*samples*/, GL_RGB, cm.get_view_width(), cm.get_view_height(), GL_TRUE);
-    // GL_TRUE -> use identical sample locations and the same number of subsamples for each texel
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-    // attach to framebuffer
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID, 0);
+    //unsigned int MSAA_render_texture_ID;
+    //glGenTextures(1, &MSAA_render_texture_ID);
+    //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID);
+    //glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4 /*samples*/, GL_RGB, cm.get_view_width(), cm.get_view_height(), GL_TRUE);
+    //// GL_TRUE -> use identical sample locations and the same number of subsamples for each texel
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    //// attach to framebuffer
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, MSAA_render_texture_ID, 0);
 
-    // use a multisampled renderbuffer instead
-    unsigned int MSAA_RBO_ID;
-    glGenRenderbuffers(1, &MSAA_RBO_ID);
-    glBindRenderbuffer(GL_RENDERBUFFER, MSAA_RBO_ID);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4 /*samples*/, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
-    glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, MSAA_RBO_ID);
+    //// use a multisampled renderbuffer instead
+    //unsigned int MSAA_RBO_ID;
+    //glGenRenderbuffers(1, &MSAA_RBO_ID);
+    //glBindRenderbuffer(GL_RENDERBUFFER, MSAA_RBO_ID);
+    //glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4 /*samples*/, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
+    //glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
+    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, MSAA_RBO_ID);
+    
 
     // check frambuffer
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout << "New Framebuffer was not complete, rebinding to default" << std::endl;
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+        std::cout << "Screen Framebuffer was not complete, rebinding to default" << std::endl;
     }
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+
+
+    // ***************** Shadow Map Objects *********************
+    // TODO: build encapsulated light objects
+
+    // TODO: build shadow map into optional member of light objects
+    unsigned int shadow_map_FBO_ID;
+    glGenFramebuffers(1, &shadow_map_FBO_ID);
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    sun_cm.set_view_width(SHADOW_WIDTH);
+    sun_cm.set_view_height(SHADOW_HEIGHT);
+
+    unsigned int shadow_map_ID;
+    glGenTextures(1, &shadow_map_ID);
+    glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // always have light outside map
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float shadow_border[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, shadow_border);
+
+    // we create a texture with GL_DEPTH_COMPONENT instead and *then* we can use dept attachment, duh!
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_FBO_ID);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_map_ID, 0);
+    glDrawBuffer(GL_NONE);  // these let us draw without color
+    glReadBuffer(GL_NONE);  // so the fbo doesn't think its incomplete
+    
+    // check frambuffer
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "Shadow Framebuffer was not complete, rebinding to default" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
     // ******************** Render Loop *************************
@@ -512,29 +570,66 @@ int main(int argc, char** argv) {
         process_input(window, deltaTime);
         lastTimeVal = timeVal;
 
-        // enable framebuffer for post-processing
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-
-        // set uniform buffers for all shaders
+        // set uniform buffers for all ubo shaders
         glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
         glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &(cm.get_lookAt()));
         // could optimize further by only resetting projection if fov changes
         glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &(cm.get_projection()));
 
+        // manual movement
+        for (unsigned int i = 0; i < default_cubes.size(); i++)
+        {
+            default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
+        }
+
+        // render shadow map first
+        shadow_map_sm.activate();
+        shadow_map_sm.setMat4("world_to_view", sun_cm.get_lookAt());
+        shadow_map_sm.setMat4("projection", sun_cm.get_projection());
+        shadow_map_instances_sm.activate();
+        shadow_map_instances_sm.setMat4("world_to_view", sun_cm.get_lookAt());
+        shadow_map_instances_sm.setMat4("projection", sun_cm.get_projection());
+
+        glViewport(0,0, SHADOW_WIDTH,SHADOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_FBO_ID);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        // TODO: use scene pipeline to render required entities
+        for (unsigned int i = 0; i < default_cubes.size(); i++)
+        {
+            default_cubes[i].invoke_draw(shadow_map_sm);
+        }
+        frog.invoke_draw(shadow_map_sm);
+        grasses.invoke_instanced_draw(shadow_map_instances_sm);
+        floor.invoke_instanced_draw(shadow_map_instances_sm);
+        grass.invoke_draw(shadow_map_sm);
+        // done rendering shadow
+
+        // enable framebuffer for post-processing
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        glViewport(0,0, cm.get_view_width(),cm.get_view_height());
+
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
+
         sm.activate();
         sm.setVec3("sLights[0].position", cm.get_position());
         sm.setVec3("sLights[0].direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
+        // LightSpaceMatrix =  light_projection * light_world_to_view; 
+        sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 10 for now...
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+        sm.setInt("shadow_map", 10);
         //sm.setMat4("world_to_view", cm.get_lookAt());
         //sm.setMat4("projection", cm.get_projection());
 
         for (unsigned int i = 0; i < default_cubes.size(); i++)
         {
-            default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
             default_cubes[i].invoke_draw(sm);
         }
         frog.invoke_draw(sm);
@@ -542,8 +637,6 @@ int main(int argc, char** argv) {
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
-        light_sm.setMat4("world_to_view", cm.get_lookAt());
-        light_sm.setMat4("projection", cm.get_projection());
 
         light_source.invoke_draw(light_sm);
 
@@ -564,6 +657,12 @@ int main(int argc, char** argv) {
         instances_sm.setVec3("sLights[0].position", cm.get_position());
         instances_sm.setVec3("sLights[0].direction", cm.get_direction());
         instances_sm.setVec3("viewPos", cm.get_position());
+        instances_sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 10 for now...
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+        instances_sm.setInt("shadow_map", 10);
         // draw all available instances
         grasses.invoke_instanced_draw(instances_sm);
 
@@ -572,22 +671,32 @@ int main(int argc, char** argv) {
 
         
         // finished drawing to framebuffer, do post processing
-        /*
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
         screen_texture_sm.activate();
         glClearColor(0.1f, 0.9f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
-        screen_texture_sm.setInt("screenTexture", 0);
+        screen_texture_sm.setInt("texture", 0);
+        screen_plane.invoke_draw();
+        
+        /*
+        screen_texture_depth_sm.activate();
+        glClearColor(0.9f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+        screen_texture_depth_sm.setInt("texture", 0);
         screen_plane.invoke_draw();
         */
 
         // Instead we just "blit" the FBO with multisampled attachments to the base FBO
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO_ID);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0,0,cm.get_view_width(),cm.get_view_height(), 0,0,cm.get_view_width(),cm.get_view_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        //glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO_ID);
+        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        //glBlitFramebuffer(0,0,cm.get_view_width(),cm.get_view_height(), 0,0,cm.get_view_width(),cm.get_view_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -596,8 +705,8 @@ int main(int argc, char** argv) {
     std::cout << "Stopped rendering, terminating..." << std::endl;
 
     glDeleteFramebuffers(1, &FBO_ID);
-    glDeleteTextures(1, &MSAA_render_texture_ID);
-    glDeleteRenderbuffers(1, &MSAA_RBO_ID);
+    //glDeleteTextures(1, &MSAA_render_texture_ID);
+    //glDeleteRenderbuffers(1, &MSAA_RBO_ID);
     glDeleteTextures(1, &skybox_texture_ID);
 
     glfwTerminate();

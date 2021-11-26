@@ -94,7 +94,10 @@ glm::mat4 CameraManager::get_projection()
     }
     else
     {
-        return glm::ortho(-view_width/100, view_width/100, -view_height/100, view_height/100, view_near, view_far);
+        // how to determine left, right, bottom, top?
+        // view fov 45 -> ortho_ratio ~100?
+        float ortho_ratio = (45.0f / view_fov) * 100;
+        return glm::ortho(-view_width/ortho_ratio, view_width/ortho_ratio, -view_height/ortho_ratio, view_height/ortho_ratio, view_near, view_far);
     }
 }
 
