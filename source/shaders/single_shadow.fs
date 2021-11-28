@@ -229,18 +229,24 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
     // get depth of transformed spot
     float currentDepth = projCoord.z;
     // bias into surface. this no longer works with sampler2DShadow?
-    //max(0.005 * (1.0 - dot(fragNorm, lightDir)), 0.0005);
+    //max(0.0005 * (1.0 - dot(fragNorm, lightDir)), 0.0001);
     float bias = 0.0005;
 
     // We can use a normal sampler2D and do anti-aliasing
     //  But, sampler2DShadow does a bilinear filtering of neighboring values on hardware!
-    // sampler2DShadow's overloaded texture() uses the 3D coordinate and computes depths for us
+    //  sampler2DShadow's overloaded texture() returns shadow value implicitly...
 
-    // extra antialiasing?
+    // extra multisampling
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadow_map, 0);
-    // 3x3 kernel
-    int kernel_radius = 1;
+
+    // *****contact hardening *****
+    // increate texelSize spending on difference in depth
+    //  I think frontface culling needs to be used for thick objects at certain angles?
+    //  how can i compare depths when sampler2DShadow's texture() doesn't return depth value anymore?
+
+    // ***** regular kernel blur *****
+    const int kernel_radius = 1;
     for (int i = -kernel_radius; i <= kernel_radius; i++)
     {
         for (int j = -kernel_radius; j <= kernel_radius; j++)
@@ -253,17 +259,35 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
     }
     shadow /= pow(kernel_radius*2 + 1, 2);
 
-    // poisson sampling
+
+    // ***** poisson sampling *****
     //for (int i = 0; i < 4; i++)
     //{
     //    int rIndex = int(16.0*PseudoRandom(floor(FragPos.xyz*1000.0), i))%16;
-    //    shadow += texture(shadow_map, vec3(projCoord.xy + poissonDisk[rIndex]*texelSize, projCoord.z-bias));
+    //    // sampler2DShadow
+    //    //shadow += texture(shadow_map, vec3(projCoord.xy + poissonDisk[rIndex]*texelSize, projCoord.z-bias));
+    //    // sampler2D
+    //    shadow += currentDepth-bias > texture(shadow_map, projCoord.xy + poissonDisk[rIndex]*texelSize).r ? 0.0 : 1.0;
     //}
     //shadow /= 4;
 
-    // old single texel sampling
-    // sample that spot on shadow map
+    // ***** single texel sampler2DShadow sampling that spot on shadow map *****
     //shadow = texture(shadow_map, projCoord-bias);
+
+    // ***** doing linear sampling ourselves with sampler2D *****
+    // offset by 0.5 to move to corner of pixels not centre
+    //vec2 pixelPos = projCoord.xy / texelSize + vec2(0.5);
+    //vec2 posDecimal = fract(pixelPos);
+    //vec2 startTexel = (pixelPos - posDecimal) * texelSize;
+    //float samples[4];
+    //samples[0] = currentDepth-bias > texture(shadow_map, startTexel + vec2(0,          0          )).r ? 0.0 : 1.0;
+    //samples[1] = currentDepth-bias > texture(shadow_map, startTexel + vec2(texelSize.x,0          )).r ? 0.0 : 1.0;
+    //samples[2] = currentDepth-bias > texture(shadow_map, startTexel + vec2(0,          texelSize.y)).r ? 0.0 : 1.0;
+    //samples[3] = currentDepth-bias > texture(shadow_map, startTexel + vec2(texelSize.x,texelSize.y)).r ? 0.0 : 1.0;
+    //// interpolate in 2 dimensions
+    //float mixL = mix(samples[0], samples[2], posDecimal.y);
+    //float mixR = mix(samples[1], samples[3], posDecimal.y);
+    //shadow = mix(mixL, mixR, posDecimal.x);
     
     return 1.0 - shadow;
 }
