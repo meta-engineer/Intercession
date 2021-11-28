@@ -228,8 +228,9 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
 
     // get depth of transformed spot
     float currentDepth = projCoord.z;
-    // bias into surface. is this best expression?
-    float bias = 0.0005;//max(0.05 * (1.0 - dot(fragNorm, lightDir)), 0.005);
+    // bias into surface. this no longer works with sampler2DShadow?
+    //max(0.005 * (1.0 - dot(fragNorm, lightDir)), 0.0005);
+    float bias = 0.0005;
 
     // We can use a normal sampler2D and do anti-aliasing
     //  But, sampler2DShadow does a bilinear filtering of neighboring values on hardware!
@@ -244,7 +245,10 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
     {
         for (int j = -kernel_radius; j <= kernel_radius; j++)
         {
+            // sampler2DShadow
             shadow += texture(shadow_map, (projCoord + vec3(i*texelSize.x, j*texelSize.y, -bias)));
+            // sampler2D
+            //shadow += currentDepth-bias > texture(shadow_map, projCoord.xy + vec2(i*texelSize.x, j*texelSize.y)).r ? 0.0 : 1.0;
         }
     }
     shadow /= pow(kernel_radius*2 + 1, 2);
@@ -259,7 +263,7 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
 
     // old single texel sampling
     // sample that spot on shadow map
-    shadow = texture(shadow_map, projCoord-bias);
+    //shadow = texture(shadow_map, projCoord-bias);
     
     return 1.0 - shadow;
 }

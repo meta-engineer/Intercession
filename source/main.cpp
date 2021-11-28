@@ -551,6 +551,12 @@ int main(int argc, char** argv) {
     float shadow_border[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, shadow_border);
 
+    // THIS MUST BE SET FOR sampler2DShadow
+    // GL_TEXTURE_COMPARE_MODE "Specifies the texture comparison mode for currently bound depth textures"
+    // default is GL_NONE on NVIDIA which does something idk?
+    // GL_COMPARE_REF_TO_TEXTURE interpolates the 3d coord param in texture() and compares it to the texture
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+
     // we create a texture with GL_DEPTH_COMPONENT instead and *then* we can use dept attachment, duh!
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_FBO_ID);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_map_ID, 0);
