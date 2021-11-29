@@ -429,11 +429,11 @@ int main(int argc, char** argv) {
 
     ShaderManager shadow_map_sm(
         "source/shaders/projection_lighting.vs",
-        "source/shaders/empty.fs"   // there is no attached color to draw to
+        "source/shaders/empty.fs"
     );
     ShaderManager shadow_map_instances_sm(
         "source/shaders/projection_instances.vs",
-        "source/shaders/empty.fs"   // there is no attached color to draw to
+        "source/shaders/empty.fs"
     );
 
     glm::vec3 lPos = glm::vec3(4.0f, 20.0f, 6.0f);
@@ -542,6 +542,9 @@ int main(int argc, char** argv) {
     unsigned int shadow_map_ID;
     glGenTextures(1, &shadow_map_ID);
     glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+    // for variance shadows
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    // note we also need a depth attachment if we do this instead
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -569,7 +572,14 @@ int main(int argc, char** argv) {
         std::cout << "Shadow Framebuffer was not complete, rebinding to default" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      
+    
+    
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        std::cerr << "GL Error before rendering: ";
+        std::cerr << err << std::endl;
+    }
 
     // ******************** Render Loop *************************
     float lastTimeVal = 0;

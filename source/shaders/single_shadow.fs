@@ -47,6 +47,7 @@ uniform Material material;
 uniform float gamma = 2.2;
 // TODO: shadow map matches to rLights[0] only right now
 uniform sampler2DShadow shadow_map;
+//uniform sampler2D shadow_map;
 
 // NVIDIA throws if there is an uninitialized cubemap
 // so assume only ever 1 environment map
@@ -216,6 +217,7 @@ float PseudoRandom(vec3 seed, int i){
 	return fract(sin(dot_product) * 43758.5453);
 }
 
+// TODO: separate this into different functions for each technique
 float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
 {
     // perspective divide (match to virtual screen)
@@ -288,6 +290,26 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
     //float mixL = mix(samples[0], samples[2], posDecimal.y);
     //float mixR = mix(samples[1], samples[3], posDecimal.y);
     //shadow = mix(mixL, mixR, posDecimal.x);
+
+    // ***** variance shadow map *****
+    // TODO: this is likely a better method to use for future
+    //  See Notes.md to follow Benny's tutorial
+    //// sample depth and depth variance
+    //vec2 moments = texture(shadow_map, projCoord.xy).xy;
+    //// get difference in depth
+    //float d = currentDepth - moments.x;
+    //// get binary shadow value
+    //float p = d > 0 ? 0.0 : 1.0;
+    //// compute variance from depth^2
+    //float variance = max(moments.y - moments.x * moments.x, 0.00002);
+    //float pMax = variance / (variance + d*d);
+    //// LinearStep()
+    //float low = 0.1;
+    //float high = 1.0;
+    //pMax = (pMax-low)/(high-low);
+    //pMax = clamp(pMax, 0.0, 1.0);
+    //// clamp to most shadow of 1.0
+    //shadow = min(max(p, pMax), 1.0);
     
     return 1.0 - shadow;
 }
