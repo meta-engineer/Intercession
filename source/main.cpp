@@ -39,7 +39,8 @@
 #include "cube_vertex_group.h"
 
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
-CameraManager sun_cm(glm::vec3(0.0f));
+CameraManager sun_cm;
+CameraManager light_cm;
 
 bool show_shadow_map = false;
 
@@ -320,14 +321,14 @@ int main(int argc, char** argv) {
     );
     sm.activate();
     //sm.setFloat("gamma", 2.2f);
-    sm.setInt("num_ray_lights", 1);
+    sm.setInt("num_ray_lights", 0);
     sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
     sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
     sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
-    sm.setInt("num_point_lights", 0);
+    sm.setInt("num_point_lights", 1);
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -350,14 +351,14 @@ int main(int argc, char** argv) {
     );
     
     instances_sm.activate();
-    instances_sm.setInt("num_ray_lights", 1);
+    instances_sm.setInt("num_ray_lights", 0);
     instances_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
     instances_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
     instances_sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
     instances_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
 
-    instances_sm.setInt("num_point_lights", 0);
+    instances_sm.setInt("num_point_lights", 1);
     instances_sm.setVec3("pLights[0].position", light_source.get_origin());
     instances_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     instances_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
@@ -427,6 +428,7 @@ int main(int argc, char** argv) {
         default_cubes[i].reset_graphics_model_environment_maps(skybox_texture_ID);
     }
 
+    // direcational light shadow (depth) map renderer/generator
     ShaderManager shadow_map_sm(
         "source/shaders/projection_lighting.vs",
         "source/shaders/empty.fs"
@@ -442,6 +444,17 @@ int main(int argc, char** argv) {
     sun_cm.set_position(lPos);
     sun_cm.set_target(glm::vec3(0.0f));
     sun_cm.set_view_fov(20.0);
+
+    // omni(point) light shadow (depth) map renderer/generator
+    ShaderManager shadow_cube_map_sm(
+        "source/shaders/basic_transform.vs",
+        "source/shaders/cube_map_generator.gs",
+        "source/shaders/depth_generator.fs"
+    );
+    //ShaderManager shadow_cube_map_instances_sm( );
+
+    light_cm.set_position(light_source.get_origin());
+    // we will set other light properties with the shader objects...
 
     // ***************** Uniform buffer for all shaders ************************
       // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
@@ -572,7 +585,63 @@ int main(int argc, char** argv) {
         std::cout << "Shadow Framebuffer was not complete, rebinding to default" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // *************** OMnidirectional Shadow Map Objects ******************
+    unsigned int shadow_cube_map_FBO_ID;
+    glGenFramebuffers(1, &shadow_cube_map_FBO_ID);
+    // dimensions of the cube faces
+    const unsigned int SHADOW_CUBE_WIDTH = 1024, SHADOW_CUBE_HEIGHT = 1024;
+    light_cm.set_view_width(SHADOW_CUBE_WIDTH);
+    light_cm.set_view_height(SHADOW_CUBE_HEIGHT);
+    // set 90 degrees so that each square fov fills a cubemap face
+    light_cm.set_view_fov(90.0f);
+    light_cm.set_far_plane(25.0);
+
+    // 1 transform for each cubemap face
+    std::vector<glm::mat4> omni_light_transforms;
+    // omni-lookAt matricies use different "UP" vectors for some reason
+    // point lights should have a function to generate these...
+    {
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3( 1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)));
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)));
+            
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3(0.0,-1.0, 0.0), glm::vec3(0.0, 0.0,-1.0)));
+            
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0,-1.0, 0.0)));
+        omni_light_transforms.push_back(light_cm.get_projection() * 
+            glm::lookAt(light_cm.get_position(), light_cm.get_position() + glm::vec3(0.0, 0.0,-1.0), glm::vec3(0.0,-1.0, 0.0)));
+    }
+
+    unsigned int shadow_cube_map_ID;
+    glGenTextures(1, &shadow_cube_map_ID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
+    for (unsigned int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_CUBE_WIDTH, SHADOW_CUBE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    // attach the entire cubemap to the rbo
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_cube_map_FBO_ID);
+    // note not Texture2D
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_cube_map_ID, 0);
+    glDrawBuffer(GL_NONE);  // these let us draw without color
+    glReadBuffer(GL_NONE);  // so the fbo doesn't think its incomplete
     
+    // check frambuffer
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "cube Shadow Framebuffer was not complete, rebinding to default" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -621,15 +690,34 @@ int main(int argc, char** argv) {
         glEnable(GL_DEPTH_TEST);
         // TODO: use scene pipeline to render required entities
         for (unsigned int i = 0; i < default_cubes.size(); i++)
-        {
             default_cubes[i].invoke_draw(shadow_map_sm);
-        }
         frog.invoke_draw(shadow_map_sm);
         floor.invoke_instanced_draw(shadow_map_instances_sm);
-
         grasses.invoke_instanced_draw(shadow_map_instances_sm);
         grass.invoke_draw(shadow_map_sm);
         // ***** done rendering shadow *****
+
+        // ***** Render omni shadow map also *****
+        shadow_cube_map_sm.activate();
+        shadow_cube_map_sm.setVec3("source_pos", light_cm.get_position());
+        shadow_cube_map_sm.setFloat("source_far_plane", light_cm.get_far_plane());
+        for (int i = 0; i < 6; i ++)
+            shadow_cube_map_sm.setMat4("omni_light_transforms[" + std::to_string(i) + "]", omni_light_transforms[i]);
+        //shadow_cube_map_instances_sm.activate();
+        
+        glViewport(0,0, SHADOW_CUBE_WIDTH,SHADOW_CUBE_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_cube_map_FBO_ID);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
+        // TODO: use scene pipeline to render required entities
+        for (unsigned int i = 0; i < default_cubes.size(); i++)
+            default_cubes[i].invoke_draw(shadow_cube_map_sm);
+        frog.invoke_draw(shadow_cube_map_sm);
+        //floor.invoke_instanced_draw(shadow_cube_map_instances_sm);
+        //grasses.invoke_instanced_draw(shadow_cube_map_instances_sm);
+        grass.invoke_draw(shadow_cube_map_sm);
+        // ***** really done rendering shadow *****
 
         // enable framebuffer for post-processing
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
@@ -645,6 +733,7 @@ int main(int argc, char** argv) {
         sm.setVec3("sLights[0].direction", cm.get_direction());
         sm.setVec3("viewPos", cm.get_position());
         sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        sm.setFloat("light_far_plane", light_cm.get_far_plane());
         
         // These are in UBO now
         //sm.setMat4("world_to_view", cm.get_lookAt());
@@ -654,6 +743,7 @@ int main(int argc, char** argv) {
         instances_sm.setVec3("sLights[0].direction", cm.get_direction());
         instances_sm.setVec3("viewPos", cm.get_position());
         instances_sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        instances_sm.setFloat("light_far_plane", light_cm.get_far_plane());
         // ***** shaders ready to be invoked *****
 
         // ***** Draw regular pass *****
@@ -663,6 +753,11 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE10);
         glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
         sm.setInt("shadow_map", 10);
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 12 for now...
+        glActiveTexture(GL_TEXTURE12);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
+        sm.setInt("shadow_cube_map", 12);
 
         for (unsigned int i = 0; i < default_cubes.size(); i++)
         {
@@ -681,6 +776,12 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE11);
         glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
         instances_sm.setInt("shadow_map", 11);
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 12 for now...
+        glActiveTexture(GL_TEXTURE12);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
+        instances_sm.setInt("shadow_cube_map", 12);
+        
         floor.invoke_instanced_draw(instances_sm);
 
         // skybox drawn before transparent objects
@@ -689,6 +790,9 @@ int main(int argc, char** argv) {
         // cut out top-left 3x3 matrix (ommiting translation)
         skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
         skybox_sm.setMat4("projection", cm.get_projection());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        skybox_sm.setInt("cube_map", 0);
         skybox.invoke_draw();
         // reset depth buffer
         glDepthFunc(GL_LESS);
@@ -744,6 +848,8 @@ int main(int argc, char** argv) {
 
     std::cout << "Stopped rendering, terminating..." << std::endl;
 
+    // TODO: once actual scene architecure is buiilt we can worry about deletion
+    //  its too much of a pain to do for these temporary things...
     glDeleteFramebuffers(1, &FBO_ID);
     //glDeleteTextures(1, &MSAA_render_texture_ID);
     //glDeleteRenderbuffers(1, &MSAA_RBO_ID);

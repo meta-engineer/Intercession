@@ -45,7 +45,13 @@ class CameraManager
     void set_use_perspective(bool enable);
     bool get_use_perspective();
 
-  public:
+    void set_near_plane(float near);
+    float get_near_plane();
+    void set_far_plane(float far);
+    float get_far_plane();
+
+
+  private:
     const glm::vec3 GLOBAL_UP = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 position;
 
@@ -191,6 +197,22 @@ bool CameraManager::get_use_perspective()
     return use_perspective;
 }
 
+void CameraManager::set_near_plane(float near)
+{
+    view_near = glm::max(0.0001f, near);
+}
+float CameraManager::get_near_plane()
+{
+    return view_near;
+}
+void CameraManager::set_far_plane(float far)
+{
+    view_far = far;
+}
+float CameraManager::get_far_plane()
+{
+    return view_far;
+}
 
 void CameraManager::_set_and_match_euler(glm::vec3 new_euler)
 {

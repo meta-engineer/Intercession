@@ -122,3 +122,14 @@ const float FR_Compliment  =  1.0 - (2.0 * FR_Coefficient);
 *do verlet with dt = dt*FR_Coefficient*
 *do verlet with dt = dt*FR_Compliment*
 *do verlet with dt = dt*FR_Coefficient (again)*
+
+
+Animation:
+GODLIKE Gdc talk
+https://www.youtube.com/watch?v=LNidsMesxSE
+
+Object controller first, and animations system shall "do no harm" to that!
+VERY important for integrity and development modularity!
+
+programatic animation will save time, make more consistent animations, make animation transitions automatically,
+and create rich interpolated states multiplicatedly (see crouch walk)

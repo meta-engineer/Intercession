@@ -49,6 +49,10 @@ uniform float gamma = 2.2;
 uniform sampler2DShadow shadow_map;
 //uniform sampler2D shadow_map;
 
+// TODO: shadow sube map matches to pLights[0]
+uniform samplerCube shadow_cube_map;
+uniform float light_far_plane;
+
 // NVIDIA throws if there is an uninitialized cubemap
 // so assume only ever 1 environment map
 uniform bool use_cube_map;
@@ -72,6 +76,7 @@ vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample
 vec3 CalcSkyboxReflection(vec3 reflectSample);
 
 float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm);
+float OmniShadowCalculation(vec3 fragPos, PointLight pLight);
 
 void main()
 {
@@ -162,7 +167,9 @@ vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSamp
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample ); //material.shininess);
     vec3 specular = pLight.specular * spec * specularSample * falloff;
 
-    return (ambient + diffuse + specular);
+    float shadow = OmniShadowCalculation(FragPos, pLight);
+
+    return (ambient + (1.0-shadow) * (diffuse + specular));
 }
 
 vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
@@ -312,4 +319,19 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
     //shadow = min(max(p, pMax), 1.0);
     
     return 1.0 - shadow;
+}
+
+float OmniShadowCalculation(vec3 fragPos, PointLight pLight)
+{
+    vec3 lightToFrag = fragPos - pLight.position;
+    float currentDepth = length(lightToFrag);
+    
+    float closestDepth = texture(shadow_cube_map, lightToFrag).r;
+    closestDepth *= light_far_plane;
+
+
+    float bias = 0.05;
+    float shadow = currentDepth-bias > closestDepth ? 1.0 : 0.0;
+
+    return shadow;
 }
