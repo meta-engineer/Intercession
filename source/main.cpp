@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <queue>
 
 // external
 #include <glad/glad.h>
@@ -623,8 +624,8 @@ int main(int argc, char** argv) {
     glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
     for (unsigned int i = 0; i < 6; i++)
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_CUBE_WIDTH, SHADOW_CUBE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -654,15 +655,27 @@ int main(int argc, char** argv) {
     float lastTimeVal = 0;
     float FPS = 100;
     float frameTimeDelta = 1.0/FPS;
+
+    // 5 frame average
+    std::queue<float> fpsBuffer;
+    for (int i = 0; i < 10; i++)
+        fpsBuffer.push(0.0);
+    float fpsSum = 0.0;
     
     while(!glfwWindowShouldClose(window))
     {
         float timeVal = glfwGetTime();
         float deltaTime = timeVal - lastTimeVal;
-        if (deltaTime < frameTimeDelta) continue;
-        std::cout << "FPS: " << 1.0/(timeVal - lastTimeVal) << "\r" << std::flush;
-        process_input(window, deltaTime);
+        //if (deltaTime < frameTimeDelta) continue;
+        fpsSum -= fpsBuffer.front();
+        fpsBuffer.pop();
+        fpsBuffer.push(1.0/(timeVal - lastTimeVal));
+        fpsSum += fpsBuffer.back();
         lastTimeVal = timeVal;
+
+        std::cout << "FPS: " << fpsSum/10 << "\r" << std::flush;
+
+        process_input(window, deltaTime);
 
         // set uniform buffers for all ubo shaders
         glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
