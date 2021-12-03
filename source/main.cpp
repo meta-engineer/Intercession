@@ -452,7 +452,11 @@ int main(int argc, char** argv) {
         "source/shaders/cube_map_generator.gs",
         "source/shaders/depth_generator.fs"
     );
-    //ShaderManager shadow_cube_map_instances_sm( );
+    ShaderManager shadow_cube_map_instances_sm(
+        "source/shaders/basic_transform_instances.vs",
+        "source/shaders/cube_map_generator.gs",
+        "source/shaders/depth_generator.fs"
+    );
 
     light_cm.set_position(light_source.get_origin());
     // we will set other light properties with the shader objects...
@@ -629,6 +633,8 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
     // attach the entire cubemap to the rbo
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_cube_map_FBO_ID);
@@ -716,7 +722,11 @@ int main(int argc, char** argv) {
         shadow_cube_map_sm.setFloat("source_far_plane", light_cm.get_far_plane());
         for (int i = 0; i < 6; i ++)
             shadow_cube_map_sm.setMat4("omni_light_transforms[" + std::to_string(i) + "]", omni_light_transforms[i]);
-        //shadow_cube_map_instances_sm.activate();
+        shadow_cube_map_instances_sm.activate();
+        shadow_cube_map_instances_sm.setVec3("source_pos", light_cm.get_position());
+        shadow_cube_map_instances_sm.setFloat("source_far_plane", light_cm.get_far_plane());
+        for (int i = 0; i < 6; i ++)
+            shadow_cube_map_instances_sm.setMat4("omni_light_transforms[" + std::to_string(i) + "]", omni_light_transforms[i]);
         
         glViewport(0,0, SHADOW_CUBE_WIDTH,SHADOW_CUBE_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_cube_map_FBO_ID);
@@ -727,8 +737,8 @@ int main(int argc, char** argv) {
         for (unsigned int i = 0; i < default_cubes.size(); i++)
             default_cubes[i].invoke_draw(shadow_cube_map_sm);
         frog.invoke_draw(shadow_cube_map_sm);
-        //floor.invoke_instanced_draw(shadow_cube_map_instances_sm);
-        //grasses.invoke_instanced_draw(shadow_cube_map_instances_sm);
+        floor.invoke_instanced_draw(shadow_cube_map_instances_sm);
+        grasses.invoke_instanced_draw(shadow_cube_map_instances_sm);
         grass.invoke_draw(shadow_cube_map_sm);
         // ***** really done rendering shadow *****
 
