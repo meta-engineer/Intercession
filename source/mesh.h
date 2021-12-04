@@ -39,6 +39,8 @@ std::string ENUM_TO_STR(TextureType t)
             return "specular_map";
         case (TextureType::cube_map):
             return "cube_map";
+        case (TextureType::normal_map):
+            return "normal_map";
         default:
             return "error_unmapped_texture_type";
     }
@@ -157,6 +159,7 @@ void Mesh::set_textures(ShaderManager& sm)
     // set as many texture units as available
     unsigned int diffuse_index = 0;
     unsigned int specular_index = 0;
+    unsigned int normal_index = 0;
     unsigned int i = 0;
     for (; i < textures.size(); i++)
     {
@@ -171,6 +174,10 @@ void Mesh::set_textures(ShaderManager& sm)
                 break;
             case(TextureType::specular_map):
                 number = std::to_string(specular_index++);
+                break;
+            case(TextureType::normal_map):
+                number = std::to_string(normal_index++);
+                sm.setBool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             default:
                 std::cerr << "Mesh texture type " << ENUM_TO_STR(textures[i].type) << " not implemented; Ignoring..." << std::endl;
@@ -192,6 +199,10 @@ void Mesh::set_textures(ShaderManager& sm)
     }
     if (specular_index == 0) {
         sm.setInt("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
+    }
+    if (normal_index == 0) {
+        sm.setBool("material.set_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
+        // sampler data does not ned to be cleared
     }
 
     // use explicit environment map if id is not default

@@ -37,28 +37,29 @@ float skybox_vertices[] = {
      0.5f, -0.5f, -0.5f   // back
 };
 unsigned int skybox_indices[] = {
-    0,1,2,
-    0,2,3,
+    0,2,1,
+    0,3,2,
 
     4,5,6,
     4,6,7,
 
     8,9,10,
-    9,10,11,
+    9,11,10,
 
     12,13,14,
-    13,14,15,
+    13,15,14,
 
     16,17,18,
-    17,18,19,
+    17,19,18,
 
-    20,21,23,
+    20,23,21,
     20,22,23
 };
 unsigned int skybox_attribs[] = {
     3
 };
 
+// Skybox is a cube (like CubeVertexGroup), but winding order for faces is inward
 class SkyboxVertexGroup : public VertexGroup
 {
   public:

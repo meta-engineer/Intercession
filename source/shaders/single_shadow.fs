@@ -11,6 +11,10 @@ struct Material {
     sampler2D   diffuse_map_0;
     sampler2D   specular_map_0;
     //float       shininess;
+
+    // optionally select normal map if available
+    bool        set_normal_map_0;
+    sampler2D   normal_map_0;
 };
 
 struct PointLight {
@@ -86,7 +90,21 @@ void main()
     if (textureDiffuse4.a < 0.01)
         discard;
 
-    vec3 norm = normalize(Normal);
+    // use surface normal
+    vec3 norm;
+    if (material.set_normal_map_0)
+    {
+        norm = texture(material.normal_map_0, TexCoord).rgb;
+        norm = normalize(norm * 2.0 - 1.0);
+        // is this thing on?
+        //FragColor = vec4(norm, 1.0);
+        //return;
+    }
+    else
+    {
+        norm = normalize(Normal);
+    }
+
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 textureDiffuse = vec3(textureDiffuse4);
     vec3 textureSpecular= vec3(texture(material.specular_map_0, TexCoord));
@@ -267,7 +285,7 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
             //shadow += currentDepth-bias > texture(shadow_map, projCoord.xy + vec2(i*texelSize.x, j*texelSize.y)).r ? 0.0 : 1.0;
         }
     }
-    shadow /= pow(kernel_radius*2 + 1, 2);
+    shadow /= 9;//pow(kernel_radius*2 + 1, 2);
 
 
     // ***** poisson sampling *****

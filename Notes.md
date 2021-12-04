@@ -133,3 +133,12 @@ VERY important for integrity and development modularity!
 
 programatic animation will save time, make more consistent animations, make animation transitions automatically,
 and create rich interpolated states multiplicatedly (see crouch walk)
+
+Maps and Materials:
+diffuse maps are always needed as a base color
+
+specular maps, according to learnopengl should be greyscale. I think this is so that only the colour of the light affects the highlight colour.
+I guess specular light isn't affected by the surface, but only looks like it because it is mixed with diffuse?
+
+normal maps define the normal vector as the texture colour vector. Is the GIMP normal map gereic filter good enough to get the benefit of normal mapping?
+If the filter is based off bright/dark colours maybe you can boost contrast to improve the "normalling" filter?

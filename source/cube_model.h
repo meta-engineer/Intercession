@@ -4,7 +4,7 @@
 #include "model.h"
 
 // Build Model with standard quad buffer data
-std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std::string specular_path = "")
+std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std::string specular_path = "", std::string normal_path = "")
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -88,6 +88,11 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
     {
         unsigned int specular_tex_id = Model::loadGLTexture(specular_path);
         textures.push_back(Texture{specular_tex_id, TextureType::specular_map, ""});
+    }
+    if (!normal_path.empty())
+    {
+        unsigned int normal_tex_id = Model::loadGLTexture(normal_path);
+        textures.push_back(Texture{normal_tex_id, TextureType::normal_map, ""});
     }
     
     Mesh cube_mesh(vertices, indices, textures);

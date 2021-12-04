@@ -309,6 +309,12 @@ int main(int argc, char** argv) {
     }
     floor.set_instance_transforms(floor_transforms);
 
+    // manual object with normal map
+    Entity brick;
+    brick.set_origin(glm::vec3(0.0, 2.5, -0.5));
+    brick.set_uniform_scale(2.0);
+    brick.reset_graphics_model(create_quad_model_ptr("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg"));
+
 
     // ******************** Shading Objects *************************
     
@@ -393,8 +399,8 @@ int main(int argc, char** argv) {
     sm.activate();
     //glEnable(GL_DEPTH_TEST);  // this is managed during render loop (for skybox, etc)
     // culling (with correct index orientation)
-    //glEnable(GL_CULL_FACE);
-    //glCullFace(GL_FRONT);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     // wireframe
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_BLEND);
@@ -421,7 +427,7 @@ int main(int argc, char** argv) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
     skybox_sm.setInt("cube_map", 0);
-    CubeVertexGroup skybox;
+    SkyboxVertexGroup skybox;
 
     frog.reset_graphics_model_environment_maps(skybox_texture_ID);
     for (int i = 0; i < default_cubes.size(); i++)
@@ -711,6 +717,7 @@ int main(int argc, char** argv) {
         for (unsigned int i = 0; i < default_cubes.size(); i++)
             default_cubes[i].invoke_draw(shadow_map_sm);
         frog.invoke_draw(shadow_map_sm);
+        brick.invoke_draw(shadow_map_sm);
         floor.invoke_instanced_draw(shadow_map_instances_sm);
         grasses.invoke_instanced_draw(shadow_map_instances_sm);
         grass.invoke_draw(shadow_map_sm);
@@ -737,6 +744,7 @@ int main(int argc, char** argv) {
         for (unsigned int i = 0; i < default_cubes.size(); i++)
             default_cubes[i].invoke_draw(shadow_cube_map_sm);
         frog.invoke_draw(shadow_cube_map_sm);
+        brick.invoke_draw(shadow_cube_map_sm);
         floor.invoke_instanced_draw(shadow_cube_map_instances_sm);
         grasses.invoke_instanced_draw(shadow_cube_map_instances_sm);
         grass.invoke_draw(shadow_cube_map_sm);
@@ -788,6 +796,7 @@ int main(int argc, char** argv) {
         }
         frog.invoke_draw(sm);
         //frog.invoke_draw(normal_visualizer_sm);
+        brick.invoke_draw(sm);
 
         light_sm.activate();
         light_sm.setMat4("model_to_world", light_source.get_model_transform());
