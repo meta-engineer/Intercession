@@ -18,6 +18,7 @@ struct Vertex
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 tex_coord;
+    glm::vec3 tangent;
 };
 
 // these will be used as the prefix for shader Material struct members
@@ -43,6 +44,20 @@ std::string ENUM_TO_STR(TextureType t)
             return "normal_map";
         default:
             return "error_unmapped_texture_type";
+    }
+}
+
+// what texture types will get gamma correction on model load
+bool TEXTURE_USE_GAMMA(TextureType t)
+{
+    switch (t)
+    {
+        case(TextureType::diffuse_map):
+            return true;
+        case(TextureType::specular_map):
+            return true;
+        default:
+            return false;
     }
 }
 
@@ -128,6 +143,9 @@ void Mesh::setup()
     // vertex texture coords
     glEnableVertexAttribArray(2);	
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coord));
+    // vertex tangents
+    glEnableVertexAttribArray(3);	
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
 
     // clear binds
     glBindVertexArray(0);

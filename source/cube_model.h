@@ -11,45 +11,47 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
     std::vector<unsigned int> indices;
     std::vector<Texture>      textures;
 
+    // NOTE: tangent should be calculated based on normal and uv (texture coords)
     float cube2_vertices[] = {
-        // coordinates         // normal              // texture coordinates
-        -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,
-        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   -0.5f,  1.5f,
-         0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f, -0.5f,   // top
+        // coordinates         // normal              // texture coordinates    // tangent
+        -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   -0.5f,  1.5f,              1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   -0.5f, -0.5f,              1.0f,  0.0f,  0.0f,   // top
 
-        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,    1.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,    1.5f,  1.5f,
-         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   -0.5f,  1.5f,
-         0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   -0.5f, -0.5f,   // bottom
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   -0.5f, -0.5f,              1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   -0.5f,  1.5f,              1.0f,  0.0f,  0.0f,   // bottom
 
-        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f,  1.5f,
-        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,
-        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,   //left
+        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f, -0.5f,              0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,              0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f,  1.5f,              0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,              0.0f,  0.0f,  1.0f,   //left
 
-        -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f,  1.5f,
-         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f,  1.5f,
-        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f, -0.5f,   // front
+        -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f, -0.5f,              1.0f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f, -0.5f,              1.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f,  1.5f,              1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f,  1.5f,              1.0f,  0.0f, 0.0f,   // front
 
-         0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f,  1.5f,
-         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,
-         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,   // right
+         0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f, -0.5f,              0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,              0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f,  1.5f,              0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,              0.0f,  0.0f, -1.0f,   // right
 
-        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,
-         0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f,  1.5f,
-        -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f, -0.5f,   // back
+        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f, -0.5f,             -1.0f,  0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f, -0.5f,             -1.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f,  1.5f,             -1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,             -1.0f,  0.0f, 0.0f,   // back
     };
-    // hardcode 3+3+2
+    // hardcode 3+3+2+3
     for (unsigned int i = 0; i < sizeof(cube2_vertices) / 8; i++)
     {
         vertices.push_back( Vertex{
-            glm::vec3(cube2_vertices[i * 8 + 0], cube2_vertices[i * 8 + 1], cube2_vertices[i * 8 + 2]), 
-            glm::vec3(cube2_vertices[i * 8 + 3], cube2_vertices[i * 8 + 4], cube2_vertices[i * 8 + 5]), 
-            glm::vec2(cube2_vertices[i * 8 + 6], cube2_vertices[i * 8 + 7])
+            glm::vec3(cube2_vertices[i * 11 + 0], cube2_vertices[i * 11 + 1], cube2_vertices[i * 11 + 2]), 
+            glm::vec3(cube2_vertices[i * 11 + 3], cube2_vertices[i * 11 + 4], cube2_vertices[i * 11 + 5]), 
+            glm::vec2(cube2_vertices[i * 11 + 6], cube2_vertices[i * 11 + 7]),
+            glm::vec3(cube2_vertices[i * 11 + 8], cube2_vertices[i * 11 + 9], cube2_vertices[i * 11 +10])
         } );
     }
 
@@ -91,10 +93,11 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
     }
     if (!normal_path.empty())
     {
-        unsigned int normal_tex_id = Model::loadGLTexture(normal_path);
+        // DO NOT GAMMA CORRECT NORMAL MAP
+        unsigned int normal_tex_id = Model::loadGLTexture(normal_path, "", false);
         textures.push_back(Texture{normal_tex_id, TextureType::normal_map, ""});
     }
-    
+
     Mesh cube_mesh(vertices, indices, textures);
     return std::unique_ptr<Model>(new Model(cube_mesh));
 }

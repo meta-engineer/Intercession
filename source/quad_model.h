@@ -12,19 +12,20 @@ std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std:
     std::vector<Texture>      textures;
 
     float quad_vertices[] = {
-        // coordinates         // normal              // texture coordinates
-        -0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  0.0f,
-         0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  0.0f,
-        -0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  1.0f,
-         0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  1.0f
+        // coordinates         // normal              // texture coordinates    // tangent
+        -0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  0.0f,              1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  0.0f,              1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  1.0f,              1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  1.0f,              1.0f,  0.0f,  0.0f
     };
     // hardcode 3+3+2
     for (unsigned int i = 0; i < sizeof(quad_vertices) / 8; i++)
     {
         vertices.push_back( Vertex{
-            glm::vec3(quad_vertices[i * 8 + 0], quad_vertices[i * 8 + 1], quad_vertices[i * 8 + 2]), 
-            glm::vec3(quad_vertices[i * 8 + 3], quad_vertices[i * 8 + 4], quad_vertices[i * 8 + 5]), 
-            glm::vec2(quad_vertices[i * 8 + 6], quad_vertices[i * 8 + 7])
+            glm::vec3(quad_vertices[i * 11 + 0], quad_vertices[i * 11 + 1], quad_vertices[i * 11 + 2]), 
+            glm::vec3(quad_vertices[i * 11 + 3], quad_vertices[i * 11 + 4], quad_vertices[i * 11 + 5]), 
+            glm::vec2(quad_vertices[i * 11 + 6], quad_vertices[i * 11 + 7]),
+            glm::vec3(quad_vertices[i * 11 + 8], quad_vertices[i * 11 + 9], quad_vertices[i * 11 +10])
         } );
     }
 
@@ -51,7 +52,8 @@ std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std:
     }
     if (!normal_path.empty())
     {
-        unsigned int normal_tex_id = Model::loadGLTexture(normal_path);
+        // DO NOT GAMMA CORRECT NORMAL MAP
+        unsigned int normal_tex_id = Model::loadGLTexture(normal_path, "", false);
         textures.push_back(Texture{normal_tex_id, TextureType::normal_map, ""});
     }
 

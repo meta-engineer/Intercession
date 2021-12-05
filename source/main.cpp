@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
     }
     grasses.set_instance_transforms(grass_transforms);
 
-    CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall.jpg"));
+    CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall_specular.jpg"));
     floor.set_origin(glm::vec3(0.5f, -0.7f, 0.0));
     floor.rotate(glm::radians(-70.0f), glm::vec3(1.0, 0.0, 0.0));
     std::vector<glm::mat4> floor_transforms;
@@ -323,8 +323,8 @@ int main(int argc, char** argv) {
 
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
-        "source/shaders/single_shadow_ubo.vs",
-        "source/shaders/single_shadow.fs"
+        "source/shaders/tangents_ubo.vs",
+        "source/shaders/naive_tangent.fs"
     );
     sm.activate();
     //sm.setFloat("gamma", 2.2f);
@@ -353,8 +353,8 @@ int main(int argc, char** argv) {
     sm.setVec3("sLights[0].specular", spotColor * 1.0f);
 
     ShaderManager instances_sm(
-        "source/shaders/single_shadow_instances_ubo.vs",
-        "source/shaders/single_shadow.fs"
+        "source/shaders/tangents_instances_ubo.vs",
+        "source/shaders/naive_tangent.fs"
     );
     
     instances_sm.activate();
@@ -798,8 +798,6 @@ int main(int argc, char** argv) {
         //frog.invoke_draw(normal_visualizer_sm);
         brick.invoke_draw(sm);
 
-        light_sm.activate();
-        light_sm.setMat4("model_to_world", light_source.get_model_transform());
         light_source.invoke_draw(light_sm);
 
         instances_sm.activate();

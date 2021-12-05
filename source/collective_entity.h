@@ -75,8 +75,8 @@ bool CollectiveEntity::set_instance_transforms(std::vector<glm::mat4> new_transf
     glBindBuffer(GL_ARRAY_BUFFER, IBO_ID);
     glBufferData(GL_ARRAY_BUFFER, instance_transforms.size() * sizeof(glm::mat4), instance_transforms.data(), GL_STATIC_DRAW);
 
-    // set attrib location 3->6 as transform matrix
-    graphics_model->setup_all_instance_transform_attrib_arrays(3);
+    // set attrib location 4->7 as transform matrix
+    graphics_model->setup_all_instance_transform_attrib_arrays(4);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     return true;

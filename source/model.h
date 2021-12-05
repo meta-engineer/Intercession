@@ -111,7 +111,7 @@ void Model::setup_all_instance_transform_attrib_arrays(unsigned int offset)
 void Model::loadModel(std::string path)
 {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
     if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
     {
@@ -169,6 +169,11 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
             // Assuming we only use 1 set of texture coords (up to 8)
             vertex.tex_coord.x = mesh->mTextureCoords[0][i].x;
             vertex.tex_coord.y = mesh->mTextureCoords[0][i].y;
+
+            // tangent to face
+            vertex.tangent.x = mesh->mTangents[i].x;
+            vertex.tangent.y = mesh->mTangents[i].y;
+            vertex.tangent.z = mesh->mTangents[i].z;
         }
         else
         {
@@ -197,9 +202,10 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         std::vector<Texture> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::specular_map);
         textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
 
-        // for later :)
-        //std::vector<Texture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::normal_map);
-        //textures.insert(textures.end(), height_maps.begin(), height_maps.end());
+        // for .obj normal map is in aiTextureType_HEIGHT. (map_bump attribute)
+        // is this the same for all formats? what about when I acually want a height map?
+        std::vector<Texture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::normal_map);
+        textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
     }
     
     return Mesh(vertices, indices, textures);
@@ -228,7 +234,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
         if (is_new_texture)
         {
             Texture texture;
-            texture.id = loadGLTexture(str.C_Str(), directory);
+            texture.id = loadGLTexture(str.C_Str(), directory, TEXTURE_USE_GAMMA(tType));
             texture.type = tType;
             texture.path = str.C_Str();
             textures.push_back(texture);
