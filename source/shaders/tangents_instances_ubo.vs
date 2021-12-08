@@ -30,18 +30,19 @@ void main()
     gl_Position = projection * world_to_view * instance_to_world * vec4(aPos, 1.0);
     FragPos = vec3(instance_to_world * vec4(aPos, 1.0));
 
-    mat3 modelVector = transpose(inverse(mat3(instance_to_world)));
-
-    Normal = normalize(modelVector * aNorm);
     TexCoord = aTexCoord;
     FragPosLightTransform = light_transform * vec4(FragPos, 1.0);
     
+    mat3 normalMatrix = transpose(inverse(mat3(instance_to_world)));
+    Normal = normalize(normalMatrix * aNorm);
+    
     // Calculate trangent space matrix (change-of-basis)
-    vec3 T = normalize(modelVector * aTangent);
-    // "re-orthogonalize" T with respect to N (i guess ebcause N is considered ground-truth)
-    T = normalize(T - dot(T,Normal) * Normal);
+    vec3 T = normalize(mat3(instance_to_world) * aTangent);
+    vec3 N = normalize(mat3(instance_to_world) * aNorm);
+    // "re-orthogonalize" T with respect to N (i guess because N is considered ground-truth)
+    T = normalize(T - dot(T,N) * N);
     // generate B
-    vec3 B = cross(Normal,T);
+    vec3 B = cross(T,N);
 
-    TBN = mat3(T, B, Normal);
+    TBN = transpose(mat3(T, B, N));
 }

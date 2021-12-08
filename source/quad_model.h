@@ -4,7 +4,7 @@
 #include "model.h"
 
 // Build Model with standard quad buffer data
-std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std::string specular_path = "", std::string normal_path = "")
+std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std::string specular_path = "", std::string normal_path = "", std::string displace_path = "")
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -55,6 +55,12 @@ std::unique_ptr<Model> create_quad_model_ptr(std::string diffuse_path = "", std:
         // DO NOT GAMMA CORRECT NORMAL MAP
         unsigned int normal_tex_id = Model::loadGLTexture(normal_path, "", false);
         textures.push_back(Texture{normal_tex_id, TextureType::normal_map, ""});
+    }
+    if (!displace_path.empty())
+    {
+        // DO NOT GAMMA CORRECT DISPLACE MAP
+        unsigned int displace_tex_id = Model::loadGLTexture(displace_path, "", false);
+        textures.push_back(Texture{displace_tex_id, TextureType::displace_map, ""});
     }
 
     Mesh quad_mesh(vertices, indices, textures);

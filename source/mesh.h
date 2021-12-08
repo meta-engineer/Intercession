@@ -27,7 +27,8 @@ enum TextureType
     diffuse_map,
     specular_map,
     cube_map,
-    normal_map
+    normal_map,
+    displace_map
 };
 // TODO: find an elegant was to convert enum to string
 std::string ENUM_TO_STR(TextureType t)
@@ -42,6 +43,8 @@ std::string ENUM_TO_STR(TextureType t)
             return "cube_map";
         case (TextureType::normal_map):
             return "normal_map";
+        case (TextureType::displace_map):
+            return "displace_map";
         default:
             return "error_unmapped_texture_type";
     }
@@ -178,6 +181,7 @@ void Mesh::set_textures(ShaderManager& sm)
     unsigned int diffuse_index = 0;
     unsigned int specular_index = 0;
     unsigned int normal_index = 0;
+    unsigned int displace_index = 0;
     unsigned int i = 0;
     for (; i < textures.size(); i++)
     {
@@ -195,6 +199,10 @@ void Mesh::set_textures(ShaderManager& sm)
                 break;
             case(TextureType::normal_map):
                 number = std::to_string(normal_index++);
+                sm.setBool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
+                break;
+            case(TextureType::displace_map):
+                number = std::to_string(displace_index++);
                 sm.setBool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             default:
@@ -220,6 +228,10 @@ void Mesh::set_textures(ShaderManager& sm)
     }
     if (normal_index == 0) {
         sm.setBool("material.set_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
+        // sampler data does not ned to be cleared
+    }
+    if (displace_index == 0) {
+        sm.setBool("material.set_" + ENUM_TO_STR(TextureType::displace_map) + "_0", false);
         // sampler data does not ned to be cleared
     }
 

@@ -255,6 +255,7 @@ int main(int argc, char** argv) {
 
     frog.set_origin(glm::vec3(0.2, 0.7, 0.0));
     frog.set_uniform_scale(0.2f);
+    frog.rotate(glm::radians(30.0), glm::vec3(0.1,0.2,0.3));
 
     Entity grass(create_quad_model_ptr("resources/grass.png"));
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
@@ -294,7 +295,7 @@ int main(int argc, char** argv) {
     }
     grasses.set_instance_transforms(grass_transforms);
 
-    CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall_specular.jpg"));
+    CollectiveEntity floor = CollectiveEntity(create_quad_model_ptr("resources/wall.jpg", "resources/wall_specular.jpg", "resources/toy_box_normal.png", "resources/toy_box_disp.png"));
     floor.set_origin(glm::vec3(0.5f, -0.7f, 0.0));
     floor.rotate(glm::radians(-70.0f), glm::vec3(1.0, 0.0, 0.0));
     std::vector<glm::mat4> floor_transforms;
@@ -315,6 +316,11 @@ int main(int argc, char** argv) {
     brick.set_uniform_scale(2.0);
     brick.reset_graphics_model(create_quad_model_ptr("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg"));
 
+    Entity bumpy;
+    bumpy.set_origin(glm::vec3(2.0, 1.5, 0.5));
+    bumpy.set_uniform_scale(1.8);
+    bumpy.rotate(glm::radians(-30.0), glm::vec3(1.0,1.0,1.0));
+    bumpy.reset_graphics_model(create_quad_model_ptr("resources/wood.png", "resources/brickwall_specular.jpg", "resources/toy_box_normal.png", "resources/toy_box_disp.png"));
 
     // ******************** Shading Objects *************************
     
@@ -324,7 +330,7 @@ int main(int argc, char** argv) {
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/tangents_ubo.vs",
-        "source/shaders/naive_tangent.fs"
+        "source/shaders/naive_tangent_displace.fs"
     );
     sm.activate();
     //sm.setFloat("gamma", 2.2f);
@@ -354,7 +360,7 @@ int main(int argc, char** argv) {
 
     ShaderManager instances_sm(
         "source/shaders/tangents_instances_ubo.vs",
-        "source/shaders/naive_tangent.fs"
+        "source/shaders/naive_tangent_displace.fs"
     );
     
     instances_sm.activate();
@@ -718,6 +724,7 @@ int main(int argc, char** argv) {
             default_cubes[i].invoke_draw(shadow_map_sm);
         frog.invoke_draw(shadow_map_sm);
         brick.invoke_draw(shadow_map_sm);
+        bumpy.invoke_draw(shadow_map_sm);
         floor.invoke_instanced_draw(shadow_map_instances_sm);
         grasses.invoke_instanced_draw(shadow_map_instances_sm);
         grass.invoke_draw(shadow_map_sm);
@@ -745,6 +752,7 @@ int main(int argc, char** argv) {
             default_cubes[i].invoke_draw(shadow_cube_map_sm);
         frog.invoke_draw(shadow_cube_map_sm);
         brick.invoke_draw(shadow_cube_map_sm);
+        bumpy.invoke_draw(shadow_cube_map_sm);
         floor.invoke_instanced_draw(shadow_cube_map_instances_sm);
         grasses.invoke_instanced_draw(shadow_cube_map_instances_sm);
         grass.invoke_draw(shadow_cube_map_sm);
@@ -797,6 +805,7 @@ int main(int argc, char** argv) {
         frog.invoke_draw(sm);
         //frog.invoke_draw(normal_visualizer_sm);
         brick.invoke_draw(sm);
+        bumpy.invoke_draw(sm);
 
         light_source.invoke_draw(light_sm);
 
