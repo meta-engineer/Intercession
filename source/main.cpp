@@ -345,8 +345,8 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
-    sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
-    sm.setVec3("pLights[0].specular", staticColor * 1.0f);
+    sm.setVec3("pLights[0].diffuse",  staticColor * 10.0f);
+    sm.setVec3("pLights[0].specular", staticColor * 10.0f);
 
     sm.setInt("num_spot_lights", 0);
     sm.setVec3("sLights[0].position", cm.get_position());
@@ -428,7 +428,7 @@ int main(int argc, char** argv) {
         "resources/lake_skybox/front.jpg",
         "resources/lake_skybox/back.jpg"
     };
-    unsigned int skybox_texture_ID = 0;//loadGLCubeMapTexture(skybox_filenames);
+    unsigned int skybox_texture_ID = loadGLCubeMapTexture(skybox_filenames);
     skybox_sm.activate();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
@@ -500,6 +500,10 @@ int main(int argc, char** argv) {
         "source/shaders/screen_texture.vs",
         "source/shaders/screen_texture.fs"
     );
+    ShaderManager screen_texture_hdr_sm(
+        "source/shaders/screen_texture.vs",
+        "source/shaders/hdr_texture.fs"
+    );
     ShaderManager screen_texture_depth_sm(
         "source/shaders/screen_texture.vs",
         "source/shaders/depth_texture.fs"
@@ -511,6 +515,7 @@ int main(int argc, char** argv) {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
 
     // render to a texture... (This is used for color)
+    /*
     unsigned int rendered_texture_ID;
     glGenTextures(1, &rendered_texture_ID);
     glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
@@ -522,6 +527,16 @@ int main(int argc, char** argv) {
     glBindTexture(GL_TEXTURE_2D, 0); // clear
     // attach buffers (with type information) to the framebuffer object
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture_ID, 0);
+    */
+    // HDR texture buffer
+    unsigned int hdr_rendered_texture_ID;
+    glGenTextures(1, &hdr_rendered_texture_ID);
+    glBindTexture(GL_TEXTURE_2D, hdr_rendered_texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0); // clear
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_rendered_texture_ID, 0);
 
     // render to a RenderBuffer (this used for depth/stencil buffer)
     unsigned int RBO_ID;
@@ -854,13 +869,13 @@ int main(int argc, char** argv) {
         // draw screen plane
         if (!show_shadow_map)
         {
-            screen_texture_sm.activate();
+            screen_texture_hdr_sm.activate();
             glClearColor(0.1f, 0.9f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, rendered_texture_ID);
-            screen_texture_sm.setInt("screenTexture", 0);
+            glBindTexture(GL_TEXTURE_2D, hdr_rendered_texture_ID);
+            screen_texture_hdr_sm.setInt("screenTexture", 0);
             screen_plane.invoke_draw();
         }
         else
