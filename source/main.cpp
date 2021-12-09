@@ -324,13 +324,13 @@ int main(int argc, char** argv) {
 
     // ******************** Shading Objects *************************
     
-    glm::vec3 staticColor(1.0f, 1.0f, 1.0f);
+    glm::vec3 staticColor(10.0f, 10.0f, 10.0f);
     glm::vec3 spotColor(0.6f, 0.8f, 1.0f);
 
     // use ShaderManager to build shader program from filenames
     ShaderManager sm(
         "source/shaders/tangents_ubo.vs",
-        "source/shaders/naive_tangent_displace.fs"
+        "source/shaders/multi_target_hdr.fs"
     );
     sm.activate();
     //sm.setFloat("gamma", 2.2f);
@@ -345,8 +345,8 @@ int main(int argc, char** argv) {
     sm.setVec3("pLights[0].position", light_source.get_origin());
     sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
     sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
-    sm.setVec3("pLights[0].diffuse",  staticColor * 10.0f);
-    sm.setVec3("pLights[0].specular", staticColor * 10.0f);
+    sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
+    sm.setVec3("pLights[0].specular", staticColor * 1.0f);
 
     sm.setInt("num_spot_lights", 0);
     sm.setVec3("sLights[0].position", cm.get_position());
@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
 
     ShaderManager instances_sm(
         "source/shaders/tangents_instances_ubo.vs",
-        "source/shaders/naive_tangent_displace.fs"
+        "source/shaders/multi_target_hdr.fs"
     );
     
     instances_sm.activate();
@@ -396,7 +396,7 @@ int main(int argc, char** argv) {
 
     ShaderManager light_sm(
         "source/shaders/projection_ubo.vs",
-        "source/shaders/light_source.fs"
+        "source/shaders/hdr_light_source.fs"
     );
     light_sm.activate();
     light_sm.setVec3("lightColor", staticColor);
@@ -502,11 +502,15 @@ int main(int argc, char** argv) {
     );
     ShaderManager screen_texture_hdr_sm(
         "source/shaders/screen_texture.vs",
-        "source/shaders/hdr_texture.fs"
+        "source/shaders/bloom_texture.fs"
     );
     ShaderManager screen_texture_depth_sm(
         "source/shaders/screen_texture.vs",
         "source/shaders/depth_texture.fs"
+    );
+    ShaderManager screen_texture_blur_sm(
+        "source/shaders/screen_texture.vs",
+        "source/shaders/gaussian_1d.fs"
     );
     ScreenPlaneVertexGroup screen_plane;
 
@@ -538,6 +542,20 @@ int main(int argc, char** argv) {
     glBindTexture(GL_TEXTURE_2D, 0); // clear
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_rendered_texture_ID, 0);
 
+    // BLOOM texture buffer
+    unsigned int bloom_rendered_texture_ID;
+    glGenTextures(1, &bloom_rendered_texture_ID);
+    glBindTexture(GL_TEXTURE_2D, bloom_rendered_texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0); // clear
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloom_rendered_texture_ID, 0);
+
+    // register multiple render targets to this FBO
+    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
+
     // render to a RenderBuffer (this used for depth/stencil buffer)
     unsigned int RBO_ID;
     glGenRenderbuffers(1, &RBO_ID);
@@ -566,11 +584,36 @@ int main(int argc, char** argv) {
     //glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
     //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, MSAA_RBO_ID);
     
-
     // check frambuffer
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cout << "Screen Framebuffer was not complete, rebinding to default" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+
+
+    // pre-post-processing
+    unsigned int hot_potato_FBO_IDs[2];
+    unsigned int hot_potato_buffers[2];
+    glGenFramebuffers(2, hot_potato_FBO_IDs);
+    glGenTextures(2, hot_potato_buffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, hot_potato_FBO_IDs[i]);
+        glBindTexture(GL_TEXTURE_2D, hot_potato_buffers[i]);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // prevent wrapping
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hot_potato_buffers[i], 0);
+    }
+    // check frambuffer
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "Hot Potato Framebuffer was not complete, rebinding to default" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
 
@@ -854,7 +897,6 @@ int main(int argc, char** argv) {
         // objects with alpha have to be drawn at the end and in order of depth
         grasses.invoke_instanced_draw(instances_sm);
 
-
         sm.activate();
         // TODO: texture index must be managed with model/environment textures
         //      check using 10 for now...
@@ -863,9 +905,30 @@ int main(int argc, char** argv) {
         sm.setInt("shadow_map", 10);
         grass.invoke_draw(sm);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         // ***** finished drawing to framebuffer, do post processing *****
         
+        // ***** pre-post-processing *****
+        bool horizontal = true;
+        bool first_pass_flag = true;
+        unsigned int passes = 6;
+        screen_texture_blur_sm.activate();
+        screen_texture_blur_sm.setInt("image", 0);
+        for (unsigned int i = 0; i < passes; i++)
+        {
+            // brace yourselves, where we're going we don't need casting
+            glBindFramebuffer(GL_FRAMEBUFFER, hot_potato_FBO_IDs[horizontal]);
+            screen_texture_blur_sm.setInt("horizontal", horizontal);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, first_pass_flag ? bloom_rendered_texture_ID : hot_potato_buffers[!horizontal]);
+            screen_plane.invoke_draw();
+            horizontal = !horizontal;
+            if (first_pass_flag)
+                first_pass_flag = false;
+        }
+
+        // ***** all textures prepped for final approach *****
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         // draw screen plane
         if (!show_shadow_map)
         {
@@ -876,6 +939,9 @@ int main(int argc, char** argv) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, hdr_rendered_texture_ID);
             screen_texture_hdr_sm.setInt("screenTexture", 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, hot_potato_buffers[1]);
+            screen_texture_hdr_sm.setInt("bloomTexture", 1);
             screen_plane.invoke_draw();
         }
         else

@@ -4,12 +4,17 @@ out vec4 FragColor;
 in vec2 TexCoord;
 
 uniform sampler2D screenTexture;
-uniform float exposure = 1.0;
+// extracted and blurred
+uniform sampler2D bloomTexture;
+uniform float exposure = 0.5;
 
 void main()
 {
     // because the hdr buffer is rgba i think we need to ensure alpha is 1.0 here
     vec3 hdrColor = texture(screenTexture, TexCoord).rgb;
+    vec3 bloomColor = texture(bloomTexture, TexCoord).rgb;
+    // "additive blending"
+    hdrColor += bloomColor;
 
     // reinhard tone mappping
     //vec3 ldrColor = hdrColor / (hdrColor + vec3(1.0));
