@@ -473,6 +473,36 @@ int main(int argc, char** argv) {
     light_cm.set_position(light_source.get_origin());
     // we will set other light properties with the shader objects...
 
+    ShaderManager geom_buffer_sm(
+        "source/shaders/geom_buffer.vs",
+        "source/shaders/geom_buffer.fs"
+    );
+    ShaderManager geom_buffer_instances_sm(
+        "source/shaders/geom_buffer_instances.vs",
+        "source/shaders/geom_buffer.fs"
+    );
+
+    ShaderManager deferred_lighting_sm(
+        "source/shaders/screen_texture.vs",
+        "source/shaders/deferred_lighting_hdr.fs"
+    );
+    deferred_lighting_sm.activate();
+    deferred_lighting_sm.setInt("num_ray_lights", 0);
+    deferred_lighting_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
+    deferred_lighting_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    deferred_lighting_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
+    deferred_lighting_sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
+    deferred_lighting_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
+
+    deferred_lighting_sm.setInt("num_point_lights", 1);
+    deferred_lighting_sm.setVec3("pLights[0].position", light_source.get_origin());
+    deferred_lighting_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    deferred_lighting_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
+    deferred_lighting_sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
+    deferred_lighting_sm.setVec3("pLights[0].specular", staticColor * 1.0f);
+
+    deferred_lighting_sm.setInt("num_spot_lights", 0);
+
     // ***************** Uniform buffer for all shaders ************************
       // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
     unsigned int UBO_ID;
@@ -495,7 +525,13 @@ int main(int argc, char** argv) {
     light_sm.activate();
     glUniformBlockBinding(light_sm.SP_ID, glGetUniformBlockIndex(light_sm.SP_ID, "view_transforms"), 0);
 
-    // ******************************finally framebuffers! ************************************
+    geom_buffer_sm.activate();
+    glUniformBlockBinding(geom_buffer_sm.SP_ID, glGetUniformBlockIndex(geom_buffer_sm.SP_ID, "view_transforms"), 0);
+    
+    geom_buffer_instances_sm.activate();
+    glUniformBlockBinding(geom_buffer_instances_sm.SP_ID, glGetUniformBlockIndex(geom_buffer_instances_sm.SP_ID, "view_transforms"), 0);
+
+    // ****************************** finally framebuffers! ************************************
     ShaderManager screen_texture_sm(
         "source/shaders/screen_texture.vs",
         "source/shaders/screen_texture.fs"
@@ -553,8 +589,8 @@ int main(int argc, char** argv) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloom_rendered_texture_ID, 0);
 
     // register multiple render targets to this FBO
-    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers(2, attachments);
+    unsigned int FBO_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, FBO_attachments);
 
     // render to a RenderBuffer (this used for depth/stencil buffer)
     unsigned int RBO_ID;
@@ -719,6 +755,50 @@ int main(int argc, char** argv) {
         std::cout << "cube Shadow Framebuffer was not complete, rebinding to default" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Deferred shading framebuffer
+    unsigned int GBO_ID;
+    glGenFramebuffers(1, &GBO_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, GBO_ID);
+    unsigned int g_position_ID, g_normal_ID, g_color_spec_ID;
+
+    glGenTextures(1, &g_position_ID);
+    glBindTexture(GL_TEXTURE_2D, g_position_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_position_ID, 0);
+
+    glGenTextures(1, &g_normal_ID);
+    glBindTexture(GL_TEXTURE_2D, g_normal_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g_normal_ID, 0);
+
+    glGenTextures(1, &g_color_spec_ID);
+    glBindTexture(GL_TEXTURE_2D, g_color_spec_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, g_color_spec_ID, 0);
+
+    unsigned int GBO_attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, GBO_attachments);
+
+    // still need a depth buffer
+    unsigned int G_RBO_ID;
+    glGenRenderbuffers(1, &G_RBO_ID);
+    glBindRenderbuffer(GL_RENDERBUFFER, G_RBO_ID);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, cm.get_view_width(), cm.get_view_height());
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, G_RBO_ID);
+    
+    // check frambuffer
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "Deferred Shading Framebuffer was not complete, rebinding to default" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -816,6 +896,76 @@ int main(int argc, char** argv) {
         grass.invoke_draw(shadow_cube_map_sm);
         // ***** really done rendering shadow *****
 
+        // ***** test deferred rendering *****
+        // NO BLENDING FOR SOLID GEOMETRY
+        glDisable(GL_BLEND);
+        glBindFramebuffer(GL_FRAMEBUFFER, GBO_ID);
+        glViewport(0,0, cm.get_view_width(),cm.get_view_height());
+        // AHHHHH MUST CLEAR 0's (black) for GEOMETRY PASS
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        geom_buffer_sm.activate();
+        geom_buffer_sm.setVec3("viewPos", cm.get_position());
+
+        for (unsigned int i = 0; i < default_cubes.size(); i++)
+        {
+            default_cubes[i].invoke_draw(geom_buffer_sm);
+        }
+        frog.invoke_draw(geom_buffer_sm);
+        brick.invoke_draw(geom_buffer_sm);
+        bumpy.invoke_draw(geom_buffer_sm);
+        grass.invoke_draw(geom_buffer_sm);
+
+        geom_buffer_instances_sm.activate();
+        geom_buffer_instances_sm.setVec3("viewPos", cm.get_position());
+        floor.invoke_instanced_draw(geom_buffer_instances_sm);
+        grasses.invoke_instanced_draw(geom_buffer_instances_sm);
+
+
+        // deferred lighting check
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        deferred_lighting_sm.activate();
+        deferred_lighting_sm.setVec3("viewPos", cm.get_position());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 10 for now...
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+        deferred_lighting_sm.setInt("shadow_map", 10);
+        deferred_lighting_sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        deferred_lighting_sm.setFloat("light_far_plane", light_cm.get_far_plane());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 12 for now...
+        glActiveTexture(GL_TEXTURE12);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
+        deferred_lighting_sm.setInt("shadow_cube_map", 12);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, g_position_ID);
+        deferred_lighting_sm.setInt("GPosition", 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, g_normal_ID);
+        deferred_lighting_sm.setInt("GNormal", 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, g_color_spec_ID);
+        deferred_lighting_sm.setInt("GColorSpec", 2);
+        screen_plane.invoke_draw();
+
+        //NOTE: if we want to draw to another buffer (ex: 0, if we weren't doing post-processing)
+        //  we would have to blit the depth buffer bit from FBO_ID to 0 (see the deffered-shading page)
+
+        // then do forward rendering passes afterward
+        light_source.invoke_draw(light_sm);
+
+
+        // FBO_ID's hdr and bloom textures are set
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glEnable(GL_BLEND);
+        // ***** you deferred WHAT?! *****
+        
+/*
         // enable framebuffer for post-processing
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
         glViewport(0,0, cm.get_view_width(),cm.get_view_height());
@@ -906,7 +1056,7 @@ int main(int argc, char** argv) {
         grass.invoke_draw(sm);
 
         // ***** finished drawing to framebuffer, do post processing *****
-        
+*/
         // ***** pre-post-processing *****
         bool horizontal = true;
         bool first_pass_flag = true;
