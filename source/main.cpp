@@ -604,9 +604,9 @@ int main(int argc, char** argv) {
     unsigned int RBO_ID;
     glGenRenderbuffers(1, &RBO_ID);
     glBindRenderbuffer(GL_RENDERBUFFER, RBO_ID);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cm.get_view_width(), cm.get_view_height());
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, cm.get_view_width(), cm.get_view_height());
     glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO_ID);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, RBO_ID);
 
     // use a multisample texture instead
     //unsigned int MSAA_render_texture_ID;
@@ -798,7 +798,7 @@ int main(int argc, char** argv) {
     unsigned int G_RBO_ID;
     glGenRenderbuffers(1, &G_RBO_ID);
     glBindRenderbuffer(GL_RENDERBUFFER, G_RBO_ID);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, cm.get_view_width(), cm.get_view_height());
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, cm.get_view_width(), cm.get_view_height());
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, G_RBO_ID);
     
     // check frambuffer
@@ -840,11 +840,6 @@ int main(int argc, char** argv) {
         std::cout << "FPS: " << fpsSum/10 << "\r" << std::flush;
 
         process_input(window, deltaTime);
-    while ((err = glGetError()) != GL_NO_ERROR)
-    {
-        std::cerr << "GL Error before rendering: ";
-        std::cerr << err << std::endl;
-    }
 
         // set uniform buffers for all ubo shaders
         glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
@@ -938,6 +933,7 @@ int main(int argc, char** argv) {
 
         // deferred lighting check
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
+        glClearColor(0.7, 0.7, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
         deferred_lighting_sm.activate();
@@ -948,12 +944,19 @@ int main(int argc, char** argv) {
         glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
         deferred_lighting_sm.setInt("shadow_map", 10);
         deferred_lighting_sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
-        deferred_lighting_sm.setFloat("light_far_plane", light_cm.get_far_plane());
         // TODO: texture index must be managed with model/environment textures
         //      check using 12 for now...
         glActiveTexture(GL_TEXTURE12);
         glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
         deferred_lighting_sm.setInt("shadow_cube_map", 12);
+        deferred_lighting_sm.setFloat("light_far_plane", light_cm.get_far_plane());
+
+        // set environment map for ALL MATERIALS?
+        // can/should we have this part of the g buffers?
+        glActiveTexture(GL_TEXTURE13);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        deferred_lighting_sm.setInt("cube_map", 13);
+        deferred_lighting_sm.setBool("use_cube_map", true);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, g_position_ID);
@@ -966,16 +969,39 @@ int main(int argc, char** argv) {
         deferred_lighting_sm.setInt("GColorSpec", 2);
         screen_plane.invoke_draw();
 
-        //NOTE: if we want to draw to another buffer (ex: 0, if we weren't doing post-processing)
-        //  we would have to blit the depth buffer bit from FBO_ID to 0 (see the deffered-shading page)
+
+        //NOTE: if we want to draw to another buffer (ex: FBO_ID, if we weren't doing post-processing)
+        //  we would have to blit the depth buffer bit from GBO_ID to FBO_ID (see the deffered-shading page)
+        //  it doesn't seem to work for my gpus/fbos
+        glEnable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, GBO_ID);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO_ID); // write to lighting
+        glBlitFramebuffer(
+        0, 0, cm.get_view_width(), cm.get_view_height(), 0, 0, cm.get_view_width(), cm.get_view_height(), GL_DEPTH_BUFFER_BIT, GL_NEAREST
+        );
+
 
         // then do forward rendering passes afterward
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
         light_source.invoke_draw(light_sm);
+
+        // we can also do a skybox foreward pass before hdr/bloom post-processing
+        glDepthFunc(GL_LEQUAL); // so skybox only passes if there is nothing else in buffer
+        skybox_sm.activate();
+        // cut out top-left 3x3 matrix (ommiting translation)
+        skybox_sm.setMat4("world_to_view", glm::mat4(glm::mat3(cm.get_lookAt())));
+        skybox_sm.setMat4("projection", cm.get_projection());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture_ID);
+        skybox_sm.setInt("cube_map", 0);
+        skybox.invoke_draw();
+        // reset depth buffer
+        glDepthFunc(GL_LESS);
 
 
         // FBO_ID's hdr and bloom textures are set
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glEnable(GL_BLEND);
+        // proceed to post-processing
+
         // ***** you deferred WHAT?! *****
         
 /*
@@ -1071,6 +1097,7 @@ int main(int argc, char** argv) {
         // ***** finished drawing to framebuffer, do post processing *****
 */
         // ***** pre-post-processing *****
+        glEnable(GL_BLEND);
         bool horizontal = true;
         bool first_pass_flag = true;
         unsigned int passes = 6;
