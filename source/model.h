@@ -69,7 +69,7 @@ Model::~Model()
     // My meshes should be unique, and their textures should be unique
     //   (between models, not necessarily inside a model)
     // IF textures/meshes become shared across models this must be smart deletion
-    for (int i = 0; i < meshes.size(); i++)
+    for (unsigned int i = 0; i < meshes.size(); i++)
     {
         while (meshes[i].textures.size() > 0)
         {

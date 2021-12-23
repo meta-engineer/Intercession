@@ -10,6 +10,7 @@
 // external
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+//#define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -48,16 +49,23 @@ bool show_shadow_map = false;
 // TODO: move these
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    // silence warning while not using
+    static_cast<void*>(window);
+
     cm.set_view_height(height);
     cm.set_view_width(width);
     // should viewport be controlled by camera manager...? TBD
     glViewport(0, 0, width, height);
 }
 
+// signature requires doubles
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    static float lastX = -1;
-    static float lastY = -1;
+    // silence warning while not using
+    static_cast<void*>(window);
+
+    static double lastX = -1;
+    static double lastY = -1;
     const float sensitivity = 0.05f;
 
     float xoffset = lastX == -1 ? 0 : xpos - lastX;
@@ -436,7 +444,7 @@ int main(int argc, char** argv) {
     SkyboxVertexGroup skybox;
 
     frog.reset_graphics_model_environment_maps(skybox_texture_ID);
-    for (int i = 0; i < default_cubes.size(); i++)
+    for (unsigned int i = 0; i < default_cubes.size(); i++)
     {
         default_cubes[i].reset_graphics_model_environment_maps(skybox_texture_ID);
     }
@@ -832,6 +840,11 @@ int main(int argc, char** argv) {
         std::cout << "FPS: " << fpsSum/10 << "\r" << std::flush;
 
         process_input(window, deltaTime);
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        std::cerr << "GL Error before rendering: ";
+        std::cerr << err << std::endl;
+    }
 
         // set uniform buffers for all ubo shaders
         glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);

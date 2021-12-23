@@ -98,6 +98,47 @@ Alternatively there is variance shadows. They are a little more confusing using 
 Follow Benny (set 1.25x spped) for a walkthrough. So there! yea... its, well there we go!
 https://www.youtube.com/watch?v=mb7WuTDz5jw
 
+Textures:
+Note that our loadGLTexture() function simply passes to glTexImage2D witht he data we read with stbi_load.
+However we can create textures (as therefore use them in shaders) with any collection of structured 2D data.
+It is probably easier to keep track of that data outside of the texture if we need to read it.
+But for dynamic data (maybe deformable snow heightmap?) we can use glTexSubImage2D to update it.
+
+Deferred Shading:
+geometry pass: do a multi-render-pass to a 3 textures for the fragments: world position, normal, color & specular
+
+lighting pass: ingest those 3 texture uniforms and calculate lighting for each screen fragment once.
+
+Even with deferred lighting, we are checking all uniformed lights per fragment.
+Ideally we'd have some space division in our LOD system so that we don't have every light in the world in uniforms.
+IDK if its efficient to be reseting uniform information for each object.
+perhaps with texture arrays to store shadow maps we can bind an unlimited amount.
+There may be a space/time tradeoff whether we use cpu time to selectively uniform in light structs per object, or we store all lights for the whole scene.
+Whatever upper bound of lights we uniform we can use...
+
+SSAO:
+requires VIEW space position (including depth) and normals. this is because the sampled points
+around the frag need to be projected back into clip space.
+(i would have thought using a world_to_view transform would fix that but idk it didn't work)
+if this is required, as all the ssao articles use it (or maybe just optimal), this means
+the standard deferred shading Geom pass doesn't work (in world space).
+Ideally we don't convert that to view space, because all our lights are in world space when the lighting pass comes.
+Maybe using world_to_view there works?
+
+Most likely this means We'd have to do a second "ssao special" viewspace geom pass for these values.
+Which means ssao is going to be more expensive than i thought.
+
+I think I may skip it for now and we can re-try and performance test it when the proper Renderer and pipelines exist. Overall it is a subtle effect so its not that big a concern.
+Something like Fresnel might be a larger impact (and probably easier).
+
+Light Volumes: render a sphere at each point lights location with radius depending on attenuation.
+the sphere will have no texure info, but
+The vertex information will then selectively render to frags that the light COULD affect.
+(note we need to use frontface culling so that the sphere is always visible, even from inside, and only ever affects a frag once)
+Somehow we need to get a screen-space coordinate for the geometry textures (maybe gl_FragCoord?)
+Then we render the fragment based on only that 1 lights info.
+We need to use the right glBlendFunc so that colors from each rendered light are added togther.
+This can only be possible with deferred rendering becuase we have already done a pass with the real objects and in the lighting step we can use any geometry to "stencil" the areas with light
 
 Motion integration:
 Euler method is FIRST-ORDER which means it is inaccurate for all but constant velocity (no acceleration)

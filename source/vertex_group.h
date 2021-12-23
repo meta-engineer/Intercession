@@ -71,11 +71,11 @@ VertexGroup::VertexGroup(float* vertices, unsigned int size_vertices, unsigned i
     //  offset of data in the buffer
     unsigned int offset = 0;
     unsigned int stride = 0;
-    for (int i = 0; i < num_attribs; i++) {
+    for (unsigned int i = 0; i < num_attribs; i++) {
         stride += attribs[i];
     }
 
-    for (int i = 0; i < num_attribs; i++)
+    for (unsigned int i = 0; i < num_attribs; i++)
     {
         glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, attribs[i], GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset * sizeof(float)));

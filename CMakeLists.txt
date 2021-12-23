@@ -8,6 +8,14 @@ include(source/source_files.cmake)
 include(external/source_files.cmake)
 add_executable(${PROJECT_NAME} ${ALL_SOURCE_FILES} ${ALL_EXTERNAL_SOURCE_FILES} config/AppIcon.rc)
 
+# global compiler warning options
+if(MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+  # /W4 for warnings, /WX for warnings as errors
+else()
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+  # -Wall -Wextra -Wpedantic -Werror
+endif()
 
 # link to internal source and libraries
 add_subdirectory(source)
