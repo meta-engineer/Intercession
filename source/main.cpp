@@ -10,7 +10,7 @@
 // external
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-//#define GLM_FORCE_SILENT_WARNINGS
+#define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -47,15 +47,19 @@ CameraManager light_cm;
 bool show_shadow_map = false;
 
 // TODO: move these
+// signature requires int
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // silence warning while not using
     static_cast<void*>(window);
 
-    cm.set_view_height(height);
-    cm.set_view_width(width);
+    size_t uWidth  = (size_t)width;
+    size_t uHeight = (size_t)height;
+
+    cm.set_view_width(uWidth);
+    cm.set_view_height(uHeight);
     // should viewport be controlled by camera manager...? TBD
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, uWidth, uHeight);
 }
 
 // signature requires doubles
@@ -68,8 +72,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     static double lastY = -1;
     const float sensitivity = 0.05f;
 
-    float xoffset = lastX == -1 ? 0 : xpos - lastX;
-    float yoffset = lastY == -1 ? 0 : lastY - ypos;
+    float xoffset = lastX == -1.0f ? 0.0f : (float)(xpos - lastX);
+    float yoffset = lastY == -1.0f ? 0.0f : (float)(lastY - ypos);
 
     lastX = xpos;
     lastY = ypos;
@@ -80,17 +84,21 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
+    // silence warning while not using
+    static_cast<void*>(window);
+    static_cast<void>(xoffset);
+
     cm.set_view_fov(cm.get_view_fov() - (float)yoffset);
 }
 
-void process_input(GLFWwindow *window, float deltaTime)
+void process_input(GLFWwindow *window, double deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
 
-    const float spd = 2.5f * deltaTime;
+    const float spd = 2.5f * (float)deltaTime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cm.move_foreward(spd);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -181,6 +189,9 @@ int main(int argc, char** argv) {
     std::cout << view_manager::get_glfw_version_major() << std::endl;
 #endif
 
+    // process cmd options?
+    static_cast<void>(argc);
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -263,7 +274,7 @@ int main(int argc, char** argv) {
 
     frog.set_origin(glm::vec3(0.2, 0.7, 0.0));
     frog.set_uniform_scale(0.2f);
-    frog.rotate(glm::radians(30.0), glm::vec3(0.1,0.2,0.3));
+    frog.rotate(glm::radians(30.0f), glm::vec3(0.1,0.2,0.3));
 
     Entity grass(create_quad_model_ptr("resources/grass.png"));
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
@@ -276,7 +287,8 @@ int main(int argc, char** argv) {
     // Fun
     unsigned int num_blades = 10000;
     std::vector<glm::mat4> grass_transforms;
-    srand(glfwGetTime());
+    // lossiness doesn't really matter
+    srand((unsigned int)glfwGetTime());
     float radius = 10.0;
     float offset = 3.0f;
     for (unsigned int i = 0; i < num_blades; i++)
@@ -292,11 +304,11 @@ int main(int argc, char** argv) {
         transform = glm::translate(transform, glm::vec3(x, y, z));
 
         // 2. scale: scale between 0.05 and 0.25f
-        float scale = (rand() % 20) / 100.0f + 0.05;
+        float scale = (float)(rand() % 20) / 100.0f + 0.05f;
         transform = glm::scale(transform, glm::vec3(scale));
 
         // 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-        float rotAngle = (rand() % 360);
+        float rotAngle = (float)(rand() % 360);
         transform = glm::rotate(transform, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
 
         grass_transforms.push_back(transform);
@@ -326,8 +338,8 @@ int main(int argc, char** argv) {
 
     Entity bumpy;
     bumpy.set_origin(glm::vec3(2.0, 1.5, 0.5));
-    bumpy.set_uniform_scale(1.8);
-    bumpy.rotate(glm::radians(-30.0), glm::vec3(1.0,1.0,1.0));
+    bumpy.set_uniform_scale(1.8f);
+    bumpy.rotate(glm::radians(-30.0f), glm::vec3(1.0,1.0,1.0));
     bumpy.reset_graphics_model(create_quad_model_ptr("resources/wood.png", "resources/brickwall_specular.jpg", "resources/toy_box_normal.png", "resources/toy_box_disp.png"));
 
     // ******************** Shading Objects *************************
@@ -816,20 +828,21 @@ int main(int argc, char** argv) {
     }
 
     // ******************** Render Loop *************************
-    float lastTimeVal = 0;
-    float FPS = 100;
-    float frameTimeDelta = 1.0/FPS;
+    double lastTimeVal = 0;
+    // limiting fps
+    //unsigned int FPS = 100;
+    //double frameTimeDelta = 1.0/FPS;
 
     // 5 frame average
-    std::queue<float> fpsBuffer;
+    std::queue<double> fpsBuffer;
     for (int i = 0; i < 10; i++)
         fpsBuffer.push(0.0);
-    float fpsSum = 0.0;
+    double fpsSum = 0.0;
     
     while(!glfwWindowShouldClose(window))
     {
-        float timeVal = glfwGetTime();
-        float deltaTime = timeVal - lastTimeVal;
+        double timeVal = glfwGetTime();
+        double deltaTime = timeVal - lastTimeVal;
         //if (deltaTime < frameTimeDelta) continue;
         fpsSum -= fpsBuffer.front();
         fpsBuffer.pop();
@@ -843,9 +856,12 @@ int main(int argc, char** argv) {
 
         // set uniform buffers for all ubo shaders
         glBindBuffer(GL_UNIFORM_BUFFER, UBO_ID);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &(cm.get_lookAt()));
+        // buffering from stack data here is ok?
+        glm::mat4 UBO_world_to_view = cm.get_lookAt();
+        glm::mat4 UBO_projection = cm.get_projection();
+        glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &UBO_world_to_view);
         // could optimize further by only resetting projection if fov changes
-        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &(cm.get_projection()));
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &UBO_projection);
 
         // manual movement
         for (unsigned int i = 0; i < default_cubes.size(); i++)
@@ -910,7 +926,7 @@ int main(int argc, char** argv) {
         glBindFramebuffer(GL_FRAMEBUFFER, GBO_ID);
         glViewport(0,0, cm.get_view_width(),cm.get_view_height());
         // AHHHHH MUST CLEAR 0's (black) for GEOMETRY PASS
-        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         geom_buffer_sm.activate();
@@ -933,7 +949,7 @@ int main(int argc, char** argv) {
 
         // deferred lighting check
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
-        glClearColor(0.7, 0.7, 0.0, 1.0);
+        glClearColor(0.7f, 0.7f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
         deferred_lighting_sm.activate();

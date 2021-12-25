@@ -35,10 +35,10 @@ class CameraManager
     void turn_yaw(float deg);
     void turn_pitch(float deg);
 
-    void set_view_height(float pix);
-    float get_view_height();
-    void set_view_width(float pix);
-    float get_view_width();
+    void set_view_height(unsigned int pix);
+    unsigned int get_view_height();
+    void set_view_width(unsigned int pix);
+    unsigned int get_view_width();
 
     void set_view_fov(float degrees);
     float get_view_fov();
@@ -61,8 +61,8 @@ class CameraManager
 
     float view_near;
     float view_far;
-    float view_width;
-    float view_height;
+    unsigned int view_width;
+    unsigned int view_height;
     float view_fov;
     bool use_perspective;
 
@@ -79,8 +79,8 @@ CameraManager::CameraManager(
     : position(pos)
     , view_near(0.1f)
     , view_far(100.0f)
-    , view_width(1290.0f)    // 3440:1440 reduced is 43:18
-    , view_height(540.0f)
+    , view_width(1290)    // 3440:1440 reduced is 43:18
+    , view_height(540)
     , view_fov(45.0f)
     , use_perspective(true)
 {
@@ -96,14 +96,24 @@ glm::mat4 CameraManager::get_projection()
 {
     if (use_perspective)
     {
-        return glm::perspective(glm::radians(view_fov), view_width/view_height, view_near, view_far);
+        return glm::perspective(
+            glm::radians(view_fov), 
+            (float)view_width/(float)view_height, 
+            view_near, view_far
+        );
     }
     else
     {
         // how to determine left, right, bottom, top?
         // view fov 45 -> ortho_ratio ~100?
         float ortho_ratio = (45.0f / view_fov) * 100;
-        return glm::ortho(-view_width/ortho_ratio, view_width/ortho_ratio, -view_height/ortho_ratio, view_height/ortho_ratio, view_near, view_far);
+        return glm::ortho(
+            -1 * (float)(view_width)/ortho_ratio, 
+             1 * (float)(view_width)/ortho_ratio, 
+            -1 * (float)(view_height)/ortho_ratio, 
+             1 * (float)(view_height)/ortho_ratio, 
+            view_near, view_far
+        );
     }
 }
 
@@ -158,21 +168,21 @@ void CameraManager::turn_pitch(float deg)
 }
 
 
-void CameraManager::set_view_height(float pix)
+void CameraManager::set_view_height(unsigned int pix)
 {
     view_height = pix;
 }
-float CameraManager::get_view_height()
+unsigned int CameraManager::get_view_height()
 {
     return view_height;
 }
 
 
-void CameraManager::set_view_width(float pix)
+void CameraManager::set_view_width(unsigned int pix)
 {
     view_width = pix;
 }
-float CameraManager::get_view_width()
+unsigned int CameraManager::get_view_width()
 {
     return view_width;
 }
