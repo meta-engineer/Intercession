@@ -2,7 +2,7 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNorm;
 layout (location = 2) in vec2 aTexCoord;
-layout (location = 4) in mat4 aInstanceTransform;
+layout (location = 6) in mat4 aInstanceTransform;
 
 uniform mat4 projection;
 uniform mat4 world_to_view;

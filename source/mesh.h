@@ -264,8 +264,9 @@ void Mesh::setup_instance_transform_attrib_array(unsigned int offset)
 {
     glBindVertexArray(VAO_ID);
 
-    // Meshes already use 0(positions), 1(normals), 2(texture coords)
-    // so offset = 3 (default) should be used
+    // Meshes already use 0(positions), 1(normals), 2(texture coords), 3(tangents)
+    //      optionally 4(boneids), 5(boneweights)
+    // so offset = 6 (default) should be used
     glEnableVertexAttribArray(offset + 0);
     glVertexAttribPointer(offset + 0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
     glVertexAttribDivisor(offset + 0, 1);

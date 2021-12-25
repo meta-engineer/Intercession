@@ -523,6 +523,14 @@ int main(int argc, char** argv) {
 
     deferred_lighting_sm.setInt("num_spot_lights", 0);
 
+
+    // Bones to Bananas
+    // using foreward rendering for now
+    ShaderManager bones_sm(
+        "source/shaders/bones_ubo.vs",
+        "source/shaders/multi_target_hdr.fs"
+    );
+
     // ***************** Uniform buffer for all shaders ************************
       // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
     unsigned int UBO_ID;
