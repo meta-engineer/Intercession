@@ -33,9 +33,7 @@ out mat3 TBN;
 
 void main()
 {
-    vec4 boned_pos = vec4(0.0f);
-    vec4 boned_norm = vec4(0.0f);
-    vec4 boned_tang = vec4(0.0f);
+    mat4 model_to_bone = mat4(0.0);
     for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
     {
         if (aBoneIDs[i] == -1)
@@ -47,18 +45,15 @@ void main()
         {
             // disable bone influence if too many bones found?
             // this may cause headaches later remember this!
-            boned_pos = vec4(aPos, 1.0f);
-            boned_norm = vec4(aNorm, 1.0f);
+            model_to_bone = mat4(1.0);
             break;
         }
 
-        vec4 local_pos = finalBonesMatrices[aBoneIDs[i]] * aBoneWeights[i] * vec4(aPos, 1.0f);
-        boned_pos  += local_pos;
-        boned_norm += mat3(finalBonesMatrices[aBoneIDs[i]]) * aNorm;
-        boned_tang += mat3(finalBonesMatrices[aBoneIDs[i]]) * aTangent;
+        model_to_bone += finalBonesMatrices[aBoneIDs[i]] * aBoneWeights[i];
     }
 
- 
+    vec4 boned_pos = model_to_bone * vec4(aPos, 1.0);
+
     gl_Position = projection * world_to_view * model_to_world * boned_pos;
     FragPos = vec3(model_to_world * boned_pos);
 
@@ -66,11 +61,11 @@ void main()
     FragPosLightTransform = light_transform * vec4(FragPos, 1.0);
     
     mat3 normalMatrix = transpose(inverse(mat3(model_to_world)));
-    Normal = normalize(normalMatrix * vec3(boned_norm));
+    Normal = normalize(normalMatrix * aNorm);
     
     // Calculate trangent space matrix (change-of-basis)
-    vec3 T = normalize(mat3(model_to_world) * vec3(boned_tang));
-    vec3 N = normalize(mat3(model_to_world) * vec3(boned_norm));
+    vec3 T = normalize(mat3(model_to_world) * aTangent);
+    vec3 N = normalize(mat3(model_to_world) * aNorm);
     // "re-orthogonalize" T with respect to N (i guess because N is considered ground-truth)
     T = normalize(T - dot(T,N) * N);
     // generate B

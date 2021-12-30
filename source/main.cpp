@@ -40,6 +40,9 @@
 #include "skybox_vertex_group.h"
 #include "cube_vertex_group.h"
 
+#include "animation.h"
+#include "animator.h"
+
 CameraManager cm(glm::vec3(0.0f, 0.0f, 4.0f));
 CameraManager sun_cm;
 CameraManager light_cm;
@@ -264,17 +267,22 @@ int main(int argc, char** argv) {
     light_source.set_uniform_scale(0.1f);
 
     // NOTE: models passed as moved or temporary pointers to give entity exclusive control
-    Entity frog(std::make_unique<Model>("resources/normal_frog.obj"));
+    //Entity frog(std::make_unique<Model>("resources/frog_walk.dae"));
+
+    Entity frog;
+    frog.set_origin(glm::vec3(0.0f, 0.5f, 0.0f));
 
     // Example for resetting model afterward
-    //std::unique_ptr<Model> frog_model = std::make_unique<Model>("resources/12268_banjofrog_v1_L3.obj");
-    //frog.reset_graphics_model(std::move(frog_model));
+    std::unique_ptr<Model> frog_model = std::make_unique<Model>("resources/vampire/dancing_vampire3.dae");
+    Animation frog_walk("resources/vampire/dancing_vampire3.dae", frog_model.get());
+
+    frog.reset_graphics_model(std::move(frog_model));
     // OR
     //frog.reset_graphics_model(create_cube_model_ptr("resources/12268_banjofrog_diffuse.jpg"));
 
-    frog.set_origin(glm::vec3(0.2, 0.7, 0.0));
-    frog.set_uniform_scale(0.2f);
-    frog.rotate(glm::radians(30.0f), glm::vec3(0.1,0.2,0.3));
+    Animator frog_animator;
+    frog_animator.playAnimation(&frog_walk);
+
 
     Entity grass(create_quad_model_ptr("resources/grass.png"));
     grass.set_origin(glm::vec3(0.0f, 1.5f, -1.0f));
@@ -530,6 +538,23 @@ int main(int argc, char** argv) {
         "source/shaders/bones_ubo.vs",
         "source/shaders/multi_target_hdr.fs"
     );
+    // duplicated lighting assignments... again
+    bones_sm.activate();
+    bones_sm.setInt("num_ray_lights", 0);
+    bones_sm.setVec3("rLights[0].direction", glm::vec3(-0.2f, -1.0f, -0.3f)); 
+    bones_sm.setVec3("rLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    bones_sm.setVec3("rLights[0].ambient",  staticColor * 0.1f);
+    bones_sm.setVec3("rLights[0].diffuse",  staticColor * 1.0f);
+    bones_sm.setVec3("rLights[0].specular", staticColor * 1.0f);
+
+    bones_sm.setInt("num_point_lights", 1);
+    bones_sm.setVec3("pLights[0].position", light_source.get_origin());
+    bones_sm.setVec3("pLights[0].attenuation", glm::vec3(1.0f, 0.14f, 0.07f));
+    bones_sm.setVec3("pLights[0].ambient",  staticColor * 0.1f);
+    bones_sm.setVec3("pLights[0].diffuse",  staticColor * 1.0f);
+    bones_sm.setVec3("pLights[0].specular", staticColor * 1.0f);
+
+    bones_sm.setInt("num_spot_lights", 0);
 
     // ***************** Uniform buffer for all shaders ************************
       // hold view transforms in a uniform buffer (as all mesh's use the same per frame)
@@ -558,6 +583,9 @@ int main(int argc, char** argv) {
     
     geom_buffer_instances_sm.activate();
     glUniformBlockBinding(geom_buffer_instances_sm.SP_ID, glGetUniformBlockIndex(geom_buffer_instances_sm.SP_ID, "view_transforms"), 0);
+    
+    bones_sm.activate();
+    glUniformBlockBinding(bones_sm.SP_ID, glGetUniformBlockIndex(bones_sm.SP_ID, "view_transforms"), 0);
 
     // ****************************** finally framebuffers! ************************************
     ShaderManager screen_texture_sm(
@@ -871,11 +899,14 @@ int main(int argc, char** argv) {
         // could optimize further by only resetting projection if fov changes
         glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &UBO_projection);
 
+        // these are tied to fps for now...
         // manual movement
         for (unsigned int i = 0; i < default_cubes.size(); i++)
         {
             default_cubes[i].rotate(glm::radians(i / 10.0f), glm::vec3(1.0f, 0.7f, 0.4f));
         }
+        // automated movement
+        frog_animator.updateAnimation(deltaTime);
 
         // ***** render shadow map first *****
         shadow_map_sm.activate();
@@ -944,7 +975,7 @@ int main(int argc, char** argv) {
         {
             default_cubes[i].invoke_draw(geom_buffer_sm);
         }
-        frog.invoke_draw(geom_buffer_sm);
+        //frog.invoke_draw(geom_buffer_sm);
         brick.invoke_draw(geom_buffer_sm);
         bumpy.invoke_draw(geom_buffer_sm);
         grass.invoke_draw(geom_buffer_sm);
@@ -1008,6 +1039,25 @@ int main(int argc, char** argv) {
         // then do forward rendering passes afterward
         glBindFramebuffer(GL_FRAMEBUFFER, FBO_ID);
         light_source.invoke_draw(light_sm);
+
+        bones_sm.activate();
+        bones_sm.setVec3("viewPos", cm.get_position());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 10 for now...
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, shadow_map_ID);
+        bones_sm.setInt("shadow_map", 10);
+        bones_sm.setMat4("light_transform", sun_cm.get_projection() * sun_cm.get_lookAt());
+        // TODO: texture index must be managed with model/environment textures
+        //      check using 12 for now...
+        glActiveTexture(GL_TEXTURE12);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cube_map_ID);
+        bones_sm.setInt("shadow_cube_map", 12);
+        bones_sm.setFloat("light_far_plane", light_cm.get_far_plane());
+        std::vector<glm::mat4> bone_transforms = frog_animator.getFinalBoneMatrices();
+        for (unsigned int i = 0; i < bone_transforms.size(); i++)
+            bones_sm.setMat4("finalBonesMatrices[" + std::to_string(i) + "]", bone_transforms[i]);
+        frog.invoke_draw(bones_sm);
 
         // we can also do a skybox foreward pass before hdr/bloom post-processing
         glDepthFunc(GL_LEQUAL); // so skybox only passes if there is nothing else in buffer

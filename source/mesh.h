@@ -12,6 +12,9 @@
 
 #include "shader_manager.h"
 
+// lets us store in a vec4 for ease
+#define MAX_BONE_INFLUENCE 4
+
 // Note: struct members are stored sequentially so we can pass them like an array pointer
 struct Vertex
 {
@@ -19,6 +22,9 @@ struct Vertex
     glm::vec3 normal;
     glm::vec2 tex_coord;
     glm::vec3 tangent;
+
+    int bone_IDs[MAX_BONE_INFLUENCE];
+    float bone_weights[MAX_BONE_INFLUENCE];
 };
 
 // these will be used as the prefix for shader Material struct members
@@ -149,6 +155,13 @@ void Mesh::setup()
     // vertex tangents
     glEnableVertexAttribArray(3);	
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
+
+    // bone ids
+    glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(4, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, bone_IDs));
+    // bone weights
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bone_weights));
 
     // clear binds
     glBindVertexArray(0);

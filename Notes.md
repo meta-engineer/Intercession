@@ -59,6 +59,43 @@ target_link_options(${PROJECT_NAME}
    PRIVATE "-mwindows"
 )
 
+## Naming conventions
+A good standard is hard to come by, consistent agreement is even harder.
+Here's what I'm thinking:
+
+List of things to name:
+namespaces, class names, type/enum names, 
+function names, method names, 
+local variables, class variables, global variables, static variables, const variables
+
+glfw and opengl use camelCase for functions (glGenbuffers)
+However the std library uses lower_with_under (std::find_if)
+
+google uses lower_with_under for variables
+    and also a trailing underscore for class members
+    and PascalCase for functions
+
+iso uses lower_with_under for variables and functions
+
+stroustrup uses lower_with_under for variables and functions
+    but Proper_with_underscores for classes??
+
+
+file_names:         lower_underscore
+ClassNames:         PascalCase
+functionNames:      camelCase (glfw and opengl do this, but)
+
+local_variables:    lower_underscore
+global_variables:   g_ prefix, lower_underscore
+class_variables:    m_ prefix, lower_underscore (i don't like using "my", but it's clear)
+static_variables:   s_ prefix, lower_underscore
+const_variables:    c_ prefix, lower_underscore
+const_class_variables?
+
+Abbriviations:      treat cases as normal word
+Acroynms:           treat cases as normal word
+
+
 ## Using opengl/glfw
 
 https://learnopengl.com/

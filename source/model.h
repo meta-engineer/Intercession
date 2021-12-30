@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -12,6 +13,14 @@
 #include <stb_image.h>
 
 #include "mesh.h"
+#include "assimp_glm_convertors.h"
+
+// Models know about bones, but are fed by animators?
+struct BoneInfo
+{
+    int ID;
+    glm::mat4 model_to_bone;
+};
 
 class Model
 {
@@ -32,14 +41,10 @@ class Model
 
     static unsigned int loadGLTexture(std::string filename, const std::string& path = "", bool gamma_correction = true);
 
+    std::map<std::string, BoneInfo>& getBoneInfoMap();
+    int& getBoneCount();
+    
   private:
-    // TODO: heirarchy of meshes is not preserved
-    std::vector<Mesh> meshes;
-    // maintain location to find associated files
-    std::string directory;
-    // should loaded textures be static so all model instances share equivalent textures?
-    std::vector<Texture> textures_loaded;
-
     void loadModel(std::string path);
 
     // recursively process from scene->mRootNode
@@ -47,6 +52,25 @@ class Model
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
 
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, TextureType tType);
+
+
+    // uses flag ID of -1 to disable bone
+    void setVertexBoneDataToDefault(Vertex& vertex);
+    // finds next disabled bone, and sets id and weight. Does nothing if all 4 are used
+    void setVertexBoneData(Vertex& vertex, int boneID, float weight);
+    // iterating through bones, instead of through verticies like in processMesh
+    void extractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene);
+    
+    // TODO: heirarchy of meshes is not preserved
+    std::vector<Mesh> meshes;
+    // maintain location to find associated files
+    std::string directory;
+    // should loaded textures be static so all model instances share equivalent textures?
+    std::vector<Texture> textures_loaded;
+
+    std::map<std::string, BoneInfo> bone_info_map;
+    // initialize to 0 in declaration?
+    int bone_ID_counter = 0;
 };
 
 Model::Model(std::string path)
@@ -87,6 +111,13 @@ void Model::invoke_draw(ShaderManager& sm)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].invoke_draw(sm);
+
+    //std::cerr << "Drawing model with " << bone_ID_counter << " bones." << std::endl;
+    //std::map<std::string, BoneInfo>::iterator it;
+    //for (it = bone_info_map.begin(); it != bone_info_map.end(); it++)
+    //{
+    //    std::cerr << it->second.ID << ": " << it->first << std::endl;
+    //}
 }
 
 void Model::invoke_instanced_draw(ShaderManager& sm, size_t amount)
@@ -111,6 +142,7 @@ void Model::setup_all_instance_transform_attrib_arrays(unsigned int offset)
 void Model::loadModel(std::string path)
 {
     Assimp::Importer importer;
+    // aiProcess_GenSmoothNormals ?
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
     if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
@@ -180,8 +212,14 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
             vertex.tex_coord = glm::vec2(0.0f, 0.0f);
         }
 
+        // setup bone data as default (all disabled)
+        setVertexBoneDataToDefault(vertex);
+
         vertices.push_back(vertex);
     }
+
+    // setup all bone data (iterating by bones, not by verticies like above)
+    extractBoneWeightForVertices(vertices, mesh, scene);
 
     // indices
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
@@ -206,6 +244,9 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         // is this the same for all formats? what about when I acually want a height map?
         std::vector<Texture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::normal_map);
         textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
+
+        // TODO: height maps for models?
+        // aiTextureType_AMBIENT
     }
     
     return Mesh(vertices, indices, textures);
@@ -307,6 +348,91 @@ unsigned int Model::loadGLTexture(std::string filename, const std::string& path,
     stbi_image_free(texData);
 
     return texture_ID;
+}
+
+
+std::map<std::string, BoneInfo>& Model::getBoneInfoMap()
+{
+    return bone_info_map;
+}
+
+int& Model::getBoneCount()
+{
+    return bone_ID_counter;
+}
+
+void Model::setVertexBoneDataToDefault(Vertex& vertex)
+{
+    for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
+        vertex.bone_IDs[i] = -1;
+        vertex.bone_weights[i] = 0.0f;
+    }
+}
+
+void Model::setVertexBoneData(Vertex& vertex, int boneID, float weight)
+{
+    for (int i = 0; i < MAX_BONE_INFLUENCE; ++i)
+    {
+        if (vertex.bone_IDs[i] < 0)
+        {
+            vertex.bone_weights[i] = weight;
+            vertex.bone_IDs[i] = boneID;
+            break;
+        }
+    }
+}
+
+void Model::extractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+{
+    // silence unused warning
+    assert(scene);
+
+    // parse through assimp bone list
+    for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
+    {
+        int boneID = -1;
+        std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+
+        // if this bone isn't in our internal list
+        if (bone_info_map.find(boneName) == bone_info_map.end())
+        {
+            BoneInfo newBone;
+            newBone.ID = bone_ID_counter;
+            // we have to manually cast these math types, as in processMesh with vec3's
+            // i dont think there is row,col indexing
+            newBone.model_to_bone = assimp_converters::convert_matrix(mesh->mBones[boneIndex]->mOffsetMatrix);
+
+            // care for collisions? this depends on external model data
+            bone_info_map[boneName] = newBone;
+
+            boneID = newBone.ID;
+            bone_ID_counter++;
+        }
+        else
+        {
+            boneID = bone_info_map[boneName].ID;
+        }
+
+        // bone was either created or fetched
+        assert(boneID != -1);
+
+        // fetch corresponding weight for "this" bone
+        aiVertexWeight* aiWeights = mesh->mBones[boneIndex]->mWeights;
+        unsigned int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+        for (unsigned int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+        {
+            // our vertices array matches indices in weights?!
+            unsigned int aiVertexID = aiWeights[weightIndex].mVertexId;
+            // this is an aiReal ?
+            float boneWeight = aiWeights[weightIndex].mWeight;
+
+            // check for weirdness
+            assert(aiVertexID < vertices.size());
+
+            setVertexBoneData(vertices[aiVertexID], boneID, boneWeight);
+        }
+    }
 }
 
 #endif // MODEL_H
