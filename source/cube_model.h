@@ -4,7 +4,7 @@
 #include "model.h"
 
 // Build Model with standard quad buffer data
-std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std::string specular_path = "", std::string normal_path = "")
+std::unique_ptr<Model> create_cube_model_ptr(std::string diffusePath = "", std::string specularPath = "", std::string normalPath = "")
 {
     // generate cube mesh
     std::vector<Vertex>       vertices;
@@ -12,7 +12,7 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
     std::vector<Texture>      textures;
 
     // NOTE: tangent should be calculated based on normal and uv (texture coords)
-    float cube2_vertices[] = {
+    const float CUBE2_VERTICES[] = {
         // coordinates         // normal              // texture coordinates    // tangent
         -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
         -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
@@ -45,17 +45,17 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
          0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,             -1.0f,  0.0f, 0.0f,   // back
     };
     // hardcode 3+3+2+3
-    for (unsigned int i = 0; i < sizeof(cube2_vertices) / 8; i++)
+    for (unsigned int i = 0; i < sizeof(CUBE2_VERTICES) / 8; i++)
     {
         vertices.push_back( Vertex{
-            glm::vec3(cube2_vertices[i * 11 + 0], cube2_vertices[i * 11 + 1], cube2_vertices[i * 11 + 2]), 
-            glm::vec3(cube2_vertices[i * 11 + 3], cube2_vertices[i * 11 + 4], cube2_vertices[i * 11 + 5]), 
-            glm::vec2(cube2_vertices[i * 11 + 6], cube2_vertices[i * 11 + 7]),
-            glm::vec3(cube2_vertices[i * 11 + 8], cube2_vertices[i * 11 + 9], cube2_vertices[i * 11 +10])
+            glm::vec3(CUBE2_VERTICES[i * 11 + 0], CUBE2_VERTICES[i * 11 + 1], CUBE2_VERTICES[i * 11 + 2]), 
+            glm::vec3(CUBE2_VERTICES[i * 11 + 3], CUBE2_VERTICES[i * 11 + 4], CUBE2_VERTICES[i * 11 + 5]), 
+            glm::vec2(CUBE2_VERTICES[i * 11 + 6], CUBE2_VERTICES[i * 11 + 7]),
+            glm::vec3(CUBE2_VERTICES[i * 11 + 8], CUBE2_VERTICES[i * 11 + 9], CUBE2_VERTICES[i * 11 +10])
         } );
     }
 
-    unsigned int cube2_indices[] = {
+    unsigned int CUBE2_INDICES[] = {
         0,1,2,
         0,2,3,
 
@@ -74,32 +74,32 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffuse_path = "", std:
         20,21,23,
         20,23,22
     };
-    for (unsigned int i = 0; i < sizeof(cube2_indices); i++)
+    for (unsigned int i = 0; i < sizeof(CUBE2_INDICES); i++)
     {
-        indices.push_back(cube2_indices[i]);
+        indices.push_back(CUBE2_INDICES[i]);
     }
 
     // hijack model's texture loading
     // mesh.invoke_draw() will use all black if none exist
-    if (!diffuse_path.empty())
+    if (!diffusePath.empty())
     {
-        unsigned int diffuse_tex_id = Model::loadGLTexture(diffuse_path);
-        textures.push_back(Texture{diffuse_tex_id, TextureType::diffuse_map, ""});
+        unsigned int diffuseTex_id = Model::load_gl_texture(diffusePath);
+        textures.push_back(Texture{diffuseTex_id, TextureType::diffuse_map, ""});
     }
-    if (!specular_path.empty())
+    if (!specularPath.empty())
     {
-        unsigned int specular_tex_id = Model::loadGLTexture(specular_path);
-        textures.push_back(Texture{specular_tex_id, TextureType::specular_map, ""});
+        unsigned int specularTex_id = Model::load_gl_texture(specularPath);
+        textures.push_back(Texture{specularTex_id, TextureType::specular_map, ""});
     }
-    if (!normal_path.empty())
+    if (!normalPath.empty())
     {
         // DO NOT GAMMA CORRECT NORMAL MAP
-        unsigned int normal_tex_id = Model::loadGLTexture(normal_path, "", false);
-        textures.push_back(Texture{normal_tex_id, TextureType::normal_map, ""});
+        unsigned int normalTex_id = Model::load_gl_texture(normalPath, "", false);
+        textures.push_back(Texture{normalTex_id, TextureType::normal_map, ""});
     }
 
-    Mesh cube_mesh(vertices, indices, textures);
-    return std::unique_ptr<Model>(new Model(cube_mesh));
+    Mesh cubeMesh(vertices, indices, textures);
+    return std::unique_ptr<Model>(new Model(cubeMesh));
 }
 
 #endif // CUBE_MODEL_H

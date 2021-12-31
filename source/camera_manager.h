@@ -1,4 +1,3 @@
-
 #ifndef CAMERA_MANAGER_H
 #define CAMERA_MANAGER_H
 
@@ -15,8 +14,9 @@ class CameraManager
   public:
     CameraManager(
         glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f), 
-        //                        pitch,yaw,  roll
-        glm::vec3 ang = glm::vec3(0.0f, 0.0f, 0.0f));
+        //                       pitch,  yaw, roll
+        glm::vec3 ang = glm::vec3(0.0f, 0.0f, 0.0f)
+    );
 
     // generate world_to_view matrix
     glm::mat4 get_lookAt();
@@ -59,17 +59,17 @@ class CameraManager
     glm::vec3 direction;
     glm::vec3 euler;
 
-    float view_near;
-    float view_far;
-    unsigned int view_width;
-    unsigned int view_height;
-    float view_fov;
-    bool use_perspective;
+    float viewNear;
+    float viewFar;
+    unsigned int viewWidth;
+    unsigned int viewHeight;
+    float viewFov;
+    bool usePerspective;
 
-    // set direciton = new_direction, and set matching euler
-    void _set_and_match_direction(glm::vec3 new_direction);
-    // set euler = new_euler, and set matching direction
-    void _set_and_match_euler(glm::vec3 new_euler);
+    // set direciton = newDirection, and set matching euler
+    void _set_and_match_direction(glm::vec3 newDirection);
+    // set euler = newEuler, and set matching direction
+    void _set_and_match_euler(glm::vec3 newEuler);
 
 };
 
@@ -77,12 +77,12 @@ CameraManager::CameraManager(
     glm::vec3 pos,
     glm::vec3 ang)
     : position(pos)
-    , view_near(0.1f)
-    , view_far(100.0f)
-    , view_width(1290)    // 3440:1440 reduced is 43:18
-    , view_height(540)
-    , view_fov(45.0f)
-    , use_perspective(true)
+    , viewNear(0.1f)
+    , viewFar(100.0f)
+    , viewWidth(1290)    // 3440:1440 reduced is 43:18
+    , viewHeight(540)
+    , viewFov(45.0f)
+    , usePerspective(true)
 {
     _set_and_match_euler(ang);
 }
@@ -94,25 +94,25 @@ glm::mat4 CameraManager::get_lookAt()
 
 glm::mat4 CameraManager::get_projection()
 {
-    if (use_perspective)
+    if (usePerspective)
     {
         return glm::perspective(
-            glm::radians(view_fov), 
-            (float)view_width/(float)view_height, 
-            view_near, view_far
+            glm::radians(viewFov), 
+            (float)viewWidth/(float)viewHeight, 
+            viewNear, viewFar
         );
     }
     else
     {
         // how to determine left, right, bottom, top?
-        // view fov 45 -> ortho_ratio ~100?
-        float ortho_ratio = (45.0f / view_fov) * 100;
+        // view fov 45 -> orthoRatio ~100?
+        float orthoRatio = (45.0f / viewFov) * 100;
         return glm::ortho(
-            -1 * (float)(view_width)/ortho_ratio, 
-             1 * (float)(view_width)/ortho_ratio, 
-            -1 * (float)(view_height)/ortho_ratio, 
-             1 * (float)(view_height)/ortho_ratio, 
-            view_near, view_far
+            -1 * (float)(viewWidth)/orthoRatio, 
+             1 * (float)(viewWidth)/orthoRatio, 
+            -1 * (float)(viewHeight)/orthoRatio, 
+             1 * (float)(viewHeight)/orthoRatio, 
+            viewNear, viewFar
         );
     }
 }
@@ -170,63 +170,63 @@ void CameraManager::turn_pitch(float deg)
 
 void CameraManager::set_view_height(unsigned int pix)
 {
-    view_height = pix;
+    viewHeight = pix;
 }
 unsigned int CameraManager::get_view_height()
 {
-    return view_height;
+    return viewHeight;
 }
 
 
 void CameraManager::set_view_width(unsigned int pix)
 {
-    view_width = pix;
+    viewWidth = pix;
 }
 unsigned int CameraManager::get_view_width()
 {
-    return view_width;
+    return viewWidth;
 }
 
 
 void CameraManager::set_view_fov(float degrees)
 {
-    view_fov = glm::max(degrees, 1.0f);
-    view_fov = glm::min(view_fov, 120.0f);
+    viewFov = glm::max(degrees, 1.0f);
+    viewFov = glm::min(viewFov, 120.0f);
 }
 float CameraManager::get_view_fov()
 {
-    return view_fov;
+    return viewFov;
 }
 
 void CameraManager::set_use_perspective(bool enable)
 {
-    use_perspective = enable;
+    usePerspective = enable;
 }
 bool CameraManager::get_use_perspective()
 {
-    return use_perspective;
+    return usePerspective;
 }
 
 void CameraManager::set_near_plane(float near)
 {
-    view_near = glm::max(0.0001f, near);
+    viewNear = glm::max(0.0001f, near);
 }
 float CameraManager::get_near_plane()
 {
-    return view_near;
+    return viewNear;
 }
 void CameraManager::set_far_plane(float far)
 {
-    view_far = far;
+    viewFar = far;
 }
 float CameraManager::get_far_plane()
 {
-    return view_far;
+    return viewFar;
 }
 
-void CameraManager::_set_and_match_euler(glm::vec3 new_euler)
+void CameraManager::_set_and_match_euler(glm::vec3 newEuler)
 {
-    euler = new_euler;
+    euler = newEuler;
     euler.x = glm::max(euler.x, -89.0f);
     euler.x = glm::min(euler.x,  89.0f);
     euler.y = euler.y >= 360 ? euler.y - 360 : euler.y; // cannot handle angles over 720
@@ -238,15 +238,15 @@ void CameraManager::_set_and_match_euler(glm::vec3 new_euler)
     direction = glm::normalize(direction);
 }
 
-void CameraManager::_set_and_match_direction(glm::vec3 new_direction)
+void CameraManager::_set_and_match_direction(glm::vec3 newDirection)
 {
-    direction = glm::normalize(new_direction);
+    direction = glm::normalize(newDirection);
     // maintain same roll value;
     glm::vec3 xz = glm::normalize(glm::vec3(direction.x, 0, direction.z));
-    glm::vec3 null_yaw(1.0f, 0.0f, 0.0f);
+    glm::vec3 nullYaw(1.0f, 0.0f, 0.0f);
 
     // get absolute angle (between 0 and 180)
-    euler.y = glm::degrees(acos(glm::dot(xz, null_yaw)));
+    euler.y = glm::degrees(acos(glm::dot(xz, nullYaw)));
     // quadrant determination
     if (direction.z < 0) euler.y = 360 - euler.y;
     if (euler.y < 0) euler.y += 360; // clamp 0 to 359.9

@@ -1,4 +1,3 @@
-
 #ifndef VERTEX_GROUP_H
 #define VERTEX_GROUP_H
 
@@ -11,7 +10,11 @@
 class VertexGroup
 {
   public:
-    VertexGroup(float* vertices, unsigned int size_vertices, unsigned int* indices, unsigned int size_indices, unsigned int* attribs, unsigned int size_attribs);
+    VertexGroup(
+        const float* vertices, const unsigned int numVertices,
+        const unsigned int* indices, const unsigned int numIndices, 
+        const unsigned int* attribs, const unsigned int numAttribs
+    );
     ~VertexGroup();
 
     glm::mat4 get_model_transform();
@@ -30,35 +33,38 @@ class VertexGroup
     // TODO: copy in mesh properties. could be useful to know later? And delete in destructor
     // could be stored in smart containers
     float* vertices;
-    unsigned int num_vertices;
+    unsigned int vertices_size;
     unsigned int* indices;
-    unsigned int num_indices;
+    unsigned int indices_size;
     unsigned int* attribs;
-    unsigned int num_attribs;
+    unsigned int attribs_size;
 
     unsigned int VAO_ID;
     unsigned int VBO_ID;
     unsigned int EBO_ID;
 };
 
-VertexGroup::VertexGroup(float* vertices, unsigned int size_vertices, unsigned int* indices, unsigned int size_indices, unsigned int* attribs, unsigned int size_attribs)
+VertexGroup::VertexGroup(
+        const float* vertices, const unsigned int numVertices,
+        const unsigned int* indices, const unsigned int numIndices, 
+        const unsigned int* attribs, const unsigned int numAttribs)
     : origin(0.0f)
     , rotation(1.0f)
     , scale(1.0f)
-    , num_vertices(size_vertices/sizeof(unsigned int))
-    , num_indices(size_indices/sizeof(unsigned int))
-    , num_attribs(size_attribs/sizeof(unsigned int))
+    , vertices_size(numVertices/sizeof(unsigned int))
+    , indices_size(numIndices/sizeof(unsigned int))
+    , attribs_size(numAttribs/sizeof(unsigned int))
 {
     glGenVertexArrays(1, &VAO_ID);
     glBindVertexArray(VAO_ID);
 
     glGenBuffers(1, &VBO_ID);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_ID);
-    glBufferData(GL_ARRAY_BUFFER, size_vertices, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, numVertices, vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &EBO_ID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_ID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size_indices, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
 
     // Set the interpretation of our VBO structure for the vertex shader input
     //  (glVertexAttribPointer takes data from the currently bound vbo)
@@ -71,11 +77,11 @@ VertexGroup::VertexGroup(float* vertices, unsigned int size_vertices, unsigned i
     //  offset of data in the buffer
     unsigned int offset = 0;
     unsigned int stride = 0;
-    for (unsigned int i = 0; i < num_attribs; i++) {
+    for (unsigned int i = 0; i < attribs_size; i++) {
         stride += attribs[i];
     }
 
-    for (unsigned int i = 0; i < num_attribs; i++)
+    for (unsigned int i = 0; i < attribs_size; i++)
     {
         glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, attribs[i], GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset * sizeof(float)));
@@ -131,7 +137,7 @@ void VertexGroup::set_uniform_scale(float factor)
 void VertexGroup::invoke_draw()
 {
     glBindVertexArray(VAO_ID);
-    glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indices_size, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 

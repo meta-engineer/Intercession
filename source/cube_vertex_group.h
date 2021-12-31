@@ -4,7 +4,7 @@
 #include "vertex_group.h"
 
 // NOTE: tangent should be calculated based on normal and uv (texture coords)
-float cube2_vertices[] = {
+const float CUBE2_VERTICES[] = {
     // coordinates         // normal              // texture coordinates    // tangent
     -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
     -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
@@ -36,7 +36,7 @@ float cube2_vertices[] = {
     -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f,  1.5f,             -1.0f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,             -1.0f,  0.0f, 0.0f,   // back
 };
-unsigned int cube2_indices[] = {
+const unsigned int CUBE2_INDICES[] = {
     0,1,2,
     0,2,3,
 
@@ -55,7 +55,7 @@ unsigned int cube2_indices[] = {
     20,21,23,
     20,23,22
 };
-unsigned int cube2_attribs[] = {
+const unsigned int CUBE2_ATTRIBS[] = {
     3,3,2,3
 };
 
@@ -63,9 +63,9 @@ class CubeVertexGroup : public VertexGroup
 {
   public:
     CubeVertexGroup()
-        : VertexGroup(cube2_vertices, sizeof(cube2_vertices), // These are SIZE of the arrays data (bytes)
-            cube2_indices, sizeof(cube2_indices),
-            cube2_attribs, sizeof(cube2_attribs))
+        : VertexGroup(CUBE2_VERTICES, sizeof(CUBE2_VERTICES), // These are SIZE of the arrays data (bytes)
+            CUBE2_INDICES, sizeof(CUBE2_INDICES),
+            CUBE2_ATTRIBS, sizeof(CUBE2_ATTRIBS))
     {}
 };
 

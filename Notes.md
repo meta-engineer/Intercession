@@ -61,7 +61,6 @@ target_link_options(${PROJECT_NAME}
 
 ## Naming conventions
 A good standard is hard to come by, consistent agreement is even harder.
-Here's what I'm thinking:
 
 List of things to name:
 namespaces, class names, type/enum names, 
@@ -78,22 +77,34 @@ google uses lower_with_under for variables
 iso uses lower_with_under for variables and functions
 
 stroustrup uses lower_with_under for variables and functions
-    but Proper_with_underscores for classes??
+    but Proper_With_Underscores for classes??
 
+Here's what I'm thinking:
 
-file_names:         lower_underscore
+file_names:         lower_with_under
+function_names:     lower_with_under (to match std, and it works gramatically like a sentence)
 ClassNames:         PascalCase
-functionNames:      camelCase (glfw and opengl do this, but)
+class_method:       lower_with_under, private methods prefixed with _
 
-local_variables:    lower_underscore
-global_variables:   g_ prefix, lower_underscore
-class_variables:    m_ prefix, lower_underscore (i don't like using "my", but it's clear)
-static_variables:   s_ prefix, lower_underscore
-const_variables:    c_ prefix, lower_underscore
-const_class_variables?
+variables:          camelCase (looks like the uncapitalized type, EX: Model* model = ...
+    this keeps each single variable "one word", can use an underscore sparingly for an attribute
+    would otherwise be a member of a struct. EX: bigChickenStore_id)
+localVariables:     camelCase
+functionParameters: camelCase (even if they are const)
+classVariables:     camelCase (m_ prefix would be clear but i don't like it)
+g_globalVariables:  g_ prefix or other relevant, camelCase
+static_variables:   static_ prefix, camelCase
+CONST_DEFINITIONS:  UPPER_WITH_UNDER (may be confusing with macros) (again not function params)
+#MACRO_DEFINES:     UPPER_WITH_UNDER
 
-Abbriviations:      treat cases as normal word
-Acroynms:           treat cases as normal word
+Abbriviations & acronyms: treat as normal word
+
+Exceptions:
+    gl buffer object ids can use all caps because they shouldn't be changed by *us*
+but are not really const, only gl functions should be managing them.
+    change-of-basis matricies can use x_to_y for readability when chaining transforms together
+
+GLSL naming:
 
 
 ## Using opengl/glfw
@@ -136,7 +147,7 @@ Follow Benny (set 1.25x spped) for a walkthrough. So there! yea... its, well the
 https://www.youtube.com/watch?v=mb7WuTDz5jw
 
 Textures:
-Note that our loadGLTexture() function simply passes to glTexImage2D witht he data we read with stbi_load.
+Note that our load_gl_texture() function simply passes to glTexImage2D witht he data we read with stbi_load.
 However we can create textures (as therefore use them in shaders) with any collection of structured 2D data.
 It is probably easier to keep track of that data outside of the texture if we need to read it.
 But for dynamic data (maybe deformable snow heightmap?) we can use glTexSubImage2D to update it.

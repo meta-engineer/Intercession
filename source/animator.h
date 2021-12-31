@@ -9,80 +9,80 @@ class Animator
   public:
     Animator();
 
-    void updateAnimation(double delta_time);
-    void playAnimation(Animation* anim);
-    void calculateBoneTransform(const AssimpNodeData* node, glm::mat4 parent_transform);
-    std::vector<glm::mat4> getFinalBoneMatrices();
+    void update_animation(double deltaTime);
+    void play_animation(Animation* anim);
+    void calculate_bone_transform(const AssimpNodeData* node, glm::mat4 parentTransform);
+    std::vector<glm::mat4> get_final_bone_matrices();
 
   private:
-    std::vector<glm::mat4> final_bone_matrices;
-    Animation* curr_animation;
-    double curr_time;
-    double last_delta_time;  // allocate memory here so its not done every frame?
+    std::vector<glm::mat4> finalBoneMatrices;
+    Animation* currAnimation;
+    double currTime;
+    double lastDeltaTime;  // allocate memory here so its not done every frame?
 };
 
 
 Animator::Animator()
-    : curr_time(0.0)
-    , curr_animation(nullptr)
+    : currTime(0.0)
+    , currAnimation(nullptr)
 {
-    final_bone_matrices.reserve(100);
+    finalBoneMatrices.reserve(100);
 
     for (int i = 0; i < 100; i++)
-        final_bone_matrices.push_back(glm::mat4(1.0f));
+        finalBoneMatrices.push_back(glm::mat4(1.0f));
 }
 
-void Animator::updateAnimation(double delta_time)
+void Animator::update_animation(double deltaTime)
 {
-    last_delta_time = delta_time;
+    lastDeltaTime = deltaTime;
 
-    if (curr_animation)
+    if (currAnimation)
     {
-        curr_time += curr_animation->getTicksPerSecond() * delta_time;
-        curr_time = fmod(curr_time, curr_animation->getDuration());
+        currTime += currAnimation->get_ticks_per_second() * deltaTime;
+        currTime = fmod(currTime, currAnimation->get_duration());
 
-        calculateBoneTransform(&curr_animation->getRootNode(), glm::mat4(1.0f));
+        calculate_bone_transform(&currAnimation->get_root_node(), glm::mat4(1.0f));
     }
 }
 
-void Animator::playAnimation(Animation* anim)
+void Animator::play_animation(Animation* anim)
 {
-    curr_animation = anim;
-    curr_time = 0.0f;
+    currAnimation = anim;
+    currTime = 0.0f;
 }
 
-void Animator::calculateBoneTransform(const AssimpNodeData* node, glm::mat4 parent_transform)
+void Animator::calculate_bone_transform(const AssimpNodeData* node, glm::mat4 parentTransform)
 {
-    std::string node_name = node->name;
-    glm::mat4 node_transform = node->transform;
+    std::string nodeName = node->name;
+    glm::mat4 nodeTransform = node->transform;
 
-    Bone* bone = curr_animation->findBone(node_name);
+    Bone* bone = currAnimation->find_bone(nodeName);
 
     if (bone)
     {
-        bone->update(curr_time);
-        node_transform = bone->getLocalTransform();
+        bone->update(currTime);
+        nodeTransform = bone->get_local_transform();
     }
 
-    glm::mat4 global_transform = parent_transform * node_transform;
+    glm::mat4 globalTransform = parentTransform * nodeTransform;
 
-    std::map<std::string, BoneInfo> bone_info_map = curr_animation->getBoneIDMap();
-    if (bone_info_map.find(node_name) != bone_info_map.end())
+    std::map<std::string, BoneInfo> animBoneInfoMap = currAnimation->get_bone_id_map();
+    if (animBoneInfoMap.find(nodeName) != animBoneInfoMap.end())
     {
-        int index = bone_info_map[node_name].ID;
-        glm::mat4 model_to_bone = bone_info_map[node_name].model_to_bone;
-        final_bone_matrices[index] = global_transform * model_to_bone;
+        int index = animBoneInfoMap[nodeName].id;
+        glm::mat4 model_to_bone = animBoneInfoMap[nodeName].model_to_bone;
+        finalBoneMatrices[index] = globalTransform * model_to_bone;
     }
 
-    for (int i = 0; i < node->child_count; i++)
+    for (int i = 0; i < node->numChildren; i++)
     {
-        calculateBoneTransform(&node->children[i], global_transform);
+        calculate_bone_transform(&node->children[i], globalTransform);
     }
 }
 
-std::vector<glm::mat4> Animator::getFinalBoneMatrices()
+std::vector<glm::mat4> Animator::get_final_bone_matrices()
 {
-    return final_bone_matrices;
+    return finalBoneMatrices;
 }
 
 

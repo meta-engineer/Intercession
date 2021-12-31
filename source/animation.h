@@ -19,7 +19,7 @@ struct AssimpNodeData
 {
     glm::mat4 transform;
     std::string name;
-    int child_count;
+    int numChildren;
     std::vector<AssimpNodeData> children;
 };
 
@@ -30,54 +30,54 @@ class Animation
     ~Animation();
     Animation(const std::string& path, Model* refreshModel = nullptr);
 
-    Bone* findBone(const std::string& name);
+    Bone* find_bone(const std::string& name);
 
-    double getTicksPerSecond();
-    double getDuration();
-    const AssimpNodeData& getRootNode();
-    const std::map<std::string, BoneInfo>& getBoneIDMap();
+    double get_ticks_per_second();
+    double get_duration();
+    const AssimpNodeData& get_root_node();
+    const std::map<std::string, BoneInfo>& get_bone_id_map();
 
   private:
-    void readMissingBones(const aiAnimation* animation, Model& model);
-    void readHeirarchyData(AssimpNodeData& dest, const aiNode* src);
-
+    void _read_missing_bones(const aiAnimation* animation, Model& model);
+    void _read_heirarchy_data(AssimpNodeData& dest, const aiNode* src);
+    
     double duration;
-    double ticks_per_second;
+    double ticksPerSecond;
     std::vector<Bone> bones;
-    AssimpNodeData root_node;
-    std::map<std::string, BoneInfo> bone_info_map;
+    AssimpNodeData rootNode;
+    std::map<std::string, BoneInfo> boneInfoMap;
 };
 
 Animation::~Animation() {}
 
 Animation::Animation(const std::string& path, Model* refreshModel) 
 {
-    Assimp::Importer ai_importer;
-    const aiScene* scene = ai_importer.ReadFile(path, aiProcess_Triangulate);
+    Assimp::Importer aiImporter;
+    const aiScene* scene = aiImporter.ReadFile(path, aiProcess_Triangulate);
     assert(scene && scene->mRootNode);
 
     // TODO: is this hardcoded to load the first animation?
     aiAnimation* animation = scene->mAnimations[0];
 
     duration = animation->mDuration;
-    ticks_per_second = animation->mTicksPerSecond;
+    ticksPerSecond = animation->mTicksPerSecond;
 
-    readHeirarchyData(root_node, scene->mRootNode);
+    _read_heirarchy_data(rootNode, scene->mRootNode);
 
     // this is because "sometimes loading an FBX model separately some bones were missing and only found in the animation file"??
     // TODO: test this and determine if needed, or just bloat
     if (refreshModel)
-        readMissingBones(animation, *refreshModel);
+        _read_missing_bones(animation, *refreshModel);
 }
 
 // its like find, but uses null to signal not found...
-Bone* Animation::findBone(const std::string& name)
+Bone* Animation::find_bone(const std::string& name)
 {
     // we're not in c land anymore...
     auto iter = std::find_if(bones.begin(), bones.end(),
         [&](const Bone& bone)
         {
-            return bone.getBoneName() == name;
+            return bone.get_bone_name() == name;
         }
     );
 
@@ -85,82 +85,71 @@ Bone* Animation::findBone(const std::string& name)
     return &(*iter);
 }
 
-double Animation::getTicksPerSecond()
+double Animation::get_ticks_per_second()
 {
-    return ticks_per_second;
+    return ticksPerSecond;
 }
 
-double Animation::getDuration()
+double Animation::get_duration()
 {
     return duration;
 }
 
-const AssimpNodeData& Animation::getRootNode()
+const AssimpNodeData& Animation::get_root_node()
 {
-    return root_node;
+    return rootNode;
 }
 
-const std::map<std::string, BoneInfo>& Animation::getBoneIDMap()
+const std::map<std::string, BoneInfo>& Animation::get_bone_id_map()
 {
-    return bone_info_map;
+    return boneInfoMap;
 }
 
-glm::mat4 ConvertMatrixToGLMFormat(const aiMatrix4x4& from)
-{
-    glm::mat4 to;
-    //the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
-    to[0][0] = from.a1; to[1][0] = from.a2; to[2][0] = from.a3; to[3][0] = from.a4;
-    to[0][1] = from.b1; to[1][1] = from.b2; to[2][1] = from.b3; to[3][1] = from.b4;
-    to[0][2] = from.c1; to[1][2] = from.c2; to[2][2] = from.c3; to[3][2] = from.c4;
-    to[0][3] = from.d1; to[1][3] = from.d2; to[2][3] = from.d3; to[3][3] = from.d4;
-    return to;
-}
-
-void Animation::readHeirarchyData(AssimpNodeData& dest, const aiNode* src)
+void Animation::_read_heirarchy_data(AssimpNodeData& dest, const aiNode* src)
 {
     // TODO: setup assertions along with project logger
     assert(src);
 
     dest.name = src->mName.data;
-    dest.child_count = src->mNumChildren;
+    dest.numChildren = src->mNumChildren;
     // manually cast assimp math type to glm
     dest.transform = assimp_converters::convert_matrix(src->mTransformation);
 
     for (unsigned int i = 0; i < src->mNumChildren; i++)
     {
-        AssimpNodeData new_data;
-        readHeirarchyData(new_data, src->mChildren[i]);
-        dest.children.push_back(new_data);
+        AssimpNodeData childData;
+        _read_heirarchy_data(childData, src->mChildren[i]);
+        dest.children.push_back(childData);
     }
 }
 
-void Animation::readMissingBones(const aiAnimation* animation, Model& model)
+void Animation::_read_missing_bones(const aiAnimation* animation, Model& model)
 {
     unsigned int size = animation->mNumChannels;
 
     // fetch references to model class to update
-    std::map<std::string, BoneInfo>& model_bone_info_map = model.getBoneInfoMap();
-    int& model_bone_count = model.getBoneCount();
+    std::map<std::string, BoneInfo>& model_boneInfoMap = model.get_bone_info_map();
+    int& model_boneCount = model.get_num_bones();
 
     for (unsigned int i = 0; i < size; i++)
     {
         aiNodeAnim* channel = animation->mChannels[i];
-        std::string bone_name = channel->mNodeName.data;
+        std::string boneName = channel->mNodeName.data;
 
-        if (model_bone_info_map.find(bone_name) == model_bone_info_map.end())
+        if (model_boneInfoMap.find(boneName) == model_boneInfoMap.end())
         {
-            model_bone_info_map[bone_name].ID = model_bone_count;
-            model_bone_count++;
+            model_boneInfoMap[boneName].id = model_boneCount;
+            model_boneCount++;
         }
 
         bones.push_back(
             Bone(channel->mNodeName.data,
-                model_bone_info_map[channel->mNodeName.data].ID,
+                model_boneInfoMap[channel->mNodeName.data].id,
                 channel)
         );
     }
 
-    bone_info_map = model_bone_info_map;
+    boneInfoMap = model_boneInfoMap;
 }
 
 #endif // ANIMATION_H

@@ -52,10 +52,10 @@ void main()
         model_to_bone += finalBonesMatrices[aBoneIDs[i]] * aBoneWeights[i];
     }
 
-    vec4 boned_pos = model_to_bone * vec4(aPos, 1.0);
+    vec4 bonedPos = model_to_bone * vec4(aPos, 1.0);
 
-    gl_Position = projection * world_to_view * model_to_world * boned_pos;
-    FragPos = vec3(model_to_world * boned_pos);
+    gl_Position = projection * world_to_view * model_to_world * bonedPos;
+    FragPos = vec3(model_to_world * bonedPos);
 
     TexCoord = aTexCoord;
     FragPosLightTransform = light_transform * vec4(FragPos, 1.0);

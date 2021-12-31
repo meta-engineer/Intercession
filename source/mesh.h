@@ -1,4 +1,3 @@
-
 #ifndef MESH_H
 #define MESH_H
 
@@ -20,11 +19,11 @@ struct Vertex
 {
     glm::vec3 position;
     glm::vec3 normal;
-    glm::vec2 tex_coord;
+    glm::vec2 texCoord;
     glm::vec3 tangent;
 
-    int bone_IDs[MAX_BONE_INFLUENCE];
-    float bone_weights[MAX_BONE_INFLUENCE];
+    int boneIds[MAX_BONE_INFLUENCE];
+    float boneWeights[MAX_BONE_INFLUENCE];
 };
 
 // these will be used as the prefix for shader Material struct members
@@ -57,7 +56,7 @@ std::string ENUM_TO_STR(TextureType t)
 }
 
 // what texture types will get gamma correction on model load
-bool TEXTURE_USE_GAMMA(TextureType t)
+bool DOES_TEXTURE_USE_GAMMA(TextureType t)
 {
     switch (t)
     {
@@ -85,7 +84,7 @@ class Mesh
     std::vector<unsigned int> indices;
     std::vector<Texture>      textures;
     // TODO: better texture managing to for different types (once all types are better understood)
-    Texture                   environment_map;
+    Texture                   environmentCubemap;
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
     // Mesh is not responsible for texture GPU memory! Caller is!
@@ -96,8 +95,8 @@ class Mesh
     void invoke_draw(ShaderManager& sm);
     void invoke_instanced_draw(ShaderManager& sm, size_t amount);
 
-    // set to 0 to ignore environment_map
-    void reset_environment_map(unsigned int new_cube_map_id = 0);
+    // set to 0 to ignore environmentCubemap
+    void reset_environment_cubemap(const unsigned int newCubemap_id = 0);
     // set attrib pointers for transform matrix starting at attrib location "offset"
     // Instance data Array Buffer MUST be bound already!
     void setup_instance_transform_attrib_array(unsigned int offset);
@@ -107,9 +106,9 @@ class Mesh
     unsigned int VAO_ID, VBO_ID, EBO_ID;
 
     // Store struct member data into GL objects and retain IDs
-    void setup();
+    void _setup();
 
-    void set_textures(ShaderManager& sm);
+    void _set_textures(ShaderManager& sm);
 };
 
 
@@ -118,8 +117,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     , indices(indices)
     , textures(textures)
 {
-    setup();
-    environment_map.id = 0;
+    _setup();
+    environmentCubemap.id = 0;
 }
 
 Mesh::~Mesh()
@@ -129,7 +128,7 @@ Mesh::~Mesh()
     glDeleteBuffers(1, &VAO_ID);
 }
 
-void Mesh::setup()
+void Mesh::_setup()
 {
     glGenVertexArrays(1, &VAO_ID);
     glBindVertexArray(VAO_ID);
@@ -151,17 +150,17 @@ void Mesh::setup()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     // vertex texture coords
     glEnableVertexAttribArray(2);	
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coord));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
     // vertex tangents
     glEnableVertexAttribArray(3);	
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
 
     // bone ids
     glEnableVertexAttribArray(4);
-    glVertexAttribIPointer(4, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, bone_IDs));
+    glVertexAttribIPointer(4, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, boneIds));
     // bone weights
     glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bone_weights));
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
 
     // clear binds
     glBindVertexArray(0);
@@ -171,7 +170,7 @@ void Mesh::setup()
 
 void Mesh::invoke_draw(ShaderManager& sm)
 {
-    set_textures(sm);
+    _set_textures(sm);
 
     glBindVertexArray(VAO_ID);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
@@ -181,20 +180,20 @@ void Mesh::invoke_draw(ShaderManager& sm)
 void Mesh::invoke_instanced_draw(ShaderManager& sm, size_t amount)
 {
     if (amount == 0) return;
-    set_textures(sm);
+    _set_textures(sm);
 
     glBindVertexArray(VAO_ID);
     glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, amount);
     glBindVertexArray(0);
 }
 
-void Mesh::set_textures(ShaderManager& sm)
+void Mesh::_set_textures(ShaderManager& sm)
 {
     // set as many texture units as available
-    unsigned int diffuse_index = 0;
-    unsigned int specular_index = 0;
-    unsigned int normal_index = 0;
-    unsigned int displace_index = 0;
+    unsigned int diffuseIndex = 0;
+    unsigned int specularIndex = 0;
+    unsigned int normalIndex = 0;
+    unsigned int displaceIndex = 0;
     unsigned int i = 0;
     for (; i < textures.size(); i++)
     {
@@ -205,18 +204,18 @@ void Mesh::set_textures(ShaderManager& sm)
         switch(textures[i].type)
         {
             case(TextureType::diffuse_map):
-                number = std::to_string(diffuse_index++);
+                number = std::to_string(diffuseIndex++);
                 break;
             case(TextureType::specular_map):
-                number = std::to_string(specular_index++);
+                number = std::to_string(specularIndex++);
                 break;
             case(TextureType::normal_map):
-                number = std::to_string(normal_index++);
-                sm.setBool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
+                number = std::to_string(normalIndex++);
+                sm.set_bool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             case(TextureType::displace_map):
-                number = std::to_string(displace_index++);
-                sm.setBool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
+                number = std::to_string(displaceIndex++);
+                sm.set_bool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             default:
                 std::cerr << "Mesh texture type " << ENUM_TO_STR(textures[i].type) << " not implemented; Ignoring..." << std::endl;
@@ -225,7 +224,7 @@ void Mesh::set_textures(ShaderManager& sm)
 
         // we set all textures as material.TYPE_X
         // so shader will have to use all textures in this form
-        sm.setInt("material." + ENUM_TO_STR(textures[i].type) + "_" + number, i);
+        sm.set_int("material." + ENUM_TO_STR(textures[i].type) + "_" + number, i);
     }
 
     // If a model has less than usual textures (i.e.no specular) it will use the last bound one.
@@ -233,44 +232,44 @@ void Mesh::set_textures(ShaderManager& sm)
     i++;
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, 0); // texture_id 0 should be black
-    if (diffuse_index == 0) {
-        sm.setInt("material." + ENUM_TO_STR(TextureType::diffuse_map) + "_0", i);
+    if (diffuseIndex == 0) {
+        sm.set_int("material." + ENUM_TO_STR(TextureType::diffuse_map) + "_0", i);
     }
-    if (specular_index == 0) {
-        sm.setInt("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
+    if (specularIndex == 0) {
+        sm.set_int("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
     }
-    if (normal_index == 0) {
-        sm.setBool("material.set_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
+    if (normalIndex == 0) {
+        sm.set_bool("material.set_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
         // sampler data does not ned to be cleared
     }
-    if (displace_index == 0) {
-        sm.setBool("material.set_" + ENUM_TO_STR(TextureType::displace_map) + "_0", false);
+    if (displaceIndex == 0) {
+        sm.set_bool("material.set_" + ENUM_TO_STR(TextureType::displace_map) + "_0", false);
         // sampler data does not ned to be cleared
     }
 
     // use explicit environment map if id is not default
-    if (environment_map.id != 0 && environment_map.type == TextureType::cube_map)
+    if (environmentCubemap.id != 0 && environmentCubemap.type == TextureType::cube_map)
     {
         i++;
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map.id);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
         // cube_maps (plural)
-        sm.setInt(ENUM_TO_STR(TextureType::cube_map), i);
-        sm.setBool("use_cube_map", true);
+        sm.set_int(ENUM_TO_STR(TextureType::cube_map), i);
+        sm.set_bool("use_cube_map", true);
     }
     else
     {
         // if not bind black texture (0) so NVIDIA is happy
-        sm.setInt(ENUM_TO_STR(TextureType::cube_map), i);
-        sm.setBool("use_cube_map", false);
+        sm.set_int(ENUM_TO_STR(TextureType::cube_map), i);
+        sm.set_bool("use_cube_map", false);
     }
 }
 
-void Mesh::reset_environment_map(unsigned int new_cube_map_id)
+void Mesh::reset_environment_cubemap(const unsigned int newCubemap_id)
 {
     // We don't own the gpu memory. No need to free.
-    environment_map.type = TextureType::cube_map;
-    environment_map.id = new_cube_map_id;
+    environmentCubemap.type = TextureType::cube_map;
+    environmentCubemap.id = newCubemap_id;
 }
 
 void Mesh::setup_instance_transform_attrib_array(unsigned int offset)

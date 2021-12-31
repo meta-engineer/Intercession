@@ -1,10 +1,9 @@
-
 #ifndef SKYBOX_VERTEX_GROUP_H
 #define SKYBOX_VERTEX_GROUP_H
 
 #include "vertex_group.h"
 
-float skybox_vertices[] = {
+const float SKYBOX_VERTICES[] = {
     // coordinates         
     -0.5f,  0.5f, -0.5f,
     -0.5f,  0.5f,  0.5f,
@@ -36,7 +35,7 @@ float skybox_vertices[] = {
     -0.5f, -0.5f, -0.5f,
      0.5f, -0.5f, -0.5f   // back
 };
-unsigned int skybox_indices[] = {
+const unsigned int SKYBOX_INDICES[] = {
     0,2,1,
     0,3,2,
 
@@ -55,7 +54,7 @@ unsigned int skybox_indices[] = {
     20,23,21,
     20,22,23
 };
-unsigned int skybox_attribs[] = {
+const unsigned int SKYBOX_ATTRIBS[] = {
     3
 };
 
@@ -64,9 +63,9 @@ class SkyboxVertexGroup : public VertexGroup
 {
   public:
     SkyboxVertexGroup()
-        : VertexGroup(skybox_vertices, sizeof(skybox_vertices), // These are SIZE of the arrays data (bytes)
-            skybox_indices, sizeof(skybox_indices),
-            skybox_attribs, sizeof(skybox_attribs))
+        : VertexGroup(SKYBOX_VERTICES, sizeof(SKYBOX_VERTICES), // These are SIZE of the arrays data (bytes)
+            SKYBOX_INDICES, sizeof(SKYBOX_INDICES),
+            SKYBOX_ATTRIBS, sizeof(SKYBOX_ATTRIBS))
     {}
 };
 
