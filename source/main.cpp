@@ -121,60 +121,6 @@ void process_input(GLFWwindow *window, double deltaTime)
         showShadowMap = !showShadowMap;
 }
 
-unsigned int load_gl_cubemap_texture(std::vector<std::string> filenames, bool gammaCorrect = true)
-{
-    unsigned int texture_id;
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
-
-    // options for cube_maps
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    // data
-    int texWidth, texHeight, texChannels;
-    for (unsigned int i = 0; i < std::min(filenames.size(), (size_t)6); i++)
-    {
-        unsigned char *texData = stbi_load(filenames[i].c_str(), &texWidth, &texHeight, &texChannels, 0);
-        if (texData)
-        {
-            GLenum internalFormat;
-            GLenum dataFormat;
-            if (texChannels == 3)
-            {
-                internalFormat = gammaCorrect ? GL_SRGB : GL_RGB;
-                dataFormat = GL_RGB;
-            }
-            else if (texChannels == 4)
-            {
-                internalFormat = gammaCorrect ? GL_SRGB_ALPHA : GL_RGBA;
-                dataFormat = GL_RGBA;
-            }
-            else // if (texChannels == 1)
-            {
-                internalFormat = dataFormat = GL_RED;
-            }
-
-            glTexImage2D(
-                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-                0, internalFormat, texWidth, texHeight, 0, dataFormat, GL_UNSIGNED_BYTE, texData
-            );
-        }
-        else
-        {
-            std::cerr << "MODEL::load_gl_texture Failed to load texture: " << filenames[i] << std::endl;
-        }
-        stbi_image_free(texData);
-    }
-
-    // clear
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    return texture_id;
-}
-
 int main(int argc, char** argv) {
     std::cout << argv[0] << " Version " << BUILD_VERSION_MAJOR << "." << BUILD_VERSION_MINOR << std::endl;
 #if defined(_DEBUG)
@@ -455,7 +401,7 @@ int main(int argc, char** argv) {
         "resources/lake_skybox/front.jpg",
         "resources/lake_skybox/back.jpg"
     };
-    unsigned int skyboxTexture_id = load_gl_cubemap_texture(skyboxFilenames);
+    unsigned int skyboxTexture_id = Model::load_gl_cubemap_texture(skyboxFilenames);
     skybox_sm.activate();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture_id);
@@ -712,8 +658,8 @@ int main(int argc, char** argv) {
     // TODO: build encapsulated light objects
 
     // TODO: build shadow map into optional member of light objects
-    unsigned int shadowMapFBO_ID;
-    glGenFramebuffers(1, &shadowMapFBO_ID);
+    unsigned int SHADOW_MAP_FBO_ID;
+    glGenFramebuffers(1, &SHADOW_MAP_FBO_ID);
     const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     sun_cm.set_view_width(SHADOW_WIDTH);
     sun_cm.set_view_height(SHADOW_HEIGHT);
@@ -740,7 +686,7 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
     // we create a texture with GL_DEPTH_COMPONENT instead and *then* we can use dept attachment, duh!
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, SHADOW_MAP_FBO_ID);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMap_id, 0);
     glDrawBuffer(GL_NONE);  // these let us draw without color
     glReadBuffer(GL_NONE);  // so the fbo doesn't think its incomplete
@@ -752,9 +698,9 @@ int main(int argc, char** argv) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // *************** OMnidirectional Shadow Map Objects ******************
-    unsigned int shadowCubemapFBO_ID;
-    glGenFramebuffers(1, &shadowCubemapFBO_ID);
+    // *************** Omnidirectional Shadow Map Objects ******************
+    unsigned int SHADOW_CUBEMAP_FBO_ID;
+    glGenFramebuffers(1, &SHADOW_CUBEMAP_FBO_ID);
     // dimensions of the cube faces
     const unsigned int SHADOW_CUBE_WIDTH = 1024, SHADOW_CUBE_HEIGHT = 1024;
     light_cm.set_view_width(SHADOW_CUBE_WIDTH);
@@ -798,7 +744,7 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
     // attach the entire cubemap to the rbo
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowCubemapFBO_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, SHADOW_CUBEMAP_FBO_ID);
     // note not Texture2D
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowCubemap_id, 0);
     glDrawBuffer(GL_NONE);  // these let us draw without color
@@ -812,41 +758,41 @@ int main(int argc, char** argv) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Deferred shading framebuffer
-    unsigned int gFBO_ID;
-    glGenFramebuffers(1, &gFBO_ID);
-    glBindFramebuffer(GL_FRAMEBUFFER, gFBO_ID);
-    unsigned int gPosition_ID, gNormal_ID, gColorSpec_ID;
+    unsigned int GEOM_FBO_ID;
+    glGenFramebuffers(1, &GEOM_FBO_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, GEOM_FBO_ID);
+    unsigned int gPosition_id, gNormal_id, gColorSpec_id;
 
-    glGenTextures(1, &gPosition_ID);
-    glBindTexture(GL_TEXTURE_2D, gPosition_ID);
+    glGenTextures(1, &gPosition_id);
+    glBindTexture(GL_TEXTURE_2D, gPosition_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition_ID, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition_id, 0);
 
-    glGenTextures(1, &gNormal_ID);
-    glBindTexture(GL_TEXTURE_2D, gNormal_ID);
+    glGenTextures(1, &gNormal_id);
+    glBindTexture(GL_TEXTURE_2D, gNormal_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal_ID, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal_id, 0);
 
-    glGenTextures(1, &gColorSpec_ID);
-    glBindTexture(GL_TEXTURE_2D, gColorSpec_ID);
+    glGenTextures(1, &gColorSpec_id);
+    glBindTexture(GL_TEXTURE_2D, gColorSpec_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cm.get_view_width(), cm.get_view_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec_ID, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec_id, 0);
 
-    unsigned int GBO_attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, GBO_attachments);
+    unsigned int GEOM_FBO_attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, GEOM_FBO_attachments);
 
     // still need a depth buffer
-    unsigned int gRBO_ID;
-    glGenRenderbuffers(1, &gRBO_ID);
-    glBindRenderbuffer(GL_RENDERBUFFER, gRBO_ID);
+    unsigned int GEOM_RBO_ID;
+    glGenRenderbuffers(1, &GEOM_RBO_ID);
+    glBindRenderbuffer(GL_RENDERBUFFER, GEOM_RBO_ID);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, cm.get_view_width(), cm.get_view_height());
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gRBO_ID);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, GEOM_RBO_ID);
     
     // check frambuffer
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -916,7 +862,7 @@ int main(int argc, char** argv) {
         shadowMapInstances_sm.set_mat4("projection", sun_cm.get_projection());
 
         glViewport(0,0, SHADOW_WIDTH,SHADOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO_ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, SHADOW_MAP_FBO_ID);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         // TODO: use scene pipeline to render required entities
@@ -943,7 +889,7 @@ int main(int argc, char** argv) {
             shadowCubemapInstances_sm.set_mat4("omniLightTransforms[" + std::to_string(i) + "]", omniLightTransforms[i]);
         
         glViewport(0,0, SHADOW_CUBE_WIDTH,SHADOW_CUBE_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, shadowCubemapFBO_ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, SHADOW_CUBEMAP_FBO_ID);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );//| GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -961,7 +907,7 @@ int main(int argc, char** argv) {
         // ***** test deferred rendering *****
         // NO BLENDING FOR SOLID GEOMETRY
         glDisable(GL_BLEND);
-        glBindFramebuffer(GL_FRAMEBUFFER, gFBO_ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, GEOM_FBO_ID);
         glViewport(0,0, cm.get_view_width(),cm.get_view_height());
         // AHHHHH MUST CLEAR 0's (black) for GEOMETRY PASS
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1013,22 +959,22 @@ int main(int argc, char** argv) {
         deferredLighting_sm.set_bool("environmentCubemap_enable", true);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gPosition_ID);
+        glBindTexture(GL_TEXTURE_2D, gPosition_id);
         deferredLighting_sm.set_int("GPosition", 0);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, gNormal_ID);
+        glBindTexture(GL_TEXTURE_2D, gNormal_id);
         deferredLighting_sm.set_int("GNormal", 1);
         glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, gColorSpec_ID);
+        glBindTexture(GL_TEXTURE_2D, gColorSpec_id);
         deferredLighting_sm.set_int("GColorSpec", 2);
         screenPlane.invoke_draw();
 
 
         //NOTE: if we want to draw to another buffer (ex: FBO_ID, if we weren't doing post-processing)
-        //  we would have to blit the depth buffer bit from gFBO_ID to FBO_ID (see the deffered-shading page)
+        //  we would have to blit the depth buffer bit from GEOM_FBO_ID to FBO_ID (see the deffered-shading page)
         //  it doesn't seem to work for my gpus/fbos
         glEnable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, gFBO_ID);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, GEOM_FBO_ID);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO_ID); // write to lighting
         glBlitFramebuffer(
         0, 0, cm.get_view_width(), cm.get_view_height(), 0, 0, cm.get_view_width(), cm.get_view_height(), GL_DEPTH_BUFFER_BIT, GL_NEAREST

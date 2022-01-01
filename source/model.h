@@ -39,7 +39,9 @@ class Model
     // set all child meshes to have a mat4 attrib from location = offset to offset+4
     void setup_all_instance_transform_attrib_arrays(unsigned int offset);
 
+    // TODO: move these loaders to a RenderDynamo component
     static unsigned int load_gl_texture(std::string filename, const std::string& path = "", bool gammaCorrect = true);
+    static unsigned int load_gl_cubemap_texture(std::vector<std::string> filenames, bool gammaCorrect = true);
 
     std::map<std::string, BoneInfo>& get_bone_info_map();
     int& get_num_bones();
@@ -343,6 +345,59 @@ unsigned int Model::load_gl_texture(std::string filename, const std::string& pat
     return texture_id;
 }
 
+unsigned int Model::load_gl_cubemap_texture(std::vector<std::string> filenames, bool gammaCorrect)
+{
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+
+    // options for cube_maps
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    // data
+    int texWidth, texHeight, texChannels;
+    for (unsigned int i = 0; i < std::min(filenames.size(), (size_t)6); i++)
+    {
+        unsigned char *texData = stbi_load(filenames[i].c_str(), &texWidth, &texHeight, &texChannels, 0);
+        if (texData)
+        {
+            GLenum internalFormat;
+            GLenum dataFormat;
+            if (texChannels == 3)
+            {
+                internalFormat = gammaCorrect ? GL_SRGB : GL_RGB;
+                dataFormat = GL_RGB;
+            }
+            else if (texChannels == 4)
+            {
+                internalFormat = gammaCorrect ? GL_SRGB_ALPHA : GL_RGBA;
+                dataFormat = GL_RGBA;
+            }
+            else // if (texChannels == 1)
+            {
+                internalFormat = dataFormat = GL_RED;
+            }
+
+            glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                0, internalFormat, texWidth, texHeight, 0, dataFormat, GL_UNSIGNED_BYTE, texData
+            );
+        }
+        else
+        {
+            std::cerr << "MODEL::load_gl_texture Failed to load texture: " << filenames[i] << std::endl;
+        }
+        stbi_image_free(texData);
+    }
+
+    // clear
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    return texture_id;
+}
 
 std::map<std::string, BoneInfo>& Model::get_bone_info_map()
 {
