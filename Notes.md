@@ -77,7 +77,7 @@ google uses lower_with_under for variables
 iso uses lower_with_under for variables and functions
 
 stroustrup uses lower_with_under for variables and functions
-    but Proper_With_Underscores for classes??
+    but Pascal_With_Underscores for classes??
 
 Here's what I'm thinking:
 
@@ -105,6 +105,10 @@ but are not really const, only gl functions should be managing them.
     change-of-basis matricies can use x_to_y for readability when chaining transforms together
 
 GLSL naming:
+    attributes are camelCase with "a" prefix
+    out variables are PascalCase (why? to denote them as the important "return" values for that shader)
+
+    ill leave material names for the learnOpenGL shader structs as they are, because they'll likely be changing in future anyway.
 
 
 ## Using opengl/glfw

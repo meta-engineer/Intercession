@@ -12,16 +12,16 @@ struct Material {
     sampler2D   diffuse_map_0;
     sampler2D   specular_map_0;
     
-    bool        set_normal_map_0;
+    bool        enable_normal_map_0;
     sampler2D   normal_map_0;
 
-    bool        set_displace_map_0;
+    bool        enable_displace_map_0;
     sampler2D   displace_map_0;
 };
 
 uniform vec3 viewPos;
 uniform Material material;
-uniform float height_scale = 0.1;
+uniform float heightMapScale = 0.1;
 
 vec2 DisplaceMapping(vec2 texCoords, vec3 viewDir);
 
@@ -30,7 +30,7 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 tangentViewDir = normalize(TBN * viewDir);
     vec2 remappedTexCoord = TexCoord;
-    if (material.set_displace_map_0)
+    if (material.enable_displace_map_0)
     {
         remappedTexCoord = DisplaceMapping(TexCoord, tangentViewDir);
         if(remappedTexCoord.x > 1.0 || remappedTexCoord.y > 1.0 || remappedTexCoord.x < 0.0 || remappedTexCoord.y < 0.0)
@@ -43,7 +43,7 @@ void main()
     GPosition = FragPos;
 
     GNormal = Normal;
-    if (material.set_normal_map_0)
+    if (material.enable_normal_map_0)
     {
         GNormal = texture(material.normal_map_0, remappedTexCoord).xyz;
         GNormal = (2.0 * GNormal - vec3(1.0));
@@ -66,7 +66,7 @@ vec2 DisplaceMapping(vec2 texCoords, vec3 viewDir)
     // depth of current layer
     float currentLayerDepth = 0.0;
     // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 P = viewDir.xy / viewDir.z * height_scale; 
+    vec2 P = viewDir.xy / viewDir.z * heightMapScale; 
     vec2 deltaTexCoords = P / numLayers;
   
     // get initial values

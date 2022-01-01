@@ -6,7 +6,7 @@ layout (location = 2) in vec2 aTexCoord;
 // std140 is a standard byte layout for the struct
 // The aligned byte offset of a variable must be a multiple of its base alignment (size)
 // mat4's are an array of 4 vec4's so it must be on a multiple of 16
-layout (std140) uniform view_transforms
+layout (std140) uniform viewTransforms
 {
     mat4 world_to_view;     // offset  0 bytes, size 64 bytes
     mat4 projection;        // offset 64 bytes, size 64 bytes

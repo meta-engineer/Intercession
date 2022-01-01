@@ -2,7 +2,7 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices=18) out;
 
-uniform mat4 omni_light_transforms[6];
+uniform mat4 omniLightTransforms[6];
 
 out vec4 FragPos; // FragPos from GS (output per emitvertex)
 
@@ -14,7 +14,7 @@ void main()
         for(int i = 0; i < 3; ++i) // for each triangle vertex
         {
             FragPos = gl_in[i].gl_Position;
-            gl_Position = omni_light_transforms[face] * FragPos;
+            gl_Position = omniLightTransforms[face] * FragPos;
             EmitVertex();
         }
         EndPrimitive();

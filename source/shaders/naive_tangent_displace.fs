@@ -3,7 +3,7 @@ out vec4 FragColor;
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
-in vec4 FragPosLightTransform;
+in vec4 FragPosLightSpace_Ray_0;
 in mat3 TBN;
 
 // All textures must be in the single Material instance "material"
@@ -14,10 +14,10 @@ struct Material {
     //float       shininess;
 
     // optionally select normal map if available
-    bool        set_normal_map_0;
+    bool        enable_normal_map_0;
     sampler2D   normal_map_0;
 
-    bool        set_displace_map_0;
+    bool        enable_displace_map_0;
     sampler2D   displace_map_0;
 };
 
@@ -53,40 +53,40 @@ struct SpotLight {
 uniform vec3 viewPos;
 uniform Material material;
 uniform float gamma = 2.2;
-uniform float height_scale = 0.1;
+uniform float heightMapScale = 0.1;
 // TODO: shadow map matches to rLights[0] only right now
-uniform sampler2DShadow shadow_map;
-//uniform sampler2D shadow_map;
+uniform sampler2DShadow shadowMap_ray_0;
+//uniform sampler2D shadowMap_ray_0;
 
 // TODO: shadow sube map matches to pLights[0]
-uniform samplerCubeShadow shadow_cube_map;
-//uniform samplerCube shadow_cube_map;
-uniform float light_far_plane;
+uniform samplerCubeShadow shadowCubemap_point_0;
+//uniform samplerCube shadowCubemap_point_0;
+uniform float shadowFarPlane_point_0;
 
 // NVIDIA throws if there is an uninitialized cubemap
 // so assume only ever 1 environment map
-uniform bool use_cube_map;
-uniform samplerCube cube_map;
+uniform bool environmentCubemap_enable;
+uniform samplerCube environmentCubemap;
 
 #define MAX_RAY_LIGHTS 1
-uniform int num_ray_lights;
+uniform int numRayLights;
 uniform RayLight rLights[MAX_RAY_LIGHTS];
 
 #define MAX_POINT_LIGHTS 4
-uniform int num_point_lights;
+uniform int numPointLights;
 uniform PointLight pLights[MAX_POINT_LIGHTS];
 
 #define MAX_SPOT_LIGHTS 2
-uniform int num_spot_lights;
+uniform int numSpotLights;
 uniform SpotLight sLights[MAX_SPOT_LIGHTS];
 
-vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample, int shadowMapIndex);
-vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
-vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
-vec3 CalcSkyboxReflection(vec3 reflectSample, vec3 norm);
+vec3 calc_ray_light(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample, int shadowMapIndex);
+vec3 calc_point_light(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 calc_spot_light(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 calc_skybox_reflection(vec3 reflectSample, vec3 norm);
 
-float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm);
-float OmniShadowCalculation(vec3 fragPos, PointLight pLight);
+float frustrum_shadow_calculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 fragNorm);
+float omni_shadow_calculation(vec3 fragPos, PointLight pLight);
 
 vec2 DisplaceMapping(vec2 texCoords, vec3 viewDir);
 
@@ -95,7 +95,7 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 tangentViewDir = normalize(TBN * viewDir);
     vec2 remappedTexCoord = TexCoord;
-    if (material.set_displace_map_0)
+    if (material.enable_displace_map_0)
     {
         remappedTexCoord = DisplaceMapping(TexCoord, tangentViewDir);
         if(remappedTexCoord.x > 1.0 || remappedTexCoord.y > 1.0 || remappedTexCoord.x < 0.0 || remappedTexCoord.y < 0.0)
@@ -109,7 +109,7 @@ void main()
 
     // use surface normal
     vec3 norm = Normal;
-    if (material.set_normal_map_0)
+    if (material.enable_normal_map_0)
     {
         // texture values should be in range [0,1]
         norm = texture(material.normal_map_0, remappedTexCoord).xyz;
@@ -124,22 +124,22 @@ void main()
     
     // no shininess from model imports so we'll generate a makeshift one for now
     // + 1 to avoid zeroing FragColor. color of (0.5, 0.5, 0.5) should be about 32? so factor of 15?
-    float blinn_ratio = 8;
-    float textureGloss = 16 * blinn_ratio;//textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 20;
+    float blinnRatio = 8;
+    float textureGloss = 16 * blinnRatio;//textureSpecular.x + textureSpecular.y + textureSpecular.z + 1* 20;
 
     // clamp ambient to highest single ambient source?
     vec3 outColor = vec3(0.0);
 
-    for (int i = 0; i < min(num_ray_lights, MAX_RAY_LIGHTS); i++)
-        outColor += CalcRayLight(rLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss, 0);
-    for (int i = 0; i < min(num_point_lights, MAX_POINT_LIGHTS); i++)
-        outColor += CalcPointLight(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
-    for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
-        outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    for (int i = 0; i < min(numRayLights, MAX_RAY_LIGHTS); i++)
+        outColor += calc_ray_light(rLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss, 0);
+    for (int i = 0; i < min(numPointLights, MAX_POINT_LIGHTS); i++)
+        outColor += calc_point_light(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    for (int i = 0; i < min(numSpotLights, MAX_SPOT_LIGHTS); i++)
+        outColor += calc_spot_light(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     
-    if (use_cube_map == true)
+    if (environmentCubemap_enable == true)
     {
-        outColor += CalcSkyboxReflection(textureSpecular, norm);
+        outColor += calc_skybox_reflection(textureSpecular, norm);
     }
 
     // NOTE: this should not be further post-processed once gamma-corrected
@@ -147,7 +147,7 @@ void main()
     FragColor = vec4(outColor, textureDiffuse4.a);
 }
 
-vec3 CalcSkyboxReflection(vec3 reflectSample, vec3 norm)
+vec3 calc_skybox_reflection(vec3 reflectSample, vec3 norm)
 {
     vec3 I = normalize(FragPos - viewPos);
     // reflection
@@ -155,10 +155,10 @@ vec3 CalcSkyboxReflection(vec3 reflectSample, vec3 norm)
     // refraction
     //vec3 R = refract(I, normalize(norm), 1.00/1.52); // air to glass ratio
 
-    return texture(cube_map, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
+    return texture(environmentCubemap, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
 }
 
-vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample, int shadowMapIndex)
+vec3 calc_ray_light(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample, int shadowMapIndex)
 {
     // no attenuation needed
     vec3 ambient = rLight.ambient * diffuseSample;
@@ -173,13 +173,13 @@ vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, 
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample );
     vec3 specular = rLight.specular * spec * specularSample;
 
-    // only 1 shadow_map so don't use index
-    float shadow = ShadowCalculation(FragPosLightTransform, lightDir, norm);
+    // only 1 shadowMap_ray_0 so don't use index
+    float shadow = frustrum_shadow_calculation(FragPosLightSpace_Ray_0, lightDir, norm);
 
     return (ambient + (1.0-shadow) * (diffuse + specular));
 }
 
-vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
+vec3 calc_point_light(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
 {
     // distance factor
     float dist = length(pLight.position - FragPos);
@@ -199,12 +199,12 @@ vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSamp
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample ); //material.shininess);
     vec3 specular = pLight.specular * spec * specularSample * falloff;
 
-    float shadow = OmniShadowCalculation(FragPos, pLight);
+    float shadow = omni_shadow_calculation(FragPos, pLight);
 
     return (ambient + (1.0-shadow) * (diffuse + specular));
 }
 
-vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
+vec3 calc_spot_light(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
 {
     float dist = length(sLight.position - FragPos);
     float falloff = 1 / (sLight.attenuation.x + sLight.attenuation.y * dist + sLight.attenuation.z * (dist*dist));
@@ -231,10 +231,10 @@ vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample
 }
 
 // TODO: separate this into different functions for each technique
-float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
+float frustrum_shadow_calculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 fragNorm)
 {
     // perspective divide (match to virtual screen)
-    vec3 projCoord = lightFragPos.xyz / lightFragPos.w;
+    vec3 projCoord = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] NDC
     projCoord = projCoord * 0.5 + 0.5;
     // values outside far plane always in lights
@@ -249,10 +249,10 @@ float ShadowCalculation(vec4 lightFragPos, vec3 lightDir, vec3 fragNorm)
 
     // extra multisampling
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadow_map, 0);
+    vec2 texelSize = 1.0 / textureSize(shadowMap_ray_0, 0);
 
     // ***** single texel sampler2DShadow sampling that spot on shadow map *****
-    shadow = texture(shadow_map, projCoord-bias);
+    shadow = texture(shadowMap_ray_0, projCoord-bias);
     
     return 1.0 - shadow;
 }
@@ -266,7 +266,7 @@ vec3 sampleOffsetDirections[20] = vec3[]
    vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
 );  
 
-float OmniShadowCalculation(vec3 fragPos, PointLight pLight)
+float omni_shadow_calculation(vec3 fragPos, PointLight pLight)
 {
     vec3 lightToFrag = fragPos - pLight.position;
     float currentDepth = length(lightToFrag);
@@ -274,7 +274,7 @@ float OmniShadowCalculation(vec3 fragPos, PointLight pLight)
     float bias = 0.05;
 
     // ***** single texel samplerCubeShadow sampling that spot on shadow cube map *****
-    float shadow = texture(shadow_cube_map, vec4(lightToFrag, (currentDepth-bias) / light_far_plane));
+    float shadow = texture(shadowCubemap_point_0, vec4(lightToFrag, (currentDepth-bias) / shadowFarPlane_point_0));
 
     return 1.0 - shadow;
 }
@@ -290,7 +290,7 @@ vec2 DisplaceMapping(vec2 texCoords, vec3 viewDir)
     // depth of current layer
     float currentLayerDepth = 0.0;
     // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 P = viewDir.xy / viewDir.z * height_scale; 
+    vec2 P = viewDir.xy / viewDir.z * heightMapScale; 
     vec2 deltaTexCoords = P / numLayers;
   
     // get initial values

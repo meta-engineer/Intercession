@@ -211,11 +211,11 @@ void Mesh::_set_textures(ShaderManager& sm)
                 break;
             case(TextureType::normal_map):
                 number = std::to_string(normalIndex++);
-                sm.set_bool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
+                sm.set_bool("material.enable_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             case(TextureType::displace_map):
                 number = std::to_string(displaceIndex++);
-                sm.set_bool("material.set_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
+                sm.set_bool("material.enable_" + ENUM_TO_STR(textures[i].type) + "_" + number, true);
                 break;
             default:
                 std::cerr << "Mesh texture type " << ENUM_TO_STR(textures[i].type) << " not implemented; Ignoring..." << std::endl;
@@ -239,11 +239,11 @@ void Mesh::_set_textures(ShaderManager& sm)
         sm.set_int("material." + ENUM_TO_STR(TextureType::specular_map) + "_0", i);
     }
     if (normalIndex == 0) {
-        sm.set_bool("material.set_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
+        sm.set_bool("material.enable_" + ENUM_TO_STR(TextureType::normal_map) + "_0", false);
         // sampler data does not ned to be cleared
     }
     if (displaceIndex == 0) {
-        sm.set_bool("material.set_" + ENUM_TO_STR(TextureType::displace_map) + "_0", false);
+        sm.set_bool("material.enable_" + ENUM_TO_STR(TextureType::displace_map) + "_0", false);
         // sampler data does not ned to be cleared
     }
 
@@ -254,14 +254,14 @@ void Mesh::_set_textures(ShaderManager& sm)
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
         // cube_maps (plural)
-        sm.set_int(ENUM_TO_STR(TextureType::cube_map), i);
-        sm.set_bool("use_cube_map", true);
+        sm.set_int("environmentCubemap", i);
+        sm.set_bool("environmentCubemap_enable", true);
     }
     else
     {
         // if not bind black texture (0) so NVIDIA is happy
-        sm.set_int(ENUM_TO_STR(TextureType::cube_map), i);
-        sm.set_bool("use_cube_map", false);
+        sm.set_int("environmentCubemap", i);
+        sm.set_bool("environmentCubemap_enable", false);
     }
 }
 

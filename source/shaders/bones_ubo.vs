@@ -10,7 +10,7 @@ layout (location = 5) in vec4 aBoneWeights;
 //  In the base of instace with no bones, locations 4 & 5 will be blank
 //  Hopefully this doesn't have a performance impact if they're not packed well
 
-layout (std140) uniform view_transforms
+layout (std140) uniform viewTransforms
 {
     mat4 world_to_view;     // offset  0 bytes, size 64 bytes
     mat4 projection;        // offset 64 bytes, size 64 bytes
@@ -23,12 +23,12 @@ const int MAX_BONE_INFLUENCE = 4;       // because we use a vec4
 uniform mat4 finalBonesMatrices[MAX_BONES];
 
 // TODO: dealing with multiple light transforms
-uniform mat4 light_transform;
+uniform mat4 lightTransform_ray_0;
 
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoord;
-out vec4 FragPosLightTransform;
+out vec4 FragPosLightSpace_Ray_0;
 out mat3 TBN;
 
 void main()
@@ -58,7 +58,7 @@ void main()
     FragPos = vec3(model_to_world * bonedPos);
 
     TexCoord = aTexCoord;
-    FragPosLightTransform = light_transform * vec4(FragPos, 1.0);
+    FragPosLightSpace_Ray_0 = lightTransform_ray_0 * vec4(FragPos, 1.0);
     
     mat3 normalMatrix = transpose(inverse(mat3(model_to_world)));
     Normal = normalize(normalMatrix * aNorm);

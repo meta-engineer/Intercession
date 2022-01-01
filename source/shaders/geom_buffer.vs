@@ -5,7 +5,7 @@ layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec3 aTangent;
 
 
-layout (std140) uniform view_transforms
+layout (std140) uniform viewTransforms
 {
     mat4 world_to_view;     // offset  0 bytes, size 64 bytes
     mat4 projection;        // offset 64 bytes, size 64 bytes

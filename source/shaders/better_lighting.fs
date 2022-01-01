@@ -46,25 +46,25 @@ uniform Material material;
 
 // NVIDIA throws if there is an uninitialized cubemap
 // so assume only ever 1 environment map
-uniform bool use_cube_map;
-uniform samplerCube cube_map;
+uniform bool environmentCubemap_enable;
+uniform samplerCube environmentCubemap;
 
 #define MAX_RAY_LIGHTS 1
-uniform int num_ray_lights;
+uniform int numRayLights;
 uniform RayLight rLights[MAX_RAY_LIGHTS];
 
 #define MAX_POINT_LIGHTS 4
-uniform int num_point_lights;
+uniform int numPointLights;
 uniform PointLight pLights[MAX_POINT_LIGHTS];
 
 #define MAX_SPOT_LIGHTS 2
-uniform int num_spot_lights;
+uniform int numSpotLights;
 uniform SpotLight sLights[MAX_SPOT_LIGHTS];
 
-vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
-vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
-vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
-vec3 CalcSkyboxReflection(vec3 reflectSample);
+vec3 calc_ray_light(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 calc_point_light(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 calc_spot_light(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample);
+vec3 calc_skybox_reflection(vec3 reflectSample);
 
 void main()
 {
@@ -85,22 +85,22 @@ void main()
     // clamp ambient to highest single ambient source?
     vec3 outColor = vec3(0.0);
 
-    for (int i = 0; i < min(num_ray_lights, MAX_RAY_LIGHTS); i++)
-        outColor += CalcRayLight(rLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
-    for (int i = 0; i < min(num_point_lights, MAX_POINT_LIGHTS); i++)
-        outColor += CalcPointLight(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
-    for (int i = 0; i < min(num_spot_lights, MAX_SPOT_LIGHTS); i++)
-        outColor += CalcSpotLight(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    for (int i = 0; i < min(numRayLights, MAX_RAY_LIGHTS); i++)
+        outColor += calc_ray_light(rLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    for (int i = 0; i < min(numPointLights, MAX_POINT_LIGHTS); i++)
+        outColor += calc_point_light(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+    for (int i = 0; i < min(numSpotLights, MAX_SPOT_LIGHTS); i++)
+        outColor += calc_spot_light(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     
-    if (use_cube_map == true)
+    if (environmentCubemap_enable == true)
     {
-        outColor += CalcSkyboxReflection(textureSpecular);
+        outColor += calc_skybox_reflection(textureSpecular);
     }
 
     FragColor = vec4(outColor, textureDiffuse4.a);
 }
 
-vec3 CalcSkyboxReflection(vec3 reflectSample)
+vec3 calc_skybox_reflection(vec3 reflectSample)
 {
     vec3 I = normalize(FragPos - viewPos);
     // reflection
@@ -108,11 +108,11 @@ vec3 CalcSkyboxReflection(vec3 reflectSample)
     // refraction
     //vec3 R = refract(I, normalize(Normal), 1.00/1.52); // air to glass ratio
 
-    return texture(cube_map, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
+    return texture(environmentCubemap, R).xyz * (reflectSample.x + reflectSample.y, reflectSample.z)/3;
 
 }
 
-vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
+vec3 calc_ray_light(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
 {
     // no attenuation needed
     vec3 ambient = rLight.ambient * diffuseSample;
@@ -129,7 +129,7 @@ vec3 CalcRayLight(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, 
     return (ambient + diffuse + specular);
 }
 
-vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
+vec3 calc_point_light(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
 {
     // distance factor
     float dist = length(pLight.position - FragPos);
@@ -151,7 +151,7 @@ vec3 CalcPointLight(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSamp
     return (ambient + diffuse + specular);
 }
 
-vec3 CalcSpotLight(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
+vec3 calc_spot_light(SpotLight sLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample)
 {
     float dist = length(sLight.position - FragPos);
     float falloff = 1 / (sLight.attenuation.x + sLight.attenuation.y * dist + sLight.attenuation.z * (dist*dist));

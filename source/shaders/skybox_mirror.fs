@@ -5,7 +5,7 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 uniform vec3 viewPos;
-uniform samplerCube cube_map;
+uniform samplerCube environmentCubemap;
 
 void main()
 {
@@ -15,5 +15,5 @@ void main()
     // refraction
     //vec3 R = refract(I, normalize(Normal), 1.00/1.52); // air to glass ratio
 
-    FragColor = vec4(texture(cube_map, R).xyz, 1.0);
+    FragColor = vec4(texture(environmentCubemap, R).xyz, 1.0);
 }
