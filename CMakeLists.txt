@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19.1)
 
-project(INTERCESSION VERSION 0.1)
+project(INTERCESSION VERSION 0.2)
 
 # use known executable name to be linked to by sub-libraries
 # update source)files.cmake with everything to compile

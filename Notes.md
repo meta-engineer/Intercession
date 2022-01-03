@@ -111,6 +111,23 @@ GLSL naming:
     ill leave material names for the learnOpenGL shader structs as they are, because they'll likely be changing in future anyway.
 
 
+## Application Architecture
+
+core/   : app/architecture components
+render/ : render dynamo/relays
+cosmos/ : ECS and world logic
+net/    : networking tools
+
+AppConfigBuilder:
+ provide functions to create specific subclass of abstract ones
+ (WindowApi -> GlfwWindowApi, RenderDynamo -> OpenGlRenderDynamo)
+
+top level AppGateway class:
+ creates WindowApi (provides generic equivalents of glfw calls)
+ passes WindowApi to CosmosManager
+ passes control to CosmosManager (main game loop)
+
+
 ## Using opengl/glfw
 
 https://learnopengl.com/
