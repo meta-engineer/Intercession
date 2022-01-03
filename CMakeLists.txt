@@ -42,4 +42,4 @@ add_subdirectory(external)
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(FILES "${PROJECT_BINARY_DIR}/source/build_config.h" DESTINATION include)
 # packaging includes & options
-add_subdirectory(package)
+add_subdirectory(packaging)

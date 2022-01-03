@@ -1,7 +1,7 @@
 #!/bin/bash
 # package, and move package to root
 
-cd D:/Projects/Programs/OpenGL_2021
+cd D:/Projects/Programs/Intercession
 # release_build_cmake.sh must have been run
 if [ ! -d "./build/Release" ]
 then
@@ -9,10 +9,9 @@ then
     exit 1
 fi
 
-cmake --build build --config Release
 cd build
 cpack
 cd ..
 
-mv build/EIDOLON-installer.exe EIDOLON-installer.exe
+mv build/INTERCESSION-installer.exe INTERCESSION-installer.exe
 echo "****** Moved installer to $PWD"

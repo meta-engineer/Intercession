@@ -48,8 +48,8 @@ This section needs further thought: How to propagate dynamic objects states into
 ## System Architecture
 Entry point is main.cpp::main() which parses commandline args, builds and runs the app root AppGateway.
 
-AppGateway manages external system resource apis (windowing, audio, networking) and owns the CosmosManager.
+AppGateway manages external system resource apis (windowing, audio, networking) and owns the CosmosContext.
 
-CosmosManager uses the apis to contruct dynamos which are business logic systems a cosmos would need.
+CosmosContext uses the apis to contruct dynamos which are business logic systems a cosmos would need.
 
 Cosmos holds the ECS and calls out the the dynamos to update the cosmos.

@@ -124,8 +124,8 @@ AppConfigBuilder:
 
 top level AppGateway class:
  creates WindowApi (provides generic equivalents of glfw calls)
- passes WindowApi to CosmosManager
- passes control to CosmosManager (main game loop)
+ passes WindowApi to CosmosContext
+ passes control to CosmosContext (main game loop)
 
 
 ## Using opengl/glfw

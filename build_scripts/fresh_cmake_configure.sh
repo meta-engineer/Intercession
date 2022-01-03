@@ -2,7 +2,7 @@
 # fresh configure
 
 # pwd is root
-cd D:/Projects/Programs/OpenGL_2021
+cd D:/Projects/Programs/Intercession
 
 if [ -d "./build" ]
 then
