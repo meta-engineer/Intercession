@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cassert>
 
 // TODO: pre-compiled header
 #include <glm/glm.hpp>

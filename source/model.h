@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cassert>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -61,7 +62,8 @@ class Model
     // finds next disabled bone, and sets id and weight. Does nothing if all 4 are used
     void _set_vertex_bone_data(Vertex& vertex, int boneId, float weight);
     // iterating through bones, instead of through verticies like in _process_mesh
-    void _extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene);
+    // shown to also accept (const aiScene* scene), but is unused?
+    void _extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh);
     
     // TODO: heirarchy of meshes is not preserved
     std::vector<Mesh> meshes;
@@ -214,7 +216,7 @@ Mesh Model::_process_mesh(aiMesh *mesh, const aiScene *scene)
     }
 
     // setup all bone data (iterating by bones, not by verticies like above)
-    _extract_bone_weight_for_vertices(vertices, mesh, scene);
+    _extract_bone_weight_for_vertices(vertices, mesh);
 
     // indices
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
@@ -430,11 +432,8 @@ void Model::_set_vertex_bone_data(Vertex& vertex, int boneId, float weight)
     }
 }
 
-void Model::_extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+void Model::_extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh)
 {
-    // silence unused warning
-    assert(scene);
-
     // parse through assimp bone list
     for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
     {
