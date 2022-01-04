@@ -41,5 +41,7 @@ add_subdirectory(external)
 # cmake install
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(FILES "${PROJECT_BINARY_DIR}/source/build_config.h" DESTINATION include)
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/resources/" DESTINATION "resources")
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/source/shaders/" DESTINATION "source/shaders")
 # packaging includes & options
 add_subdirectory(packaging)
