@@ -5,5 +5,5 @@
 # pwd is root
 cd D:/Projects/Programs/Intercession
 
-cmake . -B build
-cmake --build build --config Release
+#cmake . -B build
+cmake --build build

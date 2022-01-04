@@ -19,7 +19,7 @@ std::unique_ptr<Model> create_quad_model_ptr(std::string diffusePath = "", std::
          0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  1.0f,              1.0f,  0.0f,  0.0f
     };
     // hardcode 3+3+2
-    for (unsigned int i = 0; i < sizeof(QUAD_VERTICES) / 8; i++)
+    for (unsigned int i = 0; i < sizeof(QUAD_VERTICES) / sizeof(float) / 11; i++)
     {
         vertices.push_back( Vertex{
             glm::vec3(QUAD_VERTICES[i * 11 + 0], QUAD_VERTICES[i * 11 + 1], QUAD_VERTICES[i * 11 + 2]), 
@@ -27,13 +27,16 @@ std::unique_ptr<Model> create_quad_model_ptr(std::string diffusePath = "", std::
             glm::vec2(QUAD_VERTICES[i * 11 + 6], QUAD_VERTICES[i * 11 + 7]),
             glm::vec3(QUAD_VERTICES[i * 11 + 8], QUAD_VERTICES[i * 11 + 9], QUAD_VERTICES[i * 11 +10])
         } );
+        
+        // Don't forget Bones!
+        Model::set_vertex_bone_data_to_default(vertices.back());
     }
 
     const unsigned int QUAD_INDICES[] = {
         0,2,1,
         1,2,3,
     };
-    for (unsigned int i = 0; i < sizeof(QUAD_INDICES); i++)
+    for (unsigned int i = 0; i < sizeof(QUAD_INDICES) / sizeof(unsigned int); i++)
     {
         indices.push_back(QUAD_INDICES[i]);
     }

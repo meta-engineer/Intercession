@@ -22,9 +22,9 @@ class ScreenPlaneVertexGroup : public VertexGroup
 {
   public:
     ScreenPlaneVertexGroup()
-        : VertexGroup(SCREEN_PLANE_VERTICES, sizeof(SCREEN_PLANE_VERTICES), 
-            SCREEN_PLANE_INDICES, sizeof(SCREEN_PLANE_INDICES), 
-            SCREEN_PLANE_ATTRIBS, sizeof(SCREEN_PLANE_ATTRIBS))
+        : VertexGroup(SCREEN_PLANE_VERTICES, sizeof(SCREEN_PLANE_VERTICES) / sizeof(float), 
+            SCREEN_PLANE_INDICES, sizeof(SCREEN_PLANE_INDICES) / sizeof(unsigned int), 
+            SCREEN_PLANE_ATTRIBS, sizeof(SCREEN_PLANE_ATTRIBS) / sizeof(unsigned int))
     {}
 };
 

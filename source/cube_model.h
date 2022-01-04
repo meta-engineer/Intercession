@@ -45,14 +45,17 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffusePath = "", std::
          0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,             -1.0f,  0.0f, 0.0f,   // back
     };
     // hardcode 3+3+2+3
-    for (unsigned int i = 0; i < sizeof(CUBE2_VERTICES) / 8; i++)
+    for (unsigned int i = 0; i < sizeof(CUBE2_VERTICES) / sizeof(float) / 11; i++)
     {
         vertices.push_back( Vertex{
             glm::vec3(CUBE2_VERTICES[i * 11 + 0], CUBE2_VERTICES[i * 11 + 1], CUBE2_VERTICES[i * 11 + 2]), 
             glm::vec3(CUBE2_VERTICES[i * 11 + 3], CUBE2_VERTICES[i * 11 + 4], CUBE2_VERTICES[i * 11 + 5]), 
-            glm::vec2(CUBE2_VERTICES[i * 11 + 6], CUBE2_VERTICES[i * 11 + 7]),
+            glm::vec2(CUBE2_VERTICES[i * 11 + 6], CUBE2_VERTICES[i * 11 + 7]), 
             glm::vec3(CUBE2_VERTICES[i * 11 + 8], CUBE2_VERTICES[i * 11 + 9], CUBE2_VERTICES[i * 11 +10])
         } );
+
+        // Don't forget Bones!
+        Model::set_vertex_bone_data_to_default(vertices.back());
     }
 
     unsigned int CUBE2_INDICES[] = {
@@ -74,7 +77,7 @@ std::unique_ptr<Model> create_cube_model_ptr(std::string diffusePath = "", std::
         20,21,23,
         20,23,22
     };
-    for (unsigned int i = 0; i < sizeof(CUBE2_INDICES); i++)
+    for (unsigned int i = 0; i < sizeof(CUBE2_INDICES) / sizeof(unsigned int); i++)
     {
         indices.push_back(CUBE2_INDICES[i]);
     }

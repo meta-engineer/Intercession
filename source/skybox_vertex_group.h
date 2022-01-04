@@ -63,9 +63,9 @@ class SkyboxVertexGroup : public VertexGroup
 {
   public:
     SkyboxVertexGroup()
-        : VertexGroup(SKYBOX_VERTICES, sizeof(SKYBOX_VERTICES), // These are SIZE of the arrays data (bytes)
-            SKYBOX_INDICES, sizeof(SKYBOX_INDICES),
-            SKYBOX_ATTRIBS, sizeof(SKYBOX_ATTRIBS))
+        : VertexGroup(SKYBOX_VERTICES, sizeof(SKYBOX_VERTICES) / sizeof(float),
+            SKYBOX_INDICES, sizeof(SKYBOX_INDICES) / sizeof(unsigned int),
+            SKYBOX_ATTRIBS, sizeof(SKYBOX_ATTRIBS) / sizeof(unsigned int))
     {}
 };
 

@@ -46,6 +46,11 @@ class Model
 
     std::map<std::string, BoneInfo>& get_bone_info_map();
     int& get_num_bones();
+
+    // uses flag id of -1 to disable bone
+    static void set_vertex_bone_data_to_default(Vertex& vertex);
+    // finds next disabled bone, and sets id and weight. Sets nothing if all 4 are valid bones
+    static void set_vertex_bone_data(Vertex& vertex, int boneId, float weight);
     
   private:
     void _load_model(std::string path);
@@ -56,11 +61,6 @@ class Model
 
     std::vector<Texture> _load_material_textures(aiMaterial *mat, aiTextureType type, TextureType tType);
 
-
-    // uses flag id of -1 to disable bone
-    void _set_vertex_bone_data_to_default(Vertex& vertex);
-    // finds next disabled bone, and sets id and weight. Does nothing if all 4 are used
-    void _set_vertex_bone_data(Vertex& vertex, int boneId, float weight);
     // iterating through bones, instead of through verticies like in _process_mesh
     // shown to also accept (const aiScene* scene), but is unused?
     void _extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh);
@@ -210,7 +210,7 @@ Mesh Model::_process_mesh(aiMesh *mesh, const aiScene *scene)
         }
 
         // setup bone data as default (all disabled)
-        _set_vertex_bone_data_to_default(vertex);
+        set_vertex_bone_data_to_default(vertex);
 
         vertices.push_back(vertex);
     }
@@ -411,7 +411,7 @@ int& Model::get_num_bones()
     return boneIdCounter;
 }
 
-void Model::_set_vertex_bone_data_to_default(Vertex& vertex)
+void Model::set_vertex_bone_data_to_default(Vertex& vertex)
 {
     for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
         vertex.boneIds[i] = -1;
@@ -419,7 +419,7 @@ void Model::_set_vertex_bone_data_to_default(Vertex& vertex)
     }
 }
 
-void Model::_set_vertex_bone_data(Vertex& vertex, int boneId, float weight)
+void Model::set_vertex_bone_data(Vertex& vertex, int boneId, float weight)
 {
     for (int i = 0; i < MAX_BONE_INFLUENCE; ++i)
     {
@@ -477,7 +477,7 @@ void Model::_extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiM
             // check for weirdness
             assert(aiVertexId < vertices.size());
 
-            _set_vertex_bone_data(vertices[aiVertexId], boneId, boneWeight);
+            set_vertex_bone_data(vertices[aiVertexId], boneId, boneWeight);
         }
     }
 }
