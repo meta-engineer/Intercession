@@ -55,8 +55,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // silence warning while not using
     static_cast<void*>(window);
 
-    size_t uWidth  = (size_t)width;
-    size_t uHeight = (size_t)height;
+    unsigned int uWidth  = (unsigned int)width;
+    unsigned int uHeight = (unsigned int)height;
 
     cm.set_view_width(uWidth);
     cm.set_view_height(uHeight);

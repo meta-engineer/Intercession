@@ -1,4 +1,4 @@
-// Cannot use ${PROJECT_NAME} here, it won't resolve
+// Cannot use PROJECT_NAME macro here, it won't reslve nested macros
 #define BUILD_VERSION_MAJOR @INTERCESSION_VERSION_MAJOR@
 #define BUILD_VERSION_MINOR @INTERCESSION_VERSION_MINOR@
 

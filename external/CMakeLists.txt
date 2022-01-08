@@ -23,14 +23,24 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/CMakeLists.txt")
     message(FATAL_ERROR "The GLFW submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
 endif()
 
+# "immediate" building
 # extra glfw build options (can be set on cmake configure with -D)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL [FORCE])
-set(GLFW_BUILD_TESTS OFF CACHE BOOL [FORCE])
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL [FORCE])
+#set(GLFW_BUILD_DOCS OFF CACHE BOOL [FORCE])
+#set(GLFW_BUILD_TESTS OFF CACHE BOOL [FORCE])
+#set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL [FORCE])
+#add_subdirectory(glfw)
+#target_link_libraries(${PROJECT_NAME} glfw)
 
-add_subdirectory(glfw)
-target_link_libraries(${PROJECT_NAME} glfw)
-target_include_directories(${PROJECT_NAME} PUBLIC glfw/include)
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/build")
+    message(FATAL_ERROR "GLFW has not been precompiled into a library. Please manually run glfw_precompile_library.sh")
+    add_custom_command(COMMAND ../cmake_scripts/glfw_precompile_library.sh)
+endif()
+
+# if we precompile glfw into a static library can we link there directly
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/build/src/${CONFIGURATION})
+target_link_libraries(${PROJECT_NAME} glfw3)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/include)
 
 
 # GLAD
@@ -38,28 +48,54 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glad/src/glad.c")
     message(FATAL_ERROR "The GLAD is not available! Please see external/README.md to regenerate it.")
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC glad/include)
+# include cpp headers. NOTE: glad also has source files accounted for in ./source_files.cmake
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glad/include)
 
 # GLM
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glm/CMakeLists.txt")
     message(FATAL_ERROR "The GLM submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
 endif()
 
-add_subdirectory(glm)
-target_link_libraries(${PROJECT_NAME} glm)
-target_include_directories(${PROJECT_NAME} PUBLIC glm)
+# glm is header only?
+#add_subdirectory(glm)
+#target_link_libraries(${PROJECT_NAME} glm)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glm)
 
 # STB_IMAGE
-target_include_directories(${PROJECT_NAME} PUBLIC stb_image)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/stb_image)
 
 # ASSIMP
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/assimp/CMakeLists.txt")
 message(FATAL_ERROR "The assimp submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
 endif()
 
-# extra ssimp build options
-set(ASSIMP_INSTALL OFF CACHE BOOL [FORCE])
+# "immediate" build
+# extra assimp build options
+#set(BUILD_SHARED_LIBS OFF CACHE BOOL [FORCE])
+#set(ASSIMP_BUILD_ZLIB ON CACHE BOOL [FORCE])
+#add_subdirectory(assimp)
+#target_link_libraries(${PROJECT_NAME} assimp)
 
-add_subdirectory(assimp)
-target_link_libraries(${PROJECT_NAME} assimp)
-target_include_directories(${PROJECT_NAME} PUBLIC assimp/include)
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/assimp/build")
+    message(FATAL_ERROR "ASSIMP has not been precompiled into a library. Please manually run assimp_precompile_library.sh")
+endif()
+
+# if we precompile assimp into a dll or static lib can we link there directly
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/lib/${CONFIGURATION})
+# Assimp uses a debug postfix "d"
+target_link_libraries(${PROJECT_NAME} 
+    debug assimp-vc141-mtd
+    optimized assimp-vc141-mt
+)
+# include cmake generated header
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/include)
+# include cpp headers
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/include)
+
+# also required to build and link zlib if assimp was built into static lib
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/contrib/zlib/${CONFIGURATION})
+# Zlib will also use a debug postfix "d"
+target_link_libraries(${PROJECT_NAME} 
+    debug zlibstaticd
+    optimized zlibstatic
+)

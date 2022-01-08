@@ -2,7 +2,8 @@
 include(InstallRequiredSystemLibraries) # what does this do?
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "pleep_games\\\\Intercession")   # WINDOWS PATH!
+# Remember WINDOWS PATHS!
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Pleep\\\\Intercession")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-installer")
 set(CPACK_PACKAGE_VENDOR "Pleep Inc.")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/packaging/License.txt")

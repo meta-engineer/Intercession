@@ -1,13 +1,29 @@
 #!/bin/bash
 # fresh configure
 
-# pwd is root
-cd D:/Projects/Programs/Intercession
+# push working directory
+START_PWD=$(pwd)
 
+if [[ $(basename $START_PWD) == "Intercession" ]]
+then
+    true
+elif [[ $(basename $START_PWD) == "cmake_scripts" ]]
+then
+    cd ..
+else
+    echo "-- Please run script from directory cmake_scripts/ or project root Intercession/"
+    exit
+fi
+
+echo "-- Configuring Intercession build files"
 if [ -d "./build" ]
 then
     echo "-- Clearing old /build"
     rm ./build -r
 fi
 
-cmake . -B build
+cmake . -B build -G "Visual Studio 15 2017"
+
+
+# pop working directory
+cd ${START_PWD}
