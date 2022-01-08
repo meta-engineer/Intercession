@@ -4,9 +4,11 @@
 build/
 [Bb][Uu][Ii][Ll][Dd]/
 
-# can we add a readme in /extern that explains the dependancies but .gitignore them for space?
+# readme in /extern that explains the dependancies but .gitignore them for space
 #external/*
 external/glfw/*
 external/glm/*
+external/assimp/*
+external/spdlog/*
 
 .vscode

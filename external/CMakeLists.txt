@@ -99,3 +99,13 @@ target_link_libraries(${PROJECT_NAME}
     debug zlibstaticd
     optimized zlibstatic
 )
+
+
+# SPDLOG
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/spdlog/CMakeLists.txt")
+message(FATAL_ERROR "The spdlog submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
+endif()
+
+# spdlog is header only?
+# include cpp headers
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/spdlog/include)

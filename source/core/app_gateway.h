@@ -11,6 +11,7 @@
 #include <GLFW/glfw3.h>
 
 //internal
+#include "logging/pleep_log.h"
 #include "cosmos_context.h"
 
 // these should be defined in some use config file and part of a window abstraction layer

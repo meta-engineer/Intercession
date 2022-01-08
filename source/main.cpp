@@ -9,18 +9,21 @@
 
 // internal
 #include "build_config.h"
+#include "logging/pleep_log.h"
 #include "core/app_gateway.h"
 
 int main(int argc, char** argv)
 {
-    // TODO: PLEEP_LOG()
-    std::cout << argv[0] << std::endl;
-    std::cout << "Build version: " << BUILD_VERSION_MAJOR << "." << BUILD_VERSION_MINOR << std::endl;
+    INIT_PLEEPLOG();
+    PLEEPLOG_INFO("Initialized pleep logger!");
+
+    PLEEPLOG_INFO(argv[0]);
+    PLEEPLOG_INFO("Build version: " + std::to_string(BUILD_VERSION_MAJOR) + "." + std::to_string(BUILD_VERSION_MINOR));
 
 #if defined(_DEBUG)
-    std::cout << "Build config:  Debug" << std::endl;
+    PLEEPLOG_INFO("Build config:  Debug");
 #elif defined(NDEBUG)
-    std::cout << "Build config:  Release" << std::endl;
+    PLEEPLOG_INFO("Build config:  Release");
 #endif
 
     // parse cmd arguments
@@ -31,10 +34,11 @@ int main(int argc, char** argv)
     if (!args.empty())
     {
         // just echo for now
-        std::cout << "Ignored args: ";
+        std::string concat;
         for (std::string a : args)
-            std::cout << a << " | ";
-        std::cout << std::endl << std::endl;
+            concat.append(a + " ");
+
+        PLEEPLOG_WARN("Ignored cmd args: " + concat);
     }
 
     pleep::AppGateway* client = nullptr;
@@ -47,10 +51,10 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        // TODO: PLEEPLOG_ERROR() with errorcodes for clients in release
-        //  also PLEEPLOG_DEBUG() with file and linenumber for devs in debug
-        std::cerr << "main:: Uncaught exception during AppGateway startup" << std::endl;
-        std::cerr << e.what() << std::endl;
+        UNREFERENCED_PARAMETER(e);
+        PLEEPLOG_ERROR("Uncaught exception during AppGateway startup");
+        PLEEPLOG_ERROR(e.what());
+        return 1;
     }
 
     try
@@ -59,8 +63,10 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "main:: Uncaught exception during AppGateway running" << std::endl;
-        std::cerr << e.what() << std::endl;
+        UNREFERENCED_PARAMETER(e);
+        PLEEPLOG_ERROR("Uncaught exception during AppGateway running");
+        PLEEPLOG_ERROR(e.what());
+        return 1;
     }
 
     // cleanup

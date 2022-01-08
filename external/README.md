@@ -70,3 +70,13 @@ use target_link_libraries options "debug <name>" and "optimized <name>" to speci
 NOTE: we can compile it as a static lib by DISABLING BUILD_SHARED_LIBS and ENABLING ASSIMP_BUILD_ZLIB
 then the aforementioned assimp-vc141-mt(d).lib becomes the whole static library to be linked.
 We now have to link build/contrib/zlib/${Configuration}/zlibstatic(d).lib
+
+# spdlog
+spdlog seems to be compile optional, so we'll use header-only for ease.
+
+Simply included headers.
+
+NOTE: spdlog invludes minwindef.h which defines APIENTRY.
+glfw also defined APIENTRY. winwindef.h does not have a redefine guard.
+So in pleep_logger.h I manually #undef APIENTRY to fix it.
+Hopefully this causes no long term bugs...

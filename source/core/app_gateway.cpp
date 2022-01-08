@@ -22,7 +22,7 @@ namespace pleep
     void AppGateway::run() 
     {
         m_running = true;
-        std::cout << "AppGateway run start" << std::endl;
+        PLEEPLOG_TRACE("App run start");
 
         while (m_running)
         {
@@ -32,7 +32,7 @@ namespace pleep
             this->stop();
         }
 
-        std::cout << "AppGateway run finish" << std::endl;
+        PLEEPLOG_TRACE("App run finish");
     }
     
     void AppGateway::stop() 
@@ -53,8 +53,7 @@ namespace pleep
     {
         assert(!m_glfwWindow);
 
-        std::cout << "AppGateway:: initializing glfw version: ";
-        std::cout << glfwGetVersionString() << std::endl;
+        PLEEPLOG_INFO("Initializing glfw version: " + std::string(glfwGetVersionString()));
 
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -65,7 +64,7 @@ namespace pleep
         
         if (!m_glfwWindow)
         {
-            std::cerr << "AppGateway:: Failed to create GLFW window." << std::endl;
+            PLEEPLOG_ERROR("Failed to create GLFW window.");
             glfwTerminate();
             assert(false);
         }
@@ -76,7 +75,7 @@ namespace pleep
         //  (glfw knows them and supplies this function)
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-            std::cerr << "Failed to init GLAD" << std::endl;
+            PLEEPLOG_ERROR("Failed to init GLAD.");
             assert(false);
         }
 
