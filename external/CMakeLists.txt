@@ -109,3 +109,13 @@ endif()
 # spdlog is header only?
 # include cpp headers
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/spdlog/include)
+
+
+# IMGUI
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/imgui/imgui.h")
+message(FATAL_ERROR "The imgui submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please manually update submodules.")
+endif()
+
+# no CMakeLists.txt, source is added in source_files.cmake
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends)

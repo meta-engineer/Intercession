@@ -2,20 +2,27 @@
 #define COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
-#include "cosmos.h"
 
 // external
+// our "window api"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include "cosmos.h"
 
 namespace pleep
 {
-    // maintains the interactive "world"/"level" to update
+    // manages change between interactive "worlds" aka cosmoses
     // maintain the dynamos and their resources (render, audio, networking)
     // maintains a current cosmos and attaches dynamos to it
     // runs main game loop, update cosmos
     class CosmosContext
     {
     public:
+        // I need to know some kind of configuration to know what cosmos to build first + scene information, and a state machine for comoses to change to/from
         CosmosContext();
         CosmosContext(GLFWwindow* appWindow);
         ~CosmosContext();

@@ -5,8 +5,9 @@
 
 namespace pleep
 {
-    // We could have a Cosmos interface? assuming we want another Cosmos architecture,
-    // but will anything be preferred over ECS?
+    // We could have a Cosmos interface
+    // a subclass could have a character controller, ecs, graphics/phsyics
+    // a subclass could have only mouse and ui
     class Cosmos
     {
     public:
