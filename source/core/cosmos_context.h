@@ -14,7 +14,7 @@
 
 #include "core/cosmos.h"
 #include "rendering/render_dynamo.h"
-#include "input/input_dynamo.h"
+#include "controlling/control_dynamo.h"
 
 namespace pleep
 {
@@ -48,7 +48,7 @@ namespace pleep
         //GLFWwindow* m_windowApi;
         // dynamos are shared with sychros
         RenderDynamo* m_renderDynamo;
-        InputDynamo* m_inputDynamo;
+        ControlDynamo* m_controlDynamo;
 
         //AudioApi* m_audioApi;
         //AudioDynamo* m_audioDynamo;

@@ -10,5 +10,5 @@ set(ALL_SOURCE_FILES
 
     source/rendering/render_dynamo.cpp
 
-    source/input/input_dynamo.cpp
+    source/controlling/control_dynamo.cpp
 )

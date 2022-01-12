@@ -1,21 +1,21 @@
-#include "input_dynamo.h"
+#include "control_dynamo.h"
 
 #include "logging/pleep_log.h"
 
 namespace pleep
 {
-    InputDynamo::InputDynamo(GLFWwindow* windowApi) 
+    ControlDynamo::ControlDynamo(GLFWwindow* windowApi) 
         : m_windowApi(windowApi)
         , m_closeSignal(false)
     {
     }
     
-    InputDynamo::~InputDynamo()
+    ControlDynamo::~ControlDynamo()
     {
         
     }
     
-    void InputDynamo::update(double deltaTime) 
+    void ControlDynamo::update(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
 
@@ -23,19 +23,21 @@ namespace pleep
 
         if (glfwWindowShouldClose(m_windowApi))
         {
+            // maybe this should trigger some ui instead, and call appropriate shutdown/logoff
             m_closeSignal = true;
             glfwSetWindowShouldClose(m_windowApi, false);
         }
         
         // update each relay
 
+        // for development
         if (glfwGetKey(m_windowApi, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             m_closeSignal = true;
         }
     }
     
-    bool InputDynamo::poll_close_signal() 
+    bool ControlDynamo::poll_close_signal() 
     {
         if (m_closeSignal)
         {

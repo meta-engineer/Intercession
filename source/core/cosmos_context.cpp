@@ -18,7 +18,7 @@ namespace pleep
 
         // construct dynamos
         m_renderDynamo = new RenderDynamo(windowApi);
-        m_inputDynamo  = new InputDynamo(windowApi);
+        m_controlDynamo  = new ControlDynamo(windowApi);
         
         // link cosmos synchros with dynamos
         
@@ -31,7 +31,7 @@ namespace pleep
         delete m_currentCosmos;
 
         delete m_renderDynamo;
-        delete m_inputDynamo;
+        delete m_controlDynamo;
     }
     
     void CosmosContext::run() 
@@ -51,12 +51,12 @@ namespace pleep
             deltaTime = thisTimeVal - lastTimeVal;
 
             // "Event processing is normally done each frame AFTER buffer swapping" ?
-            m_inputDynamo->update(deltaTime);
+            m_controlDynamo->update(deltaTime);
 
             // TODO: this should be done by synchro? context should have mechanism to signal stop/change
-            // InputDynamo should process inputs
+            // ControlDynamo should process inputs
             // since dynamos don't know about us, we need to poll states we want
-            if(m_inputDynamo->poll_close_signal())
+            if(m_controlDynamo->poll_close_signal())
             {
                 this->stop();
             }
