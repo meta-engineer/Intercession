@@ -4,6 +4,7 @@
 //#include "intercession_pch.h"
 
 // external
+#include <memory>
 // our "window api"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -11,7 +12,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "cosmos.h"
+#include "core/cosmos.h"
+#include "rendering/render_dynamo.h"
+#include "input/input_dynamo.h"
 
 namespace pleep
 {
@@ -23,8 +26,10 @@ namespace pleep
     {
     public:
         // I need to know some kind of configuration to know what cosmos to build first + scene information, and a state machine for comoses to change to/from
+        // or some "multiverse" file which lists where to look for "scene" files
+        // use scene files to build cosmos
         CosmosContext();
-        CosmosContext(GLFWwindow* appWindow);
+        CosmosContext(GLFWwindow* windowApi);   // etc...
         ~CosmosContext();
 
         void run();
@@ -36,12 +41,19 @@ namespace pleep
         // Are apis and dynamos 1-to-1?
 
     private:
-        //Cosmos* m_currentCosmos;
+        Cosmos* m_currentCosmos;
 
-        GLFWwindow* m_appWindow;
-        //RenderDynamo* m_renderDynamo;
-        //InputDynamo* m_inputDynamo;
+        // does ctx need to remember apis? if dynamos don't change then no
+        // Ctx won't keep apis references, only pass them to constructed dynamos
+        //GLFWwindow* m_windowApi;
+        // dynamos are shared with sychros
+        RenderDynamo* m_renderDynamo;
+        InputDynamo* m_inputDynamo;
+
+        //AudioApi* m_audioApi;
         //AudioDynamo* m_audioDynamo;
+
+        //NetworkApi* m_netApi;
         //NetworkDynamo* m_netDynamo;
 
         bool m_running;

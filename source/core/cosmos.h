@@ -14,7 +14,13 @@ namespace pleep
         Cosmos();
         ~Cosmos();
 
-        //void update(double deltaTime);
+        // call all synchros to invoke system updates
+        void update(double deltaTime);
+
+        // dynamically attach dynamo?
+        // cosmos subclass can deal with it as they wish
+        // (pass it to synchros who would "subscribe" to it)
+        //void attach_dynamo();
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
@@ -24,13 +30,14 @@ namespace pleep
         // synchros are created with their required dynamo (would dynamically attaching be useful?)
         // deleting or mutating a dynamo must apply to any synchros attached to it
         // to avoid dereferencing an invalid dynamo (done by CosmosManager?)
+        // synchros need direct access to the ECS and some sort of access to dynamo
         
-        //RenderSynchro* m_renderSynch;
+        //RenderSynchro*  m_renderSynch;
 
-        //InputSynchro*
-        //PhysicsSynchro*
-        //AudioSynchro*
-        //NetSynchro*
+        //InputSynchro*   m_inputSynch;
+        //PhysicsSynchro* m_physicsSynch;
+        //AudioSynchro*   m_audioSynch;
+        //NetSynchro*     m_netSynch;
         // etc...
     };
 }

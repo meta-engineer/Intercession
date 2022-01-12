@@ -10,16 +10,28 @@ namespace pleep
         
     }
     
-    CosmosContext::CosmosContext(GLFWwindow* appWindow)
-        : m_appWindow(appWindow)
+    CosmosContext::CosmosContext(GLFWwindow* windowApi)
     {
-        // we have "lease" of api to override callbacks
-        //glfwSetFramebufferSizeCallback(m_appWindow, _framebuffer_size_callback);
+
+        // unique_ptr inits as nullptr
+        m_currentCosmos = new Cosmos();
+
+        // construct dynamos
+        m_renderDynamo = new RenderDynamo(windowApi);
+        m_inputDynamo  = new InputDynamo(windowApi);
+        
+        // link cosmos synchros with dynamos
+        
+        // until we can load from file we can manually call methods to build entities in its ecs
+        // use imgui input in main loop do add more at runtime
     }
     
     CosmosContext::~CosmosContext() 
     {
-        
+        delete m_currentCosmos;
+
+        delete m_renderDynamo;
+        delete m_inputDynamo;
     }
     
     void CosmosContext::run() 
@@ -27,36 +39,65 @@ namespace pleep
         m_running = true;
 
         // main game loop
-        PLEEPLOG_TRACE("Starting main \"game loop\"");
+        PLEEPLOG_TRACE("Starting \"main loop\"");
+        double lastTimeVal = glfwGetTime();
+        double thisTimeVal;
+        double deltaTime;
+
         while (m_running)
         {
-            glfwPollEvents();
-            // Cosmos should process inputs (or we should call callbacks it registers)
+            // smarter way to get dt?
+            thisTimeVal = glfwGetTime();
+            deltaTime = thisTimeVal - lastTimeVal;
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            // "Event processing is normally done each frame AFTER buffer swapping" ?
+            m_inputDynamo->update(deltaTime);
+
+            // TODO: this should be done by synchro? context should have mechanism to signal stop/change
+            // InputDynamo should process inputs
+            // since dynamos don't know about us, we need to poll states we want
+            if(m_inputDynamo->poll_close_signal())
+            {
+                this->stop();
+            }
+
+            // update data for this frame
+            m_currentCosmos->update(deltaTime);
+
+            m_renderDynamo->begin_frame();
+
+            // render synchro will submit from ecs
+            //m_renderDynamo->submit();
+
+            // once command queue is implemented this will flush them through relays
+            m_renderDynamo->end_frame();
+
 
             // top ui layer in context for debug
             // TODO: abstract this to ui layer
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
-
             bool checkbox;
-
             // show ui window
             {
                 static float f = 0.0f;
                 static int counter = 0;
 
-                ImGui::Begin("Context Debug");                          // Create a window and append into it.
+                // Create a window and append into it.
+                ImGui::Begin("Context Debug");
 
-                ImGui::Text("This window runs above the cosmos");               // Display some text (you can use a format strings too)
-                ImGui::Checkbox("checkbox", &checkbox);      // Edit bools storing our window open/close state
+                // Display some text (you can use a format strings too)
+                ImGui::Text("This window runs above the cosmos");
+                // Edit bools storing our window open/close state
+                ImGui::Checkbox("checkbox", &checkbox);
 
-                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+                // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
                 //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-                if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                // Buttons return true when clicked (most widgets return true when edited/activated)
+                if (ImGui::Button("Button"))
                     counter++;
                 ImGui::SameLine();
                 ImGui::Text("counter = %d", counter);
@@ -64,18 +105,12 @@ namespace pleep
                 ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
                 ImGui::End();
             }
-
             // Render out ui
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-            // call to window api
-            if(glfwWindowShouldClose(m_appWindow))
-            {
-                this->stop();
-            }
             
-            glfwSwapBuffers(m_appWindow);
+            // RenderDynamo calls swap buffers
+            m_renderDynamo->flush_frame();
         }
         
     }

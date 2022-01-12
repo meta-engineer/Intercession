@@ -58,12 +58,14 @@ namespace pleep
     private:
         // should have a window abstraction layer
         // hard-code to use glfw for now...
+        // are smart pointers better? I only want this class to have "ownership"
+        // I only want this class to manage the emeory, 
+        // and I want all other references to be nulled (stopping undefined behaviour) if I delete it.
         GLFWwindow* m_windowApi;
 
         //AudioApi* m_audioApi;
         //NetApi*   m_netApi;
 
-        // TODO: smart pointers
         CosmosContext* m_ctx;
     };
 }
