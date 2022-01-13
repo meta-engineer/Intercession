@@ -7,9 +7,7 @@ namespace pleep
     RenderDynamo::RenderDynamo(GLFWwindow* windowApi)
         : m_windowApi(windowApi)
     {
-        // we have "lease" of api to override callbacks
-        //glfwSetFramebufferSizeCallback(m_windowApi, _framebuffer_size_callback);
-        
+
     }
     
     RenderDynamo::~RenderDynamo() 
@@ -34,5 +32,22 @@ namespace pleep
     void RenderDynamo::flush_frame() 
     {
         glfwSwapBuffers(m_windowApi);
+    }
+    
+    void RenderDynamo::framebuffer_resize_callback(GLFWwindow* window, int width, int height) 
+    {
+        PLEEPLOG_TRACE("Framebuffer resize triggered");
+        // silence warning while not using
+        static_cast<void*>(window);
+        
+        unsigned int uWidth  = (unsigned int)width;
+        unsigned int uHeight = (unsigned int)height;
+
+        glViewport(0, 0, uWidth, uHeight);
+
+        // assigned cameras/framebuffers also need to get the resize
+        //m_mainCamera.set_view_width(uWidth);
+        //m_mainCamera.set_view_height(uHeight);
+        
     }
 }

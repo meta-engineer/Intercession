@@ -14,10 +14,13 @@ namespace pleep
         
     }
     
-    void Cosmos::update(double deltaTime) 
+    bool Cosmos::update(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
         
         //m_renderSynch->update();
+
+        // Cosmos has finished, and no longer wishes to be called
+        return false;
     }
 }

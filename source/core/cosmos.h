@@ -15,7 +15,8 @@ namespace pleep
         ~Cosmos();
 
         // call all synchros to invoke system updates
-        void update(double deltaTime);
+        // return communicates if the cosmos has already finished
+        bool update(double deltaTime);
 
         // dynamically attach dynamo?
         // cosmos subclass can deal with it as they wish
@@ -24,7 +25,7 @@ namespace pleep
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
-        //EntityRegistry* m_registry;
+        //EntityRegistry*   m_registry;
 
         // ECS synchros know their respective dynamos and feed components into them on update
         // synchros are created with their required dynamo (would dynamically attaching be useful?)
@@ -32,12 +33,12 @@ namespace pleep
         // to avoid dereferencing an invalid dynamo (done by CosmosManager?)
         // synchros need direct access to the ECS and some sort of access to dynamo
         
-        //RenderSynchro*  m_renderSynch;
+        //RenderSynchro*    m_renderSynch;
 
-        //InputSynchro*   m_inputSynch;
-        //PhysicsSynchro* m_physicsSynch;
-        //AudioSynchro*   m_audioSynch;
-        //NetSynchro*     m_netSynch;
+        //ControlSynchro*   m_controlSynch;
+        //PhysicsSynchro*   m_physicsSynch;
+        //AudioSynchro*     m_audioSynch;
+        //NetSynchro*       m_netSynch;
         // etc...
     };
 }

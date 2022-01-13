@@ -31,10 +31,17 @@ namespace pleep
         // stagger the final flush to allow context to debug
         void flush_frame();
 
+        // TODO: how does controlDynamo get here?
+        void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
     private:
         // window api is shared with AppGateway (and other dynamos)
         // hard-code windowApi to glfw for now
         GLFWwindow* m_windowApi;
+
+        // needs a camera component registered as the "main" camera for rendering
+        // like a CameraManager, but data only
+        // other camera components can be registered for shadow maps, etc...
+        //CameraComponent* m_mainCamera
     };
 }
 

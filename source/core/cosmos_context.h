@@ -32,7 +32,9 @@ namespace pleep
         CosmosContext(GLFWwindow* windowApi);   // etc...
         ~CosmosContext();
 
+        // main loop, exits when context dies
         void run();
+        // respond to Cosmos update and stop main loop
         void stop();
 
         // apis provide context for dynamos to use

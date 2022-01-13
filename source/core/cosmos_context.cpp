@@ -19,6 +19,7 @@ namespace pleep
         // construct dynamos
         m_renderDynamo = new RenderDynamo(windowApi);
         m_controlDynamo  = new ControlDynamo(windowApi);
+        m_controlDynamo->attach_render_dynamo(m_renderDynamo);
         
         // link cosmos synchros with dynamos
         
@@ -30,8 +31,9 @@ namespace pleep
     {
         delete m_currentCosmos;
 
-        delete m_renderDynamo;
+        m_controlDynamo->attach_render_dynamo(nullptr);
         delete m_controlDynamo;
+        delete m_renderDynamo;
     }
     
     void CosmosContext::run() 
@@ -50,23 +52,23 @@ namespace pleep
             thisTimeVal = glfwGetTime();
             deltaTime = thisTimeVal - lastTimeVal;
 
-            // "Event processing is normally done each frame AFTER buffer swapping" ?
-            m_controlDynamo->update(deltaTime);
-
-            // TODO: this should be done by synchro? context should have mechanism to signal stop/change
-            // ControlDynamo should process inputs
-            // since dynamos don't know about us, we need to poll states we want
-            if(m_controlDynamo->poll_close_signal())
-            {
+            // ControlSyncho will trigger update to components
+            // Caller should respond to update return
+            if (!m_controlDynamo->update(deltaTime))
                 this->stop();
-            }
 
             // update data for this frame
-            m_currentCosmos->update(deltaTime);
+            // Caller should respond to update return
+            if (!m_currentCosmos->update(deltaTime))
+            {
+                // check Cosmos for some end state and handle appropriately
+                // for now always cosmos does nothing so don't handle
+                //this->stop();
+            }
 
             m_renderDynamo->begin_frame();
 
-            // render synchro will submit from ecs
+            // RenderSynchro will submit from ecs
             //m_renderDynamo->submit();
 
             // once command queue is implemented this will flush them through relays

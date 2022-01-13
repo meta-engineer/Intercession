@@ -113,10 +113,12 @@ GLSL naming:
 
 ## Application Architecture
 
-core/   : app/architecture components
-render/ : render dynamo/relays
-cosmos/ : ECS and world logic
-net/    : networking tools
+core/           : app/architecture components
+logging/        : pleep logger based on spdlog
+cosmos/         : ECS and world logic
+rendering/      : render dynamo/relays
+controlling/    : input and entity control dynamo/relays
+net/            : networking tools
 
 AppConfigBuilder:
  provide functions to create specific subclass of abstract ones
@@ -127,6 +129,13 @@ top level AppGateway class:
  passes WindowApi to CosmosContext
  passes control to CosmosContext (main game loop)
 
+
+Configuring cosmos data:
+it may be usefull to provide script ingesting to build/modify scenes at runtime
+LUA worked pretty good for cs488, and javidx9 can show how:
+https://www.youtube.com/watch?v=4l5HdmPoynw
+
+Otherwise using a serialized/readable data format for entities could be used to create/ingest
 
 ## Using opengl/glfw
 
@@ -234,7 +243,7 @@ const float FR_Compliment  =  1.0 - (2.0 * FR_Coefficient);
 *do verlet with dt = dt*FR_Coefficient (again)*
 
 
-Animation:
+## Animation
 GODLIKE Gdc talk
 https://www.youtube.com/watch?v=LNidsMesxSE
 
@@ -252,3 +261,14 @@ I guess specular light isn't affected by the surface, but only looks like it bec
 
 normal maps define the normal vector as the texture colour vector. Is the GIMP normal map gereic filter good enough to get the benefit of normal mapping?
 If the filter is based off bright/dark colours maybe you can boost contrast to improve the "normalling" filter?
+
+
+## Networking
+I forsee a network architecture being useful to implement the separate timelines required for the time travel mechanic.
+
+This would have the added benefit of allowing multiplayer with little extra effort:
+ASIO (and boost::ASIO) seems to be the weapon of choice, and javidx9 can show how:
+https://www.youtube.com/watch?v=2hNdkYInj4g
+
+There's also the extensive codersblock blog which uses raw sockets, but may provide further insight into setting up a packet system to provide good performance:
+https://www.codersblock.org/blog/multiplayer-fps-part-1
