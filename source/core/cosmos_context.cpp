@@ -12,16 +12,16 @@ namespace pleep
     
     CosmosContext::CosmosContext(GLFWwindow* windowApi)
     {
-
-        // unique_ptr inits as nullptr
-        m_currentCosmos = new Cosmos();
-
         // construct dynamos
         m_renderDynamo = new RenderDynamo(windowApi);
         m_controlDynamo  = new ControlDynamo(windowApi);
+
+        // init config and cross-config dynamos before passing to Cosmos
         m_controlDynamo->attach_render_dynamo(m_renderDynamo);
         
-        // link cosmos synchros with dynamos
+        // build init cosmos
+        // cosmos will build synchros and link with dynamos
+        m_currentCosmos = new Cosmos(m_renderDynamo, m_controlDynamo);
         
         // until we can load from file we can manually call methods to build entities in its ecs
         // use imgui input in main loop do add more at runtime
@@ -29,6 +29,7 @@ namespace pleep
     
     CosmosContext::~CosmosContext() 
     {
+        // delete cosmos first to avoid null dynamo dereferences
         delete m_currentCosmos;
 
         m_controlDynamo->attach_render_dynamo(nullptr);
@@ -48,35 +49,30 @@ namespace pleep
 
         while (m_running)
         {
+            // ***** Init Frame *****
             // smarter way to get dt?
             thisTimeVal = glfwGetTime();
             deltaTime = thisTimeVal - lastTimeVal;
 
-            // ControlSyncho will trigger update to components
-            // Caller should respond to update return
-            if (!m_controlDynamo->update(deltaTime))
-                this->stop();
+            // ***** Cosmos Update *****
+            m_currentCosmos->update(deltaTime);
 
-            // update data for this frame
-            // Caller should respond to update return
-            if (!m_currentCosmos->update(deltaTime))
+            // check Cosmos for some update/end state and handle appropriately
+            // is polling every frame ideal?
+            switch (m_currentCosmos->get_status())
             {
-                // check Cosmos for some end state and handle appropriately
-                // for now always cosmos does nothing so don't handle
-                //this->stop();
+                case (Cosmos::Status::OK):
+                    break;
+                default:
+                    // handler will just simply kill, for now
+                    this->stop();
+                    break;
             }
 
-            m_renderDynamo->begin_frame();
-
-            // RenderSynchro will submit from ecs
-            //m_renderDynamo->submit();
-
-            // once command queue is implemented this will flush them through relays
-            m_renderDynamo->end_frame();
-
-
+            // ***** Post Processing *****
             // top ui layer in context for debug
             // TODO: abstract this to ui layer
+            // use IDynamo->get_signal() to display Dynamo runtime status
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
@@ -111,6 +107,9 @@ namespace pleep
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             
+
+            // ***** Finish Frame *****
+            // Context gets last word on any final superceding actions
             // RenderDynamo calls swap buffers
             m_renderDynamo->flush_frame();
         }

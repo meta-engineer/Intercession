@@ -7,8 +7,11 @@ set(ALL_SOURCE_FILES
 
     source/core/cosmos_context.cpp
     source/core/cosmos.cpp
+    source/core/i_dynamo.cpp
 
     source/rendering/render_dynamo.cpp
+    source/rendering/render_synchro.cpp
 
     source/controlling/control_dynamo.cpp
+    source/controlling/control_synchro.cpp
 )

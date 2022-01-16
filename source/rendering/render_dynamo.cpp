@@ -1,5 +1,6 @@
 #include "render_dynamo.h"
 
+#include <exception>
 #include "logging/pleep_log.h"
 
 namespace pleep
@@ -15,8 +16,17 @@ namespace pleep
         // I do not own my api references
     }
     
-    void RenderDynamo::begin_frame() 
+    void RenderDynamo::prime() 
     {
+        IDynamo::prime();
+
+        // fatal error if window api has been destroyed
+        if (m_windowApi == nullptr)
+        {
+            PLEEPLOG_ERROR("Window API reference was unexpectedly NULL");
+            throw std::runtime_error("RenderDynamo update found window api reference unexpectedly null");
+        }
+
         glClear(GL_COLOR_BUFFER_BIT);
     }
     
@@ -25,8 +35,9 @@ namespace pleep
         
     }
     
-    void RenderDynamo::end_frame() 
+    void RenderDynamo::run_relays(double deltaTime) 
     {
+        UNREFERENCED_PARAMETER(deltaTime);
     }
     
     void RenderDynamo::flush_frame() 

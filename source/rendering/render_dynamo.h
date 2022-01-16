@@ -12,9 +12,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "core/i_dynamo.h"
+
 namespace pleep
 {
-    class RenderDynamo
+    class RenderDynamo : public IDynamo
     {
     public:
         // any use dynamically attaching apis to a dynamo?
@@ -23,11 +25,11 @@ namespace pleep
 
         // methods to process render pipeline
         // clear and initialize for frame
-        void begin_frame();
-        // entry meches / vertex groups to be rendered
+        void prime() override;
+        // entry meshes / vertex groups to be rendered
         void submit();
         // process render command queue
-        void end_frame();
+        void run_relays(double deltaTime) override;
         // stagger the final flush to allow context to debug
         void flush_frame();
 

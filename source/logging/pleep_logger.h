@@ -8,6 +8,7 @@
 #undef APIENTRY
 #include "spdlog/spdlog.h"
 
+
 // ***** Logger compilation options *****
 
 #if defined(_DEBUG)
@@ -23,8 +24,10 @@
 //#define PLEEPLOG_CONSOLE
 
 // TODO: have error/critical create popup for non-technical users to report remotely
+// TODO: related^ have enum of engine error codes for specific failures
 
 // *********** End of options ***********
+
 
 namespace pleep
 {

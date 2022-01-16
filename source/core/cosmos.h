@@ -2,6 +2,10 @@
 #define COSMOS_H
 
 //#include "intercession_pch.h"
+#include "rendering/render_dynamo.h"
+#include "rendering/render_synchro.h"
+#include "controlling/control_dynamo.h"
+#include "controlling/control_synchro.h"
 
 namespace pleep
 {
@@ -11,16 +15,35 @@ namespace pleep
     class Cosmos
     {
     public:
-        Cosmos();
+        // cosmos constructed with all needed dynamos
+        Cosmos(RenderDynamo* renderDynamo, ControlDynamo* controlDynamo);   // etc...
         ~Cosmos();
 
+        // indicate running status of cosmos to context
+        // synchros can change behaviour based on cosmos' status
+        // however, states only relevant to 1 synchro should not use this variable
+        // EX: disabling user input should not override a transition or close state
+        enum class Status {
+            OK,                 // normal running status
+            CLOSE,              // cosmos has finished and wishes to end
+            TRANSITION,         // this cosmos wishes to end and switch to another
+            FAIL,               // error has occurred and cannot be handled
+        };
+
         // call all synchros to invoke system updates
-        // return communicates if the cosmos has already finished
-        bool update(double deltaTime);
+        // return communicates if the cosmos has already finished and does not wish to be called
+        // cosmos should also set/return a state enum indicating an exit state
+        void update(double deltaTime);
+
+        // check running state of Cosmos
+        Cosmos::Status get_status();
+        uint8_t get_status_value();
+        // only Synchro friends set status, so no setter required
 
         // dynamically attach dynamo?
         // cosmos subclass can deal with it as they wish
         // (pass it to synchros who would "subscribe" to it)
+        // otherwise just have static set of Dynamos on construction should be fine
         //void attach_dynamo();
 
     private:
@@ -33,13 +56,25 @@ namespace pleep
         // to avoid dereferencing an invalid dynamo (done by CosmosManager?)
         // synchros need direct access to the ECS and some sort of access to dynamo
         
-        //RenderSynchro*    m_renderSynch;
+        // friendship to allow ECS access
+        // synchros are treated as part of a Cosmos, they have full control
+        friend class RenderSynchro;
+        RenderSynchro*    m_renderSynch;
 
-        //ControlSynchro*   m_controlSynch;
+        friend class ControlSynchro;
+        ControlSynchro*   m_controlSynch;
+
         //PhysicsSynchro*   m_physicsSynch;
         //AudioSynchro*     m_audioSynch;
         //NetSynchro*       m_netSynch;
         // etc...
+
+        // Synchros will populate this to signal changes
+        // NOTE: all synchros will share this one member?
+        //   synchros will have to coordinate the highest priority value to set
+        Status m_status = Status::OK;
+        // indicates sub status
+        uint8_t m_statusValue = 0;
     };
 }
 

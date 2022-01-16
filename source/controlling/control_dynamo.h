@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "core/i_dynamo.h"
 #include "rendering/render_dynamo.h"
 
 namespace pleep
@@ -12,19 +13,33 @@ namespace pleep
     // input has to have feedback (unlike the render dynamo)
     // so its operation should be different, but the concept of a dynamo should be the same
     // an "engine" that is passed entities to "power" using the api
+    // each relay will be able to pass data back into the components its fed
+    // At the end of a relay (or during) the Dynamo's IDynamo::Signal can be set
+    // to communicate non-entity specific feedback
+    // Synchro will read this feedback and make judgements.
+    // If multiple signals arise, 1 will have to be given priority (hopefully this is a reasonable assumption)
+
     // "control relays" could be subclassed to power specific components
     // a "controller" component might be a good semantic link (like a material) for input synchro
     // some sort of priority system can be used to shift output targets of the dynamo
     // materials know render relays, controllers know control relays?
-    class ControlDynamo
+    class ControlDynamo : public IDynamo
     {
     public:
         ControlDynamo(GLFWwindow* windowApi);
         ~ControlDynamo();
 
+        // any per-frame init needs to be done
+        void prime() override;
+
+        // should control components be "submitted" or statically "registered"
+        // "immediate mode" vs "retained mode"
+        // NOTE: if you use submit() then it could be added to IDynamo (RenderDynamo also uses it)
+        //void submit();
+
         // poll event queue and process relays
-        // return communicates if shouldClose has been called during this update
-        bool update(double deltaTime);
+        // THROWS runtime_error if m_windowApi is null
+        void run_relays(double deltaTime) override;
         
         // Control Dynamo can directly affect the state of other dynamos
         // this is the most straightforeward solution i could think of

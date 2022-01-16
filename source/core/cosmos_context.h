@@ -45,10 +45,9 @@ namespace pleep
     private:
         Cosmos* m_currentCosmos;
 
-        // does ctx need to remember apis? if dynamos don't change then no
-        // Ctx won't keep apis references, only pass them to constructed dynamos
-        //GLFWwindow* m_windowApi;
-        // dynamos are shared with sychros
+        // dynamos store relevant api references passed here from AppGateway
+        // therefore dynamos must live for the context's lifetime, we cannot rebuild them
+        // created cosmos' share dynamos with their synchros
         RenderDynamo* m_renderDynamo;
         ControlDynamo* m_controlDynamo;
 

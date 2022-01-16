@@ -4,23 +4,35 @@
 
 namespace pleep
 {
-    Cosmos::Cosmos() 
+    Cosmos::Cosmos(RenderDynamo* renderDynamo, ControlDynamo* controlDynamo) 
     {
-        
+        // assume Dynamos are already configured and cross-configured as needed
+
+        m_renderSynch  = new RenderSynchro(this, renderDynamo);
+
+        m_controlSynch = new ControlSynchro(this, controlDynamo);
     }
 
     Cosmos::~Cosmos() 
     {
-        
+        delete m_renderSynch;
+        delete m_controlSynch;
     }
     
-    bool Cosmos::update(double deltaTime) 
+    void Cosmos::update(double deltaTime) 
     {
-        UNREFERENCED_PARAMETER(deltaTime);
-        
-        //m_renderSynch->update();
-
-        // Cosmos has finished, and no longer wishes to be called
-        return false;
+        // synchros will feed Entities into dynamos, results will mutate Components
+        m_controlSynch->update(deltaTime);
+        m_renderSynch->update(deltaTime);
+    }
+    
+    Cosmos::Status Cosmos::get_status() 
+    {
+        return m_status;
+    }
+    
+    uint8_t Cosmos::get_status_value() 
+    {
+        return m_statusValue;
     }
 }

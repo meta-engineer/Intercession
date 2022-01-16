@@ -1,5 +1,6 @@
 #include "control_dynamo.h"
 
+#include <exception>
 #include "logging/pleep_log.h"
 
 namespace pleep
@@ -20,27 +21,36 @@ namespace pleep
     {
     }
     
-    bool ControlDynamo::update(double deltaTime) 
+    void ControlDynamo::prime() 
+    {
+        // fatal error if window api has been destroyed
+        if (m_windowApi == nullptr)
+        {
+            PLEEPLOG_ERROR("Window API reference was unexpectedly NULL");
+            throw std::runtime_error("ControlDynamo update found window api reference unexpectedly null");
+        }
+    }
+    
+    void ControlDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
 
         // this will call all triggered callbacks
         glfwPollEvents();
 
-        // update each relay inside callbacks?
-        // relays could "subcribe" to an input
+        // update each relay inside callbacks
+        // relays could "subcribe" to an input?
         // the relay will have to be pre-attached to an entity component which it can modify.
+        // return false if a relay fails
 
-
-        // inform if shouldClose was called this frame
+        //glfwWindowShouldClose will be set after glfwPollEvents
         if (glfwWindowShouldClose(m_windowApi))
         {
             // reset flag for next frame
             glfwSetWindowShouldClose(m_windowApi, GLFW_FALSE);
-            // Control Dynamo "wishes" to stop being updated
-            return false;
+            // Control Dynamo signal to its caller a close request has been made
+            m_signal = IDynamo::Signal::CLOSE;
         }
-        return true;
     }
     
     void ControlDynamo::attach_render_dynamo(RenderDynamo* renderDynamo) 
