@@ -20,6 +20,7 @@
 #define DEFAULT_WINDOW_WIDTH 1290
 #define DEFAULT_WINDOW_HEIGHT 540
 #define DEFAULT_WINDOW_TITLE "Intercession"
+#define CONFIG_DIRECTORY "config/"  //starts in pwd
 
 namespace pleep
 {

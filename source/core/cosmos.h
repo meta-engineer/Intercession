@@ -48,7 +48,9 @@ namespace pleep
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
-        //EntityRegistry*   m_registry;
+        //std::unique_ptr<EntityRegistry>    m_entityRegistry;
+        //std::unique_ptr<ComponentRegistry> m_componentRegistry;
+        //std::unique_ptr<SynchroRegistry>   m_synchroRegistry; 
 
         // ECS synchros know their respective dynamos and feed components into them on update
         // synchros are created with their required dynamo (would dynamically attaching be useful?)

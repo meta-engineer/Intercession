@@ -44,6 +44,7 @@ namespace pleep
         // Control Dynamo can directly affect the state of other dynamos
         // this is the most straightforeward solution i could think of
         // hopefully this isn't the start of spaghetti
+        // ...it should probably use a pubsub
         void attach_render_dynamo(RenderDynamo* renderDynamo);
 
     private:
@@ -61,6 +62,8 @@ namespace pleep
         GLFWwindow* m_windowApi;
 
         // Render dynamo I will feed callbacks to
+        // ehh... perhaps this should publish an event to a known pubsub...
+        // along with other non-ecs control flow...
         RenderDynamo* m_attachedRenderDynamo;
     };
 }
