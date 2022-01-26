@@ -40,12 +40,6 @@ namespace pleep
         // poll event queue and process relays
         // THROWS runtime_error if m_windowApi is null
         void run_relays(double deltaTime) override;
-        
-        // Control Dynamo can directly affect the state of other dynamos
-        // this is the most straightforeward solution i could think of
-        // hopefully this isn't the start of spaghetti
-        // ...it should probably use a pubsub
-        void attach_render_dynamo(RenderDynamo* renderDynamo);
 
     private:
         // take over window user pointer and bind all callbacks below
@@ -60,11 +54,6 @@ namespace pleep
         // receive events from windowing api
         // this should probably be abstracted so that network/ai can be control inputs as well
         GLFWwindow* m_windowApi;
-
-        // Render dynamo I will feed callbacks to
-        // ehh... perhaps this should publish an event to a known pubsub...
-        // along with other non-ecs control flow...
-        RenderDynamo* m_attachedRenderDynamo;
     };
 }
 

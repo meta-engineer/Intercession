@@ -15,9 +15,6 @@ namespace pleep
         // construct dynamos
         m_renderDynamo = new RenderDynamo(windowApi);
         m_controlDynamo  = new ControlDynamo(windowApi);
-
-        // init config and cross-config dynamos before passing to Cosmos
-        m_controlDynamo->attach_render_dynamo(m_renderDynamo);
         
         // build init cosmos
         // cosmos will build synchros and link with dynamos
@@ -32,7 +29,6 @@ namespace pleep
         // delete cosmos first to avoid null dynamo dereferences
         delete m_currentCosmos;
 
-        m_controlDynamo->attach_render_dynamo(nullptr);
         delete m_controlDynamo;
         delete m_renderDynamo;
     }
@@ -56,18 +52,6 @@ namespace pleep
 
             // ***** Cosmos Update *****
             m_currentCosmos->update(deltaTime);
-
-            // check Cosmos for some update/end state and handle appropriately
-            // is polling every frame ideal?
-            switch (m_currentCosmos->get_status())
-            {
-                case (Cosmos::Status::OK):
-                    break;
-                default:
-                    // handler will just simply kill, for now
-                    this->stop();
-                    break;
-            }
 
             // ***** Post Processing *****
             // top ui layer in context for debug

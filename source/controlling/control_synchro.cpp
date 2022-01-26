@@ -31,7 +31,6 @@ namespace pleep
         if (m_attachedControlDynamo == nullptr)
         {
             PLEEPLOG_WARN("Control Synchro update was called without an attached Dynamo");
-            m_ownerCosmos->m_status = Cosmos::Status::FAIL;
             return;
         }
 
@@ -41,18 +40,6 @@ namespace pleep
         m_attachedControlDynamo->prime();
 
         m_attachedControlDynamo->run_relays(deltaTime);
-        
-        // handle final dynamo signals
-        switch(m_attachedControlDynamo->get_signal())
-        {
-            case (IDynamo::Signal::FAIL):
-                // dynamo will report error, what how should cosmos react? just end?
-                break;
-            case (IDynamo::Signal::CLOSE):
-                m_ownerCosmos->m_status = Cosmos::Status::CLOSE;
-                break;
-            default:
-                break;
-        }
+
     }
 }

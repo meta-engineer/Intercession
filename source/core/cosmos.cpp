@@ -25,14 +25,5 @@ namespace pleep
         m_controlSynch->update(deltaTime);
         m_renderSynch->update(deltaTime);
     }
-    
-    Cosmos::Status Cosmos::get_status() 
-    {
-        return m_status;
-    }
-    
-    uint8_t Cosmos::get_status_value() 
-    {
-        return m_statusValue;
-    }
+
 }

@@ -31,7 +31,6 @@ namespace pleep
         if (m_attachedRenderDynamo == nullptr)
         {
             PLEEPLOG_WARN("Render Synchro update was called without an attached Dynamo");
-            m_ownerCosmos->m_status = Cosmos::Status::FAIL;
             return;
         }
         
@@ -46,17 +45,5 @@ namespace pleep
         m_attachedRenderDynamo->run_relays(deltaTime);
 
         // Do not yet flush Dynamo as other components (Context) may draw further
-
-
-        // handle final dynamo signals
-        switch(m_attachedRenderDynamo->get_signal())
-        {
-            case (IDynamo::Signal::FAIL):
-                // how to communicate fail from this synchro?
-            case (IDynamo::Signal::CLOSE):
-                // can RenderDynamo send a close signal? why?
-            default:
-                break;
-        }
     }
 }

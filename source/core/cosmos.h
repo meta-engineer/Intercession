@@ -19,26 +19,10 @@ namespace pleep
         Cosmos(RenderDynamo* renderDynamo, ControlDynamo* controlDynamo);   // etc...
         ~Cosmos();
 
-        // indicate running status of cosmos to context
-        // synchros can change behaviour based on cosmos' status
-        // however, states only relevant to 1 synchro should not use this variable
-        // EX: disabling user input should not override a transition or close state
-        enum class Status {
-            OK,                 // normal running status
-            CLOSE,              // cosmos has finished and wishes to end
-            TRANSITION,         // this cosmos wishes to end and switch to another
-            FAIL,               // error has occurred and cannot be handled
-        };
-
         // call all synchros to invoke system updates
         // return communicates if the cosmos has already finished and does not wish to be called
         // cosmos should also set/return a state enum indicating an exit state
         void update(double deltaTime);
-
-        // check running state of Cosmos
-        Cosmos::Status get_status();
-        uint8_t get_status_value();
-        // only Synchro friends set status, so no setter required
 
         // dynamically attach dynamo?
         // cosmos subclass can deal with it as they wish
@@ -70,13 +54,6 @@ namespace pleep
         //AudioSynchro*     m_audioSynch;
         //NetSynchro*       m_netSynch;
         // etc...
-
-        // Synchros will populate this to signal changes
-        // NOTE: all synchros will share this one member?
-        //   synchros will have to coordinate the highest priority value to set
-        Status m_status = Status::OK;
-        // indicates sub status
-        uint8_t m_statusValue = 0;
     };
 }
 

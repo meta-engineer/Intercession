@@ -7,7 +7,6 @@ namespace pleep
 {
     ControlDynamo::ControlDynamo(GLFWwindow* windowApi) 
         : m_windowApi(windowApi)
-        , m_attachedRenderDynamo(nullptr)
     {
         // we have "lease" of api to override callbacks
         _set_my_window_callbacks();
@@ -48,14 +47,8 @@ namespace pleep
         {
             // reset flag for next frame
             glfwSetWindowShouldClose(m_windowApi, GLFW_FALSE);
-            // Control Dynamo signal to its caller a close request has been made
-            m_signal = IDynamo::Signal::CLOSE;
+            // Control Dynamo signal a close request has been made
         }
-    }
-    
-    void ControlDynamo::attach_render_dynamo(RenderDynamo* renderDynamo) 
-    {
-        m_attachedRenderDynamo = renderDynamo;
     }
 
     void ControlDynamo::_set_my_window_callbacks()
@@ -193,11 +186,13 @@ namespace pleep
     
     void ControlDynamo::_window_size_callback(GLFWwindow* w, int width, int height) 
     {
+        UNREFERENCED_PARAMETER(w);
+        UNREFERENCED_PARAMETER(width);
+        UNREFERENCED_PARAMETER(height);
         PLEEPLOG_TRACE("Resize event: " + std::to_string(width) + ", " + std::to_string(height));
 
-        // Render Dynamo could use this info...
-        if (m_attachedRenderDynamo)
-            m_attachedRenderDynamo->framebuffer_resize_callback(w, width, height);
+        // Send event to Render Dynamo
+
     }
     
 }
