@@ -26,7 +26,7 @@ namespace pleep
     class ControlDynamo : public IDynamo
     {
     public:
-        ControlDynamo(GLFWwindow* windowApi);
+        ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi);
         ~ControlDynamo();
 
         // any per-frame init needs to be done

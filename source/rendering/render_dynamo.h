@@ -20,7 +20,7 @@ namespace pleep
     {
     public:
         // any use dynamically attaching apis to a dynamo?
-        RenderDynamo(GLFWwindow* windowApi);
+        RenderDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi);
         ~RenderDynamo();
 
         // methods to process render pipeline

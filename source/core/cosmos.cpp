@@ -9,7 +9,6 @@ namespace pleep
         // assume Dynamos are already configured and cross-configured as needed
 
         m_renderSynch  = new RenderSynchro(this, renderDynamo);
-
         m_controlSynch = new ControlSynchro(this, controlDynamo);
     }
 

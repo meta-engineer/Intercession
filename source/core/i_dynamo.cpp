@@ -2,19 +2,20 @@
 
 namespace pleep
 {
-    IDynamo::IDynamo() 
+    IDynamo::IDynamo(EventBroker* sharedBroker)
+        : m_sharedBroker(sharedBroker)
     {
-        
+        // no guarentees sharedBroker isn't null
     }
-    
-    IDynamo::~IDynamo() 
-    {
-        
-    }
-    
+
     void IDynamo::prime() 
     {
         
+    }
+    
+    EventBroker* IDynamo::get_shared_broker() 
+    {
+        return m_sharedBroker;
     }
     
 }

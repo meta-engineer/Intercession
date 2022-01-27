@@ -9,6 +9,9 @@ set(ALL_SOURCE_FILES
     source/core/cosmos.cpp
     source/core/i_dynamo.cpp
 
+    source/events/event.cpp
+    source/events/event_broker.cpp
+
     source/rendering/render_dynamo.cpp
     source/rendering/render_synchro.cpp
 

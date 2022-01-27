@@ -5,8 +5,9 @@
 
 namespace pleep
 {
-    ControlDynamo::ControlDynamo(GLFWwindow* windowApi) 
-        : m_windowApi(windowApi)
+    ControlDynamo::ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi)
+        : IDynamo(sharedBroker)
+        , m_windowApi(windowApi)
     {
         // we have "lease" of api to override callbacks
         _set_my_window_callbacks();
@@ -45,9 +46,8 @@ namespace pleep
         //glfwWindowShouldClose will be set after glfwPollEvents
         if (glfwWindowShouldClose(m_windowApi))
         {
-            // reset flag for next frame
-            glfwSetWindowShouldClose(m_windowApi, GLFW_FALSE);
-            // Control Dynamo signal a close request has been made
+            // callback will reset shouldClose bit
+            this->_window_should_close_callback(m_windowApi);
         }
     }
 
@@ -169,8 +169,6 @@ namespace pleep
 
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
-            glfwSetWindowShouldClose(w, GLFW_TRUE);
-            // i guess i need to call this explicitly to trigger since i'm not polling
             this->_window_should_close_callback(w);
         }
     }
@@ -178,10 +176,15 @@ namespace pleep
     void ControlDynamo::_window_should_close_callback(GLFWwindow* w) 
     {
         UNREFERENCED_PARAMETER(w);
-        PLEEPLOG_TRACE("I think the window should close");
+
+        // always clear bit?
+        glfwSetWindowShouldClose(w, GLFW_FALSE);
 
         // Cosmos that I am powering could use this info...
-        // I can return false from update to communicate this to a cosmos
+        // ill send window::QUIT event, cosmos should pick this up and 
+        // foreward as a cosmos::QUIT for context
+        PLEEPLOG_TRACE("Sending event " + std::to_string(events::window::QUIT) + " (events::window::QUIT)");
+        m_sharedBroker->send_event(events::window::QUIT);
     }
     
     void ControlDynamo::_window_size_callback(GLFWwindow* w, int width, int height) 

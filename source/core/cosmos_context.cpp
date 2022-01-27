@@ -4,17 +4,23 @@
 
 namespace pleep
 {
-    CosmosContext::CosmosContext() 
-        : m_running(false)
+    CosmosContext::CosmosContext()
     {
-        
+        m_running = false;
+
+        // build event listener and setup context's "fallback" listeners
+        m_eventBroker = new EventBroker();
+        m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, CosmosContext::quit_handler));
     }
     
     CosmosContext::CosmosContext(GLFWwindow* windowApi)
+        : CosmosContext()
     {
+        // Broker is ready to be distributed
+
         // construct dynamos
-        m_renderDynamo = new RenderDynamo(windowApi);
-        m_controlDynamo  = new ControlDynamo(windowApi);
+        m_renderDynamo = new RenderDynamo(m_eventBroker, windowApi);
+        m_controlDynamo  = new ControlDynamo(m_eventBroker, windowApi);
         
         // build init cosmos
         // cosmos will build synchros and link with dynamos
@@ -31,6 +37,8 @@ namespace pleep
 
         delete m_controlDynamo;
         delete m_renderDynamo;
+
+        delete m_eventBroker;
     }
     
     void CosmosContext::run() 
@@ -104,4 +112,15 @@ namespace pleep
     {
         m_running = false;
     }
+    
+    void CosmosContext::quit_handler(Event quitEvent) 
+    {
+        // should only be subscribed to events given with type:
+        // events::window::QUIT
+        UNREFERENCED_PARAMETER(quitEvent);
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::QUIT) + " should be (events::window::QUIT)");
+
+        this->stop();
+    }
+
 }
