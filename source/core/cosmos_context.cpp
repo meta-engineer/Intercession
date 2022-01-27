@@ -10,7 +10,7 @@ namespace pleep
 
         // build event listener and setup context's "fallback" listeners
         m_eventBroker = new EventBroker();
-        m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, CosmosContext::quit_handler));
+        m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, CosmosContext::_quit_handler));
     }
     
     CosmosContext::CosmosContext(GLFWwindow* windowApi)
@@ -113,7 +113,7 @@ namespace pleep
         m_running = false;
     }
     
-    void CosmosContext::quit_handler(Event quitEvent) 
+    void CosmosContext::_quit_handler(Event quitEvent) 
     {
         // should only be subscribed to events given with type:
         // events::window::QUIT

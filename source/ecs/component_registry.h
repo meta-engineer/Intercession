@@ -45,6 +45,10 @@ namespace pleep
         void clear_entity(Entity entity);
 
     private:
+        // cast ComponentArray into mapped type
+        template<typename T>
+        std::shared_ptr<ComponentArray<T>> _get_component_array();
+
         // "type string" pointer to a component type's id
         std::unordered_map<const char*, ComponentType> m_componentTypes{};
 
@@ -53,10 +57,6 @@ namespace pleep
 
         // track total components registered
         ComponentType m_componentTypeCount;
-
-        // cast ComponentArray into mapped type
-        template<typename T>
-        std::shared_ptr<ComponentArray<T>> _get_component_array();
     };
 
     template<typename T>

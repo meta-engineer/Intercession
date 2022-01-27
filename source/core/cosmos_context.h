@@ -38,15 +38,15 @@ namespace pleep
         // respond to Cosmos update and stop main loop
         void stop();
 
-        // events:window::QUIT sent by ControlDynamo
-        void quit_handler(Event quitEvent);
-
         // apis provide context for dynamos to use
         // should dynamo be contructed when a relevant api is attached?
         // or should an api reference be stored in the context.
         // Are apis and dynamos 1-to-1?
 
     private:
+        // Listening to events:window::QUIT sent by ControlDynamo
+        void _quit_handler(Event quitEvent);
+
         Cosmos* m_currentCosmos;
 
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos

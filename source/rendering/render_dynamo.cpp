@@ -46,7 +46,7 @@ namespace pleep
         glfwSwapBuffers(m_windowApi);
     }
     
-    void RenderDynamo::framebuffer_resize_callback(GLFWwindow* window, int width, int height) 
+    void RenderDynamo::_framebuffer_resize_callback(GLFWwindow* window, int width, int height) 
     {
         PLEEPLOG_TRACE("Framebuffer resize triggered");
         // silence warning while not using

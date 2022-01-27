@@ -33,9 +33,10 @@ namespace pleep
         // stagger the final flush to allow context to debug
         void flush_frame();
 
-        // TODO: how does controlDynamo get here?
-        void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
     private:
+        // Listening to events::window::RESIZE sent by ControlDynamo
+        void _framebuffer_resize_callback(GLFWwindow* window, int width, int height);
+
         // window api is shared with AppGateway (and other dynamos)
         // hard-code windowApi to glfw for now
         GLFWwindow* m_windowApi;
