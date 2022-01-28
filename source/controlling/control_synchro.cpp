@@ -2,13 +2,12 @@
 
 #include <exception>
 #include "logging/pleep_log.h"
-#include "core/cosmos.h"
 
 namespace pleep
 {
-    ControlSynchro::ControlSynchro(Cosmos* owner, ControlDynamo* controlDynamo)
+    ControlSynchro::ControlSynchro(Cosmos* owner)
         : m_ownerCosmos(owner)
-        , m_attachedControlDynamo(controlDynamo)
+        , m_attachedControlDynamo(nullptr)
     {
         
     }
@@ -33,13 +32,23 @@ namespace pleep
             PLEEPLOG_WARN("Control Synchro update was called without an attached Dynamo");
             return;
         }
-
-        // use friendly owner Cosmos' ECS to feed control components to attached ControlDynamo
-
+        
         // any dynamo specific initialization
         m_attachedControlDynamo->prime();
 
-        m_attachedControlDynamo->run_relays(deltaTime);
+        // feed components of m_entities to attached ControlDynamo
+        // I should implicitly know my signature and therefore what components i can fetch
+        for (Entity const& entity : m_entities)
+        {
+            UNREFERENCED_PARAMETER(entity);
+            //m_ownerCosmos->get_component<Transform>(entity);
+        }
 
+        m_attachedControlDynamo->run_relays(deltaTime);
+    }
+    
+    void ControlSynchro::attach_dynamo(ControlDynamo* contextDynamo) 
+    {
+        m_attachedControlDynamo = contextDynamo;
     }
 }

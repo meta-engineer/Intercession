@@ -10,8 +10,11 @@ namespace pleep
     {
     public:
         IDynamo(EventBroker* sharedBroker);
+
         // universal pre-frame init for dynamos
+        // Does nothing right now
         virtual void prime();
+
         virtual void run_relays(double deltaTime) = 0;
 
         // synchros get broker reference from respective dynamo

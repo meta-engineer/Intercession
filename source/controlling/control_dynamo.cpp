@@ -195,6 +195,7 @@ namespace pleep
         PLEEPLOG_TRACE("Resize event: " + std::to_string(width) + ", " + std::to_string(height));
 
         // Send event to Render Dynamo
+        // TODO: send resize event with params
 
     }
     

@@ -14,7 +14,6 @@ namespace pleep
     {
     public:
         EntityRegistry();
-        ~EntityRegistry();
 
         Entity create_entity();
         void destroy_entity(Entity entity);
@@ -36,7 +35,8 @@ namespace pleep
         Entity m_entityCount{};
     };
 
-    EntityRegistry::EntityRegistry()
+    
+    inline EntityRegistry::EntityRegistry()
     {
         // initialize the queue statically with ALL entities (as non are used yet)
         for (Entity e = 0; e < MAX_ENTITIES; e++)
@@ -45,7 +45,7 @@ namespace pleep
         }
     }
 
-    Entity EntityRegistry::create_entity()
+    inline Entity EntityRegistry::create_entity()
     {
         // assert()
         if (m_entityCount >= MAX_ENTITIES)
@@ -62,7 +62,7 @@ namespace pleep
         return ent;
     }
 
-    void EntityRegistry::destroy_entity(Entity entity)
+    inline void EntityRegistry::destroy_entity(Entity entity)
     {
         if (entity >= MAX_ENTITIES)
         {
@@ -78,7 +78,7 @@ namespace pleep
         m_entityCount--;
     }
     
-    void EntityRegistry::set_signature(Entity entity, Signature sign)
+    inline void EntityRegistry::set_signature(Entity entity, Signature sign)
     {
         if (entity >= MAX_ENTITIES)
         {
@@ -89,7 +89,7 @@ namespace pleep
         m_signatures[entity] = sign;
     }
 
-    Signature EntityRegistry::get_signature(Entity entity)
+    inline Signature EntityRegistry::get_signature(Entity entity)
     {
         if (entity >= MAX_ENTITIES)
         {

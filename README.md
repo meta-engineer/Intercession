@@ -53,3 +53,16 @@ AppGateway manages external system resource apis (windowing, audio, networking) 
 CosmosContext uses the apis to contruct dynamos which are business logic systems a cosmos would need.
 
 Cosmos holds the ECS and calls out the the dynamos to update the cosmos.
+
+---
+
+## Bibliography
+Special thanks to the following resources, programmers, and teachers for their invaluable and selfless work which I was able to learn from and adapt to produce this project. (This does not include those libraries which I directly used).
+
+It is amazing what you can learn for free with the internet.
+
+* https://learnopengl.com/ - Fundamentals of Opengl and graphics concepts
+* https://www.thecherno.com/ - Extensive resources and topics related to game engines, based on the Hazel project
+* https://community.onelonecoder.com/ - Aka Javidx9. Extensive c++ topics and inspiration to build things yourself
+* https://www.youtube.com/c/CodeTechandTutorials - c++ and project management (cmake) walkthroughs
+* https://austinmorlan.com/ - Walkthrough and intuition of ECS architecture

@@ -2,13 +2,12 @@
 
 #include <exception>
 #include "logging/pleep_log.h"
-#include "core/cosmos.h"
 
 namespace pleep
 {
-    RenderSynchro::RenderSynchro(Cosmos* owner, RenderDynamo* renderDynamo) 
+    RenderSynchro::RenderSynchro(Cosmos* owner) 
         : m_ownerCosmos(owner)
-        , m_attachedRenderDynamo(renderDynamo)
+        , m_attachedRenderDynamo(nullptr)
     {
         
     }
@@ -38,12 +37,25 @@ namespace pleep
         // any dynamo specific initialization (glClear)
         m_attachedRenderDynamo->prime();
 
-        // use friendly owner Cosmos' ECS to feed Render Components to attached RenderDynamo
-        //m_attachedRenderDynamo->submit();
+        // feed components of m_entities to attached ControlDynamo
+        // I should implicitly know my signature and therefore what components i can fetch
+        for (Entity const& entity : m_entities)
+        {
+            UNREFERENCED_PARAMETER(entity);
+            //m_ownerCosmos->get_component<Transform>(entity);
+            
+            //m_attachedRenderDynamo->submit();
+        }
 
         // once command queue is implemented this will flush them through relays
         m_attachedRenderDynamo->run_relays(deltaTime);
 
-        // Do not yet flush Dynamo as other components (Context) may draw further
+        // Do not flush Dynamo yet as other components (Context) may draw further
+        // and then Context will flush at frame end
+    }
+    
+    void RenderSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
+    {
+        m_attachedRenderDynamo = contextDynamo;
     }
 }

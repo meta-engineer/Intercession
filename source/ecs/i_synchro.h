@@ -24,7 +24,9 @@ namespace pleep
     class ISynchro
     {
     public:
-        // should this have comething pure virtual?
+        // Cosmos will call this universally for all synchros
+        virtual void update(double deltaTime) = 0;
+
         std::set<Entity> m_entities;
     };
 }

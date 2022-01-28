@@ -59,6 +59,7 @@ namespace pleep
         ComponentType m_componentTypeCount;
     };
 
+    
     template<typename T>
     void ComponentRegistry::register_component_type()
     {
@@ -113,7 +114,7 @@ namespace pleep
         return this->_get_component_array<T>()->get_data_for(entity);
     }
     
-    void ComponentRegistry::clear_entity(Entity entity)
+    inline void ComponentRegistry::clear_entity(Entity entity)
     {
         // typeid & ComponentArray pointer
         for (auto const& pair : m_componentArrays)

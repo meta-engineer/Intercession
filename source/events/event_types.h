@@ -20,7 +20,7 @@ namespace pleep
 
     // Define event consts
     // enums conveniently assign values to each event
-    // all events would have to be under the same enum
+    // but all events would have to be under the same enum
     // otherwise when they cast to EventId they will create collisions
 
     // namespaces can nest event classifications in a tree

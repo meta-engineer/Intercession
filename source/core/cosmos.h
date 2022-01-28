@@ -2,59 +2,172 @@
 #define COSMOS_H
 
 //#include "intercession_pch.h"
-#include "rendering/render_dynamo.h"
-#include "rendering/render_synchro.h"
-#include "controlling/control_dynamo.h"
-#include "controlling/control_synchro.h"
+#include <memory>
+
+#include "ecs/ecs_types.h"
+#include "ecs/entity_registry.h"
+#include "ecs/component_registry.h"
+#include "ecs/synchro_registry.h"
 
 namespace pleep
 {
-    // We could have a Cosmos interface
-    // a subclass could have a character controller, ecs, graphics/phsyics
-    // a subclass could have only mouse and ui
+    // Cosmos is simply a harness for an ecs
+    // it is "everything that exists" in a simulated verse of some sort
+    // all types of "scenes" (a title screen with mouse & text input, or a 3D world with a character controller)
+    // should be able to fit in a generic ecs framework
+    // the differentiation will come from how the Cosmos owner (CosmosContext) builds its registries
+    // the specific types of compnents/synchros (and their dynamos) will determine how the cosmos manifests
     class Cosmos
     {
     public:
-        // cosmos constructed with all needed dynamos
-        Cosmos(RenderDynamo* renderDynamo, ControlDynamo* controlDynamo);   // etc...
+        // build empty ecs
+        Cosmos();
         ~Cosmos();
 
-        // call all synchros to invoke system updates
-        // return communicates if the cosmos has already finished and does not wish to be called
-        // cosmos should also set/return a state enum indicating an exit state
+        // call all synchros to invoke entity updates
+        // synchros have access to parent (me) to access components for their entities
+        // and can be provided access (after registering) to a dynamo for
+        //   external resources (like sending events)
         void update(double deltaTime);
 
-        // dynamically attach dynamo?
-        // cosmos subclass can deal with it as they wish
-        // (pass it to synchros who would "subscribe" to it)
-        // otherwise just have static set of Dynamos on construction should be fine
-        //void attach_dynamo();
+        // cosmos does not receive/know dynamos
+        // context that registers synchros will receive returned synchros and
+        // attach dynamos/config as necessary
+
+        // ***** ECS methods *****
+
+        // register empty entity
+        Entity create_entity();
+
+        // remove entity & related components, and clear it from any synchros
+        void destroy_entity(Entity entity);
+
+
+        // setup component T to be usable in this cosmos
+        template<typename T>
+        void register_component();
+
+        // add an instance of a registered component T to a registered entity
+        template<typename T>
+        void add_component(Entity entity, T component);
+
+        // remove component T from entity, and update all syncrhos
+        template<typename T>
+        void remove_component(Entity entity);
+
+        // find component T of entity
+        template<typename T>
+        T& get_component(Entity entity);
+
+        // get registered component T's typeid
+        template<typename T>
+        ComponentType get_component_type();
+        
+
+        // setup synchro T to be usable in this cosmos
+        // and return it once created
+        template<typename T>
+        std::shared_ptr<T> register_synchro();
+
+        // set synchro T to have entity signature sign.
+        // this does NOT recalculate its entities accordingly
+        template<typename T>
+        void set_synchro_signature(Signature sign);
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
-        //std::unique_ptr<EntityRegistry>    m_entityRegistry;
-        //std::unique_ptr<ComponentRegistry> m_componentRegistry;
-        //std::unique_ptr<SynchroRegistry>   m_synchroRegistry; 
+        std::unique_ptr<ComponentRegistry> m_componentRegistry;
+        std::unique_ptr<EntityRegistry>    m_entityRegistry;
+        std::unique_ptr<SynchroRegistry>   m_synchroRegistry;
 
         // ECS synchros know their respective dynamos and feed components into them on update
-        // synchros are created with their required dynamo (would dynamically attaching be useful?)
-        // deleting or mutating a dynamo must apply to any synchros attached to it
-        // to avoid dereferencing an invalid dynamo (done by CosmosManager?)
-        // synchros need direct access to the ECS and some sort of access to dynamo
+        // synchros are given a dynamo to attach to by register_synchro caller (context)
+        // deleting or significantly mutating a dynamo must apply to any synchros attached to it
+        //   to avoid a synchro dereferencing an invalid dynamo
         
-        // friendship to allow ECS access
-        // synchros are treated as part of a Cosmos, they have full control
-        friend class RenderSynchro;
-        RenderSynchro*    m_renderSynch;
+        // synchros are dynamically created by CosmosContext
+        //   (it will need some input "scene" file to know what to do)
 
-        friend class ControlSynchro;
-        ControlSynchro*   m_controlSynch;
-
-        //PhysicsSynchro*   m_physicsSynch;
-        //AudioSynchro*     m_audioSynch;
-        //NetSynchro*       m_netSynch;
-        // etc...
+        // examples of synchros are:
+        // RenderSynchro: submits renderable components to a dynamo that accesses a window api
+        // ControlSynchro: submits components which receive input to a dynamo that accesses a window api
+        // PhysicsSynchro: submits components with physical properties to a dynmo that does motion integration/collision
+        // AudioSynchro: submits audable/playable components to a dynamo that accesses an audio api
+        // NetSynchro: submits components which are remotely synchronized to a dynamo that accesses a network api
     };
+
+
+    // ***** ECS methods *****
+    // templates need to be accessable to all translation units that use Cosmos
+    // (non-template entity methods also provided as inline for organization)
+    
+    inline Entity Cosmos::create_entity() 
+    {
+        return m_entityRegistry->create_entity();
+    }
+    
+    inline void Cosmos::destroy_entity(Entity entity) 
+    {
+        m_entityRegistry->destroy_entity(entity);
+        m_componentRegistry->clear_entity(entity);
+        m_synchroRegistry->clear_entity(entity);
+    }
+
+    template<typename T>
+    void Cosmos::register_component() 
+    {
+        m_componentRegistry->register_component_type<T>();
+    }
+    
+    template<typename T>
+    void Cosmos::add_component(Entity entity, T component) 
+    {
+        m_componentRegistry->add_component<T>(entity, component);
+
+        // flip signature bit for this component
+        Signature sign = m_entityRegistry->get_signature(entity);
+        sign.set(m_componentRegistry->get_component_type<T>(), true);
+        m_entityRegistry->set_signature(entity, sign);
+
+        m_synchroRegistry->change_entity_signature(entity, sign);
+    }
+    
+    template<typename T>
+    void Cosmos::remove_component(Entity entity) 
+    {
+        m_componentRegistry->remove_component<T>(entity);
+        
+        // flip signature bit for this component
+        Signature sign = m_entityRegistry->get_signature(entity);
+        sign.set(m_componentRegistry->get_component_type<T>(), false);
+        m_entityRegistry->set_signature(entity, sign);
+
+        m_synchroRegistry->change_entity_signature(entity, sign);
+    }
+    
+    template<typename T>
+    T& Cosmos::get_component(Entity entity) 
+    {
+        return m_componentRegistry->get_component<T>(entity);
+    }
+    
+    template<typename T>
+    ComponentType Cosmos::get_component_type() 
+    {
+        return m_componentRegistry->get_component_type<T>();
+    }
+    
+    template<typename T>
+    std::shared_ptr<T> Cosmos::register_synchro() 
+    {
+        return m_synchroRegistry->register_synchro<T>(this);
+    }
+    
+    template<typename T>
+    void Cosmos::set_synchro_signature(Signature sign) 
+    {
+        m_synchroRegistry->set_signature<T>(sign);
+    }
 }
 
 #endif // COSMOS_H
