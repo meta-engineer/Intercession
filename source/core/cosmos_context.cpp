@@ -146,7 +146,7 @@ namespace pleep
         // should only be subscribed to events given with type:
         // events::window::QUIT
         UNREFERENCED_PARAMETER(quitEvent);
-        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::QUIT) + " should be (events::window::QUIT)");
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::QUIT) + " (events::window::QUIT)");
 
         this->stop();
     }

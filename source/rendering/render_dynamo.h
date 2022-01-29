@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 
 #include "core/i_dynamo.h"
+#include "events/event_broker.h"
 
 namespace pleep
 {
@@ -35,7 +36,9 @@ namespace pleep
 
     private:
         // Listening to events::window::RESIZE sent by ControlDynamo
-        void _framebuffer_resize_callback(GLFWwindow* window, int width, int height);
+        void _resize_handler(Event resizeEvent);
+
+        void _framebuffer_resize(int width, int height);
 
         // window api is shared with AppGateway (and other dynamos)
         // hard-code windowApi to glfw for now

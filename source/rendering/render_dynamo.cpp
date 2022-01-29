@@ -9,12 +9,13 @@ namespace pleep
         : IDynamo(sharedBroker)
         , m_windowApi(windowApi)
     {
-
+        // subscribe to events
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::window::RESIZE, RenderDynamo::_resize_handler));
     }
     
     RenderDynamo::~RenderDynamo() 
     {
-        // I do not own my api references
+        // I do not own my api references or event broker
     }
     
     void RenderDynamo::prime() 
@@ -46,11 +47,18 @@ namespace pleep
         glfwSwapBuffers(m_windowApi);
     }
     
-    void RenderDynamo::_framebuffer_resize_callback(GLFWwindow* window, int width, int height) 
+    void RenderDynamo::_resize_handler(Event resizeEvent) 
     {
-        PLEEPLOG_TRACE("Framebuffer resize triggered");
-        // silence warning while not using
-        static_cast<void*>(window);
+        events::window::resize::Params resizeParams = resizeEvent.get_param<events::window::resize::Params>();
+        
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) {" + std::to_string(resizeParams.width) + ", " + std::to_string(resizeParams.height) + "}");
+
+        _framebuffer_resize(resizeParams.width, resizeParams.height);
+    }
+    
+    void RenderDynamo::_framebuffer_resize(int width, int height) 
+    {
+        // Do I need access to the GLFWwindow?
         
         unsigned int uWidth  = (unsigned int)width;
         unsigned int uHeight = (unsigned int)height;

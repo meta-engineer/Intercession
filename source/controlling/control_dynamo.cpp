@@ -190,13 +190,16 @@ namespace pleep
     void ControlDynamo::_window_size_callback(GLFWwindow* w, int width, int height) 
     {
         UNREFERENCED_PARAMETER(w);
-        UNREFERENCED_PARAMETER(width);
-        UNREFERENCED_PARAMETER(height);
-        PLEEPLOG_TRACE("Resize event: " + std::to_string(width) + ", " + std::to_string(height));
+        
+        PLEEPLOG_TRACE("Sending event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) {" + std::to_string(width) + ", " + std::to_string(height) + "}");
 
         // Send event to Render Dynamo
         // TODO: send resize event with params
+        Event resizeEvent(events::window::RESIZE);
+        events::window::resize::Params resizeParams { width, height };
+        resizeEvent.set_param(resizeParams);
 
+        m_sharedBroker->send_event(resizeEvent);
     }
     
 }
