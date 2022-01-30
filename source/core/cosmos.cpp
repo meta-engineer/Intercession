@@ -32,6 +32,6 @@ namespace pleep
             // context should only need to manage its dynamos
             synchroIter->second->update(deltaTime);
         }
-    }    
+    }
 
 }

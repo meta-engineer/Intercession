@@ -5,6 +5,8 @@
 #include "controlling/control_synchro.h"
 #include "rendering/render_synchro.h"
 
+#include "physics/transform_component.h"
+
 namespace pleep
 {
     CosmosContext::CosmosContext()
@@ -88,6 +90,11 @@ namespace pleep
 
                 // Display some text (you can use a format strings too)
                 ImGui::Text("This window runs above the cosmos");
+
+                // Report Cosmos info
+                std::string countString = "Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
+                ImGui::Text(countString.c_str());
+
                 // Edit bools storing our window open/close state
                 ImGui::Checkbox("checkbox", &checkbox);
 
@@ -130,15 +137,40 @@ namespace pleep
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
         // use imgui input in main loop do add more at runtime
-
-        // we shouldn't need to keep synchro references after we config them here, we'll only access through Cosmos
-        // any other functionallity should be in dynamos
         
+        // register components
+        m_currentCosmos->register_component<TransformComponent>();
+
+        // register/create synchros, set component signatures
+        // we shouldn't need to keep synchro references after we config them here, 
+        // we'll only access through Cosmos
+        // any other functionallity should be in dynamos
         std::shared_ptr<ControlSynchro> controlSynchro = m_currentCosmos->register_synchro<ControlSynchro>();
         controlSynchro->attach_dynamo(m_controlDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+
+            m_currentCosmos->set_synchro_signature<ControlSynchro>(sign);
+        }
 
         std::shared_ptr<RenderSynchro> renderSynchro   = m_currentCosmos->register_synchro<RenderSynchro>();
         renderSynchro->attach_dynamo(m_renderDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+
+            m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
+        }
+
+        // create entities
+        // create component and pass or give template and pass initializer list
+        Entity cube = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component<TransformComponent>(cube, { glm::vec3(0.0f) });
+
+        Entity box  = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component<TransformComponent>(box, { glm::vec3(0.0f) });
+
     }
     
     void CosmosContext::_quit_handler(Event quitEvent)

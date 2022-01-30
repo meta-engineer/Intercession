@@ -72,8 +72,8 @@ namespace pleep
 
         if (m_synchros.find(typeName) == m_synchros.end())
         {
-            PLEEPLOG_ERROR("Cannot set signature of synchro " + std::to_string(typeName) + " which has not been registered");
-            throw std::runtime_error("SynchroRegistry cannot set signature of synchro " + std::to_string(typeName) + " which has not been registered");
+            PLEEPLOG_ERROR("Cannot set signature of synchro " + std::string(typeName) + " which has not been registered");
+            throw std::runtime_error("SynchroRegistry cannot set signature of synchro " + std::string(typeName) + " which has not been registered");
         }
 
         m_signatures.insert({typeName, sign});

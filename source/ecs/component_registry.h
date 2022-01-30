@@ -67,8 +67,8 @@ namespace pleep
 
         if (m_componentTypes.find(typeName) != m_componentTypes.end())
         {
-            PLEEPLOG_ERROR("Cannot register component type " + std::to_string(typeName) + " which already exists");
-            throw std::runtime_error("ComponentRegistry cannot register component type " + std::to_string(typeName) + " which already exists");
+            PLEEPLOG_ERROR("Cannot register component type " + std::string(typeName) + " which already exists");
+            throw std::runtime_error("ComponentRegistry cannot register component type " + std::string(typeName) + " which already exists");
         }
 
         // add type id/name to next register index
@@ -86,10 +86,10 @@ namespace pleep
     {
         const char* typeName = typeid(T).name();
 
-        if (m_componentTypes.find(typeName) -- m_componentTypes.end())
+        if (m_componentTypes.find(typeName) == m_componentTypes.end())
         {
-            PLEEPLOG_ERROR("Cannot retrieve component type " + std::to_string(typeName) + " which has not been registered");
-            throw std::range_error("ComponentRegistry cannot retrieve component type " + std::to_string(typeName) + " which has not been registered");
+            PLEEPLOG_ERROR("Cannot retrieve component type " + std::string(typeName) + " which has not been registered");
+            throw std::range_error("ComponentRegistry cannot retrieve component type " + std::string(typeName) + " which has not been registered");
         }
 
         // this type is used for creating signatures
@@ -120,7 +120,7 @@ namespace pleep
         for (auto const& pair : m_componentArrays)
         {
             std::shared_ptr<IComponentArray> const& components = pair.second;
-            components->clear_for(entity);
+            components->clear_data_for(entity);
         }
     }
     
@@ -133,8 +133,8 @@ namespace pleep
         // component type may not have been registered
         if (m_componentTypes.find(typeName) == m_componentTypes.end())
         {
-            PLEEPLOG_ERROR("Cannot get array for component " + std::to_string(typeName) + " which has not been registered");
-            throw std::runtime_error("ComponentArray cannot get array for component " + std::to_string(typeName) + " which has not been registered");
+            PLEEPLOG_ERROR("Cannot get array for component " + std::string(typeName) + " which has not been registered");
+            throw std::runtime_error("ComponentArray cannot get array for component " + std::string(typeName) + " which has not been registered");
         }
 
         return std::static_pointer_cast<ComponentArray<T>>(m_componentArrays[typeName]);

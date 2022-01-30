@@ -62,7 +62,7 @@ namespace pleep
         m_mapEntityToIndex[entity]   = newIndex;
         m_mapIndexToEntity[newIndex] = entity;
         m_array[newIndex]            = component;
-        m_size++
+        m_size++;
     }
 
     template<typename T>
@@ -75,10 +75,10 @@ namespace pleep
         }
 
         // copy end element into removed index
-        size_t removedIndex = m_mapEntityToIndex.find(entity);
+        size_t removedIndex = m_mapEntityToIndex[entity];
         size_t lastIndex    = m_size - 1;
 
-        Entity lastEntity = m_array[lastIndex];
+        Entity lastEntity = m_mapIndexToEntity[lastIndex];
         m_mapEntityToIndex[lastEntity] = removedIndex;
         m_mapIndexToEntity[removedIndex] = lastEntity;
 

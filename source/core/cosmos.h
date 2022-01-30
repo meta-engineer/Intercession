@@ -42,6 +42,9 @@ namespace pleep
         // remove entity & related components, and clear it from any synchros
         void destroy_entity(Entity entity);
 
+        // foreward count fetch to EntityRegistry
+        Entity get_entity_count();
+
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -111,6 +114,11 @@ namespace pleep
         m_entityRegistry->destroy_entity(entity);
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);
+    }
+    
+    inline Entity Cosmos::get_entity_count() 
+    {
+        return m_entityRegistry->get_entity_count();
     }
 
     template<typename T>

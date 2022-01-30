@@ -17,6 +17,7 @@ namespace pleep
 
         Entity create_entity();
         void destroy_entity(Entity entity);
+        Entity get_entity_count();
         
         void set_signature(Entity entity, Signature sign);
 
@@ -76,6 +77,11 @@ namespace pleep
         // re-add entity to queue
         m_availableEntities.push(entity);
         m_entityCount--;
+    }
+
+    inline Entity EntityRegistry::get_entity_count()
+    {
+        return m_entityCount;
     }
     
     inline void EntityRegistry::set_signature(Entity entity, Signature sign)

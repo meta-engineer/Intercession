@@ -16,7 +16,7 @@ namespace pleep
         
         // remove component from entity
         // non-strict usage, does nothing if component does not exist
-        virtual void clear_for(Entity entity) = 0;
+        virtual void clear_data_for(Entity entity) = 0;
     };
 }
 
