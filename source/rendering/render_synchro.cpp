@@ -42,7 +42,7 @@ namespace pleep
         for (Entity const& entity : m_entities)
         {
             UNREFERENCED_PARAMETER(entity);
-            //m_ownerCosmos->get_component<Transform>(entity);
+            //TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             
             //m_attachedRenderDynamo->submit();
         }

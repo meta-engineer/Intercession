@@ -166,10 +166,11 @@ namespace pleep
         // create entities
         // create component and pass or give template and pass initializer list
         Entity cube = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component<TransformComponent>(cube, { glm::vec3(0.0f) });
+        m_currentCosmos->add_component<TransformComponent>(cube, TransformComponent(glm::vec3(0.0f)));
 
         Entity box  = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component<TransformComponent>(box, { glm::vec3(0.0f) });
+        TransformComponent boxTransform(glm::vec3(1.0f));
+        m_currentCosmos->add_component<TransformComponent>(box, boxTransform);
 
     }
     

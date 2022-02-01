@@ -29,16 +29,19 @@ namespace pleep
             throw std::runtime_error("RenderDynamo update found window api reference unexpectedly null");
         }
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     
     void RenderDynamo::submit() 
     {
-        
+        // pass mesh/material information to the relay designated by the material
     }
     
     void RenderDynamo::run_relays(double deltaTime) 
     {
+        // submited meshes will get assigned to a render relay
+        // relays may have a non-greedy process (deferred rendering)
+        // here we have finished all submittions and can run through each relay
         UNREFERENCED_PARAMETER(deltaTime);
     }
     
