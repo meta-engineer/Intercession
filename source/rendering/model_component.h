@@ -7,14 +7,7 @@
 #include <map>
 #include <cassert>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#define STB_IMAGE_IMPLEMENTATION // must define before include?
-#include <stb_image.h>
-
-#include "mesh.h"
-#include "assimp_glm_convertors.h"
+#include "model.h"
 
 
 namespace pleep
@@ -24,13 +17,11 @@ namespace pleep
     // methods for building/modifying mesh data
     struct ModelComponent
     {
-        // I am responsible for my mesh texture's GPU memory!
-        ~ModelComponent();
-
-        // ideally needs to be a heirarchy
         // the cherno uses components with shared pointers
         //   so i'll assume that it is reasonably performant, though maybe not ideal
-        std::vector<Mesh> meshes;
+        // for now we'll reuse our test class
+        // TODO: make his more data-oriented
+        std::shared_ptr<Model> model;
 
         // model builder should maintain these while constructing all meshes
         // It is unlikely we'll me changing a model so significantly after construction
@@ -39,7 +30,12 @@ namespace pleep
 
         // ideally armatures would be in a completely seperate component
         // but the bone data may be tied to the specific model
-        //std::map<std::string, BoneInfo> boneInfoMap;
+
+		ModelComponent() = default;
+		ModelComponent(const ModelComponent&) = default;
+        ModelComponent(std::shared_ptr<Model> initModel)
+            : model(initModel)
+        {}
     };
 
     // we may want multiple entities to share mesh data.

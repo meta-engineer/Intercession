@@ -16,9 +16,14 @@ else
     exit
 fi
 
-echo "-- Building Intercession in Release mode"
-#cmake . -B build
-cmake --build build --config Release
+if [ -d "./build" ]
+then
+    echo "-- Building Intercession in Release mode"
+    cmake --build build --config Release
+else
+    echo "-- Build files do not exist, run fresh_cmake_configure.sh first"
+fi
+
 
 # pop working directory
 cd ${START_PWD}

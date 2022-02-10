@@ -13,6 +13,9 @@ set(ALL_SOURCE_FILES
 
     source/rendering/render_dynamo.cpp
     source/rendering/render_synchro.cpp
+    source/rendering/model.cpp
+    source/rendering/mesh.cpp
+    source/rendering/shader_manager.cpp
 
     source/controlling/control_dynamo.cpp
     source/controlling/control_synchro.cpp

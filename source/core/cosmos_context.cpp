@@ -7,6 +7,10 @@
 
 #include "physics/transform_component.h"
 
+// TODO: This is temporary for hard-coding entities
+#include "rendering/model_component.h"
+#include "rendering/cube_model.h"
+
 namespace pleep
 {
     CosmosContext::CosmosContext()
@@ -140,6 +144,7 @@ namespace pleep
         
         // register components
         m_currentCosmos->register_component<TransformComponent>();
+        m_currentCosmos->register_component<ModelComponent>();
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -164,13 +169,17 @@ namespace pleep
         }
 
         // create entities
-        // create component and pass or give template and pass initializer list
+        // create component and pass or construct inline
+        // if component is explicit (no initalizer list), we can omit template
         Entity cube = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component<TransformComponent>(cube, TransformComponent(glm::vec3(0.0f)));
+        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(2.0f)));
+        std::shared_ptr<Model> cubeModel = std::make_shared<Model>("resources/normal_frog.obj");
+        m_currentCosmos->add_component(cube, ModelComponent(cubeModel));
 
         Entity box  = m_currentCosmos->create_entity();
         TransformComponent boxTransform(glm::vec3(1.0f));
-        m_currentCosmos->add_component<TransformComponent>(box, boxTransform);
+        m_currentCosmos->add_component(box, boxTransform);
+        m_currentCosmos->add_component(box, ModelComponent(create_cube_model_ptr("resources/container2.png", "resources/container2_specular.png")));
 
     }
     

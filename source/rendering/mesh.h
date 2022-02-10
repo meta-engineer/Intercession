@@ -7,9 +7,12 @@
 #include <string>
 
 #include <glad/glad.h>
+#define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "texture.h"
+#include "shader_manager.h"
 
 namespace pleep
 {
@@ -28,71 +31,40 @@ namespace pleep
         float boneWeights[MAX_BONE_INFLUENCE];
     };
 
-    // these will be used as the prefix for shader Material struct members
-    enum TextureType
-    {
-        diffuse_map,
-        specular_map,
-        cube_map,
-        normal_map,
-        displace_map
-    };
-    // TODO: find an elegant was to convert enum to string
-    std::string TEXTURETYPE_TO_STR(TextureType t)
-    {
-        switch(t)
-        {
-            case (TextureType::diffuse_map):
-                return "diffuse_map";
-            case (TextureType::specular_map):
-                return "specular_map";
-            case (TextureType::cube_map):
-                return "cube_map";
-            case (TextureType::normal_map):
-                return "normal_map";
-            case (TextureType::displace_map):
-                return "displace_map";
-            default:
-                return "error_unmapped_texture_type";
-        }
-    }
 
-    // what texture types will get gamma correction on model load
-    bool DOES_TEXTURE_USE_GAMMA(TextureType t)
-    {
-        switch (t)
-        {
-            case(TextureType::diffuse_map):
-                return true;
-            case(TextureType::specular_map):
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    struct Texture
-    {
-        unsigned int id;
-        TextureType type;
-        std::string path; // location where file was loaded from
-    };
-
-    struct Mesh
+    // Only stores rendering data, no object data related to world space
+    class Mesh
     {
     public:
-        Mesh();
-        // Mesh is not responsible for texture GPU memory! Caller is!
-        // but i am responsible for buffer object's GPU memory!
-        ~Mesh();
-
         std::vector<Vertex>       vertices;
         std::vector<unsigned int> indices;
         std::vector<Texture>      textures;
+        // TODO: better texture managing to for different types (once all types are better understood)
+        Texture                   environmentCubemap;
+
+        Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+        // Mesh is not responsible for texture GPU memory! Caller is!
+        ~Mesh();
+
+        // Send texture info to shader and draw (with my VAO)
+        // Transform matricies/lighting must be sent before this
+        void invoke_draw(ShaderManager& sm);
+        void invoke_instanced_draw(ShaderManager& sm, size_t amount);
+
+        // set to 0 to ignore environmentCubemap
+        void reset_environment_cubemap(const unsigned int newCubemap_id = 0);
+        // set attrib pointers for transform matrix starting at attrib location "offset"
+        // Instance data Array Buffer MUST be bound already!
+        void setup_instance_transform_attrib_array(unsigned int offset);
 
     private:
         // Array Buffer Object, Vertex Buffer Object, Element Buffer Object
         unsigned int VAO_ID, VBO_ID, EBO_ID;
+
+        // Store struct member data into GL objects and retain IDs
+        void _setup();
+
+        void _set_textures(ShaderManager& sm);
     };
 }
 

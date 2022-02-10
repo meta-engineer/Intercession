@@ -1,0 +1,74 @@
+#ifndef CAMERA_COMPONENT_H
+#define CAMERA_COMPONENT_H
+
+//#include "intercession_pch.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "logging/pleep_log.h"
+#include "physics/transform_component.h"
+
+namespace pleep
+{
+    enum ProjectionType
+    {
+        perspective,
+        orthographic
+    };
+
+    struct CameraComponent
+    {
+        // set generic defaults
+        // use TransformComponent.position and .rotation
+        ProjectionType projectionType = ProjectionType::perspective;
+        const glm::vec3 GLOBAL_UP = glm::vec3(0.0f, 1.0f, 0.0f);
+        float viewNear          = 0.1f;
+        float viewFar           = 100.0f;
+        unsigned int viewWidth  = 1290;
+        unsigned int viewHeight = 540;
+        float viewFov           = 45.0f;
+    };
+
+    // Helper functions for camera use
+    glm::mat4 get_lookAt(TransformComponent& trans, CameraComponent& cam)
+    {
+        // manually calculate direction vector each time since transform component only stores euler angles
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(trans.rotation.y)) * cos(glm::radians(trans.rotation.x));
+        direction.y = sin(glm::radians(trans.rotation.x));
+        direction.z = sin(glm::radians(trans.rotation.y)) * cos(glm::radians(trans.rotation.x));
+        direction = glm::normalize(direction);
+        return glm::lookAt(trans.origin, trans.origin + direction, cam.GLOBAL_UP);
+    }
+
+    glm::mat4 get_projection(CameraComponent& cam)
+    {
+        switch(cam.projectionType)
+        {
+            case ProjectionType::perspective:
+                return glm::perspective(
+                    glm::radians(cam.viewFov), 
+                    (float)cam.viewWidth/(float)cam.viewHeight, 
+                    cam.viewNear, cam.viewFar
+                );
+            case ProjectionType::orthographic:
+                // orth needs left, right, bottom, top
+                // view fov 45 -> orthoRatio ~100?
+                float orthoRatio = (45.0f / cam.viewFov) * 100;
+                return glm::ortho(
+                    -1 * (float)(cam.viewWidth)/orthoRatio, 
+                    1 * (float)(cam.viewWidth)/orthoRatio, 
+                    -1 * (float)(cam.viewHeight)/orthoRatio, 
+                    1 * (float)(cam.viewHeight)/orthoRatio, 
+                    cam.viewNear, cam.viewFar
+                );
+                break;
+            default:
+                PLEEPLOG_ERROR("Camera ProjectionType not recognized: " + std::to_string(cam.projectionType));
+                return glm::mat4(1.0);
+        }
+    }
+}
+
+#endif // CAMERA_COMPONENT_H

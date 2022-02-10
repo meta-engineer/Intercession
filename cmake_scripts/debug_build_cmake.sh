@@ -16,9 +16,13 @@ else
     exit
 fi
 
-echo "-- Building Intercession in Debug mode"
-#cmake . -B build
-cmake --build build
+if [ -d "./build" ]
+then
+    echo "-- Building Intercession in Debug mode"
+    cmake --build build
+else
+    echo "-- Build files do not exist, run fresh_cmake_configure.sh first"
+fi
 
 
 # pop working directory

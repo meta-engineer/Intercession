@@ -1,7 +1,10 @@
 #include "render_synchro.h"
 
 #include <exception>
+
 #include "logging/pleep_log.h"
+#include "physics/transform_component.h"
+#include "rendering/model_component.h"
 
 namespace pleep
 {
@@ -42,7 +45,8 @@ namespace pleep
         for (Entity const& entity : m_entities)
         {
             UNREFERENCED_PARAMETER(entity);
-            //TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
+            TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
+            ModelComponent model = m_ownerCosmos->get_component<ModelComponent>(entity);
             
             //m_attachedRenderDynamo->submit();
         }
