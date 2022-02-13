@@ -12,7 +12,9 @@ namespace pleep
 
     // These aren't considered ids, the ids ARE entities themselves
     using Entity = std::uint32_t;
+    // careful that max does not overlap NULL_ENTITY (4.3b)
     const Entity MAX_ENTITIES = 5000;
+    const Entity NULL_ENTITY = UINT32_MAX;
 
     using ComponentType = std::uint8_t; // round up from uint5
     const ComponentType MAX_COMPONENT_TYPES = 32;

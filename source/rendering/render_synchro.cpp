@@ -44,7 +44,6 @@ namespace pleep
         // I should implicitly know my signature and therefore what components i can fetch
         for (Entity const& entity : m_entities)
         {
-            UNREFERENCED_PARAMETER(entity);
             TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             ModelComponent model = m_ownerCosmos->get_component<ModelComponent>(entity);
             
@@ -60,6 +59,30 @@ namespace pleep
     
     void RenderSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
     {
+        // We cannot subscribe to events until the dynamo is attached (to have broker access)
+        // So we have to do it here, but make sure we don't double subscribe if dynamo changes
+        if (m_attachedRenderDynamo)
+        {
+            // events subscribed elsewhere during runtime also need to be here?
+
+            m_attachedRenderDynamo->get_shared_broker()->remove_listener(METHOD_LISTENER(events::rendering::SET_MAIN_CAMERA, RenderSynchro::_register_main_camera));
+        }
+
         m_attachedRenderDynamo = contextDynamo;
+
+        if (m_attachedRenderDynamo)
+        {
+            // remember this is broadcast so if there are more than 1 synchro they will all be set
+            contextDynamo->get_shared_broker()->add_listener(METHOD_LISTENER(events::rendering::SET_MAIN_CAMERA, RenderSynchro::_register_main_camera));
+        }
+    }
+    
+    void RenderSynchro::_register_main_camera(Event setCameraEvent) 
+    {
+        events::rendering::set_main_camera::Params cameraParams = setCameraEvent.get_param<events::rendering::set_main_camera::Params>();
+        
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(cameraParams.cameraEntity) + " }");
+
+        m_mainCamera = cameraParams.cameraEntity;
     }
 }

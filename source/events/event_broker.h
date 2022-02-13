@@ -14,6 +14,7 @@ namespace pleep
     {
     public:
         void add_listener(EventId eventId, std::function<void(Event&)> const& listener);
+        void remove_listener(EventId eventId, std::function<void(Event&)> const& listener);
 
         // synchronous send to all registered listeners
         void send_event(Event& event);

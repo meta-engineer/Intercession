@@ -9,9 +9,6 @@
 #include "event_types.h"
 #include "logging/pleep_log.h"
 
-// int is 4 bytes
-constexpr size_t MAX_PARAM_SIZE = 8;
-
 namespace pleep
 {
     class Event

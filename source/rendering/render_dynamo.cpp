@@ -54,7 +54,7 @@ namespace pleep
     {
         events::window::resize::Params resizeParams = resizeEvent.get_param<events::window::resize::Params>();
         
-        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) {" + std::to_string(resizeParams.width) + ", " + std::to_string(resizeParams.height) + "}");
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 
         _framebuffer_resize(resizeParams.width, resizeParams.height);
     }

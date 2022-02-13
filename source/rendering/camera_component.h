@@ -22,7 +22,7 @@ namespace pleep
         // set generic defaults
         // use TransformComponent.position and .rotation
         ProjectionType projectionType = ProjectionType::perspective;
-        const glm::vec3 GLOBAL_UP = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 gimbal_up = glm::vec3(0.0f, 1.0f, 0.0f);
         float viewNear          = 0.1f;
         float viewFar           = 100.0f;
         unsigned int viewWidth  = 1290;
@@ -30,8 +30,9 @@ namespace pleep
         float viewFov           = 45.0f;
     };
 
-    // Helper functions for camera use
-    glm::mat4 get_lookAt(TransformComponent& trans, CameraComponent& cam)
+    // Helper function for camera use
+    // use camera entity's transform and camera data to build world_to_view transform
+    inline glm::mat4 get_lookAt(TransformComponent& trans, CameraComponent& cam)
     {
         // manually calculate direction vector each time since transform component only stores euler angles
         glm::vec3 direction;
@@ -39,20 +40,25 @@ namespace pleep
         direction.y = sin(glm::radians(trans.rotation.x));
         direction.z = sin(glm::radians(trans.rotation.y)) * cos(glm::radians(trans.rotation.x));
         direction = glm::normalize(direction);
-        return glm::lookAt(trans.origin, trans.origin + direction, cam.GLOBAL_UP);
+        return glm::lookAt(trans.origin, trans.origin + direction, cam.gimbal_up);
     }
 
-    glm::mat4 get_projection(CameraComponent& cam)
+    // Helper function for camera use
+    // use camera entity's camera data to get projection matrix (view_to_screen)
+    inline glm::mat4 get_projection(CameraComponent& cam)
     {
         switch(cam.projectionType)
         {
             case ProjectionType::perspective:
+            {
                 return glm::perspective(
                     glm::radians(cam.viewFov), 
                     (float)cam.viewWidth/(float)cam.viewHeight, 
                     cam.viewNear, cam.viewFar
                 );
+            }
             case ProjectionType::orthographic:
+            {
                 // orth needs left, right, bottom, top
                 // view fov 45 -> orthoRatio ~100?
                 float orthoRatio = (45.0f / cam.viewFov) * 100;
@@ -63,11 +69,12 @@ namespace pleep
                     1 * (float)(cam.viewHeight)/orthoRatio, 
                     cam.viewNear, cam.viewFar
                 );
-                break;
-            default:
-                PLEEPLOG_ERROR("Camera ProjectionType not recognized: " + std::to_string(cam.projectionType));
-                return glm::mat4(1.0);
+            }
         }
+
+        
+        PLEEPLOG_ERROR("Camera ProjectionType not recognized: " + std::to_string(cam.projectionType));
+        return glm::mat4(1.0);
     }
 }
 

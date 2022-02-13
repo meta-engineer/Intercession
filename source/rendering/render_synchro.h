@@ -29,12 +29,21 @@ namespace pleep
         void attach_dynamo(RenderDynamo* contextDynamo);
         
     private:
+        // Register Cosmos/CosmosBuilder setting the entity of the main camera
+        void _register_main_camera(Event setCameraEvent);
+
         // cosmos who created me and will proc my update
-        // I am its friend and can access ECS
+        // use it to access ECS
         Cosmos* m_ownerCosmos;
 
         // dynamo provided by cosmos context to invoke on update
         RenderDynamo* m_attachedRenderDynamo;
+
+        // Rendering specific data
+
+        // Cosmos should register the current rendering camera
+        // synchro will have to fetch data and update Dynamo each frame
+        Entity m_mainCamera = NULL_ENTITY;
     };
 }
 

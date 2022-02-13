@@ -7,8 +7,14 @@ namespace pleep
     void EventBroker::add_listener(EventId eventId, std::function<void(Event&)> const& listener) 
     {
         // may be convenient to have a better eventId name conversion
-        PLEEPLOG_TRACE("Add listener triggered for event " + std::to_string(eventId));
+        PLEEPLOG_TRACE("Add listener for event " + std::to_string(eventId));
         m_listeners[eventId].push_back(listener);
+    }
+    
+    void EventBroker::remove_listener(EventId eventId, std::function<void(Event&)> const& listener) 
+    {
+        PLEEPLOG_TRACE("Remove listener for event " + std::to_string(eventId));
+        m_listeners[eventId].remove_if([listener](std::function<void(Event&)> f){ return f.target_type() == listener.target_type(); });
     }
     
     void EventBroker::send_event(Event& event) 

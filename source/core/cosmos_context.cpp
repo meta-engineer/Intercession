@@ -5,11 +5,11 @@
 #include "controlling/control_synchro.h"
 #include "rendering/render_synchro.h"
 
+// TODO: This is temporary for building hard-coded entities
 #include "physics/transform_component.h"
-
-// TODO: This is temporary for hard-coding entities
 #include "rendering/model_component.h"
 #include "rendering/cube_model.h"
+#include "rendering/camera_component.h"
 
 namespace pleep
 {
@@ -145,6 +145,7 @@ namespace pleep
         // register components
         m_currentCosmos->register_component<TransformComponent>();
         m_currentCosmos->register_component<ModelComponent>();
+        m_currentCosmos->register_component<CameraComponent>();
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -164,6 +165,7 @@ namespace pleep
         {
             Signature sign;
             sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<ModelComponent>());
 
             m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
         }
@@ -176,11 +178,42 @@ namespace pleep
         std::shared_ptr<Model> cubeModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(cube, ModelComponent(cubeModel));
 
-        Entity box  = m_currentCosmos->create_entity();
+        Entity box = m_currentCosmos->create_entity();
         TransformComponent boxTransform(glm::vec3(1.0f));
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(create_cube_model_ptr("resources/container2.png", "resources/container2_specular.png")));
 
+        // Scene needs to create an entity with camera component
+        Entity mainCamera = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 0.0f, 5.0f)));
+        m_currentCosmos->add_component(mainCamera, CameraComponent());
+        
+        // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
+        // assuming there is only ever 1 main camera we can notify over event broker
+        // dynamos don't have acess to cosmos, so they can't lookup entity
+        // we can pass pointer to components for dynamo to use
+        // or synchro can maintain camera and pass its data each frame
+        
+        Event cameraEvent(events::rendering::SET_MAIN_CAMERA);
+        events::rendering::set_main_camera::Params cameraParams {
+            mainCamera
+        };
+        cameraEvent.set_param(cameraParams);
+        
+        // TODO: unit testing
+        renderSynchro->attach_dynamo(nullptr);
+        m_eventBroker->send_event(cameraEvent);
+        renderSynchro->attach_dynamo(m_renderDynamo);
+        
+        m_eventBroker->send_event(cameraEvent);
+
+        // RenderRelays should deal with each render phase
+        //   and need to know camera entity's data
+        // RenderRelays don't have access to Cosmos, so they need references to camera data
+        // Cosmos builder could create relays for RenderDynamo, create entities and then assign
+        //  how would it deal with dynamically created cameras...
+        // Camera entities, like "rendered" entities need to have/know a relay type
+        //   then the camera synchro can pass to dynamo and it would know what to do?
     }
     
     void CosmosContext::_quit_handler(Event quitEvent)
