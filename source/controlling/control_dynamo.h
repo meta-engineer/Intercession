@@ -29,9 +29,6 @@ namespace pleep
         ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi);
         ~ControlDynamo();
 
-        // any per-frame init needs to be done
-        void prime() override;
-
         // should control components be "submitted" or statically "registered"
         // "immediate mode" vs "retained mode"
         // NOTE: if you use submit() then it could be added to IDynamo (RenderDynamo also uses it)

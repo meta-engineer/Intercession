@@ -20,17 +20,7 @@ namespace pleep
     ControlDynamo::~ControlDynamo()
     {
     }
-    
-    void ControlDynamo::prime() 
-    {
-        // fatal error if window api has been destroyed
-        if (m_windowApi == nullptr)
-        {
-            PLEEPLOG_ERROR("Window API reference was unexpectedly NULL");
-            throw std::runtime_error("ControlDynamo update found window api reference unexpectedly null");
-        }
-    }
-    
+
     void ControlDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);

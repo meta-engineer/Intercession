@@ -12,7 +12,7 @@ namespace pleep
         : m_ownerCosmos(owner)
         , m_attachedRenderDynamo(nullptr)
     {
-        
+
     }
     
     RenderSynchro::~RenderSynchro() 
@@ -35,10 +35,6 @@ namespace pleep
             PLEEPLOG_WARN("Render Synchro update was called without an attached Dynamo");
             return;
         }
-        
-
-        // any dynamo specific initialization (glClear)
-        m_attachedRenderDynamo->prime();
 
         // feed components of m_entities to attached ControlDynamo
         // I should implicitly know my signature and therefore what components i can fetch

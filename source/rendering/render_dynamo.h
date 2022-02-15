@@ -25,9 +25,8 @@ namespace pleep
         ~RenderDynamo();
 
         // methods to process render pipeline
-        // clear and initialize for frame
-        void prime() override;
-        // entry meshes / vertex groups to be rendered
+        
+        // enter meshes / vertex groups to be rendered
         void submit();
         // process render command queue
         void run_relays(double deltaTime) override;

@@ -32,9 +32,6 @@ namespace pleep
             PLEEPLOG_WARN("Control Synchro update was called without an attached Dynamo");
             return;
         }
-        
-        // any dynamo specific initialization
-        m_attachedControlDynamo->prime();
 
         // feed components of m_entities to attached ControlDynamo
         // I should implicitly know my signature and therefore what components i can fetch

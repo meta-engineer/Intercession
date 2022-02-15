@@ -18,20 +18,6 @@ namespace pleep
         // I do not own my api references or event broker
     }
     
-    void RenderDynamo::prime() 
-    {
-        IDynamo::prime();
-
-        // fatal error if window api has been destroyed
-        if (m_windowApi == nullptr)
-        {
-            PLEEPLOG_ERROR("Window API reference was unexpectedly NULL");
-            throw std::runtime_error("RenderDynamo update found window api reference unexpectedly null");
-        }
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-    
     void RenderDynamo::submit() 
     {
         // pass mesh/material information to the relay designated by the material
@@ -43,6 +29,9 @@ namespace pleep
         // relays may have a non-greedy process (deferred rendering)
         // here we have finished all submittions and can run through each relay
         UNREFERENCED_PARAMETER(deltaTime);
+
+        // TODO: move this to individual relays
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     
     void RenderDynamo::flush_frame() 

@@ -7,11 +7,6 @@ namespace pleep
     {
         // no guarentees sharedBroker isn't null
     }
-
-    void IDynamo::prime() 
-    {
-        
-    }
     
     EventBroker* IDynamo::get_shared_broker() 
     {

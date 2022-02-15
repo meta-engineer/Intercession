@@ -12,8 +12,7 @@ namespace pleep
         IDynamo(EventBroker* sharedBroker);
 
         // universal pre-frame init for dynamos
-        // Does nothing right now
-        virtual void prime();
+        //virtual void prime();
 
         virtual void run_relays(double deltaTime) = 0;
 
