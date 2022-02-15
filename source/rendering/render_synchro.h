@@ -30,7 +30,13 @@ namespace pleep
         
     private:
         // Register Cosmos/CosmosBuilder setting the entity of the main camera
-        void _register_main_camera(Event setCameraEvent);
+        void _set_main_camera_handler(Event setCameraEvent);
+        
+        // handle any entity related resizing (m_mainCamera)
+        // dynamo also handles this, making gl calls
+        void _resize_handler(Event resizeEvent);
+        
+        void _resize_main_camera(int width, int height);
 
         // cosmos who created me and will proc my update
         // use it to access ECS

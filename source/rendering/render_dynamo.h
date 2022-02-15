@@ -32,6 +32,10 @@ namespace pleep
         void run_relays(double deltaTime) override;
         // stagger the final flush to allow context to debug
         void flush_frame();
+        
+        // get current viewport origin/sizes
+        // viewportDims must be at least 4 int large
+        void read_viewport_size(int* viewportDims);
 
     private:
         // Listening to events::window::RESIZE sent by ControlDynamo

@@ -39,6 +39,11 @@ namespace pleep
         glfwSwapBuffers(m_windowApi);
     }
     
+    void RenderDynamo::read_viewport_size(int* viewportDims) 
+    {
+        glGetIntegerv(GL_VIEWPORT, viewportDims);
+    }
+    
     void RenderDynamo::_resize_handler(Event resizeEvent) 
     {
         events::window::resize::Params resizeParams = resizeEvent.get_param<events::window::resize::Params>();
