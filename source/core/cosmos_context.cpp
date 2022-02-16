@@ -10,6 +10,7 @@
 #include "rendering/model_component.h"
 #include "rendering/cube_model.h"
 #include "rendering/camera_component.h"
+#include "rendering/light_source_component.h"
 
 namespace pleep
 {
@@ -122,6 +123,8 @@ namespace pleep
 
             // ***** Finish Frame *****
             // Context gets last word on any final superceding actions
+            // Maybe IDynamo should have a generic "flush" method
+            //   and we invoke all dynamos (to avoid having to specify)
             
             // RenderDynamo calls swap buffers
             m_renderDynamo->flush_frame();
@@ -146,6 +149,7 @@ namespace pleep
         m_currentCosmos->register_component<TransformComponent>();
         m_currentCosmos->register_component<ModelComponent>();
         m_currentCosmos->register_component<CameraComponent>();
+        m_currentCosmos->register_component<LightSourceComponent>();
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -174,7 +178,7 @@ namespace pleep
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
         Entity cube = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(2.0f)));
+        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(-2.0f)));
         std::shared_ptr<Model> cubeModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(cube, ModelComponent(cubeModel));
 
@@ -204,8 +208,14 @@ namespace pleep
         renderSynchro->attach_dynamo(nullptr);
         m_eventBroker->send_event(cameraEvent);
         renderSynchro->attach_dynamo(m_renderDynamo);
-        
+
         m_eventBroker->send_event(cameraEvent);
+
+
+        Entity light = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 2.0f, -2.0f)));
+        m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(0.7f, 0.8f, 0.9f)));
+        m_currentCosmos->add_component(light, ModelComponent(create_cube_model_ptr("resources/blending_transparent_window.png")));
 
         // RenderRelays should deal with each render phase
         //   and need to know camera entity's data

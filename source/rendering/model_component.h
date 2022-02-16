@@ -20,16 +20,19 @@ namespace pleep
         // the cherno uses components with shared pointers
         //   so i'll assume that it is reasonably performant, though maybe not ideal
         // for now we'll reuse our test class
+        // ideally armatures would be in a completely seperate component
+        // but the bone data may be firmly tied to the specific model
         // TODO: make his more data-oriented
         std::shared_ptr<Model> model;
 
-        // model builder should maintain these while constructing all meshes
-        // It is unlikely we'll me changing a model so significantly after construction
+        // the model builder or context should maintain these while constructing all meshes
+        // and track references to those unified texture locations
+        // It is unlikely we'll be changing a model so significantly after construction
         //std::string directory;
         //std::vector<Texture> texturesLoaded;
 
-        // ideally armatures would be in a completely seperate component
-        // but the bone data may be tied to the specific model
+        // TODO: additional rendering options
+        //bool shadow_caster;
 
 		ModelComponent() = default;
 		ModelComponent(const ModelComponent&) = default;
@@ -42,8 +45,8 @@ namespace pleep
     // This could be accomplished by building them into instances and
     //   merging them to one instanced draw call
     // Alternatively we could have them use a flyweight model
-    // Where each user would reference them same (const) data (VAO, EBO, EBO)
-    // then they would differ in uniforms set by other components (transformcomponent)
+    // Where each user would reference them same (const) model data (VAO, EBO, EBO)
+    // then they would differ in uniforms set by other components (TransformComponent)
 }
 
 #endif // MODEL_COMPONENT_H

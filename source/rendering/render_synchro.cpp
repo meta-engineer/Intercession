@@ -44,7 +44,7 @@ namespace pleep
             TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             ModelComponent model = m_ownerCosmos->get_component<ModelComponent>(entity);
             
-            //m_attachedRenderDynamo->submit();
+            //m_attachedRenderDynamo->submit(transform, model->meshes[i]);
         }
 
         // once command queue is implemented this will flush them through relays

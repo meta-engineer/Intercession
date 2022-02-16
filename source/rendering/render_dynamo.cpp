@@ -18,17 +18,27 @@ namespace pleep
         // I do not own my api references or event broker
     }
     
-    void RenderDynamo::submit() 
+    void RenderDynamo::submit(TransformComponent& transform, Mesh& mesh)
     {
-        // pass mesh/material information to the relay designated by the material
+        // pass mesh/material information to the relay designated by the meshes material
+        UNREFERENCED_PARAMETER(transform);
+        UNREFERENCED_PARAMETER(mesh);
     }
     
     void RenderDynamo::run_relays(double deltaTime) 
     {
-        // submited meshes will get assigned to a render relay
-        // relays may have a non-greedy process (deferred rendering)
-        // here we have finished all submittions and can run through each relay
+        // We have finished all submittions and can run through each relay
+        // each relay is like a "mini-scene"
+        //   initialize the frame
+        //   then render through each renderable it has been submitted
+        //   then close the frame
         UNREFERENCED_PARAMETER(deltaTime);
+
+        // TODO: update uniform buffer for registered relays
+
+
+        // run through each relay in my configured order
+
 
         // TODO: move this to individual relays
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

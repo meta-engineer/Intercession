@@ -14,6 +14,8 @@
 
 #include "core/i_dynamo.h"
 #include "events/event_broker.h"
+#include "physics/transform_component.h"
+#include "mesh.h"
 
 namespace pleep
 {
@@ -27,7 +29,7 @@ namespace pleep
         // methods to process render pipeline
         
         // enter meshes / vertex groups to be rendered
-        void submit();
+        void submit(TransformComponent& transform, Mesh& mesh);
         // process render command queue
         void run_relays(double deltaTime) override;
         // stagger the final flush to allow context to debug
@@ -47,10 +49,14 @@ namespace pleep
         // hard-code windowApi to glfw for now
         GLFWwindow* m_windowApi;
 
-        // needs a camera component registered as the "main" camera for rendering
-        // like a CameraManager, but data only
-        // other camera components can be registered for shadow maps, etc...
-        //CameraComponent* m_mainCamera
+        // Relays encapsulate procedures for a render "pass"
+        // they should output to a framebuffer which can be passed to the next relay
+
+
+        // DRenderDynamo maintains a uniform buffer for all relays to use
+
+        // Camera data is not live ( dynamo can't access ECS)
+        // but synchro will update use each frame (or when neccessary)
     };
 }
 
