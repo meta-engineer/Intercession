@@ -11,7 +11,7 @@
 #include <assimp/postprocess.h>
 
 #include "mesh.h"
-#include "assimp_glm_convertors.h"
+#include "assimp_converters.h"
 
 namespace pleep {
     // Models know about bones, but are fed by animators?
@@ -39,7 +39,7 @@ namespace pleep {
         // set all child meshes to have a mat4 attrib from location = offset to offset+4
         void setup_all_instance_transform_attrib_arrays(unsigned int offset);
 
-        // TODO: move these loaders to a RenderDynamo component
+        // TODO: move these helpers to model_builder
         static unsigned int load_gl_texture(std::string filename, const std::string& path = "", bool gammaCorrect = true);
         static unsigned int load_gl_cubemap_texture(std::vector<std::string> filenames, bool gammaCorrect = true);
 
@@ -68,7 +68,7 @@ namespace pleep {
         std::vector<Mesh> meshes;
         // maintain location to find associated files
         std::string directory;
-        // should loaded textures be static so all model instances share equivalent textures?
+        // TODO: move this to model_builder utilities to share textures across models
         std::vector<Texture> texturesLoaded;
 
         std::map<std::string, BoneInfo> boneInfoMap;

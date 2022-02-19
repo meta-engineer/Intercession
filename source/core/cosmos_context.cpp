@@ -8,7 +8,7 @@
 // TODO: This is temporary for building hard-coded entities
 #include "physics/transform_component.h"
 #include "rendering/model_component.h"
-#include "rendering/cube_model.h"
+#include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
 
@@ -185,7 +185,7 @@ namespace pleep
         Entity box = m_currentCosmos->create_entity();
         TransformComponent boxTransform(glm::vec3(1.0f));
         m_currentCosmos->add_component(box, boxTransform);
-        m_currentCosmos->add_component(box, ModelComponent(create_cube_model_ptr("resources/container2.png", "resources/container2_specular.png")));
+        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
 
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
@@ -215,7 +215,7 @@ namespace pleep
         Entity light = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 2.0f, -2.0f)));
         m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(0.7f, 0.8f, 0.9f)));
-        m_currentCosmos->add_component(light, ModelComponent(create_cube_model_ptr("resources/blending_transparent_window.png")));
+        m_currentCosmos->add_component(light, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));
 
         // RenderRelays should deal with each render phase
         //   and need to know camera entity's data

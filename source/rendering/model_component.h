@@ -22,7 +22,8 @@ namespace pleep
         // for now we'll reuse our test class
         // ideally armatures would be in a completely seperate component
         // but the bone data may be firmly tied to the specific model
-        // TODO: make his more data-oriented
+        // TODO: make his more data-oriented, directly store meshes here
+        //   and create model_builder module with all needed methods
         std::shared_ptr<Model> model;
 
         // the model builder or context should maintain these while constructing all meshes

@@ -44,6 +44,7 @@ namespace pleep
             TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             ModelComponent model = m_ownerCosmos->get_component<ModelComponent>(entity);
             
+            // NOTE: eventually ModelComponent will directly own mesh vector, not just wrap old/model
             //m_attachedRenderDynamo->submit(transform, model->meshes[i]);
         }
 

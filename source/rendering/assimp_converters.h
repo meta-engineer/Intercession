@@ -1,5 +1,5 @@
-#ifndef ASSIMP_GLM_CONVERTERS_H
-#define ASSIMP_GLM_CONVERTERS_H
+#ifndef ASSIMP_CONVERTERS_H
+#define ASSIMP_CONVERTERS_H
 
 #include<assimp/matrix4x4.h>
 #include<glm/glm.hpp>
@@ -19,4 +19,4 @@ namespace assimp_converters
 }
 
 
-#endif // ASSIMP_GLM_CONVERTERS_H
+#endif // ASSIMP_CONVERTERS_H
