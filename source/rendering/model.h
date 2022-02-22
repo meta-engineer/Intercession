@@ -64,8 +64,12 @@ namespace pleep {
         // shown to also accept (const aiScene* scene), but is unused?
         void _extract_bone_weight_for_vertices(std::vector<Vertex>& vertices, aiMesh* mesh);
         
+        // TODO: store directly in ModelComponent
+    public:
         // TODO: heirarchy of meshes is not preserved
         std::vector<Mesh> meshes;
+        
+    private:
         // maintain location to find associated files
         std::string directory;
         // TODO: move this to model_builder utilities to share textures across models

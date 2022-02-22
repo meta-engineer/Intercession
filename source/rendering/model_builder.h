@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include "model.h"
+#include "vertex_group.h"
 
 namespace pleep
 {
@@ -13,6 +14,9 @@ namespace pleep
         // Build Model with standard quad buffer data
         // return shared pointer for ECS
         std::shared_ptr<Model> create_cube(std::string diffusePath = "", std::string specularPath = "", std::string normalPath = "");
+
+        // basic unit square for screen textures
+        std::shared_ptr<VertexGroup> create_screen_plane();
     }
 }
 

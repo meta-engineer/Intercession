@@ -15,7 +15,7 @@
 int main(int argc, char** argv)
 {
     INIT_PLEEPLOG();
-    PLEEPLOG_INFO("Initialized pleep logger!");
+    PLEEPLOG_TRACE("Initialized pleep logger!");
 
     PLEEPLOG_INFO(argv[0]);
     PLEEPLOG_INFO("Build version: " + std::to_string(BUILD_VERSION_MAJOR) + "." + std::to_string(BUILD_VERSION_MINOR));
@@ -41,6 +41,7 @@ int main(int argc, char** argv)
         PLEEPLOG_WARN("Ignored cmd args: " + concat);
     }
 
+
     pleep::AppGateway* client = nullptr;
 
     // top level, last-resort catch to safely handle errors
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
 
     try
     {
+        // "run" is synchronous, returning implies app has stopped (unlike "start")
         client->run();
     }
     catch (const std::exception& e)

@@ -1,5 +1,7 @@
 #include "shader_manager.h"
 
+#include "logging/pleep_log.h"
+
 namespace pleep
 {
     ShaderManager::ShaderManager(const char* vertexPath, const char* fragmentPath)
@@ -44,7 +46,18 @@ namespace pleep
 
     void ShaderManager::activate()
     {
+        GLint currProgram_id;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &currProgram_id);
+        if (currProgram_id != 0 )
+        {
+            PLEEPLOG_WARN("ShaderManager misuse. Program " + std::to_string(shaderProgram_id) + " activated before program " + std::to_string(currProgram_id) + " was deactivated");
+        }
         glUseProgram(shaderProgram_id);
+    }
+    
+    void ShaderManager::deactivate() 
+    {
+        glUseProgram(0);
     }
 
     void ShaderManager::set_bool(const std::string &name, bool value) const

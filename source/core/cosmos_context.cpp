@@ -155,6 +155,7 @@ namespace pleep
         // we shouldn't need to keep synchro references after we config them here, 
         // we'll only access through Cosmos
         // any other functionallity should be in dynamos
+        PLEEPLOG_TRACE("Create Synchros");
         std::shared_ptr<ControlSynchro> controlSynchro = m_currentCosmos->register_synchro<ControlSynchro>();
         controlSynchro->attach_dynamo(m_controlDynamo);
         {
@@ -174,16 +175,18 @@ namespace pleep
             m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
         }
 
+        PLEEPLOG_TRACE("Create Entities");
         // create entities
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
         Entity cube = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(-2.0f)));
+        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(0.0f, 0.0f, -2.0f)));
+        m_currentCosmos->get_component<TransformComponent>(cube).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> cubeModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(cube, ModelComponent(cubeModel));
 
         Entity box = m_currentCosmos->create_entity();
-        TransformComponent boxTransform(glm::vec3(1.0f));
+        TransformComponent boxTransform(glm::vec3(0.0f, -1.0f, -2.0f));
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
 
@@ -195,8 +198,7 @@ namespace pleep
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
         // dynamos don't have acess to cosmos, so they can't lookup entity
-        // we can pass pointer to components for dynamo to use
-        // or synchro can maintain camera and pass its data each frame
+        // synchro can maintain camera and pass its data each frame
         
         Event cameraEvent(events::rendering::SET_MAIN_CAMERA);
         events::rendering::set_main_camera::Params cameraParams {

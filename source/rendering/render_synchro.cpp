@@ -6,6 +6,7 @@
 #include "physics/transform_component.h"
 #include "rendering/model_component.h"
 #include "rendering/camera_component.h"
+#include "rendering/render_packet.h"
 
 namespace pleep
 {
@@ -37,15 +38,30 @@ namespace pleep
             return;
         }
 
+        // update view info with registered camera
+        // re-get camera each time becuase ECS pointers are volatile
+        CameraComponent& viewCamera = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
+        TransformComponent& viewTransform = m_ownerCosmos->get_component<TransformComponent>(m_mainCamera);
+        m_attachedRenderDynamo->set_world_to_view(get_lookAt(viewTransform, viewCamera));
+        m_attachedRenderDynamo->set_projection(get_projection(viewCamera));
+        m_attachedRenderDynamo->set_viewPos(viewTransform.origin);
+
         // feed components of m_entities to attached ControlDynamo
         // I should implicitly know my signature and therefore what components i can fetch
         for (Entity const& entity : m_entities)
         {
-            TransformComponent transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            ModelComponent model = m_ownerCosmos->get_component<ModelComponent>(entity);
+            TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
+            ModelComponent& model = m_ownerCosmos->get_component<ModelComponent>(entity);
             
             // NOTE: eventually ModelComponent will directly own mesh vector, not just wrap old/model
-            //m_attachedRenderDynamo->submit(transform, model->meshes[i]);
+            // we'll pass each mesh to renderer, NOT a model
+            // Are meshes independant?
+            //   any other data dynamo could need from entity?
+            //   are there model-wide options for rendering? outlines? palettes?
+            for (Mesh& mesh : model.model->meshes)
+            {
+                m_attachedRenderDynamo->submit(RenderPacket{ transform, mesh });
+            }
         }
 
         // once command queue is implemented this will flush them through relays
@@ -100,6 +116,7 @@ namespace pleep
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 
+        // for now always match camera to window resolution
         _resize_main_camera(resizeParams.width, resizeParams.height);
     }
     
@@ -108,8 +125,10 @@ namespace pleep
         PLEEPLOG_TRACE("Overwriting registered camera with viewport dimensions: " + std::to_string(width) + ", " + std::to_string(height));
 
         // camera components must be registered and this entity must have a camera component
-        CameraComponent mainCamInfo = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
+        CameraComponent& mainCamInfo = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
         mainCamInfo.viewWidth = width;
         mainCamInfo.viewHeight = height;
+
+        m_attachedRenderDynamo->resize_framebuffers(mainCamInfo.viewWidth, mainCamInfo.viewHeight);
     }
 }

@@ -104,5 +104,30 @@ namespace pleep
             Mesh cubeMesh(vertices, indices, textures);
             return std::shared_ptr<Model>(new Model(cubeMesh));
         }
+        
+        std::shared_ptr<VertexGroup> create_screen_plane()
+        {
+            const float SCREEN_PLANE_VERTICES[] = {
+                // coordinates       // texture coordinates
+                -1.0f,  1.0f,  0.0f,   0.0f,  1.0f,
+                1.0f,  1.0f,  0.0f,   1.0f,  1.0f,
+                -1.0f, -1.0f,  0.0f,   0.0f, 0.0f,
+                1.0f, -1.0f,  0.0f,   1.0f, 0.0f
+            };
+            const unsigned int SCREEN_PLANE_INDICES[] = {
+                0,2,1,
+                1,2,3
+            };
+            const unsigned int SCREEN_PLANE_ATTRIBS[] = {
+                3,2
+            };
+            
+            // should load stack data into VAO, then it can be removed when this stack ends
+            return std::make_shared<VertexGroup>(
+                SCREEN_PLANE_VERTICES, sizeof(SCREEN_PLANE_VERTICES) / sizeof(float), 
+                SCREEN_PLANE_INDICES, sizeof(SCREEN_PLANE_INDICES) / sizeof(unsigned int), 
+                SCREEN_PLANE_ATTRIBS, sizeof(SCREEN_PLANE_ATTRIBS) / sizeof(unsigned int)
+            );
+        }
     }
 }

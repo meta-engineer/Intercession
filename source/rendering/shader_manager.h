@@ -22,7 +22,13 @@ namespace pleep
         ShaderManager(const char* vertexPath, const char* fragmentPath);
         ShaderManager(const char* vertexPath, const char* geometryPath, const char* fragmentPath);
 
+        // use this program
+        // overrides previous activated program
+        // logs warning if another program is still active
         void activate();
+        // sets null program
+        // This is a class method just for readability
+        void deactivate();
 
         // utility uniform functions
         void set_bool(const std::string &name, bool value) const;  

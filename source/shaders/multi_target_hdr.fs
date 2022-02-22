@@ -66,7 +66,7 @@ uniform float shadowFarPlane_point_0;
 
 // NVIDIA throws if there is an uninitialized cubemap
 // so assume only ever 1 environment map
-uniform bool environmentCubemap_enable;
+uniform bool environmentCubemap_enable = false;
 uniform samplerCube environmentCubemap;
 
 #define MAX_RAY_LIGHTS 1
