@@ -22,18 +22,6 @@ namespace pleep
         {
             // init shader uniforms
             m_sm.activate();
-            // TODO: ingest lights from a lightingSynchro
-            testLightTransform.origin = glm::vec3(0.0f, 2.0f, -2.0f);
-
-            m_sm.set_int("numPointLights", 1);
-            m_sm.set_vec3("pLights[0].position", testLightTransform.origin);
-            m_sm.set_vec3("pLights[0].attenuation", testLightSource.attenuation);
-            m_sm.set_vec3("pLights[0].ambient",  testLightSource.color * testLightSource.composition.x);
-            m_sm.set_vec3("pLights[0].diffuse",  testLightSource.color * testLightSource.composition.y);
-            m_sm.set_vec3("pLights[0].specular", testLightSource.color * testLightSource.composition.z);
-
-            m_sm.set_int("numSpotLights", 0);
-            m_sm.set_int("numRayLights", 0);
 
             // guarentee this uniform block will always be block 0?
             glUniformBlockBinding(m_sm.shaderProgram_id, glGetUniformBlockIndex(m_sm.shaderProgram_id, "viewTransforms"), 0);
@@ -56,28 +44,102 @@ namespace pleep
             // uniforms
             // TODO: ingest camera info
             m_sm.set_vec3("viewPos", glm::vec3(0.0f, 0.0f, 5.0f));
-            
-            while (!m_packetQueue.empty())
+
+            // we'll set light uniforms collectively here
+            m_numRayLights = 0;
+            m_numPointLights = 0;
+            m_numSpotLights = 0;
+            while (!m_lightPacketQueue.empty())
             {
-                RenderPacket& data = m_packetQueue.front();
+                LightPacket& data = m_lightPacketQueue.front();
+                m_lightPacketQueue.pop();
+                std::string lightUni;
+
+                switch(data.light.type)
+                {
+                    case (LightSourceType::ray):
+                        if (m_numRayLights >= MAX_RAY_LIGHTS)
+                            continue;
+                        
+                        lightUni = "rLights[" + std::to_string(m_numRayLights) + "]";
+                        m_numRayLights++;
+                        break;
+                    case (LightSourceType::point):
+                        if (m_numPointLights >= MAX_POINT_LIGHTS)
+                            continue;
+                        
+                        lightUni = "pLights[" + std::to_string(m_numPointLights) + "]";
+                        m_numPointLights++;
+                        break;
+                    case (LightSourceType::spot):
+                        if (m_numSpotLights >= MAX_SPOT_LIGHTS)
+                            continue;
+
+                        lightUni = "sLights[" + std::to_string(m_numSpotLights) + "]";
+                        m_numSpotLights++;
+                        m_sm.set_float(lightUni + ".innerCos", data.light.attributes.x);
+                        m_sm.set_float(lightUni + ".outerCos", data.light.attributes.y);
+                        break;
+                    default:
+                        // continues should affect the outer lightPacket loop
+                        continue;
+                }
+                
+                m_sm.set_vec3(lightUni + ".position",
+                    data.transform.origin);
+                m_sm.set_vec3(lightUni + ".attenuation",
+                    data.light.attenuation);
+                m_sm.set_vec3(lightUni + ".ambient",
+                    data.light.color * data.light.composition.x);
+                m_sm.set_vec3(lightUni + ".diffuse",
+                    data.light.color * data.light.composition.y);
+                m_sm.set_vec3(lightUni + ".specular",
+                    data.light.color * data.light.composition.z);
+            }
+            m_sm.set_int("numRayLights", m_numRayLights);
+            m_sm.set_int("numPointLights", m_numPointLights);
+            m_sm.set_int("numSpotLights", m_numSpotLights);
+
+            // Render through all models
+            while (!m_modelPacketQueue.empty())
+            {
+                RenderPacket& data = m_modelPacketQueue.front();
+                m_modelPacketQueue.pop();
 
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
                 data.mesh.invoke_draw(m_sm);
-
-                m_packetQueue.pop();
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             m_sm.deactivate();
         }
 
+        // Accept Mesh data to render to
+        // does EVERY kind of RenderRelay need this?
+        void submit(RenderPacket data)
+        {
+            m_modelPacketQueue.push(data);
+        }
+
+        void submit(LightPacket data)
+        {
+            m_lightPacketQueue.push(data);
+        }
+        
     private:
         // Foreward pass needs light position/direction, viewPos, shadow transform/farplane/shadowmap
         ShaderManager m_sm;
-
-        // TODO: Ingest lights from ECS
-        TransformComponent testLightTransform;
-        LightSourceComponent testLightSource;
+        // definitions known by my shader
+        const size_t MAX_RAY_LIGHTS   = 1;
+        size_t m_numRayLights = 0;
+        const size_t MAX_POINT_LIGHTS = 4;
+        size_t m_numPointLights = 0;
+        const size_t MAX_SPOT_LIGHTS  = 2;
+        size_t m_numSpotLights = 0;
+        
+        // collect packets during render submitting
+        std::queue<RenderPacket> m_modelPacketQueue;
+        std::queue<LightPacket> m_lightPacketQueue;
     };
 }
 

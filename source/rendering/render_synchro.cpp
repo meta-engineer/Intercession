@@ -3,25 +3,15 @@
 #include <exception>
 
 #include "logging/pleep_log.h"
+#include "core/cosmos.h"
+
 #include "physics/transform_component.h"
-#include "rendering/model_component.h"
 #include "rendering/camera_component.h"
+#include "rendering/model_component.h"
 #include "rendering/render_packet.h"
 
 namespace pleep
 {
-    RenderSynchro::RenderSynchro(Cosmos* owner) 
-        : m_ownerCosmos(owner)
-        , m_attachedRenderDynamo(nullptr)
-    {
-
-    }
-    
-    RenderSynchro::~RenderSynchro() 
-    {
-        // I do not own my Cosmos (parent) or Dynamo
-    }
-    
     void RenderSynchro::update(double deltaTime)
     {
         // No owner is a fatal error

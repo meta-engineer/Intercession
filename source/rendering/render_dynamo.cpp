@@ -80,6 +80,13 @@ namespace pleep
     RenderDynamo::~RenderDynamo() 
     {
         // I do not own my api references or event broker
+
+        glDeleteFramebuffers(1, &m_forwardFboId);
+        glDeleteTextures(1, &m_hdrRenderedTextureId);
+        glDeleteTextures(1, &m_bloomRenderedTextureId);
+        glDeleteRenderbuffers(1, &m_forwardRboId);
+
+        glDeleteBuffers(1, &m_viewTransformUboId);
     }
     
     void RenderDynamo::submit(RenderPacket data)
@@ -91,6 +98,12 @@ namespace pleep
         // Otherwise use some default
         
         // we don't have materials, so for now just hardwire to relays
+        m_forwardPass->submit(data);
+    }
+    
+    void RenderDynamo::submit(LightPacket data) 
+    {
+        // again, can we implicitly know which relays want this info
         m_forwardPass->submit(data);
     }
     
@@ -112,15 +125,15 @@ namespace pleep
         // run through each relay in my configured order
         GLenum err;
         err = glGetError();
-        if (err) PLEEPLOG_ERROR("glError before render");
+        if (err) { PLEEPLOG_ERROR("glError before render: " + std::to_string(err)); }
 
         m_forwardPass->render();
         err = glGetError();
-        if (err) PLEEPLOG_ERROR("glError after forward pass");
+        if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
 
         m_screenPass->render();
         err = glGetError();
-        if (err) PLEEPLOG_ERROR("glError after screen pass");
+        if (err) { PLEEPLOG_ERROR("glError after screen pass: " + std::to_string(err)); }
     }
     
     void RenderDynamo::flush_frame() 

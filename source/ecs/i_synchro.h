@@ -21,13 +21,24 @@ namespace pleep
         ...
     }
     */
+   
+    // forward declare parent/owner
+    class Cosmos;
+
     class ISynchro
     {
     public:
+        ISynchro(Cosmos* owner)
+            : m_ownerCosmos(owner)
+        {}
+
         // Cosmos will call this universally for all synchros
         virtual void update(double deltaTime) = 0;
 
         std::set<Entity> m_entities;
+        
+        // Access to ecs where m_entities are contained
+        Cosmos* m_ownerCosmos;
     };
 }
 

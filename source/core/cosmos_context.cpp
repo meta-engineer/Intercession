@@ -2,10 +2,11 @@
 
 #include "logging/pleep_log.h"
 
+// TODO: This is temporary for building hard-coded entities
 #include "controlling/control_synchro.h"
 #include "rendering/render_synchro.h"
+#include "rendering/lighting_synchro.h"
 
-// TODO: This is temporary for building hard-coded entities
 #include "physics/transform_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
@@ -165,7 +166,18 @@ namespace pleep
             m_currentCosmos->set_synchro_signature<ControlSynchro>(sign);
         }
 
-        std::shared_ptr<RenderSynchro> renderSynchro   = m_currentCosmos->register_synchro<RenderSynchro>();
+        // synchros are in a map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
+        std::shared_ptr<LightingSynchro> lightingSynchro = m_currentCosmos->register_synchro<LightingSynchro>();
+        lightingSynchro->attach_dynamo(m_renderDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<LightSourceComponent>());
+
+            m_currentCosmos->set_synchro_signature<LightingSynchro>(sign);
+        }
+
+        std::shared_ptr<RenderSynchro> renderSynchro = m_currentCosmos->register_synchro<RenderSynchro>();
         renderSynchro->attach_dynamo(m_renderDynamo);
         {
             Signature sign;

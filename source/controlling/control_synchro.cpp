@@ -2,21 +2,10 @@
 
 #include <exception>
 #include "logging/pleep_log.h"
+#include "core/cosmos.h"
 
 namespace pleep
-{
-    ControlSynchro::ControlSynchro(Cosmos* owner)
-        : m_ownerCosmos(owner)
-        , m_attachedControlDynamo(nullptr)
-    {
-        
-    }
-    
-    ControlSynchro::~ControlSynchro() 
-    {
-        // I do not own my Cosmos (parent) or Dynamo
-    }
-    
+{   
     void ControlSynchro::update(double deltaTime) 
     {
         // No owner is a fatal error

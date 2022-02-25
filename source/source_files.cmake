@@ -13,6 +13,7 @@ set(ALL_SOURCE_FILES
 
     source/rendering/render_dynamo.cpp
     source/rendering/render_synchro.cpp
+    source/rendering/lighting_synchro.cpp
     source/rendering/model.cpp
     source/rendering/model_builder.cpp
     source/rendering/mesh.cpp

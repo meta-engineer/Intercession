@@ -5,6 +5,7 @@
 #include <queue>
 
 #include "rendering/render_packet.h"
+#include "rendering/light_packet.h"
 
 namespace pleep
 {
@@ -16,12 +17,6 @@ namespace pleep
     class IRenderRelay
     {
     public:
-        // Accept Mesh data to render to
-        void submit(RenderPacket data)
-        {
-            m_packetQueue.push(data);
-        }
-        
         // link framebuffer to output (number of output buffers should be known and setup by dynamo)
         void set_output_fbo_id(unsigned int fboId)
         {
@@ -38,9 +33,6 @@ namespace pleep
 
 
     protected:
-        // collect packets during render submitting
-        std::queue<RenderPacket> m_packetQueue;
-
         // frambuffer passed from dynamo
         unsigned int m_outputFboId;
 

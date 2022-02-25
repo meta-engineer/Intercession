@@ -15,6 +15,7 @@
 #include "core/i_dynamo.h"
 #include "events/event_broker.h"
 #include "rendering/render_packet.h"
+#include "rendering/light_packet.h"
 #include "rendering/mesh.h"
 #include "rendering/forward_render_relay.h"
 #include "rendering/screen_render_relay.h"
@@ -30,8 +31,11 @@ namespace pleep
 
         // methods to process render pipeline
         
-        // enter meshes / vertex groups to be rendered
+        // pass in meshes / vertex groups to be rendered
         void submit(RenderPacket data);
+        // pass in light sources
+        void submit(LightPacket data);
+
         // process render command queue
         void run_relays(double deltaTime) override;
         // stagger the final flush to allow context to debug

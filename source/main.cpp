@@ -52,6 +52,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
+        UNREFERENCED_PARAMETER(e);
         PLEEPLOG_ERROR("The following uncaught exception occurred during AppGateway startup: ");
         PLEEPLOG_ERROR(e.what());
         return 1;

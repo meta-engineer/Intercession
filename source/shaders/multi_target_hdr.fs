@@ -70,15 +70,15 @@ uniform bool environmentCubemap_enable = false;
 uniform samplerCube environmentCubemap;
 
 #define MAX_RAY_LIGHTS 1
-uniform int numRayLights;
+uniform int numRayLights = 0;
 uniform RayLight rLights[MAX_RAY_LIGHTS];
 
 #define MAX_POINT_LIGHTS 4
-uniform int numPointLights;
+uniform int numPointLights = 0;
 uniform PointLight pLights[MAX_POINT_LIGHTS];
 
 #define MAX_SPOT_LIGHTS 2
-uniform int numSpotLights;
+uniform int numSpotLights = 0;
 uniform SpotLight sLights[MAX_SPOT_LIGHTS];
 
 vec3 calc_ray_light(RayLight rLight, vec3 norm, vec3 viewDir, vec3 diffuseSample, vec3 specularSample, float glossSample, int shadowMapIndex);

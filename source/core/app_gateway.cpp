@@ -99,10 +99,6 @@ namespace pleep
         
         // default imgui style
         ImGui::StyleColorsClassic();
-
-        // TODO: this should be determined by the context/cosmos
-        // set mouse capture mode
-        //glfwSetInputMode(m_windowApi, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     
     void AppGateway::_clean_window_api() 
