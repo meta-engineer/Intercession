@@ -30,11 +30,10 @@ namespace pleep
 
         // update view info with registered camera
         // re-get camera each time becuase ECS pointers are volatile
-        CameraComponent& viewCamera = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
-        TransformComponent& viewTransform = m_ownerCosmos->get_component<TransformComponent>(m_mainCamera);
-        m_attachedRenderDynamo->set_world_to_view(get_lookAt(viewTransform, viewCamera));
-        m_attachedRenderDynamo->set_projection(get_projection(viewCamera));
-        m_attachedRenderDynamo->set_viewPos(viewTransform.origin);
+        m_attachedRenderDynamo->submit({
+            m_ownerCosmos->get_component<TransformComponent>(m_mainCamera),
+            m_ownerCosmos->get_component<CameraComponent>(m_mainCamera)
+        });
 
         // feed components of m_entities to attached ControlDynamo
         // I should implicitly know my signature and therefore what components i can fetch

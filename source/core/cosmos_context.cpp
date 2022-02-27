@@ -191,14 +191,14 @@ namespace pleep
         // create entities
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
-        Entity cube = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(cube, TransformComponent(glm::vec3(0.0f, 0.0f, -2.0f)));
-        m_currentCosmos->get_component<TransformComponent>(cube).scale = glm::vec3(0.2f, 0.2f, 0.2f);
-        std::shared_ptr<Model> cubeModel = std::make_shared<Model>("resources/normal_frog.obj");
-        m_currentCosmos->add_component(cube, ModelComponent(cubeModel));
+        Entity frog = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 0.0f, -2.0f)));
+        m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
+        m_currentCosmos->add_component(frog, ModelComponent(frogModel));
 
         Entity box = m_currentCosmos->create_entity();
-        TransformComponent boxTransform(glm::vec3(0.0f, -1.0f, -2.0f));
+        TransformComponent boxTransform(glm::vec3(0.0f, -1.0f, 0.0f));
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
 
@@ -227,8 +227,9 @@ namespace pleep
 
 
         Entity light = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 2.0f, -2.0f)));
-        m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(0.7f, 0.8f, 0.9f)));
+        m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 2.0f, 0.0f)));
+        // remember this is relative to exposure
+        m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         m_currentCosmos->add_component(light, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));
 
         // RenderRelays should deal with each render phase

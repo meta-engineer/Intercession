@@ -25,7 +25,7 @@ namespace pleep
         {
             m_sm.activate();
             glBindFramebuffer(GL_FRAMEBUFFER, m_outputFboId);
-            glViewport(0,0, 1290,540);
+            glViewport(0,0, m_viewWidth,m_viewHeight);
             glClearColor(0.6f, 0.2f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 

@@ -12,7 +12,13 @@ layout (std140) uniform viewTransforms
 };
 uniform mat4 model_to_world;
 
-// TODO: dealing with multiple light transforms
+// TODO: can we define a shader header that concatenates this to VS and FS?
+// otherwise they have to be matched manually
+#define MAX_RAY_LIGHTS 1
+#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 2
+// Its suggested to do this matrix multiply in the vertex shader
+// TODO: convert this to array for all ray lights
 uniform mat4 lightTransform_ray_0;
 
 out vec3 FragPos;

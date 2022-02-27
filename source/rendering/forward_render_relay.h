@@ -6,7 +6,6 @@
 #include "logging/pleep_log.h"
 #include "rendering/i_render_relay.h"
 #include "rendering/shader_manager.h"
-// This will likely need to be a lightSourcePacket
 #include "rendering/light_source_component.h"
 
 namespace pleep
@@ -33,9 +32,9 @@ namespace pleep
         {
             m_sm.activate();
             glBindFramebuffer(GL_FRAMEBUFFER, m_outputFboId);
-            glViewport(0,0, 1290,540);
+            glViewport(0,0, m_viewWidth,m_viewHeight);
             // careful, deferred rendering needs x,y,z to be 0
-            glClearColor(0.5f, 0.6f, 0.8f, 1.0f);
+            glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // options
@@ -43,16 +42,16 @@ namespace pleep
 
             // uniforms
             // TODO: ingest camera info
-            m_sm.set_vec3("viewPos", glm::vec3(0.0f, 0.0f, 5.0f));
+            m_sm.set_vec3("viewPos", m_viewPos);
 
             // we'll set light uniforms collectively here
             m_numRayLights = 0;
             m_numPointLights = 0;
             m_numSpotLights = 0;
-            while (!m_lightPacketQueue.empty())
+            while (!m_LightSourcePacketQueue.empty())
             {
-                LightPacket& data = m_lightPacketQueue.front();
-                m_lightPacketQueue.pop();
+                LightSourcePacket& data = m_LightSourcePacketQueue.front();
+                m_LightSourcePacketQueue.pop();
                 std::string lightUni;
 
                 switch(data.light.type)
@@ -81,7 +80,7 @@ namespace pleep
                         m_sm.set_float(lightUni + ".outerCos", data.light.attributes.y);
                         break;
                     default:
-                        // continues should affect the outer lightPacket loop
+                        // continues should affect the outer LightSourcePacket loop
                         continue;
                 }
                 
@@ -113,33 +112,19 @@ namespace pleep
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             m_sm.deactivate();
         }
-
-        // Accept Mesh data to render to
-        // does EVERY kind of RenderRelay need this?
-        void submit(RenderPacket data)
-        {
-            m_modelPacketQueue.push(data);
-        }
-
-        void submit(LightPacket data)
-        {
-            m_lightPacketQueue.push(data);
-        }
         
     private:
         // Foreward pass needs light position/direction, viewPos, shadow transform/farplane/shadowmap
         ShaderManager m_sm;
+
         // definitions known by my shader
+        // IRenderRelay has LightSourcePacketQueue
         const size_t MAX_RAY_LIGHTS   = 1;
         size_t m_numRayLights = 0;
         const size_t MAX_POINT_LIGHTS = 4;
         size_t m_numPointLights = 0;
         const size_t MAX_SPOT_LIGHTS  = 2;
         size_t m_numSpotLights = 0;
-        
-        // collect packets during render submitting
-        std::queue<RenderPacket> m_modelPacketQueue;
-        std::queue<LightPacket> m_lightPacketQueue;
     };
 }
 

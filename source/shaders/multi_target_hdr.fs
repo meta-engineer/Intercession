@@ -207,8 +207,8 @@ vec3 calc_point_light(PointLight pLight, vec3 norm, vec3 viewDir, vec3 diffuseSa
     float spec = pow(max(dot(norm, halfwayDir), 0.0), glossSample ); //material.shininess);
     vec3 specular = pLight.specular * spec * specularSample * falloff;
 
-    float shadow = omni_shadow_calculation(FragPos, pLight);
-
+    // until we have a proper shadow pass
+    float shadow = 0.0;//omni_shadow_calculation(FragPos, pLight);
     return (ambient + (1.0-shadow) * (diffuse + specular));
 }
 

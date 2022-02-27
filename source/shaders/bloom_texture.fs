@@ -6,7 +6,7 @@ in vec2 TexCoord;
 uniform sampler2D screenTexture;
 // extracted and blurred
 uniform sampler2D bloomTexture;
-uniform float exposure = 0.5;
+uniform float exposure = 1.0;
 
 void main()
 {

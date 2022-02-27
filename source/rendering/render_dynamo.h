@@ -15,7 +15,8 @@
 #include "core/i_dynamo.h"
 #include "events/event_broker.h"
 #include "rendering/render_packet.h"
-#include "rendering/light_packet.h"
+#include "rendering/light_source_packet.h"
+#include "rendering/camera_packet.h"
 #include "rendering/mesh.h"
 #include "rendering/forward_render_relay.h"
 #include "rendering/screen_render_relay.h"
@@ -34,7 +35,9 @@ namespace pleep
         // pass in meshes / vertex groups to be rendered
         void submit(RenderPacket data);
         // pass in light sources
-        void submit(LightPacket data);
+        void submit(LightSourcePacket data);
+        // pass in main camera (overrides last submittion)
+        void submit(CameraPacket data);
 
         // process render command queue
         void run_relays(double deltaTime) override;
@@ -45,16 +48,8 @@ namespace pleep
         // viewportDims must be at least 4 int large
         void read_viewport_size(int* viewportDims);
 
-        // update camera/view info
-        // dependant on camera origin, rotation, and gimbal_up
-        void set_world_to_view(glm::mat4 world_to_view);
-        // dependant on camera dimensions, clipping planes, FOV
-        void set_projection(glm::mat4 projection);
-        // dependant on camera origin
-        void set_viewPos(glm::vec3 viewPos);
-
         // updating camera dimensions should update framebuffer render textures
-        void resize_framebuffers(unsigned int width, unsigned int height);
+        void resize_framebuffers(unsigned int uWidth, unsigned int uHeight);
 
     private:
         // Listening to events::window::RESIZE sent by ControlDynamo

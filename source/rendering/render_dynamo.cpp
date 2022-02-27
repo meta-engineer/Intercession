@@ -20,60 +20,19 @@ namespace pleep
         // set buffer to bind point 0 (relays need to know this)
         glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_viewTransformUboId, 0, 2 * sizeof(glm::mat4));
 
+        // setup relays
+        m_forwardPass = std::make_unique<ForwardRenderRelay>();
+        m_screenPass = std::make_unique<ScreenRenderRelay>();
+
         // get screen initial size
         read_viewport_size(m_viewportDims);
         // init view dimensions with default screen size until camera sends update
 
-        // setup Framebuffers
-        glGenFramebuffers(1, &m_forwardFboId);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_forwardFboId);
+        // gl object id's should init as 0
+        // setup framebuffers then
+        // configure relays with new object id's
 
-        // HDR texture buffer
-        glGenTextures(1, &m_hdrRenderedTextureId);
-        glBindTexture(GL_TEXTURE_2D, m_hdrRenderedTextureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_viewportDims[2], m_viewportDims[3], 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_hdrRenderedTextureId, 0);
-
-        // BLOOM texture buffer
-        glGenTextures(1, &m_bloomRenderedTextureId);
-        glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_viewportDims[2], m_viewportDims[3], 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_bloomRenderedTextureId, 0);
-
-        // register multiple render targets to this FBO
-        m_forwardFboAttachments[0] = GL_COLOR_ATTACHMENT0;
-        m_forwardFboAttachments[1] = GL_COLOR_ATTACHMENT1;
-        glDrawBuffers(2, m_forwardFboAttachments);
-
-        // RenderBufferObject for depth (and sometimes stencil)
-        glGenRenderbuffers(1, &m_forwardRboId);
-        glBindRenderbuffer(GL_RENDERBUFFER, m_forwardRboId);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, m_viewportDims[2], m_viewportDims[3]);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_forwardRboId);
-        
-        // check frambuffer
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            std::cout << "Screen Framebuffer was not complete, rebinding to default" << std::endl;
-        }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
-        PLEEPLOG_TRACE("Framebuffers constructed successfully");
-
-        // configure relays
-        m_forwardPass = std::make_unique<ForwardRenderRelay>();
-        m_forwardPass->set_output_fbo_id(m_forwardFboId);
-
-        m_screenPass = std::make_unique<ScreenRenderRelay>();
-        m_screenPass->set_output_fbo_id(0);
-        m_screenPass->set_input_screen_textures(m_hdrRenderedTextureId, m_bloomRenderedTextureId);
-
+        resize_framebuffers(m_viewportDims[2], m_viewportDims[3]);
         PLEEPLOG_TRACE("Render pipeline config done.");
     }
     
@@ -101,11 +60,25 @@ namespace pleep
         m_forwardPass->submit(data);
     }
     
-    void RenderDynamo::submit(LightPacket data) 
+    void RenderDynamo::submit(LightSourcePacket data) 
     {
         // again, can we implicitly know which relays want this info
         m_forwardPass->submit(data);
     }
+    
+    void RenderDynamo::submit(CameraPacket data) 
+    {
+        // again, i don't know if this is the best solution but,
+        // ecs references are volatile so its probably necessary.
+        m_forwardPass->submit(data);
+        m_screenPass->submit(data);
+
+        // I also need to save some data to set UBO
+        // these calulated mat4s are no longer volatile, so they're ok
+        m_world_to_view = get_lookAt(data.transform, data.camera);
+        m_projection    = get_projection(data.camera);
+    }
+
     
     void RenderDynamo::run_relays(double deltaTime) 
     {
@@ -146,29 +119,61 @@ namespace pleep
         glGetIntegerv(GL_VIEWPORT, viewportDims);
     }
     
-    void RenderDynamo::set_world_to_view(glm::mat4 world_to_view) 
+    void RenderDynamo::resize_framebuffers(unsigned int uWidth, unsigned int uHeight) 
     {
-        m_world_to_view = world_to_view;
-    }
-    
-    void RenderDynamo::set_projection(glm::mat4 projection) 
-    {
-        m_projection = projection;
-    }
-    
-    void RenderDynamo::set_viewPos(glm::vec3 viewPos) 
-    {
-        m_viewPos = viewPos;
-    }
-    
-    void RenderDynamo::resize_framebuffers(unsigned int width, unsigned int height) 
-    {
-        UNREFERENCED_PARAMETER(width);
-        UNREFERENCED_PARAMETER(height);
-        // TODO: I think this needs to just delete the textures and remake them
-        // m_hdrRenderedTextureId;
-        // m_bloomRenderedTextureId;
-        // m_forwardRboId;
+        // Naive solution, just delete the textures and remake them
+        glDeleteFramebuffers(1, &m_forwardFboId);
+        glDeleteTextures(1, &m_hdrRenderedTextureId);
+        glDeleteTextures(1, &m_bloomRenderedTextureId);
+        glDeleteRenderbuffers(1, &m_forwardRboId);
+
+
+        // setup Framebuffers
+        glGenFramebuffers(1, &m_forwardFboId);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_forwardFboId);
+
+        // HDR texture buffer
+        glGenTextures(1, &m_hdrRenderedTextureId);
+        glBindTexture(GL_TEXTURE_2D, m_hdrRenderedTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0); // clear
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_hdrRenderedTextureId, 0);
+
+        // BLOOM texture buffer
+        glGenTextures(1, &m_bloomRenderedTextureId);
+        glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0); // clear
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_bloomRenderedTextureId, 0);
+
+        // register multiple render targets to this FBO
+        m_forwardFboAttachments[0] = GL_COLOR_ATTACHMENT0;
+        m_forwardFboAttachments[1] = GL_COLOR_ATTACHMENT1;
+        glDrawBuffers(2, m_forwardFboAttachments);
+
+        // RenderBufferObject for depth (and sometimes stencil)
+        glGenRenderbuffers(1, &m_forwardRboId);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_forwardRboId);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, uWidth, uHeight);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_forwardRboId);
+        
+        // check framebuffer
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            PLEEPLOG_ERROR("Screen Framebuffer was not complete, rebinding to default");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+
+        m_forwardPass->set_output_fbo_id(m_forwardFboId);
+        m_screenPass->set_output_fbo_id(0);
+        m_screenPass->set_input_screen_textures(m_hdrRenderedTextureId, m_bloomRenderedTextureId);
+        
+        PLEEPLOG_TRACE("Framebuffers constructed successfully");
     }
     
     void RenderDynamo::_resize_handler(Event resizeEvent) 
@@ -191,7 +196,7 @@ namespace pleep
         // remember original viewport to reset after relays modify it
         m_viewportDims[0] = 0;
         m_viewportDims[1] = 0;
-        m_viewportDims[2] = uWidth;
-        m_viewportDims[3] = uHeight;
+        uWidth = uWidth;
+        uHeight = uHeight;
     }
 }

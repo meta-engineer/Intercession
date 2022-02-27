@@ -6,7 +6,6 @@
 #include <GLFW/glfw3.h>
 
 #include "core/i_dynamo.h"
-#include "rendering/render_dynamo.h"
 
 namespace pleep
 {

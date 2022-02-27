@@ -6,7 +6,7 @@
 
 #include "physics/transform_component.h"
 #include "rendering/light_source_component.h"
-#include "rendering/light_packet.h"
+#include "rendering/light_source_packet.h"
 
 namespace pleep
 {
@@ -32,7 +32,7 @@ namespace pleep
             TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             LightSourceComponent& light = m_ownerCosmos->get_component<LightSourceComponent>(entity);
 
-            m_attachedRenderDynamo->submit(LightPacket{ transform, light });
+            m_attachedRenderDynamo->submit(LightSourcePacket{ transform, light });
         }
 
         // this is pre-processing and needs to be run before RenderSynchro's update
