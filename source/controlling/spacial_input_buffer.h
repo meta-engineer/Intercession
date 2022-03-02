@@ -52,6 +52,18 @@ namespace pleep
             // if actionVals are ALWAYS set with actions then we dont need to set 0's
         }
 
+        // move "hot" states to "ground" value
+        void resolve()
+        {
+            // rotations controlled by mouse need to be reset (there is no mouse "release")
+            actions.set(SpacialActions::rotatePitchUp,   false);
+            actions.set(SpacialActions::rotatePitchDown, false);
+            actions.set(SpacialActions::rotateYawLeft,   false);
+            actions.set(SpacialActions::rotateYawRight,  false);
+            actions.set(SpacialActions::rotateRollCw,    false);
+            actions.set(SpacialActions::rotateRollCcw,   false);
+        }
+
         void set(SpacialActions action, bool state, float value)
         {
             actions.set(action, state);

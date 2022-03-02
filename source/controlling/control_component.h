@@ -17,6 +17,9 @@ namespace pleep
     struct ControlComponent
     {
         bool active = true;
+
+        // TODO: indicate what kind of ControlRelay I should be managed by
+        // This likely should be using a RelayLibrary enum
     };
 }
 

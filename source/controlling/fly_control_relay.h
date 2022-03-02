@@ -31,8 +31,9 @@ namespace pleep
                     // generate direction vector from euler angles
                     glm::vec3 direction = transform.get_heading();
                     // units/time * time (seconds)
-                    float disp = 5.0f * (float)deltaTime;
-                    float rot  = 1.0f * (float)deltaTime;
+                    float disp   = 5.0f * (float)deltaTime;
+                    float rot    = 0.3f * (float)deltaTime;
+                    float aspect = 1.2f;
                     glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
                     
                     // match actions to component changes (use actionVal at the same index)
@@ -51,12 +52,12 @@ namespace pleep
                     if (m_inputCache.actions.test(SpacialActions::moveLeft)
                     && !m_inputCache.actions.test(SpacialActions::moveRight))
                     {
-                        transform.origin += glm::cross(direction, gimbalUp) * disp * m_inputCache.actionVals.at(SpacialActions::moveLeft);
+                        transform.origin += glm::normalize(glm::cross(direction, gimbalUp)) * disp * m_inputCache.actionVals.at(SpacialActions::moveLeft);
                     }
                     if (m_inputCache.actions.test(SpacialActions::moveRight)
                     && !m_inputCache.actions.test(SpacialActions::moveLeft))
                     {
-                        transform.origin -= glm::cross(direction, gimbalUp) * disp * m_inputCache.actionVals.at(SpacialActions::moveRight);
+                        transform.origin -= glm::normalize(glm::cross(direction, gimbalUp)) * disp * m_inputCache.actionVals.at(SpacialActions::moveRight);
                     }
 
                     if (m_inputCache.actions.test(SpacialActions::moveUp)
@@ -81,12 +82,16 @@ namespace pleep
                     if (m_inputCache.actions.test(SpacialActions::rotatePitchDown)
                     && !m_inputCache.actions.test(SpacialActions::rotatePitchUp))
                     {
-                        transform.rotation.x -= rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown);
+                        transform.rotation.x -= rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown);
                     }
+                    // TODO: rotation should probably be managed by a method
+                    transform.rotation.x = glm::max(transform.rotation.x, glm::radians(-89.0f));
+                    transform.rotation.x = glm::min(transform.rotation.x, glm::radians( 89.0f));
+
                     if (m_inputCache.actions.test(SpacialActions::rotateYawLeft)
                     && !m_inputCache.actions.test(SpacialActions::rotateYawRight))
                     {
-                        transform.rotation.y -= rot * m_inputCache.actionVals.at(SpacialActions::rotateYawLeft);
+                        transform.rotation.y -= rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotateYawLeft);
                     }
                     if (m_inputCache.actions.test(SpacialActions::rotateYawRight)
                     && !m_inputCache.actions.test(SpacialActions::rotateYawLeft))

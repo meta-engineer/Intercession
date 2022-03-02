@@ -16,7 +16,7 @@ namespace pleep
 
         // initalize control related window config
         // set mouse capture mode
-        //glfwSetInputMode(m_windowApi, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(m_windowApi, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     
     ControlDynamo::~ControlDynamo()
@@ -40,9 +40,9 @@ namespace pleep
         // run through each relay in my configuration
         m_flyController->engage(deltaTime);
 
-        // clear input for next frame
-        // members should be cleared on "release"
-        //m_spacialInputBuffer.clear();
+        // prepare input for next frame
+        // key members should be cleared on "release"
+        m_spacialInputBuffer.resolve();
 
         // check for interactions with window frame (not captured specifically by callbacks)
         // glfwWindowShouldClose will be set after glfwPollEvents
@@ -110,13 +110,31 @@ namespace pleep
         static double lastX = -1;
         static double lastY = -1;
 
-        //double xoffset = lastX == -1.0 ? 0.0 : (x - lastX);
-        //double yoffset = lastY == -1.0 ? 0.0 : (lastY - y);
+        double xoffset = lastX == -1.0 ? 0.0 : (x - lastX);
+        double yoffset = lastY == -1.0 ? 0.0 : (lastY - y);
 
         lastX = x;
         lastY = y;
 
         //PLEEPLOG_TRACE("Mouse move callback. Moved (" + std::to_string(xoffset) + ", " + std::to_string(yoffset) + ")");
+        
+        if (yoffset > 0)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotatePitchUp, true, (float)abs(yoffset));
+        }
+        else
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotatePitchDown, true, (float)abs(yoffset));
+        }
+        
+        if (xoffset < 0)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotateYawLeft, true, (float)abs(xoffset));
+        }
+        else
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotateYawRight, true, (float)abs(xoffset));
+        }
     }
     
     void ControlDynamo::_mouse_scroll_callback(GLFWwindow* w, double dx, double dy) 
@@ -204,7 +222,7 @@ namespace pleep
         {
             m_spacialInputBuffer.set(SpacialActions::moveDown, action, 1);
         }
-
+/*
         if (key == GLFW_KEY_UP)
         {
             m_spacialInputBuffer.set(SpacialActions::rotatePitchUp, action, 1);
@@ -221,6 +239,7 @@ namespace pleep
         {
             m_spacialInputBuffer.set(SpacialActions::rotateYawRight, action, 1);
         }
+*/
     }
     
     void ControlDynamo::_window_should_close_callback(GLFWwindow* w) 
