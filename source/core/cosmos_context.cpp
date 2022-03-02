@@ -8,6 +8,7 @@
 #include "rendering/lighting_synchro.h"
 
 #include "physics/transform_component.h"
+#include "controlling/control_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
@@ -73,6 +74,7 @@ namespace pleep
             // smarter way to get dt?
             thisTimeVal = glfwGetTime();
             deltaTime = thisTimeVal - lastTimeVal;
+            lastTimeVal = thisTimeVal;
 
             // ***** Cosmos Update *****
             // invokes all registered synchros to process their entities
@@ -148,6 +150,7 @@ namespace pleep
         
         // register components
         m_currentCosmos->register_component<TransformComponent>();
+        m_currentCosmos->register_component<ControlComponent>();
         m_currentCosmos->register_component<ModelComponent>();
         m_currentCosmos->register_component<CameraComponent>();
         m_currentCosmos->register_component<LightSourceComponent>();
@@ -161,7 +164,7 @@ namespace pleep
         controlSynchro->attach_dynamo(m_controlDynamo);
         {
             Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<ControlComponent>());
 
             m_currentCosmos->set_synchro_signature<ControlSynchro>(sign);
         }
@@ -192,20 +195,21 @@ namespace pleep
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
         Entity frog = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 0.0f, -2.0f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
 
         Entity box = m_currentCosmos->create_entity();
-        TransformComponent boxTransform(glm::vec3(0.0f, -1.0f, 0.0f));
+        TransformComponent boxTransform(glm::vec3(1.0f, -1.0f, 1.0f));
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
 
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 0.0f, 5.0f)));
+        m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 0.0f, 3.0f)));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
+        m_currentCosmos->add_component(mainCamera, ControlComponent{});
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
@@ -227,7 +231,8 @@ namespace pleep
 
 
         Entity light = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 2.0f, 0.0f)));
+        m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         // remember this is relative to exposure
         m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         m_currentCosmos->add_component(light, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));

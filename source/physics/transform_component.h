@@ -36,6 +36,16 @@ namespace pleep
                                     * glm::scale(glm::mat4(1.0f), scale);
             return model_to_world;
         }
+
+        glm::vec3 get_heading()
+        {
+            glm::vec3 direction(
+                cos(rotation.y) * cos(rotation.x),
+                sin(rotation.x),
+                sin(rotation.y) * cos(rotation.x)
+            );
+            return glm::normalize(direction);
+        }
     };
 }
 

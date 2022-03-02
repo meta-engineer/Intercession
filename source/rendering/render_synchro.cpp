@@ -30,7 +30,7 @@ namespace pleep
 
         // update view info with registered camera
         // re-get camera each time becuase ECS pointers are volatile
-        m_attachedRenderDynamo->submit({
+        m_attachedRenderDynamo->submit(CameraPacket {
             m_ownerCosmos->get_component<TransformComponent>(m_mainCamera),
             m_ownerCosmos->get_component<CameraComponent>(m_mainCamera)
         });

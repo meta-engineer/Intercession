@@ -6,22 +6,25 @@
 #include <GLFW/glfw3.h>
 
 #include "core/i_dynamo.h"
+#include "controlling/control_packet.h"
+#include "controlling/fly_control_relay.h"
+#include "controlling/spacial_input_buffer.h"
 
 namespace pleep
 {
-    // input has to have feedback (unlike the render dynamo)
+    // input has to have feedback (unlike the render/other dynamos)
     // so its operation should be different, but the concept of a dynamo should be the same
     // an "engine" that is passed entities to "power" using the api
-    // each relay will be able to pass data back into the components its fed
-    // At the end of a relay (or during) the Dynamo's IDynamo::Signal can be set
-    // to communicate non-entity specific feedback
-    // Synchro will read this feedback and make judgements.
-    // If multiple signals arise, 1 will have to be given priority (hopefully this is a reasonable assumption)
+    // relays will uniquely get a pointer to the ecs so it can dynamically pick components
 
-    // "control relays" could be subclassed to power specific components
-    // a "controller" component might be a good semantic link (like a material) for input synchro
-    // some sort of priority system can be used to shift output targets of the dynamo
-    // materials know render relays, controllers know control relays?
+    // "control relays" can be subclassed to power specific components
+    // a "controller" component is a semantic link (like a material) for input synchro
+    // materials know render relays, controllers know control relays
+
+    // Dynamo ingests raw input data from api, on run it translates
+    //   and stores it into "action buffers" each frame
+    // All relays owned by dynamo will have reference to action buffer(s)
+    //   which it will use to determine operation
     class ControlDynamo : public IDynamo
     {
     public:
@@ -30,11 +33,11 @@ namespace pleep
 
         // should control components be "submitted" or statically "registered"
         // "immediate mode" vs "retained mode"
-        // NOTE: if you use submit() then it could be added to IDynamo (RenderDynamo also uses it)
-        //void submit();
+        void submit(ControlPacket data);
 
         // poll event queue and process relays
         // THROWS runtime_error if m_windowApi is null
+        // Dynamo translates raw input from callbacks to application specific "actions" for relays
         void run_relays(double deltaTime) override;
 
     private:
@@ -50,6 +53,15 @@ namespace pleep
         // receive events from windowing api
         // this should probably be abstracted so that network/ai can be control inputs as well
         GLFWwindow* m_windowApi;
+
+        // collection of input information from this frame
+        // this is an abstraction of the raw api input that my relays will have references to
+        SpacialInputBuffer m_spacialInputBuffer;
+
+        // Specific Relays
+        // TODO: this should probably be in a specific ControlDynamo subclass built by the context
+        // TODO: I should source these from some sort of relay library
+        std::unique_ptr<FlyControlRelay> m_flyController;
     };
 }
 

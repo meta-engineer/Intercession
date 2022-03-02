@@ -8,6 +8,8 @@ namespace pleep
     ControlDynamo::ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi)
         : IDynamo(sharedBroker)
         , m_windowApi(windowApi)
+        // setup relays with access to my input buffers (we need to ecplicitly know which buffers relay needs)
+        , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))
     {
         // we have "lease" of api to override callbacks
         _set_my_window_callbacks();
@@ -20,6 +22,11 @@ namespace pleep
     ControlDynamo::~ControlDynamo()
     {
     }
+    
+    void ControlDynamo::submit(ControlPacket data) 
+    {
+        m_flyController->submit(data);
+    }
 
     void ControlDynamo::run_relays(double deltaTime) 
     {
@@ -28,12 +35,17 @@ namespace pleep
         // this will call all triggered callbacks
         glfwPollEvents();
 
-        // update each relay inside callbacks
-        // relays could "subcribe" to an input?
-        // the relay will have to be pre-attached to an entity component which it can modify.
-        // return false if a relay fails
+        // callbacks will have translated raw input into input buffers now
 
-        //glfwWindowShouldClose will be set after glfwPollEvents
+        // run through each relay in my configuration
+        m_flyController->engage(deltaTime);
+
+        // clear input for next frame
+        // members should be cleared on "release"
+        //m_spacialInputBuffer.clear();
+
+        // check for interactions with window frame (not captured specifically by callbacks)
+        // glfwWindowShouldClose will be set after glfwPollEvents
         if (glfwWindowShouldClose(m_windowApi))
         {
             // callback will reset shouldClose bit
@@ -155,11 +167,59 @@ namespace pleep
         UNREFERENCED_PARAMETER(w);
         UNREFERENCED_PARAMETER(scancode);
         UNREFERENCED_PARAMETER(mods);
-        PLEEPLOG_TRACE("Key event: " + std::to_string(key) + ", code: " + std::to_string(scancode));
+        //PLEEPLOG_TRACE("Key event: " + std::to_string(key) + ", code: " + std::to_string(scancode) + ", " + std::to_string(action));
+
+        // we''l probably NEVER want to use keyboard auto-repeat (maybe for typing?)
+        if (action == GLFW_REPEAT) return;
 
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
             this->_window_should_close_callback(w);
+        }
+
+        // fill input buffer actions
+        // dynamo specifies translation of api (devices) to input buffer
+        // format of input buffer must be synchronized with relays
+        if (key == GLFW_KEY_W)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveForward, action,  1);
+        }
+        if (key == GLFW_KEY_S)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveBackward, action, 1);
+        }
+        if (key == GLFW_KEY_D)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveLeft, action,  1);
+        }
+        if (key == GLFW_KEY_A)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveRight, action, 1);
+        }
+        if (key == GLFW_KEY_SPACE)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveUp, action,  1);
+        }
+        if (key == GLFW_KEY_C)
+        {
+            m_spacialInputBuffer.set(SpacialActions::moveDown, action, 1);
+        }
+
+        if (key == GLFW_KEY_UP)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotatePitchUp, action, 1);
+        }
+        if (key == GLFW_KEY_DOWN)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotatePitchDown, action, 1);
+        }
+        if (key == GLFW_KEY_LEFT)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotateYawLeft, action, 1);
+        }
+        if (key == GLFW_KEY_RIGHT)
+        {
+            m_spacialInputBuffer.set(SpacialActions::rotateYawRight, action, 1);
         }
     }
     
@@ -173,6 +233,7 @@ namespace pleep
         // Cosmos that I am powering could use this info...
         // ill send window::QUIT event, cosmos should pick this up and 
         // foreward as a cosmos::QUIT for context
+        // temporary: context will handle this and stop main loop
         PLEEPLOG_TRACE("Sending event " + std::to_string(events::window::QUIT) + " (events::window::QUIT)");
         m_sharedBroker->send_event(events::window::QUIT);
     }

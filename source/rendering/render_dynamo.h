@@ -49,6 +49,7 @@ namespace pleep
         void read_viewport_size(int* viewportDims);
 
         // updating camera dimensions should update framebuffer render textures
+        // also resets framebuffer id's for respective relays
         void resize_framebuffers(unsigned int uWidth, unsigned int uHeight);
 
     private:

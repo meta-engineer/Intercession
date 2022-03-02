@@ -50,7 +50,7 @@ namespace pleep
             m_numSpotLights = 0;
             while (!m_LightSourcePacketQueue.empty())
             {
-                LightSourcePacket& data = m_LightSourcePacketQueue.front();
+                LightSourcePacket data = m_LightSourcePacketQueue.front();
                 m_LightSourcePacketQueue.pop();
                 std::string lightUni;
 

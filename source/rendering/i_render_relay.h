@@ -27,7 +27,7 @@ namespace pleep
         // Subclasses should accept rendered textures from previous relays
 
         // submittions are done, invoke draws
-        // each relay is different, enfore implementation to avoid confusion
+        // each relay is different, enforce implementation to avoid confusion
         virtual void render() = 0;
 
         // pass in camera to render with (overwrites last cubmitted camera)
@@ -39,7 +39,7 @@ namespace pleep
         }
         
         // Accept Mesh data to render to
-        // does EVERY kind of RenderRelay need this?
+        // Should there be a limit to this?
         void submit(RenderPacket data)
         {
             m_modelPacketQueue.push(data);
