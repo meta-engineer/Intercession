@@ -31,8 +31,8 @@ namespace pleep
                     // generate direction vector from euler angles
                     glm::vec3 direction = transform.get_heading();
                     // units/time * time (seconds)
-                    float disp   = 5.0f * (float)deltaTime;
-                    float rot    = 0.3f * (float)deltaTime;
+                    float disp   = 2.0f * (float)deltaTime;
+                    float rot    = 0.15f * (float)deltaTime;
                     float aspect = 1.2f;
                     glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
                     

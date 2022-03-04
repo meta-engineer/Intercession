@@ -18,14 +18,21 @@ namespace pleep
                 "source/shaders/tangents_ubo.vs",
                 "source/shaders/multi_target_hdr.fs"
             )
+            , m_normalVisualizerSm(
+                "source/shaders/viewspace_normal.vs",
+                "source/shaders/vertex_normals.gs",
+                "source/shaders/fixed_color.fs"
+            )
         {
             // init shader uniforms
             m_sm.activate();
-
             // guarentee this uniform block will always be block 0?
             glUniformBlockBinding(m_sm.shaderProgram_id, glGetUniformBlockIndex(m_sm.shaderProgram_id, "viewTransforms"), 0);
-
             m_sm.deactivate();
+
+            m_normalVisualizerSm.activate();
+            glUniformBlockBinding(m_normalVisualizerSm.shaderProgram_id, glGetUniformBlockIndex(m_normalVisualizerSm.shaderProgram_id, "viewTransforms"), 0);
+            m_normalVisualizerSm.deactivate();
         }
 
         void render() override
@@ -81,6 +88,7 @@ namespace pleep
                         break;
                     default:
                         // continues should affect the outer LightSourcePacket loop
+                        PLEEPLOG_WARN("Unrecognised light source type, skipping...");
                         continue;
                 }
                 
@@ -98,6 +106,7 @@ namespace pleep
             m_sm.set_int("numRayLights", m_numRayLights);
             m_sm.set_int("numPointLights", m_numPointLights);
             m_sm.set_int("numSpotLights", m_numSpotLights);
+            m_sm.deactivate();
 
             // Render through all models
             while (!m_modelPacketQueue.empty())
@@ -105,17 +114,27 @@ namespace pleep
                 RenderPacket& data = m_modelPacketQueue.front();
                 m_modelPacketQueue.pop();
 
+                m_sm.activate();
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
                 data.mesh.invoke_draw(m_sm);
+                m_sm.deactivate();
+/*
+                m_normalVisualizerSm.activate();
+                m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());
+                data.mesh.invoke_draw(m_normalVisualizerSm);
+                m_normalVisualizerSm.deactivate();
+*/
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            m_sm.deactivate();
         }
         
     private:
         // Foreward pass needs light position/direction, viewPos, shadow transform/farplane/shadowmap
         ShaderManager m_sm;
+
+        // for debugging
+        ShaderManager m_normalVisualizerSm;
 
         // definitions known by my shader
         // IRenderRelay has LightSourcePacketQueue

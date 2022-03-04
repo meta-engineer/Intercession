@@ -195,15 +195,36 @@ namespace pleep
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
         Entity frog = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 0.0f, 0.0f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(-1.0f, 0.0f, 1.0f)));
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
 
+        Entity vamp = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(vamp).scale = glm::vec3(0.01f, 0.01f, 0.01f);
+        std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
+        m_currentCosmos->add_component(vamp, ModelComponent(vampModel));
+
         Entity box = m_currentCosmos->create_entity();
         TransformComponent boxTransform(glm::vec3(1.0f, -1.0f, 1.0f));
         m_currentCosmos->add_component(box, boxTransform);
-        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
+        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png", "resources/bricks2_normal.jpg")));
+
+        Entity wall1 = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(2.0f, 1.0f, -2.0f)));
+        m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += -1.0f;
+        m_currentCosmos->add_component(wall1, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
+        
+        Entity wall2 = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
+        m_currentCosmos->get_component<TransformComponent>(wall2).rotation.y += 2.5f;
+        m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
+
+        Entity torus = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
+        std::shared_ptr<Model> torusModel = std::make_shared<Model>("resources/torus.obj");
+        m_currentCosmos->add_component(torus, ModelComponent(torusModel));
 
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
@@ -232,7 +253,7 @@ namespace pleep
 
         Entity light = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        m_currentCosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.1f);
         // remember this is relative to exposure
         m_currentCosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         m_currentCosmos->add_component(light, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));
