@@ -46,6 +46,8 @@ namespace pleep
 
             // options
             glEnable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             // uniforms
             // TODO: ingest camera info
@@ -125,6 +127,10 @@ namespace pleep
                 m_normalVisualizerSm.deactivate();
 */
             }
+
+            // clear options
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_BLEND);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }

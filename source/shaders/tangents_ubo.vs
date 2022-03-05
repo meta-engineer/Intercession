@@ -50,5 +50,5 @@ void main()
     // generate B
     vec3 B = cross(T,N);
 
-    TBN = transpose(mat3(T, B, N));
+    TBN = mat3(T, B, N);
 }

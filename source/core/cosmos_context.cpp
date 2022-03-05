@@ -212,13 +212,13 @@ namespace pleep
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png", "resources/bricks2_normal.jpg")));
 
         Entity wall1 = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(2.0f, 1.0f, -2.0f)));
+        m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += -1.0f;
         m_currentCosmos->add_component(wall1, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
         
         Entity wall2 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
-        m_currentCosmos->get_component<TransformComponent>(wall2).rotation.y += 2.5f;
+        m_currentCosmos->get_component<TransformComponent>(wall2).rotation.y += 1.0f;
         m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
 
         Entity torus = m_currentCosmos->create_entity();
@@ -229,6 +229,7 @@ namespace pleep
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 0.0f, 3.0f)));
+        m_currentCosmos->get_component<TransformComponent>(mainCamera).rotation.y += glm::radians(-90.0f);
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         m_currentCosmos->add_component(mainCamera, ControlComponent{});
         

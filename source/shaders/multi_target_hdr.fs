@@ -94,7 +94,7 @@ vec2 DisplaceMapping(vec2 texCoords, vec3 viewDir);
 void main()
 {
     vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 tangentViewDir = normalize(TBN * viewDir);
+    vec3 tangentViewDir = normalize(transpose(TBN) * viewDir);
     vec2 remappedTexCoord = TexCoord;
     if (material.enable_displace_map_0)
     {
@@ -110,12 +110,13 @@ void main()
 
     // use surface normal
     vec3 norm = Normal;
+    // use normal map
     if (material.enable_normal_map_0)
     {
         // texture values should be in range [0,1]
         norm = texture(material.normal_map_0, remappedTexCoord).xyz;
         // transform to range [-1,1]
-        norm = (2.0 * norm - vec3(1.0));
+        norm = (norm * 2.0) - vec3(1.0);
         // "naive" method using matrix multiple in each fragment, what is the performance cost?
         norm = normalize(TBN * norm);
     }

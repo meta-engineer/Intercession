@@ -17,7 +17,7 @@ namespace pleep
     {
         // should I use my own vec3's?
         glm::vec3 origin   = glm::vec3(0.0f);
-        glm::vec3 rotation = glm::vec3(0.0f, glm::radians(-90.0f), 0.0f);   // euler angles: pitch, yaw, roll (radians)
+        glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);   // euler angles: pitch, yaw, roll (radians)
         glm::vec3 scale    = glm::vec3(1.0f);
 
         // default constructors are needed for ComponentArray
