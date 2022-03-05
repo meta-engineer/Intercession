@@ -22,16 +22,14 @@ namespace pleep
 
         // setup relays
         m_forwardPass = std::make_unique<ForwardRenderRelay>();
-        m_screenPass = std::make_unique<ScreenRenderRelay>();
+        m_bloomPass   = std::make_unique<BloomRenderRelay>();
+        m_screenPass  = std::make_unique<ScreenRenderRelay>();
 
         // get screen initial size
         read_viewport_size(m_viewportDims);
         // init view dimensions with default screen size until camera sends update
 
-        // gl object id's should init as 0
-        // setup framebuffers then
-        // configure relays with new object id's
-
+        // init framebuffers then configure relays with new object id's
         resize_framebuffers(m_viewportDims[2], m_viewportDims[3]);
         PLEEPLOG_TRACE("Render pipeline config done.");
     }
@@ -40,11 +38,11 @@ namespace pleep
     {
         // I do not own my api references or event broker
 
-        glDeleteFramebuffers(1, &m_forwardFboId);
-        glDeleteTextures(1, &m_hdrRenderedTextureId);
-        glDeleteTextures(1, &m_bloomRenderedTextureId);
-        glDeleteRenderbuffers(1, &m_forwardRboId);
-
+        // free framebuffers, textures and renderbuffers
+        _delete_resources();
+        
+        // Uniform buffer shouldn't change size so it doesn't need to be
+        //  rebuildable, it is freed only when dynamo ends
         glDeleteBuffers(1, &m_viewTransformUboId);
     }
     
@@ -72,6 +70,7 @@ namespace pleep
         // ecs references are volatile so its probably necessary.
         m_forwardPass->submit(data);
         m_screenPass->submit(data);
+        m_bloomPass->submit(data);
 
         // I also need to save some data to set UBO
         // these calulated mat4s are no longer volatile, so they're ok
@@ -104,6 +103,10 @@ namespace pleep
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
 
+        m_bloomPass->render();
+        err = glGetError();
+        if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
+
         m_screenPass->render();
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after screen pass: " + std::to_string(err)); }
@@ -122,38 +125,35 @@ namespace pleep
     void RenderDynamo::resize_framebuffers(unsigned int uWidth, unsigned int uHeight) 
     {
         // Naive solution, just delete the textures and remake them
-        glDeleteFramebuffers(1, &m_forwardFboId);
-        glDeleteTextures(1, &m_hdrRenderedTextureId);
-        glDeleteTextures(1, &m_bloomRenderedTextureId);
-        glDeleteRenderbuffers(1, &m_forwardRboId);
-
+        _delete_resources();
 
         // setup Framebuffers
         glGenFramebuffers(1, &m_forwardFboId);
         glBindFramebuffer(GL_FRAMEBUFFER, m_forwardFboId);
 
-        // HDR texture buffer
+        // LDR component texture buffer
+        glGenTextures(1, &m_ldrRenderedTextureId);
+        glBindTexture(GL_TEXTURE_2D, m_ldrRenderedTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0); // clear
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ldrRenderedTextureId, 0);
+
+        // HDR component texture buffer
         glGenTextures(1, &m_hdrRenderedTextureId);
         glBindTexture(GL_TEXTURE_2D, m_hdrRenderedTextureId);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_hdrRenderedTextureId, 0);
-
-        // BLOOM texture buffer
-        glGenTextures(1, &m_bloomRenderedTextureId);
-        glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_bloomRenderedTextureId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_hdrRenderedTextureId, 0);
 
         // register multiple render targets to this FBO
-        m_forwardFboAttachments[0] = GL_COLOR_ATTACHMENT0;
-        m_forwardFboAttachments[1] = GL_COLOR_ATTACHMENT1;
-        glDrawBuffers(2, m_forwardFboAttachments);
+        unsigned int forwardFboAttachments[2];
+        forwardFboAttachments[0] = GL_COLOR_ATTACHMENT0;
+        forwardFboAttachments[1] = GL_COLOR_ATTACHMENT1;
+        glDrawBuffers(2, forwardFboAttachments);
 
         // RenderBufferObject for depth (and sometimes stencil)
         glGenRenderbuffers(1, &m_forwardRboId);
@@ -165,13 +165,35 @@ namespace pleep
         // check framebuffer
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            PLEEPLOG_ERROR("Screen Framebuffer was not complete, rebinding to default");
+            PLEEPLOG_ERROR("Forward Pass framebuffer was not complete, rebinding to default");
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
 
-        m_forwardPass->set_output_fbo_id(m_forwardFboId);
-        m_screenPass->set_output_fbo_id(0);
-        m_screenPass->set_input_screen_textures(m_hdrRenderedTextureId, m_bloomRenderedTextureId);
+        glGenFramebuffers(2, m_bloomFboIds);
+        glGenTextures(2, m_bloomRenderedTextureIds);
+        for (unsigned int i = 0; i < 2; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, m_bloomFboIds[i]);
+            glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureIds[i]);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            // prevent wrapping
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_bloomRenderedTextureIds[i], 0);
+
+            // check framebuffer
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                PLEEPLOG_ERROR("Bloom hot potato framebuffer " + std::to_string(i) + " was not complete, rebinding to default");
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+        }
+
+        // relays should always be reset with new framebuffers
+        _configure_relay_resources();
         
         PLEEPLOG_TRACE("Framebuffers constructed successfully");
     }
@@ -198,5 +220,32 @@ namespace pleep
         m_viewportDims[1] = 0;
         uWidth = uWidth;
         uHeight = uHeight;
+    }
+    
+    void RenderDynamo::_configure_relay_resources() 
+    {
+        // renders out to m_ldrRenderedTexture and m_hdrRenderedTexture
+        m_forwardPass->set_output_fbo_id(m_forwardFboId);
+
+        // renders out to m_bloomRenderedTexture
+        m_bloomPass->set_output_fbo_id(m_bloomFboIds[0]);   // we'll render out to [0] on last iteration
+        m_bloomPass->set_input_texture(m_hdrRenderedTextureId);
+        m_bloomPass->set_internal_fbo_ids(m_bloomFboIds[0], m_bloomFboIds[1]);
+        m_bloomPass->set_internal_render_texture_ids(m_bloomRenderedTextureIds[0], m_bloomRenderedTextureIds[1]);
+
+        // renders out to screen
+        m_screenPass->set_output_fbo_id(0);
+        m_screenPass->set_input_texture(m_ldrRenderedTextureId, m_bloomRenderedTextureIds[0]);
+    }
+    
+    void RenderDynamo::_delete_resources() 
+    {
+        glDeleteFramebuffers(1, &m_forwardFboId);
+        glDeleteTextures(1, &m_ldrRenderedTextureId);
+        glDeleteTextures(1, &m_hdrRenderedTextureId);
+        glDeleteRenderbuffers(1, &m_forwardRboId);
+
+        glDeleteFramebuffers(2, m_bloomFboIds);
+        glDeleteTextures(2, m_bloomRenderedTextureIds);
     }
 }

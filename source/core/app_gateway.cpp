@@ -24,7 +24,7 @@ namespace pleep
     void AppGateway::run() 
     {
         m_running = true;
-        PLEEPLOG_TRACE("App run start");
+        PLEEPLOG_TRACE("App run begin");
 
         while (m_running)
         {

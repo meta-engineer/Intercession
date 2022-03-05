@@ -19,7 +19,9 @@ namespace pleep
                 "source/shaders/bloom_texture.fs"
             )
             , m_screenPlane(model_builder::create_screen_plane())
-        {}
+        {
+            // I don't need uniform buffers
+        }
 
         void render() override
         {
@@ -46,7 +48,8 @@ namespace pleep
             m_sm.deactivate();
         }
 
-        void set_input_screen_textures(unsigned int ldrId, unsigned int hdrId)
+        // provide texture ids to use for output, if hdr component is 0 it will have no effect
+        void set_input_texture(unsigned int ldrId, unsigned int hdrId = 0)
         {
             m_ldrScreenTextureId = ldrId;
             m_hdrScreenTextureId = hdrId;
@@ -59,8 +62,8 @@ namespace pleep
         // again, can't let objects with gl memory be copied...
         std::shared_ptr<VertexGroup> m_screenPlane;
 
-        unsigned int m_ldrScreenTextureId;
-        unsigned int m_hdrScreenTextureId;
+        unsigned int m_ldrScreenTextureId = 0;
+        unsigned int m_hdrScreenTextureId = 0;
     };
 }
 
