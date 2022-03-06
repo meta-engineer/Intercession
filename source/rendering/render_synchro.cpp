@@ -93,6 +93,7 @@ namespace pleep
 
         m_mainCamera = cameraParams.cameraEntity;
 
+        // we'll have camera match to whatever the current viewport size is
         // dynamo must be non-null when calling here
         int viewportSize[4];
         m_attachedRenderDynamo->read_viewport_size(viewportSize);
@@ -105,19 +106,19 @@ namespace pleep
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 
-        // for now always match camera to window resolution
+        // we'll have the camera always match to window resolution
         _resize_main_camera(resizeParams.width, resizeParams.height);
     }
     
     void RenderSynchro::_resize_main_camera(int width, int height) 
     {
-        PLEEPLOG_TRACE("Overwriting registered camera with viewport dimensions: " + std::to_string(width) + ", " + std::to_string(height));
+        PLEEPLOG_TRACE("Overwriting registered camera with dimensions: " + std::to_string(width) + ", " + std::to_string(height));
 
         // camera components must be registered and this entity must have a camera component
         CameraComponent& mainCamInfo = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
         mainCamInfo.viewWidth = width;
         mainCamInfo.viewHeight = height;
 
-        m_attachedRenderDynamo->resize_framebuffers(mainCamInfo.viewWidth, mainCamInfo.viewHeight);
+        // on next camera submit these dimensions will be checked and render relays will resize themselves accordingly
     }
 }

@@ -49,21 +49,15 @@ namespace pleep
         // viewportDims must be at least 4 int large
         void read_viewport_size(int* viewportDims);
 
-        // updating camera dimensions should update framebuffer render textures
-        // also resets framebuffer id's for respective relays
-        void resize_framebuffers(unsigned int uWidth, unsigned int uHeight);
-
     private:
         // Listening to events::window::RESIZE sent by ControlDynamo
         void _resize_handler(Event resizeEvent);
-        // viewport should be proportionally dependant on the window
-        // however, framebuffer is dependant only on camera
-        // (camera may then depend on window, indirectly linking framebuffer to window as well)
+        // viewport should be proportionally dependant on the window (respond to resize event)
+        // note framebuffers/textures are dependant only on camera (in submit(CameraPacket))
+        // (camera may then depend on window, indirectly linking framebuffers to window as well)
         void _resize_viewport(int width, int height);
-        // set framebuffers and textures to the pipeline's relays
+        // link input/output textures between each relay
         void _configure_relay_resources();
-        // delete resources during destructor or resize_framebuffers
-        void _delete_resources();
 
         // window api is shared with AppGateway (and other dynamos)
         // hard-code windowApi to glfw for now
@@ -80,39 +74,35 @@ namespace pleep
         // "default" relay designated by the dynamo
         // Given the material structure is standardized/castable/heirarchical we can at least perform SOME render
 
-        // All gl resources are consolidated in the dynamo and shared with relays
-        // Relays COULD manage the fbos and dynamo would just call to access the outputs
+        // Each relay manages its own gl resources
+        // dynamo would just call to access the outputs
         //   and pass them to the input of the next relay in the pipeline
-        // However, sometimes (like step 1) its not always consistent what/how many
-        //   resources are needed to be shared between steps
-        // Relays would need meta information about their resources, which the dynamo
-        //   would have to parse and try to link with the next relay
+        // We still need to explicitly know what/how many outputs/inputs and link them manually
 
         // RELAY STEP 1
+        // forward pass has 0 input textures, 1 fbo, 1 rbo, 2 output textures
+        //   it ingests renderables, light sources, and camera changes
         std::unique_ptr<ForwardRenderRelay> m_forwardPass;
-        unsigned int m_forwardFboId;
-        unsigned int m_ldrRenderedTextureId;
-        unsigned int m_hdrRenderedTextureId;
-        unsigned int m_forwardRboId;
 
         // RELAY STEP 2
+        // bloom pass has 1 input texture, 2 fbos, 0 rbos, 1 output texture
+        //  it ingests camera changes
         std::unique_ptr<BloomRenderRelay> m_bloomPass;
-        // we'll always assume that index [0] will be the final, [1] is for internal use
-        unsigned int m_bloomFboIds[2]{};
-        unsigned int m_bloomRenderedTextureIds[2]{};
 
         // RELAY STEP 3
+        // screen pass has 2 input textures, 0 fbos, 0 fbos, 0 output textures
+        //   it ingests camera changes
         std::unique_ptr<ScreenRenderRelay> m_screenPass;
         // outputs to screen framebuffer (pass framebuffer 0)
 
         // RenderDynamo maintains a uniform buffer for all relays to use
         unsigned int m_viewTransformUboId;
 
+        // Data for UBO
         // Camera data is not live ( dynamo can't access ECS)
         // but synchro will update each frame (or when neccessary)
         glm::mat4 m_world_to_view;
         glm::mat4 m_projection;
-        glm::vec3 m_viewPos;
     };
 }
 

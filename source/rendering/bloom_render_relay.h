@@ -2,6 +2,7 @@
 #define BLOOM_RENDER_RELAY_H
 
 //#include "intercession_pch.h"
+#include <assert.h>
 #include "rendering/i_render_relay.h"
 #include "logging/pleep_log.h"
 #include "rendering/shader_manager.h"
@@ -21,18 +22,105 @@ namespace pleep
             , m_screenPlane(model_builder::create_screen_plane())
         {
             // I don't need uniform buffers
+
+            // setup gl objects
+            glGenFramebuffers(2, m_bloomFboIds);
+            glGenTextures(2, m_bloomRenderedTextureIds);
+            for (unsigned int i = 0; i < 2; i++)
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, m_bloomFboIds[i]);
+                glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureIds[i]);
+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_viewWidth, m_viewHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                // prevent wrapping
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_bloomRenderedTextureIds[i], 0);
+
+                // check framebuffer
+                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                {
+                    PLEEPLOG_ERROR("Bloom hot potato framebuffer " + std::to_string(i) + " was not complete, rebinding to default");
+                    glDeleteFramebuffers(1, &m_bloomFboIds[i]);
+                    m_bloomFboIds[i] = 0;
+                }
+                glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
+            }
         }
 
-
-        void render() override
+        ~BloomRenderRelay()
         {
-            if (m_numPasses < 2) {
-                PLEEPLOG_WARN("Cannot perform less than 2 blur passes, performing 2 anyway");
+            // toBloom is owned by someone else
+
+            glDeleteFramebuffers(2, m_bloomFboIds);
+            glDeleteTextures(2, m_bloomRenderedTextureIds);
+        }
+
+        // index 0: texture to apply bloom (blur)
+        void set_input_tex_id(unsigned int texId, unsigned int index = 0) override
+        {
+            switch(index)
+            {
+                case 0:
+                    m_toBloomTextureId = texId;
+                    return;
+                default:
+                    PLEEPLOG_ERROR("Bloom render relay only has 1 input texture, could not access index " + std::to_string(index));
+                    throw std::range_error("Bloom render relay only has 1 input texture, could not access index " + std::to_string(index));
+            }
+        }
+
+        // index 0: Final bloomed (blurred) texture
+        unsigned int get_output_tex_id(unsigned int index = 0) override
+        {
+            switch(index)
+            {
+                case 0:
+                    // blurs are done in pairs of passes, so final should always land on [1]
+                    return m_bloomRenderedTextureIds[1];
+                default:
+                    PLEEPLOG_ERROR("Bloom render relay only has 1 output texture, could not retrieve index " + std::to_string(index));
+                    throw std::range_error("Bloom render relay only has 1 output texture, could not retrieve index " + std::to_string(index));
+            }
+        }
+        
+        virtual void resize_render_resources() override
+        {
+            PLEEPLOG_TRACE("Resizing render resources");
+            
+            for (unsigned int i = 0; i < 2; i++)
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, m_bloomFboIds[i]);
+                glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureIds[i]);
+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_viewWidth, m_viewHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        void render(int* viewportDims) override
+        {
+            if (m_numPasses < 1) {
+                // TODO: include a passthrough shader for option to have no blur
+                PLEEPLOG_ERROR("Cannot perform less than 1 blur passes!");
+                assert(m_numPasses >= 1);
             }
 
+            // setup trackers for "hot potato" technique
+            unsigned int nextFbo = m_bloomFboIds[0];
+            unsigned int nextTex = m_toBloomTextureId;  // for first pass
+
             m_sm.activate();
-            glBindFramebuffer(GL_FRAMEBUFFER, m_outputFboId);
-            glViewport(0,0, m_viewWidth,m_viewHeight);
+            glBindFramebuffer(GL_FRAMEBUFFER, nextFbo);
+            glViewport(
+                viewportDims[0],
+                viewportDims[1],
+                viewportDims[2],
+                viewportDims[3]
+            );
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -43,11 +131,7 @@ namespace pleep
             glActiveTexture(GL_TEXTURE0);
             m_sm.set_int("image", 0);
 
-            // setup for first pass
-            unsigned int nextTex = m_toBloomTextureId;
-            unsigned int nextFbo = m_bloomProcessingFboId1;
-
-            for (unsigned int i = 0; i < m_numPasses-1; i++)
+            for (unsigned int i = 0; i < m_numPasses * 2; i++)
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, nextFbo);
                 m_sm.set_int("horizontal", m_isHorizontalPass);
@@ -56,49 +140,12 @@ namespace pleep
                 glBindTexture(GL_TEXTURE_2D, nextTex);
                 m_screenPlane->invoke_draw();
 
-                // setup for even passes
-                if (i%2 == 0)
-                {
-                    nextTex = m_bloomProcessingTexId1;
-                    nextFbo = m_bloomProcessingFboId2;
-                }
-                // setup for odd passes (except first)
-                else
-                {
-                    nextTex = m_bloomProcessingTexId2;
-                    nextFbo = m_bloomProcessingFboId1;
-                }
+                // setup for next pass
+                nextFbo = m_bloomFboIds[(i+1) % 2];
+                nextTex = m_bloomRenderedTextureIds[i % 2];
             }
-
-            // last pass to output fbo
-            glBindFramebuffer(GL_FRAMEBUFFER, m_outputFboId);
-            m_sm.set_int("horizontal", m_isHorizontalPass);
-            m_isHorizontalPass = !m_isHorizontalPass;
-            
-            glBindTexture(GL_TEXTURE_2D, nextTex);
-            m_screenPlane->invoke_draw();
             
             m_sm.deactivate();
-        }
-
-        // provide texture to be bloomed (blurred)
-        void set_input_texture(unsigned int toBloomId)
-        {
-            m_toBloomTextureId = toBloomId;
-        }
-
-        // in addition to output_fbo_id, bloom also needs internal "hot potato" framebuffers
-        // Relay could manage it itself, but would need to be looped into dynamo's framebuffer updates
-        void set_internal_fbo_ids(unsigned int processingFbo1, unsigned int processingFbo2)
-        {
-            m_bloomProcessingFboId1 = processingFbo1;
-            m_bloomProcessingFboId2 = processingFbo2;
-        }
-        
-        void set_internal_render_texture_ids(unsigned int processingTex1, unsigned int processingTex2)
-        {
-            m_bloomProcessingTexId1 = processingTex1;
-            m_bloomProcessingTexId2 = processingTex2;
         }
 
     private:
@@ -107,21 +154,19 @@ namespace pleep
         
         std::shared_ptr<VertexGroup> m_screenPlane;
         
-        // input texture to process
+        // input texture to process (passed in by configuration)
         unsigned int m_toBloomTextureId;
 
-        // remember we get m_outputFboId from IRenderRelay
-
         // used for "hot potato" blurring
-        unsigned int m_bloomProcessingFboId1;
-        unsigned int m_bloomProcessingFboId2;
-        unsigned int m_bloomProcessingTexId1;
-        unsigned int m_bloomProcessingTexId2;
+        unsigned int m_bloomFboIds[2]{};
+        // we'll always output [1]
+        unsigned int m_bloomRenderedTextureIds[2]{};
 
         // track blurring stage
         bool m_isHorizontalPass;
 
-        const unsigned int m_numPasses = 2;
+        // each pass means 1 horizontal and 1 vertical render
+        const unsigned int m_numPasses = 1;
     };
 }
 

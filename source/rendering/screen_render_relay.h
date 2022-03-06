@@ -23,11 +23,47 @@ namespace pleep
             // I don't need uniform buffers
         }
 
-        void render() override
+        // index 0: ldr component texture
+        // index 1: hdr component texture
+        void set_input_tex_id(unsigned int texId, unsigned int index = 0) override
+        {
+            switch(index)
+            {
+                case 0:
+                    m_ldrScreenTextureId = texId;
+                    return;
+                case 1:
+                    m_hdrScreenTextureId = texId;
+                    return;
+                default:
+                    PLEEPLOG_ERROR("Screen render relay only has 2 input textures, could not access index " + std::to_string(index));
+                    throw std::range_error("Screen render relay only has 2 input textures, could not access index " + std::to_string(index));
+            }
+        }
+
+        // index 0: Final combined display texture
+        unsigned int get_output_tex_id(unsigned int index = 0) override
+        {
+            PLEEPLOG_ERROR("Screen render relay has 0 output textures, draws to framebuffer 0 (screen), could not retrieve index " + std::to_string(index));
+            throw std::range_error("Screen render relay has 0 output textures, draws to framebuffer 0 (screen), could not retrieve index " + std::to_string(index));
+        }
+        
+        virtual void resize_render_resources() override
+        {
+            PLEEPLOG_TRACE("No render resources to resize");
+            // I don't have any resources, but I need to implement this to avoid the no-implement warning
+        }
+
+        void render(int* viewportDims) override
         {
             m_sm.activate();
-            glBindFramebuffer(GL_FRAMEBUFFER, m_outputFboId);
-            glViewport(0,0, m_viewWidth,m_viewHeight);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(
+                viewportDims[0],
+                viewportDims[1],
+                viewportDims[2],
+                viewportDims[3]
+            );
             glClearColor(0.6f, 0.2f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -62,8 +98,11 @@ namespace pleep
         // again, can't let objects with gl memory be copied...
         std::shared_ptr<VertexGroup> m_screenPlane;
 
+        // input textures to display
         unsigned int m_ldrScreenTextureId = 0;
         unsigned int m_hdrScreenTextureId = 0;
+
+        // No output render location, outputs to framebuffer 0 (screen)
     };
 }
 

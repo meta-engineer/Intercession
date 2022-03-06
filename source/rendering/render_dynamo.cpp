@@ -13,6 +13,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::window::RESIZE, RenderDynamo::_resize_handler));
 
         PLEEPLOG_TRACE("Setup render pipeline");
+
         // setup UBO
         glGenBuffers(1, &m_viewTransformUboId);
         glBindBuffer(GL_UNIFORM_BUFFER, m_viewTransformUboId);
@@ -24,22 +25,21 @@ namespace pleep
         m_forwardPass = std::make_unique<ForwardRenderRelay>();
         m_bloomPass   = std::make_unique<BloomRenderRelay>();
         m_screenPass  = std::make_unique<ScreenRenderRelay>();
+        // configure relays with gl object id's
+        _configure_relay_resources();
 
         // get screen initial size
         read_viewport_size(m_viewportDims);
         // init view dimensions with default screen size until camera sends update
 
-        // init framebuffers then configure relays with new object id's
-        resize_framebuffers(m_viewportDims[2], m_viewportDims[3]);
-        PLEEPLOG_TRACE("Render pipeline config done.");
+        PLEEPLOG_TRACE("Done Render pipeline setup");
     }
     
     RenderDynamo::~RenderDynamo() 
     {
         // I do not own my api references or event broker
 
-        // free framebuffers, textures and renderbuffers
-        _delete_resources();
+        // relays will free framebuffers, textures and renderbuffers
         
         // Uniform buffer shouldn't change size so it doesn't need to be
         //  rebuildable, it is freed only when dynamo ends
@@ -99,15 +99,15 @@ namespace pleep
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError before render: " + std::to_string(err)); }
 
-        m_forwardPass->render();
+        m_forwardPass->render(m_viewportDims);
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
 
-        m_bloomPass->render();
+        m_bloomPass->render(m_viewportDims);
         err = glGetError();
-        if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
+        if (err) { PLEEPLOG_ERROR("glError after bloom pass: " + std::to_string(err)); }
 
-        m_screenPass->render();
+        m_screenPass->render(m_viewportDims);
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after screen pass: " + std::to_string(err)); }
     }
@@ -120,82 +120,6 @@ namespace pleep
     void RenderDynamo::read_viewport_size(int* viewportDims) 
     {
         glGetIntegerv(GL_VIEWPORT, viewportDims);
-    }
-    
-    void RenderDynamo::resize_framebuffers(unsigned int uWidth, unsigned int uHeight) 
-    {
-        // Naive solution, just delete the textures and remake them
-        _delete_resources();
-
-        // setup Framebuffers
-        glGenFramebuffers(1, &m_forwardFboId);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_forwardFboId);
-
-        // LDR component texture buffer
-        glGenTextures(1, &m_ldrRenderedTextureId);
-        glBindTexture(GL_TEXTURE_2D, m_ldrRenderedTextureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ldrRenderedTextureId, 0);
-
-        // HDR component texture buffer
-        glGenTextures(1, &m_hdrRenderedTextureId);
-        glBindTexture(GL_TEXTURE_2D, m_hdrRenderedTextureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0); // clear
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_hdrRenderedTextureId, 0);
-
-        // register multiple render targets to this FBO
-        unsigned int forwardFboAttachments[2];
-        forwardFboAttachments[0] = GL_COLOR_ATTACHMENT0;
-        forwardFboAttachments[1] = GL_COLOR_ATTACHMENT1;
-        glDrawBuffers(2, forwardFboAttachments);
-
-        // RenderBufferObject for depth (and sometimes stencil)
-        glGenRenderbuffers(1, &m_forwardRboId);
-        glBindRenderbuffer(GL_RENDERBUFFER, m_forwardRboId);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, uWidth, uHeight);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0); // clear
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_forwardRboId);
-        
-        // check framebuffer
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            PLEEPLOG_ERROR("Forward Pass framebuffer was not complete, rebinding to default");
-        }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
-
-        glGenFramebuffers(2, m_bloomFboIds);
-        glGenTextures(2, m_bloomRenderedTextureIds);
-        for (unsigned int i = 0; i < 2; i++)
-        {
-            glBindFramebuffer(GL_FRAMEBUFFER, m_bloomFboIds[i]);
-            glBindTexture(GL_TEXTURE_2D, m_bloomRenderedTextureIds[i]);
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, uWidth, uHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            // prevent wrapping
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_bloomRenderedTextureIds[i], 0);
-
-            // check framebuffer
-            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            {
-                PLEEPLOG_ERROR("Bloom hot potato framebuffer " + std::to_string(i) + " was not complete, rebinding to default");
-            }
-            glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to the screen
-        }
-
-        // relays should always be reset with new framebuffers
-        _configure_relay_resources();
-        
-        PLEEPLOG_TRACE("Framebuffers constructed successfully");
     }
     
     void RenderDynamo::_resize_handler(Event resizeEvent) 
@@ -212,40 +136,24 @@ namespace pleep
         unsigned int uWidth  = (unsigned int)width;
         unsigned int uHeight = (unsigned int)height;
 
-        // always have viewport fill window 100%
-        glViewport(0, 0, uWidth, uHeight);
-
-        // remember original viewport to reset after relays modify it
+        // relays will use this info to set viewport appropriately
         m_viewportDims[0] = 0;
         m_viewportDims[1] = 0;
-        uWidth = uWidth;
-        uHeight = uHeight;
+        m_viewportDims[2] = uWidth;
+        m_viewportDims[3] = uHeight;
     }
     
     void RenderDynamo::_configure_relay_resources() 
     {
-        // renders out to m_ldrRenderedTexture and m_hdrRenderedTexture
-        m_forwardPass->set_output_fbo_id(m_forwardFboId);
+        // forward pass needs nothing
 
-        // renders out to m_bloomRenderedTexture
-        m_bloomPass->set_output_fbo_id(m_bloomFboIds[0]);   // we'll render out to [0] on last iteration
-        m_bloomPass->set_input_texture(m_hdrRenderedTextureId);
-        m_bloomPass->set_internal_fbo_ids(m_bloomFboIds[0], m_bloomFboIds[1]);
-        m_bloomPass->set_internal_render_texture_ids(m_bloomRenderedTextureIds[0], m_bloomRenderedTextureIds[1]);
+        // bloom pass needs bright component of forward pass output
+        m_bloomPass->set_input_tex_id(m_forwardPass->get_output_tex_id(1));
 
-        // renders out to screen
-        m_screenPass->set_output_fbo_id(0);
-        m_screenPass->set_input_texture(m_ldrRenderedTextureId, m_bloomRenderedTextureIds[0]);
-    }
-    
-    void RenderDynamo::_delete_resources() 
-    {
-        glDeleteFramebuffers(1, &m_forwardFboId);
-        glDeleteTextures(1, &m_ldrRenderedTextureId);
-        glDeleteTextures(1, &m_hdrRenderedTextureId);
-        glDeleteRenderbuffers(1, &m_forwardRboId);
-
-        glDeleteFramebuffers(2, m_bloomFboIds);
-        glDeleteTextures(2, m_bloomRenderedTextureIds);
+        // screen pass needs normal component of forward pass and bloom component from bloom pass
+        m_screenPass->set_input_tex_id(m_forwardPass->get_output_tex_id(0), 0);
+        m_screenPass->set_input_tex_id(m_bloomPass->get_output_tex_id(0), 1);
+        
+        PLEEPLOG_TRACE("Framebuffers reconfigured successfully");
     }
 }
