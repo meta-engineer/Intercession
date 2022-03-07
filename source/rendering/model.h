@@ -39,10 +39,6 @@ namespace pleep {
         // set all child meshes to have a mat4 attrib from location = offset to offset+4
         void setup_all_instance_transform_attrib_arrays(unsigned int offset);
 
-        // TODO: move these helpers to model_builder
-        static unsigned int load_gl_texture(std::string filename, const std::string& path = "", bool gammaCorrect = true);
-        static unsigned int load_gl_cubemap_texture(std::vector<std::string> filenames, bool gammaCorrect = true);
-
         std::map<std::string, BoneInfo>& get_bone_info_map();
         int& get_num_bones();
 

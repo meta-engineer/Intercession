@@ -209,7 +209,7 @@ namespace pleep
         Entity box = m_currentCosmos->create_entity();
         TransformComponent boxTransform(glm::vec3(1.0f, -1.0f, 1.0f));
         m_currentCosmos->add_component(box, boxTransform);
-        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png", "resources/bricks2_normal.jpg")));
+        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
@@ -220,6 +220,12 @@ namespace pleep
         m_currentCosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
         m_currentCosmos->get_component<TransformComponent>(wall2).rotation.y += 1.0f;
         m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
+
+        Entity floor = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(floor).rotation.x += glm::radians(-90.0f);
+        m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f);
+        m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg", "resources/brickwall_specular")));
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
