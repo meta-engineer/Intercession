@@ -44,6 +44,11 @@ namespace pleep
         // safely clear all registered components for given entity
         void clear_entity(Entity entity);
 
+        // return entity with component "equal" to argument
+        // operator == must be defined for T
+        template<typename T>
+        Entity find_entity(T component);
+
     private:
         // cast ComponentArray into mapped type
         template<typename T>
@@ -122,6 +127,12 @@ namespace pleep
             std::shared_ptr<IComponentArray> const& components = pair.second;
             components->clear_data_for(entity);
         }
+    }
+    
+    template<typename T>
+    Entity ComponentRegistry::find_entity(T component)
+    {
+        return this->_get_component_array<T>()->find_entity_for(component);
     }
     
     template<typename T>

@@ -33,6 +33,9 @@ namespace pleep
         // does NOT return "not found", THROWS if no component exists
         T& get_data_for(Entity entity);
 
+        // find first entity with T equal to component
+        // operator == must be defined for T
+        Entity find_entity_for(T component);
 
     private:
         // Goal is to have a PACKED array of components
@@ -107,6 +110,21 @@ namespace pleep
         {
             this->remove_data_for(entity);
         }
+    }
+
+    
+    template<typename T>
+    Entity ComponentArray<T>::find_entity_for(T component)
+    {
+        for (auto e = m_mapEntityToIndex.begin(); e != m_mapEntityToIndex.end(); e++)
+        {
+            // == must be defined
+            if (m_array[e->second] == component)
+            {
+                return e->first;
+            }
+        }
+        return NULL_ENTITY;
     }
 }
 

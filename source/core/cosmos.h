@@ -45,6 +45,14 @@ namespace pleep
         // foreward count fetch to EntityRegistry
         Entity get_entity_count();
 
+        // find which entity has this component
+        // Linear complexity (with number of components of this type)
+        // operator == must be defined for T
+        // if components aren't unique this may be invalid
+        // if component doesn't exist, returns NULL_ENTITY
+        template<typename T>
+        Entity find_entity(T component);
+
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -119,6 +127,12 @@ namespace pleep
     inline Entity Cosmos::get_entity_count() 
     {
         return m_entityRegistry->get_entity_count();
+    }
+    
+    template<typename T>
+    Entity Cosmos::find_entity(T component)
+    {
+        return m_componentRegistry->find_entity(component);
     }
 
     template<typename T>

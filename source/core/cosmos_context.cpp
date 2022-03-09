@@ -13,6 +13,7 @@
 #include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
+#include "ecs/tag_component.h"
 
 namespace pleep
 {
@@ -154,6 +155,8 @@ namespace pleep
         m_currentCosmos->register_component<ModelComponent>();
         m_currentCosmos->register_component<CameraComponent>();
         m_currentCosmos->register_component<LightSourceComponent>();
+        // register tag component as a normal component
+        m_currentCosmos->register_component<TagComponent>();
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -195,6 +198,7 @@ namespace pleep
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
         Entity frog = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(frog, TagComponent{ "froog" });
         m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(-1.0f, 0.0f, 1.0f)));
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");

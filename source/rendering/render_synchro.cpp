@@ -30,10 +30,17 @@ namespace pleep
 
         // update view info with registered camera
         // re-get camera each time becuase ECS pointers are volatile
-        m_attachedRenderDynamo->submit(CameraPacket {
-            m_ownerCosmos->get_component<TransformComponent>(m_mainCamera),
-            m_ownerCosmos->get_component<CameraComponent>(m_mainCamera)
-        });
+        if (m_mainCamera != NULL_ENTITY)
+        {
+            m_attachedRenderDynamo->submit(CameraPacket {
+                m_ownerCosmos->get_component<TransformComponent>(m_mainCamera),
+                m_ownerCosmos->get_component<CameraComponent>(m_mainCamera)
+            });
+        }
+        else
+        {
+            PLEEPLOG_WARN("Update called while no main camera entity was set");
+        }
 
         // feed components of m_entities to attached ControlDynamo
         // I should implicitly know my signature and therefore what components i can fetch
