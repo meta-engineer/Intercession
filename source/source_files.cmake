@@ -21,4 +21,7 @@ set(ALL_SOURCE_FILES
 
     source/controlling/control_dynamo.cpp
     source/controlling/control_synchro.cpp
+
+    source/physics/physics_dynamo.cpp
+    source/physics/physics_synchro.cpp
 )

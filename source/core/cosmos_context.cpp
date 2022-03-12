@@ -6,8 +6,10 @@
 #include "controlling/control_synchro.h"
 #include "rendering/render_synchro.h"
 #include "rendering/lighting_synchro.h"
+#include "physics/physics_synchro.h"
 
 #include "physics/transform_component.h"
+#include "physics/physics_component.h"
 #include "controlling/control_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
@@ -18,17 +20,17 @@
 namespace pleep
 {
     CosmosContext::CosmosContext()
+        : m_currentCosmos(nullptr)
+        , m_renderDynamo(nullptr)
+        , m_controlDynamo(nullptr)
+        , m_physicsDynamo(nullptr)
     {
         m_running = false;
 
-        // build event listener and setup context's "fallback" listeners
+        // build event listener
         m_eventBroker = new EventBroker();
+        // setup context's "fallback" listeners
         m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, CosmosContext::_quit_handler));
-
-        // enforce dynamos are built?
-        m_renderDynamo = nullptr;
-        m_controlDynamo = nullptr;
-        m_currentCosmos = nullptr;
     }
     
     CosmosContext::CosmosContext(GLFWwindow* windowApi)
@@ -37,8 +39,9 @@ namespace pleep
         // Broker is ready to be distributed
 
         // construct dynamos
-        m_renderDynamo = new RenderDynamo(m_eventBroker, windowApi);
-        m_controlDynamo  = new ControlDynamo(m_eventBroker, windowApi);
+        m_renderDynamo  = new RenderDynamo(m_eventBroker, windowApi);
+        m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);
+        m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         
         // build empty starting cosmos
         m_currentCosmos = new Cosmos();
@@ -53,6 +56,7 @@ namespace pleep
         // delete cosmos first to avoid null dynamo dereferences
         delete m_currentCosmos;
 
+        delete m_physicsDynamo;
         delete m_controlDynamo;
         delete m_renderDynamo;
 
@@ -155,6 +159,7 @@ namespace pleep
         m_currentCosmos->register_component<ModelComponent>();
         m_currentCosmos->register_component<CameraComponent>();
         m_currentCosmos->register_component<LightSourceComponent>();
+        m_currentCosmos->register_component<PhysicsComponent>();
         // register tag component as a normal component
         m_currentCosmos->register_component<TagComponent>();
 
@@ -193,6 +198,16 @@ namespace pleep
             m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
         }
 
+        std::shared_ptr<PhysicsSynchro> physicsSynchro = m_currentCosmos->register_synchro<PhysicsSynchro>();
+        physicsSynchro->attach_dynamo(m_physicsDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<PhysicsComponent>());
+
+            m_currentCosmos->set_synchro_signature<PhysicsSynchro>(sign);
+        }
+
         PLEEPLOG_TRACE("Create Entities");
         // create entities
         // create component and pass or construct inline
@@ -214,6 +229,7 @@ namespace pleep
         TransformComponent boxTransform(glm::vec3(1.0f, -1.0f, 1.0f));
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
+        m_currentCosmos->add_component(box, PhysicsComponent{});
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
@@ -229,7 +245,7 @@ namespace pleep
         m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).rotation.x += glm::radians(-90.0f);
         m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f);
-        m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg", "resources/brickwall_specular")));
+        m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg", "resources/spiral_disp.jpg")));
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));

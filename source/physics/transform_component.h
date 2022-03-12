@@ -10,9 +10,7 @@
 
 namespace pleep
 {
-    // Provide baseline 3D origin for all in-cosmos entities
-    // more advanced properties (velocities, bounding boxes)
-    //   will be in a physics component
+    // Provide baseline 3D orientation for all "spacial" entities
     struct TransformComponent
     {
         // should I use my own vec3's?

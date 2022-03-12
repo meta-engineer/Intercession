@@ -78,9 +78,11 @@ namespace pleep
         }
 
         // copy end element into removed index
-        size_t removedIndex = m_mapEntityToIndex[entity];
-        size_t lastIndex    = m_size - 1;
+        size_t removedIndex   = m_mapEntityToIndex[entity];
+        size_t lastIndex      = m_size - 1;
+        m_array[removedIndex] = m_array[lastIndex];
 
+        // Update maps to point to moved index
         Entity lastEntity = m_mapIndexToEntity[lastIndex];
         m_mapEntityToIndex[lastEntity] = removedIndex;
         m_mapIndexToEntity[removedIndex] = lastEntity;

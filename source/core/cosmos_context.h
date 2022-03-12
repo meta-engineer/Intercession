@@ -16,6 +16,7 @@
 #include "events/event_broker.h"
 #include "rendering/render_dynamo.h"
 #include "controlling/control_dynamo.h"
+#include "physics/physics_dynamo.h"
 
 namespace pleep
 {
@@ -65,6 +66,7 @@ namespace pleep
         // created cosmos' share dynamos with their synchros
         RenderDynamo* m_renderDynamo;
         ControlDynamo* m_controlDynamo;
+        PhysicsDynamo* m_physicsDynamo;
 
         //AudioApi* m_audioApi;
         //AudioDynamo* m_audioDynamo;

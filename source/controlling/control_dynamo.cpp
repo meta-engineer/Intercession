@@ -11,12 +11,15 @@ namespace pleep
         // setup relays with access to my input buffers (we need to ecplicitly know which buffers relay needs)
         , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))
     {
+        PLEEPLOG_TRACE("Setup Control pipeline");
         // we have "lease" of api to override callbacks
         _set_my_window_callbacks();
 
         // initalize control related window config
         // set mouse capture mode
         glfwSetInputMode(m_windowApi, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        
+        PLEEPLOG_TRACE("Done Control pipeline setup");
     }
     
     ControlDynamo::~ControlDynamo()
