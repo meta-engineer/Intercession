@@ -128,7 +128,7 @@ namespace pleep
             glBindFramebuffer(GL_FRAMEBUFFER, 0); // clear
         }
 
-        void render(int* viewportDims) override
+        void engage(int* viewportDims) override
         {
             m_sm.activate();
             glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);

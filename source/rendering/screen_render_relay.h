@@ -54,7 +54,7 @@ namespace pleep
             // I don't have any resources, but I need to implement this to avoid the no-implement warning
         }
 
-        void render(int* viewportDims) override
+        void engage(int* viewportDims) override
         {
             m_sm.activate();
             glBindFramebuffer(GL_FRAMEBUFFER, 0);

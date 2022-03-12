@@ -15,7 +15,7 @@ namespace pleep
         // explicitly inherit constructors
         using ISynchro::ISynchro;
         
-        // exits early if there was no attached dynamo to engage
+        // exits early if there was no attached dynamo to use
         // THROWS runtime error if m_ownerCosmos is null
         void update(double deltaTime) override;
 

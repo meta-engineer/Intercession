@@ -45,7 +45,7 @@ namespace pleep
         // submittions are done, invoke draws
         // viewportDims[4] should be used to set default viewport
         // each relay is different, enforce implementation to avoid confusion
-        virtual void render(int* viewportDims) = 0;
+        virtual void engage(int* viewportDims) = 0;
 
         // pass in camera to render with (overwrites last cubmitted camera)
         void submit(CameraPacket data)

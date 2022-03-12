@@ -20,6 +20,12 @@ namespace pleep
     {
         // continue to build quad tree
         UNREFERENCED_PARAMETER(data);
+
+        // dispatch to physics relays
+
+        // temp (remember to de verlet integration)
+        //data.transform.origin += data.physics.velocity / deltaTime;
+        //data.transform.rotation += data.physics.angularVelocity / deltaTime;
     }
     
     void PhysicsDynamo::run_relays(double deltaTime) 

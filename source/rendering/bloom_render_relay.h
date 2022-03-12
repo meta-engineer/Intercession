@@ -101,7 +101,7 @@ namespace pleep
             glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-        void render(int* viewportDims) override
+        void engage(int* viewportDims) override
         {
             if (m_numPasses < 1) {
                 // TODO: include a passthrough shader for option to have no blur

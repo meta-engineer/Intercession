@@ -99,15 +99,15 @@ namespace pleep
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError before render: " + std::to_string(err)); }
 
-        m_forwardPass->render(m_viewportDims);
+        m_forwardPass->engage(m_viewportDims);
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after forward pass: " + std::to_string(err)); }
 
-        m_bloomPass->render(m_viewportDims);
+        m_bloomPass->engage(m_viewportDims);
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after bloom pass: " + std::to_string(err)); }
 
-        m_screenPass->render(m_viewportDims);
+        m_screenPass->engage(m_viewportDims);
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError after screen pass: " + std::to_string(err)); }
     }

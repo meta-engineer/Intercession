@@ -13,8 +13,8 @@ namespace pleep
         // Motion attributes
         glm::vec3 velocity;
         glm::vec3 acceleration;
-        glm::vec3 angularVelocity;      // Quaternion?
-        glm::vec3 angularAcceleration;  // Quaternion?
+        glm::vec3 angularVelocity;      // in RADS! Quaternion?
+        glm::vec3 angularAcceleration;  // in RADS! Quaternion?
 
         // Interaction attributes
         //std::shared_ptr<ICollider> collider;

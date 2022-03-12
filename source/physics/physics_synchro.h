@@ -15,7 +15,7 @@ namespace pleep
         using ISynchro::ISynchro;
 
         // Provide entities of my sign, and registered ones to dynamo
-        // exits early if there was no attached dynamo to engage
+        // exits early if there was no attached dynamo to use
         // THROWS runtime error if m_ownerCosmos is null
         void update(double deltaTime) override;
 

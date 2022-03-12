@@ -230,6 +230,8 @@ namespace pleep
         m_currentCosmos->add_component(box, boxTransform);
         m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(box, PhysicsComponent{});
+        
+        m_currentCosmos->get_component<PhysicsComponent>(box).angularVelocity = glm::vec3(1.0f, 0.5f, 0.0f);
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
