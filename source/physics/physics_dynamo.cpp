@@ -8,6 +8,9 @@ namespace pleep
         : IDynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Setup Physics pipeline");
+        
+        // setup relays
+        m_motionStep = std::make_unique<VerletPhysicsRelay>();
 
         PLEEPLOG_TRACE("Done Physics pipeline setup");
     }
@@ -18,20 +21,16 @@ namespace pleep
     
     void PhysicsDynamo::submit(PhysicsPacket data) 
     {
-        // continue to build quad tree
-        UNREFERENCED_PARAMETER(data);
+        // continue to build quad tree?
 
         // dispatch to physics relays
-
-        // temp (remember to de verlet integration)
-        //data.transform.origin += data.physics.velocity / deltaTime;
-        //data.transform.rotation += data.physics.angularVelocity / deltaTime;
+        m_motionStep->submit(data);
     }
     
     void PhysicsDynamo::run_relays(double deltaTime) 
     {
-        // quadtree is now built process all physical processes
-        UNREFERENCED_PARAMETER(deltaTime);
+        // quadtree is now built? process all physical processes
         
+        m_motionStep->engage(deltaTime);
     }
 }

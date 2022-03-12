@@ -211,7 +211,7 @@ namespace pleep
             // Render through all models
             while (!m_modelPacketQueue.empty())
             {
-                RenderPacket& data = m_modelPacketQueue.front();
+                RenderPacket data = m_modelPacketQueue.front();
                 m_modelPacketQueue.pop();
 
                 m_sm.activate();

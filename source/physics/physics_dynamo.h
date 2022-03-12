@@ -9,6 +9,7 @@
 #include "core/i_dynamo.h"
 #include "events/event_broker.h"
 #include "physics/physics_packet.h"
+#include "physics/verlet_physics_relay.h"
 
 namespace pleep
 {
@@ -25,8 +26,10 @@ namespace pleep
         void run_relays(double deltaTime) override;
 
     private:
-        // internal entity storage for optimal spacial partitioning
-        //QuadTree
+        // should I store entities for optimal spacial partitioning?
+
+        // RELAY STEP 1
+        std::unique_ptr<VerletPhysicsRelay> m_motionStep;
     };
 }
 
