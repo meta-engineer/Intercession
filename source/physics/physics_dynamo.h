@@ -10,6 +10,7 @@
 #include "events/event_broker.h"
 #include "physics/physics_packet.h"
 #include "physics/verlet_physics_relay.h"
+#include "physics/collision_physics_relay.h"
 
 namespace pleep
 {
@@ -30,6 +31,9 @@ namespace pleep
 
         // RELAY STEP 1
         std::unique_ptr<VerletPhysicsRelay> m_motionStep;
+
+        // RELAY STEP 2
+        std::unique_ptr<CollisionPhysicsRelay> m_collisionStep;
     };
 }
 

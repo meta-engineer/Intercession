@@ -4,9 +4,25 @@
 //#include "intercession_pch.h"
 #include <glm/glm.hpp>
 #include "ecs/ecs_types.h"
+#include "physics/i_collider.h"
 
 namespace pleep
 {
+    // possible properties of a physics enabled object:
+    // motion updates?
+    //   does/doesn't apply velocities
+    //   maximum velocities?
+    //   motion integration technique? scaling with velocity?
+    // collision detection?
+    //   triggers on collision? (pass collider and collidee to script?)
+    //     collideStart trigger?
+    //     collideUpdate trigger?
+    //   rigid body collision resolution?
+    //   force field collision resolution? (is this just a trigger?)
+    // force generators?
+    //   different collider for force field (always a sphere?)
+    //   can force effect self?
+
     // provide attributes to facilitate 3D motion/interaction
     struct PhysicsComponent
     {
@@ -17,25 +33,11 @@ namespace pleep
         glm::vec3 angularAcceleration;  // in RADS! Quaternion?
 
         // Interaction attributes
-        //std::shared_ptr<ICollider> collider;
-        bool isTrigger = false;
-        // this could be a function pointer, finding the component SHOULD be O(1)
-        Entity onTrigger = NULL_ENTITY;
-
-        // possible properties of a physics enabled object:
-        // motion updates?
-        //   does/doesn't apply velocities
-        //   maximum velocities?
-        //   motion integration technique? scaling with velocity?
-        // collision detection?
-        //   triggers on collision? (pass collider and collidee to script?)
-        //     collideStart trigger?
-        //     collideUpdate trigger?
-        //   rigid body collision resolution?
-        //   force field collision resolution? (is this just a trigger?)
-        // force generators?
-        //   different collider for force field (always a sphere?)
-        //   can force effect self?
+        std::shared_ptr<ICollider> collider = nullptr;
+        // collider behaviour
+        //bool isTrigger = false;
+        //Entity onTrigger = NULL_ENTITY;
+        // could use a function pointer? finding the script component SHOULD only be O(1)
     };
 }
 

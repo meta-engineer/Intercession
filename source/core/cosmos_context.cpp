@@ -10,6 +10,7 @@
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
+#include "physics/box_collider.h"
 #include "controlling/control_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
@@ -218,6 +219,11 @@ namespace pleep
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
+        m_currentCosmos->add_component(frog, PhysicsComponent{});
+        
+        PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
+        frog_physics.velocity = glm::vec3(0.3f, -0.2f, 0.1f);
+        frog_physics.collider = std::make_shared<BoxCollider>(glm::vec3(5.0f));
 
         Entity vamp = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -225,13 +231,16 @@ namespace pleep
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
         m_currentCosmos->add_component(vamp, ModelComponent(vampModel));
 
-        Entity box = m_currentCosmos->create_entity();
-        TransformComponent boxTransform(glm::vec3(1.0f, -1.0f, 1.0f));
-        m_currentCosmos->add_component(box, boxTransform);
-        m_currentCosmos->add_component(box, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
-        m_currentCosmos->add_component(box, PhysicsComponent{});
-        
-        m_currentCosmos->get_component<PhysicsComponent>(box).angularVelocity = glm::vec3(1.0f, 0.5f, 0.0f);
+        Entity crate = m_currentCosmos->create_entity();
+        TransformComponent crateTransform(glm::vec3(1.0f, -1.0f, 1.0f));
+        m_currentCosmos->add_component(crate, crateTransform);
+        m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
+        m_currentCosmos->add_component(crate, PhysicsComponent{});
+
+        PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(box);
+        crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
+        crate_physics.angularVelocity = glm::vec3(0.2f, 0.1f, 0.0f);
+        crate_physics.collider = std::make_shared<BoxCollider>();
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));

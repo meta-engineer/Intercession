@@ -12,7 +12,7 @@ namespace pleep
     class VerletPhysicsRelay : public IPhysicsRelay
     {
     public:
-        // consume acceleration values and step motion integration foreward
+        // consume acceleration values and step motion integration forward
         void engage(double deltaTime) override
         {
             // if deltaTime is too large, we may have to detect and split into
@@ -34,6 +34,11 @@ namespace pleep
                 // finish step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
                 data.transform.rotation += data.physics.angularVelocity * (float)(deltaTime / 2);
+
+                // Should we clear acceleration here
+                // or leave it for other relays to use?
+                data.physics.acceleration = glm::vec3(0.0f);
+                data.physics.angularAcceleration = glm::vec3(0.0f);
             }
         }
         

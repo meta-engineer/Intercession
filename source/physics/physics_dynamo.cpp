@@ -11,6 +11,7 @@ namespace pleep
         
         // setup relays
         m_motionStep = std::make_unique<VerletPhysicsRelay>();
+        m_collisionStep = std::make_unique<CollisionPhysicsRelay>();
 
         PLEEPLOG_TRACE("Done Physics pipeline setup");
     }
@@ -25,12 +26,16 @@ namespace pleep
 
         // dispatch to physics relays
         m_motionStep->submit(data);
+        m_collisionStep->submit(data);
     }
     
     void PhysicsDynamo::run_relays(double deltaTime) 
     {
         // quadtree is now built? process all physical processes
         
+        // motion first
         m_motionStep->engage(deltaTime);
+        // then detect and resolve collision
+        m_collisionStep->engage(deltaTime);
     }
 }

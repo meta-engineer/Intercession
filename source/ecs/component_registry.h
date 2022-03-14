@@ -124,8 +124,8 @@ namespace pleep
         // typeid & ComponentArray pointer
         for (auto const& pair : m_componentArrays)
         {
-            std::shared_ptr<IComponentArray> const& components = pair.second;
-            components->clear_data_for(entity);
+            //std::shared_ptr<IComponentArray> const& components = pair.second;
+            pair.second->clear_data_for(entity);
         }
     }
     
