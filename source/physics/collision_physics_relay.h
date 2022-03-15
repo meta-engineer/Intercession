@@ -28,10 +28,13 @@ namespace pleep
                 // no spacial partitioning :(
                 for (auto& otherData : m_physicsPacketVector)
                 {
-                    if (data.physics.collider->intersects(otherData.physics.collider))
+                    // Colliders double dispatch to their true type
+                    // we can change intersection algorithm at runtime with a static collider member
+                    if (data.physics.collider->intersects(otherData.physics.collider.get(), data.transform, otherData.transform))
                     {
                         // resolution
                         UNREFERENCED_PARAMETER(deltaTime);
+                        PLEEPLOG_DEBUG("Collision Detected!");
                     }
                 }
             }

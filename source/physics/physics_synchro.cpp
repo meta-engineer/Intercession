@@ -5,6 +5,7 @@
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
+#include "physics/physics_packet.h"
 
 namespace pleep
 {

@@ -237,7 +237,7 @@ namespace pleep
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
 
-        PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(box);
+        PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
         crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
         crate_physics.angularVelocity = glm::vec3(0.2f, 0.1f, 0.0f);
         crate_physics.collider = std::make_shared<BoxCollider>();

@@ -20,7 +20,7 @@ namespace pleep
         PhysicsDynamo(EventBroker* sharedBroker);
         ~PhysicsDynamo();
 
-        // read entities into spacial partition
+        // pass in all physics information
         void submit(PhysicsPacket data);
 
         // process render command queue

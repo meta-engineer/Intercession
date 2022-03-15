@@ -18,35 +18,31 @@ namespace pleep
             , m_dimensions(glm::vec3(1.0f))
         {
         }
+        // dimensions is actually optional with default glm::vec3(1.0f)
         BoxCollider(glm::vec3 dimensions)
             : BoxCollider()
         {
             m_dimensions = dimensions;
         }
-        ~BoxCollider()
-        {}
 
-        // Box collider must take into account transform matrix.
-        bool intersects(std::shared_ptr<ICollider>& other) override
+        // Double dispatch other
+        bool intersects(ICollider* other, 
+            TransformComponent& thisTransform,
+            TransformComponent& otherTransform) override
         {
-            switch(other->type)
-            {
-                case(ColliderType::box):
-                {
-                    PLEEPLOG_DEBUG("Testing collision between types: box and box");
-                    // other should be valid as long as we own it as a smart pointer so
-                    // we can cast it's raw, as long as the raw pointer dies before the smart one
-                    BoxCollider* otherBox = static_cast<BoxCollider*>(other.get());
-                    UNREFERENCED_PARAMETER(otherBox);
-                    return false;
-                }
-                default:
-                {
-                    PLEEPLOG_WARN("No collision implementation between types: " 
-                        + std::to_string(this->type) + " and " + std::to_string(this->type));
-                    return false;
-                }
-            }
+            // any integral return values should be inverted
+            return other->intersects(this, otherTransform, thisTransform);
+        }
+        
+        bool intersects(BoxCollider* other, 
+            TransformComponent& thisTransform,
+            TransformComponent& otherTransform) override
+        {
+            PLEEPLOG_DEBUG("Testing collision between types: box and box");
+            UNREFERENCED_PARAMETER(other);
+            UNREFERENCED_PARAMETER(thisTransform);
+            UNREFERENCED_PARAMETER(otherTransform);
+            return false;
         }
 
     private:
