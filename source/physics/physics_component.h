@@ -14,6 +14,7 @@ namespace pleep
     //   maximum velocities?
     //   motion integration technique? scaling with velocity?
     // collision detection?
+    //   multiple colliders? (composite)
     //   triggers on collision? (pass collider and collidee to script?)
     //     collideStart trigger?
     //     collideUpdate trigger?

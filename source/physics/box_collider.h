@@ -15,10 +15,10 @@ namespace pleep
     public:
         BoxCollider()
             : ICollider(ColliderType::box)
-            , m_dimensions(glm::vec3(1.0f))
+            , m_dimensions(glm::vec3(0.5f))
         {
         }
-        // dimensions is actually optional with default glm::vec3(1.0f)
+        // dimensions is actually optional with default glm::vec3(0.5f) (aka. all sidelengths 1.0)
         BoxCollider(glm::vec3 dimensions)
             : BoxCollider()
         {
@@ -38,10 +38,16 @@ namespace pleep
             TransformComponent& thisTransform,
             TransformComponent& otherTransform) override
         {
-            PLEEPLOG_DEBUG("Testing collision between types: box and box");
+            //PLEEPLOG_DEBUG("Testing collision between types: box and box");
             UNREFERENCED_PARAMETER(other);
             UNREFERENCED_PARAMETER(thisTransform);
             UNREFERENCED_PARAMETER(otherTransform);
+
+            // TODO: dynamic switch between algorithms
+            // Check should be symmetric, so test from both sides
+
+            // SAT algorithm (actually Separating Plane Theorum)
+
             return false;
         }
 

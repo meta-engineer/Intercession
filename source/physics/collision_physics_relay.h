@@ -32,7 +32,8 @@ namespace pleep
                     // we can change intersection algorithm at runtime with a static collider member
                     if (data.physics.collider->intersects(otherData.physics.collider.get(), data.transform, otherData.transform))
                     {
-                        // resolution
+                        // static resolution
+                        // dynamic resolution
                         UNREFERENCED_PARAMETER(deltaTime);
                         PLEEPLOG_DEBUG("Collision Detected!");
                     }

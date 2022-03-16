@@ -26,7 +26,9 @@ namespace pleep
 
         // dispatch to physics relays
         m_motionStep->submit(data);
-        m_collisionStep->submit(data);
+        
+        if (data.physics.collider != nullptr)
+            m_collisionStep->submit(data);
     }
     
     void PhysicsDynamo::run_relays(double deltaTime) 
