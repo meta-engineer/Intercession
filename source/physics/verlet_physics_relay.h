@@ -22,6 +22,11 @@ namespace pleep
             {
                 PhysicsPacket data = m_physicsPacketQueue.front();
                 m_physicsPacketQueue.pop();
+
+                if (!data.physics.isDynamic) continue;
+
+                // SHHH... temporary global gravity
+                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
                 
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);

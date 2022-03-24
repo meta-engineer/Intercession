@@ -222,6 +222,7 @@ namespace pleep
         m_currentCosmos->add_component(frog, PhysicsComponent{});
         PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
         frog_physics.angularVelocity = glm::vec3(0.0f, 1.0f, 0.0f);
+        frog_physics.collider = std::make_shared<BoxCollider>();
 
         Entity vamp = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -236,21 +237,21 @@ namespace pleep
         m_currentCosmos->add_component(crate, PhysicsComponent{});
         PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
         crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
-        crate_physics.angularVelocity = glm::vec3(0.2f, 0.1f, 0.0f);
+        crate_physics.angularVelocity = glm::vec3(0.0f, 0.1f, 0.0f);
         crate_physics.collider = std::make_shared<BoxCollider>();
 
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, 0.0f, 1.0f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, -0.6f, 0.0f)));
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         m_currentCosmos->add_component(block, PhysicsComponent{});
         PhysicsComponent& block_physics = m_currentCosmos->get_component<PhysicsComponent>(block);
-        block_physics.velocity = glm::vec3(0.1f, -0.1f, -0.1f);
+        block_physics.velocity = glm::vec3(0.1f, 0.0f, 0.2f);
         block_physics.angularVelocity = glm::vec3(0.0f, 0.0f, 0.1f);
         block_physics.collider = std::make_shared<BoxCollider>();
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
-        m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += -1.0f;
+        m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += 1.0f;
         m_currentCosmos->add_component(wall1, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
         
         Entity wall2 = m_currentCosmos->create_entity();
@@ -260,9 +261,13 @@ namespace pleep
 
         Entity floor = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(floor).rotation.x += glm::radians(-90.0f);
-        m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f);
-        m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg", "resources/spiral_disp.jpg")));
+        m_currentCosmos->get_component<TransformComponent>(floor).rotation.x += glm::radians(90.0f);
+        m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
+        m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
+        m_currentCosmos->add_component(floor, PhysicsComponent{});
+        PhysicsComponent& floor_physics = m_currentCosmos->get_component<PhysicsComponent>(floor);
+        floor_physics.collider = std::make_shared<BoxCollider>();
+        floor_physics.isDynamic = false;
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
@@ -271,8 +276,8 @@ namespace pleep
 
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 0.0f, 3.0f)));
-        m_currentCosmos->get_component<TransformComponent>(mainCamera).rotation.y += glm::radians(-90.0f);
+        m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 2.5f, 6.0f)));
+        m_currentCosmos->get_component<TransformComponent>(mainCamera).rotation = glm::vec3(glm::radians(-30.0f), glm::radians(180.0f), 0.0f);
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         m_currentCosmos->add_component(mainCamera, ControlComponent{});
         

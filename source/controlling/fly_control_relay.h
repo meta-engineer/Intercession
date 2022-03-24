@@ -82,22 +82,36 @@ namespace pleep
                     if (m_inputCache.actions.test(SpacialActions::rotatePitchDown)
                     && !m_inputCache.actions.test(SpacialActions::rotatePitchUp))
                     {
-                        transform.rotation.x -= rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown);
+                        transform.rotation.x -= rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown);
                     }
                     // TODO: rotation should probably be managed by a method
                     transform.rotation.x = glm::max(transform.rotation.x, glm::radians(-89.0f));
                     transform.rotation.x = glm::min(transform.rotation.x, glm::radians( 89.0f));
 
+                    // remember Ccw is positive
                     if (m_inputCache.actions.test(SpacialActions::rotateYawLeft)
                     && !m_inputCache.actions.test(SpacialActions::rotateYawRight))
                     {
-                        transform.rotation.y -= rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotateYawLeft);
+                        transform.rotation.y += rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotateYawLeft);
                     }
                     if (m_inputCache.actions.test(SpacialActions::rotateYawRight)
                     && !m_inputCache.actions.test(SpacialActions::rotateYawLeft))
                     {
-                        transform.rotation.y += rot * m_inputCache.actionVals.at(SpacialActions::rotateYawRight);
+                        transform.rotation.y -= rot * aspect * m_inputCache.actionVals.at(SpacialActions::rotateYawRight);
                     }
+
+                    if (m_inputCache.actions.test(SpacialActions::rotateRollCw)
+                    && !m_inputCache.actions.test(SpacialActions::rotateRollCcw))
+                    {
+                        transform.rotation.z += rot * m_inputCache.actionVals.at(SpacialActions::rotateRollCw);
+                    }
+                    if (m_inputCache.actions.test(SpacialActions::rotateRollCcw)
+                    && !m_inputCache.actions.test(SpacialActions::rotateRollCw))
+                    {
+                        transform.rotation.z -= rot * m_inputCache.actionVals.at(SpacialActions::rotateRollCcw);
+                    }
+                    transform.rotation.z = glm::max(transform.rotation.z, glm::radians(-5.0f));
+                    transform.rotation.z = glm::min(transform.rotation.z, glm::radians( 5.0f));
                 }
                 catch (const std::range_error& err)
                 {

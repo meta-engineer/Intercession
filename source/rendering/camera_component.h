@@ -34,13 +34,10 @@ namespace pleep
     // use camera entity's transform and camera data to build world_to_view transform
     inline glm::mat4 get_lookAt(TransformComponent& trans, CameraComponent& cam)
     {
-        // manually calculate direction vector each time since transform component only stores euler angles (in radians)
-        glm::vec3 direction;
-        direction.x = cos(trans.rotation.y) * cos(trans.rotation.x);
-        direction.y = sin(trans.rotation.x);
-        direction.z = sin(trans.rotation.y) * cos(trans.rotation.x);
-        direction = glm::normalize(direction);
-        return glm::lookAt(trans.origin, trans.origin + direction, cam.gimbal_up);
+        // recalculate direction vector each time since transform component only stores euler angles (in radians)
+        glm::vec3 direction = trans.get_heading();
+        glm::mat3 rollRotation = glm::rotate(glm::mat4(1.0f), trans.rotation.z, direction);
+        return glm::lookAt(trans.origin, trans.origin + direction, rollRotation * cam.gimbal_up);
     }
 
     // Helper function for camera use

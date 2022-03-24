@@ -130,13 +130,15 @@ namespace pleep
             m_spacialInputBuffer.set(SpacialActions::rotatePitchDown, true, (float)abs(yoffset));
         }
         
-        if (xoffset < 0)
+        if (xoffset > 0)
         {
-            m_spacialInputBuffer.set(SpacialActions::rotateYawLeft, true, (float)abs(xoffset));
+            m_spacialInputBuffer.set(SpacialActions::rotateYawRight, true, (float)abs(xoffset));
+            m_spacialInputBuffer.set(SpacialActions::rotateRollCw, true, (float)abs(xoffset));
         }
         else
         {
-            m_spacialInputBuffer.set(SpacialActions::rotateYawRight, true, (float)abs(xoffset));
+            m_spacialInputBuffer.set(SpacialActions::rotateYawLeft, true, (float)abs(xoffset));
+            m_spacialInputBuffer.set(SpacialActions::rotateRollCcw, true, (float)abs(xoffset));
         }
     }
     

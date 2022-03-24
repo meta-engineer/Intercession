@@ -38,18 +38,26 @@ namespace pleep
         const ColliderType type;
 
         // Derived colliders should Double-Dispatch on other->intersects
-        virtual bool intersects(ICollider* other, 
-            TransformComponent& thisTransform,
-            TransformComponent& otherTransform) = 0;
+        virtual bool intersects(
+            const ICollider* other, 
+            const TransformComponent& thisTransform,
+            const TransformComponent& otherTransform,
+            glm::vec3& collisionNormal,
+            float& collisionDepth) const = 0;
 
-        virtual bool intersects(BoxCollider* other, 
-            TransformComponent& thisTransform,
-            TransformComponent& otherTransform)
+        virtual bool intersects(
+            const BoxCollider* other, 
+            const TransformComponent& thisTransform,
+            const TransformComponent& otherTransform,
+            glm::vec3& collisionNormal,
+            float& collisionDepth) const
         {
             PLEEPLOG_WARN("No implementation for collision between type (?) and BoxCollider");
             UNREFERENCED_PARAMETER(other);
             UNREFERENCED_PARAMETER(thisTransform);
             UNREFERENCED_PARAMETER(otherTransform);
+            UNREFERENCED_PARAMETER(collisionNormal);
+            UNREFERENCED_PARAMETER(collisionDepth);
             return false;
         }
         

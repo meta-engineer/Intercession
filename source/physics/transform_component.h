@@ -6,7 +6,7 @@
 #define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 namespace pleep
 {
@@ -25,22 +25,24 @@ namespace pleep
             : origin(origin)
         {}
 
-        glm::mat4 get_model_transform()
+        glm::mat4 get_model_transform() const
         {
             // faster to store and maintain as matrix transforms,
             // or calculate matrices on each call?
+            // glm seems to invert pitch?
             glm::mat4 model_to_world = glm::translate(glm::mat4(1.0f), origin)
-                                    * glm::toMat4(glm::quat(rotation))
+                                    * glm::eulerAngleYXZ(rotation.y, -rotation.x, rotation.z)
                                     * glm::scale(glm::mat4(1.0f), scale);
             return model_to_world;
         }
 
-        glm::vec3 get_heading()
+        glm::vec3 get_heading() const
         {
+            // all 0 rotations -> (0,0,1) (looking along z axis)
             glm::vec3 direction(
-                cos(rotation.y) * cos(rotation.x),
+                sin(rotation.y) * cos(rotation.x),
                 sin(rotation.x),
-                sin(rotation.y) * cos(rotation.x)
+                cos(rotation.y) * cos(rotation.x)
             );
             return glm::normalize(direction);
         }

@@ -24,6 +24,8 @@ namespace pleep
     //   different collider for force field (always a sphere?)
     //   can force effect self?
 
+    const float INFINITE_MASS = 0;
+
     // provide attributes to facilitate 3D motion/interaction
     struct PhysicsComponent
     {
@@ -33,12 +35,21 @@ namespace pleep
         glm::vec3 angularVelocity;      // in RADS! Quaternion?
         glm::vec3 angularAcceleration;  // in RADS! Quaternion?
 
+        // Material attributes
+        // we may want to be able to define some model of non-uniform density
+        // and/or generate mass from a collider density & precalculated volume
+        //   to avoid poorly configured/"eyeballed" masses
+        float mass = 1.0f;
+        // does entity update velocity/position
+        bool isDynamic = true;
+
         // Interaction attributes
         std::shared_ptr<ICollider> collider = nullptr;
         // collider behaviour
         //bool isTrigger = false;
         //Entity onTrigger = NULL_ENTITY;
         // could use a function pointer? finding the script component SHOULD only be O(1)
+         
     };
 }
 

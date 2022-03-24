@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <string>
+#include <array>
 #include <glm/glm.hpp>
 
 #include "physics/i_collider.h"
@@ -26,32 +27,181 @@ namespace pleep
         }
 
         // Double dispatch other
-        bool intersects(ICollider* other, 
-            TransformComponent& thisTransform,
-            TransformComponent& otherTransform) override
+        bool intersects(
+            const ICollider* other, 
+            const TransformComponent& thisTransform,
+            const TransformComponent& otherTransform,
+            glm::vec3& collisionNormal,
+            float& collisionDepth) const override
         {
-            // any integral return values should be inverted
-            return other->intersects(this, otherTransform, thisTransform);
-        }
-        
-        bool intersects(BoxCollider* other, 
-            TransformComponent& thisTransform,
-            TransformComponent& otherTransform) override
-        {
-            //PLEEPLOG_DEBUG("Testing collision between types: box and box");
-            UNREFERENCED_PARAMETER(other);
-            UNREFERENCED_PARAMETER(thisTransform);
-            UNREFERENCED_PARAMETER(otherTransform);
-
-            // TODO: dynamic switch between algorithms
-            // Check should be symmetric, so test from both sides
-
-            // SAT algorithm (actually Separating Plane Theorum)
-
+            if (other->intersects(this, otherTransform, thisTransform, collisionNormal,collisionDepth))
+            {
+                // any integral return values should be inverted due to double dispatch
+                collisionNormal *= -1.0f;
+                return true;
+            }
             return false;
         }
+        
+        bool intersects(
+            const BoxCollider* other, 
+            const TransformComponent& thisTransform,
+            const TransformComponent& otherTransform,
+            glm::vec3& collisionNormal,
+            float& collisionDepth) const override
+        {
+            //PLEEPLOG_DEBUG("Testing collision between types: box and box");
 
-    private:
+            // TODO: dynamic switch between algorithms
+
+            // SAT algorithm (actually Separating Plane Theorum)
+            // we can optimize SPT given our polyhedra are rectangular prisms
+            // the size of the projected interval of a prism along its own face normal
+            // will always be its sidelength (it is always axis aligned to itself)
+            // so we can project its centre (origin) and then +/- its sidelength
+
+            // for each face normal (in both shapes) generate all possible axes
+            // then use each of those to generate the vec2 interval
+            // NOTE: For edge-to-end collision we also need to check 9 cases for 
+            // each face normal cross-product with the 3 of the other collider
+
+            // NOTE: angle between 3d vectors:
+            // cos(angle) = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z / (|v1| * |v2|);
+            // projection of v1 onto v2:
+            // v1_proj = cos(angle) * |v1| * norm(v2)
+
+            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform();
+            glm::mat3 thisNormalTransform  = glm::transpose(glm::inverse(glm::mat3(thisLocalTransform)));
+            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform();
+            glm::mat3 otherNormalTransform = glm::transpose(glm::inverse(glm::mat3(otherLocalTransform)));
+
+            std::array<glm::vec3, 15> axes;
+            // each calculated interval must be comparable, so they need to be using
+            //   equal sized basis vector (aka normalized)
+            // we'll wait until the axes is tested to normalize for early exits
+
+            // this face normals (w=0.0f -> no translation)
+            axes[0] = thisNormalTransform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+            axes[1] = thisNormalTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            axes[2] = thisNormalTransform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+            // other face normals (w=0.0f -> no translation)
+            axes[3] = otherNormalTransform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+            axes[4] = otherNormalTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            axes[5] = otherNormalTransform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+            // edge "normals"
+            axes[6] = glm::cross(axes[0], axes[3]);
+            axes[7] = glm::cross(axes[0], axes[4]);
+            axes[8] = glm::cross(axes[0], axes[5]);
+            axes[9] = glm::cross(axes[1], axes[3]);
+            axes[10]= glm::cross(axes[1], axes[4]);
+            axes[11]= glm::cross(axes[1], axes[5]);
+            axes[12]= glm::cross(axes[2], axes[3]);
+            axes[13]= glm::cross(axes[2], axes[4]);
+            axes[14]= glm::cross(axes[2], axes[5]);
+
+            // Maintain data from positive collision tests
+            glm::vec3 minOverlapNormal(0.0f);   // vector of collision force? world-space
+            float minOverlapDepth = INFINITY;   // depth along best normal?
+
+            // continuous collision:
+            // get velocity of this relative to other (thisVelocity - otherVelocity)
+            // extend the interval of this by that relative velocity
+
+            for (int a = 0; a < 15; a++)
+            {
+                // wait as late as possible to normalize
+                axes[a] = glm::normalize(axes[a]);
+                // CHECK! if colliders are alligned cross products might not work!
+                if (isnan(axes[a].x))
+                    continue;
+
+                glm::vec2 intervalA =  this->project_self(thisLocalTransform,  axes[a]);
+                glm::vec2 intervalB = other->project_self(otherLocalTransform, axes[a]);
+
+                // no continuous collision for now
+                // get relative velocity
+                // extend intervalA by velocity
+                if (intervalA.x >= intervalA.y)
+                {
+                    PLEEPLOG_DEBUG(std::to_string(a));
+                    PLEEPLOG_DEBUG(std::to_string(axes[a].x) + ", " + std::to_string(axes[a].y) + ", " + std::to_string(axes[a].z));
+                }
+
+                // is there a seperating plane for this axis?
+                if (intervalA.x > intervalB.y || intervalB.x > intervalA.y)
+                {
+                    return false;
+                }
+                // possible collision for this axis
+
+                const float span = glm::max(intervalA.y, intervalB.y) - glm::min(intervalA.x, intervalB.x);
+                const float range = (intervalA.y - intervalA.x) + (intervalB.y - intervalB.x);
+
+                if (range >= span)
+                {
+                    const float intervalOverlap = range - span;
+
+                    if (minOverlapDepth >= intervalOverlap)
+                    {
+                        minOverlapDepth = intervalOverlap;
+                        minOverlapNormal = intervalA.y < intervalB.y ? -axes[a] : axes[a];
+                    }
+                }
+            }
+
+            // write to references for collision normal, depth (and collision location?)
+            collisionNormal = minOverlapNormal;
+            collisionDepth = minOverlapDepth;
+            
+            return true;
+        }
+
+        // return the coefficents (lengths) of the interval of the box collider's projection along an axis
+        glm::vec2 project_self(const glm::mat4& thisTrans, const glm::vec3& axis) const
+        {
+            // for each (8) vertex 
+            //   determine the vertex position
+            //   do "dot product" with axis to get cos(angle)
+            //   do cos(angle) * |vertex vector| to get coefficient
+            //   return smallest and largest coefficients
+
+            glm::vec3 vertex;
+            float coeff;
+            float minCoeff = INFINITY;
+            float maxCoeff = -INFINITY;
+
+            // incase axis is not normalized
+            //const float axisLength = glm::length(axis);
+
+            for (int i = -1; i < 2; i+=2)
+            {
+                for (int j = -1; j < 2; j+=2)
+                {
+                    for (int k = -1; k < 2; k+=2)
+                    {
+                        vertex = {
+                            this->m_dimensions.x * i,
+                            this->m_dimensions.y * j,
+                            this->m_dimensions.z * k
+                        };
+
+                        vertex = thisTrans * glm::vec4(vertex, 1.0f);
+
+                        //cosAngle = (vertex.x * axis.x + vertex.y * axis.y + vertex.z * axis.z) 
+                        //  / (glm::length(vertex) * glm::length(axis));
+                        //coeff = cosAngle * glm::length(vertex);
+                        // optimized?
+                        coeff = glm::dot(vertex, axis);
+
+                        minCoeff = std::min(minCoeff, coeff);
+                        maxCoeff = std::max(maxCoeff, coeff);
+                    }
+                }
+            }
+            
+            return glm::vec2(minCoeff, maxCoeff);
+        }
+
         // distance each face is from origin (in local space) like a radius
         // opposite faces will be uniform distance from entity origin
         glm::vec3 m_dimensions;
