@@ -222,7 +222,7 @@ Motion integration:
 Euler method is FIRST-ORDER which means it is inaccurate for all but constant velocity (no acceleration)
 What else is there though?
 
-Verlet method:
+Improved Euler method:
 We can cheaply get at least SECOND-ORDER accuracy to improve our simulation.
 We need to add half the previous frame velocity and half the new frame velocity.
 (averages out as linear interpolating between them)
@@ -238,9 +238,9 @@ idk, its fourth order apperantly, and conserves momentum?
 const float FR_Coefficient = 1.0/(2.0 - pow(2.0, 1.0/3.0));
 const float FR_Compliment  =  1.0 - (2.0 * FR_Coefficient);
 
-*do verlet with dt = dt*FR_Coefficient*
-*do verlet with dt = dt*FR_Compliment*
-*do verlet with dt = dt*FR_Coefficient (again)*
+*do imp. euler with dt = dt*FR_Coefficient*
+*do imp. euler with dt = dt*FR_Compliment*
+*do imp. euler with dt = dt*FR_Coefficient (again)*
 
 
 ## Animation

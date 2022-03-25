@@ -1,5 +1,5 @@
-#ifndef VERLET_PHYSICS_RELAY_H
-#define VERLET_PHYSICS_RELAY_H
+#ifndef EULER_PHYSICS_RELAY_H
+#define EULER_PHYSICS_RELAY_H
 
 //#include "intercession_pch.h"
 #include <queue>
@@ -9,7 +9,8 @@
 
 namespace pleep
 {
-    class VerletPhysicsRelay : public IPhysicsRelay
+    // This is "Improved Euler" method for motion integration on entities with physics
+    class EulerPhysicsRelay : public IPhysicsRelay
     {
     public:
         // consume acceleration values and step motion integration forward
@@ -26,8 +27,8 @@ namespace pleep
                 if (!data.physics.isDynamic) continue;
 
                 // SHHH... temporary global gravity
-                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
-                
+                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
                 data.transform.rotation += data.physics.angularVelocity * (float)(deltaTime / 2);
@@ -58,4 +59,4 @@ namespace pleep
     };
 }
 
-#endif // VERLET_PHYSICS_RELAY_H
+#endif // EULER_PHYSICS_RELAY_H
