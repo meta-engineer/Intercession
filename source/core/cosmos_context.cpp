@@ -213,6 +213,7 @@ namespace pleep
         // create entities
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
+/*
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
         m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 1.0f, 1.0f)));
@@ -221,9 +222,9 @@ namespace pleep
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
         m_currentCosmos->add_component(frog, PhysicsComponent{});
         PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
-        //frog_physics.angularVelocity = glm::vec3(0.0f, 1.0f, 0.0f);
+        //frog_physics.eulerVelocity = glm::vec3(0.0f, 1.0f, 0.0f);
         frog_physics.collider = std::make_shared<BoxCollider>();
-
+*/
 /*
         Entity vamp = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -231,26 +232,26 @@ namespace pleep
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
         m_currentCosmos->add_component(vamp, ModelComponent(vampModel));
 */
-
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(1.0f, -1.0f, 1.0f));
+        TransformComponent crateTransform(glm::vec3(1.0f, 1.0f, 1.0f));
+        crateTransform.rotation = glm::vec3(2.0f, 0.0f, 1.0f);
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
         PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
-        crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
-        crate_physics.angularVelocity = glm::vec3(0.0f, 0.1f, 0.0f);
+        //crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
+        //crate_physics.eulerVelocity = glm::vec3(0.0f, 0.1f, 0.0f);
         crate_physics.collider = std::make_shared<BoxCollider>();
-
+/*
         Entity block = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, -0.6f, 0.0f)));
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         m_currentCosmos->add_component(block, PhysicsComponent{});
         PhysicsComponent& block_physics = m_currentCosmos->get_component<PhysicsComponent>(block);
         block_physics.velocity = glm::vec3(0.1f, 0.0f, 0.2f);
-        block_physics.angularVelocity = glm::vec3(0.0f, 0.0f, 0.5f);
+        block_physics.eulerVelocity = glm::vec3(0.0f, 0.0f, 0.5f);
         block_physics.collider = std::make_shared<BoxCollider>();
-
+*/
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += 1.0f;
@@ -262,7 +263,7 @@ namespace pleep
         m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
 
         Entity floor = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
+        m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.025f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).rotation.x += glm::radians(90.0f);
         m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
         m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));

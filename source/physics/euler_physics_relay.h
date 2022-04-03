@@ -31,20 +31,20 @@ namespace pleep
 
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
-                data.transform.rotation += data.physics.angularVelocity * (float)(deltaTime / 2);
+                data.transform.rotation += data.physics.eulerVelocity * (float)(deltaTime / 2);
 
                 // apply acceleration
                 data.physics.velocity += data.physics.acceleration * (float)deltaTime;
-                data.physics.angularVelocity += data.physics.angularAcceleration * (float)deltaTime;
+                data.physics.eulerVelocity += data.physics.eulerAcceleration * (float)deltaTime;
 
                 // finish step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
-                data.transform.rotation += data.physics.angularVelocity * (float)(deltaTime / 2);
+                data.transform.rotation += data.physics.eulerVelocity * (float)(deltaTime / 2);
 
                 // Should we clear acceleration here
                 // or leave it for other relays to use?
                 data.physics.acceleration = glm::vec3(0.0f);
-                data.physics.angularAcceleration = glm::vec3(0.0f);
+                data.physics.eulerAcceleration = glm::vec3(0.0f);
             }
         }
         
