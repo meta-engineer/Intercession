@@ -30,7 +30,7 @@ namespace pleep
             // faster to store and maintain as matrix transforms,
             // or calculate matrices on each call?
             // glm seems to invert pitch?
-            glm::mat4 model_to_world = glm::translate(glm::mat4(1.0f), origin)
+            const glm::mat4 model_to_world = glm::translate(glm::mat4(1.0f), origin)
                                     * glm::eulerAngleYXZ(rotation.y, -rotation.x, rotation.z)
                                     * glm::scale(glm::mat4(1.0f), scale);
             return model_to_world;

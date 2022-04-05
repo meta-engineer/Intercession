@@ -24,27 +24,41 @@ namespace pleep
                 PhysicsPacket data = m_physicsPacketQueue.front();
                 m_physicsPacketQueue.pop();
 
-                if (!data.physics.isDynamic) continue;
+                // ensure non-Dynamic Objects never move, or accidentally accumulate velocities/accelerations
+                if (!data.physics.isDynamic)
+                {
+                    data.physics.velocity            = glm::vec3(0.0f);
+                    data.physics.angularVelocity     = glm::vec3(0.0f);
+                    data.physics.acceleration        = glm::vec3(0.0f);
+                    data.physics.angularAcceleration = glm::vec3(0.0f);
+                    continue;
+                }
 
                 // SHHH... temporary global gravity
-                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+
+                // TODO: generate euler angle velocities from angular velocity
+                glm::vec3 eulerVelocity(0.0f);
 
                 // half-step
-                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
-                data.transform.rotation += data.physics.eulerVelocity * (float)(deltaTime / 2);
+                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
+                data.transform.rotation += eulerVelocity * (float)(deltaTime / 2.0f);
 
                 // apply acceleration
                 data.physics.velocity += data.physics.acceleration * (float)deltaTime;
-                data.physics.eulerVelocity += data.physics.eulerAcceleration * (float)deltaTime;
+                data.physics.angularVelocity += data.physics.angularAcceleration * (float)deltaTime;
+                // re-generate accelerated euler velocities
+                // does the transform also need to be regenerated...?
+                eulerVelocity = glm::vec3(0.0f);
 
                 // finish step
-                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2);
-                data.transform.rotation += data.physics.eulerVelocity * (float)(deltaTime / 2);
+                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
+                data.transform.rotation += eulerVelocity * (float)(deltaTime / 2.0f);
 
                 // Should we clear acceleration here
                 // or leave it for other relays to use?
                 data.physics.acceleration = glm::vec3(0.0f);
-                data.physics.eulerAcceleration = glm::vec3(0.0f);
+                data.physics.angularAcceleration = glm::vec3(0.0f);
             }
         }
         

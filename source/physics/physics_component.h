@@ -32,8 +32,8 @@ namespace pleep
         // Motion attributes
         glm::vec3 velocity;
         glm::vec3 acceleration;
-        glm::vec3 eulerVelocity;      // in RADS! Quaternion?
-        glm::vec3 eulerAcceleration;  // in RADS! Quaternion?
+        glm::vec3 angularVelocity;      // in RADS! Quaternion?
+        glm::vec3 angularAcceleration;  // in RADS! Quaternion?
 
         // Material attributes
         // we may want to be able to define some model of non-uniform density

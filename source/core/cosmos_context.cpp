@@ -213,18 +213,18 @@ namespace pleep
         // create entities
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
-/*
+
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 1.0f, 1.0f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 2.5f, 1.0f)));
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
         m_currentCosmos->add_component(frog, PhysicsComponent{});
         PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
-        //frog_physics.eulerVelocity = glm::vec3(0.0f, 1.0f, 0.0f);
+        frog_physics.angularVelocity = glm::vec3(0.4f, 0.0f, 0.0f);
         frog_physics.collider = std::make_shared<BoxCollider>();
-*/
+
 /*
         Entity vamp = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -234,24 +234,24 @@ namespace pleep
 */
         Entity crate = m_currentCosmos->create_entity();
         TransformComponent crateTransform(glm::vec3(1.0f, 1.0f, 1.0f));
-        crateTransform.rotation = glm::vec3(2.0f, 0.0f, 1.0f);
+        //crateTransform.rotation = glm::vec3(1.0f, 0.0f, glm::radians(45.0f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
         PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
         //crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
-        //crate_physics.eulerVelocity = glm::vec3(0.0f, 0.1f, 0.0f);
+        crate_physics.angularVelocity = glm::vec3(0.0f, 0.0f, 0.4f);
         crate_physics.collider = std::make_shared<BoxCollider>();
-/*
+
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, -0.6f, 0.0f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, -0.6f, 1.0f)));
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         m_currentCosmos->add_component(block, PhysicsComponent{});
         PhysicsComponent& block_physics = m_currentCosmos->get_component<PhysicsComponent>(block);
-        block_physics.velocity = glm::vec3(0.1f, 0.0f, 0.2f);
-        block_physics.eulerVelocity = glm::vec3(0.0f, 0.0f, 0.5f);
+        //block_physics.velocity = glm::vec3(0.1f, 0.0f, 0.2f);
+        block_physics.angularVelocity = glm::vec3(0.0f, 0.4f, 0.0f);
         block_physics.collider = std::make_shared<BoxCollider>();
-*/
+
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         m_currentCosmos->get_component<TransformComponent>(wall1).rotation.x += 1.0f;
@@ -270,6 +270,9 @@ namespace pleep
         m_currentCosmos->add_component(floor, PhysicsComponent{});
         PhysicsComponent& floor_physics = m_currentCosmos->get_component<PhysicsComponent>(floor);
         floor_physics.collider = std::make_shared<BoxCollider>();
+        // TODO: what mass to assign to non-dynamic objects?
+        // TODO: in general generate mass from known density
+        floor_physics.mass = 5.0f;
         floor_physics.isDynamic = false;
 
         Entity torus = m_currentCosmos->create_entity();
