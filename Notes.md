@@ -262,6 +262,8 @@ I guess specular light isn't affected by the surface, but only looks like it bec
 normal maps define the normal vector as the texture colour vector. Is the GIMP normal map gereic filter good enough to get the benefit of normal mapping?
 If the filter is based off bright/dark colours maybe you can boost contrast to improve the "normalling" filter?
 
+QUATERNIONS:
+http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/
 
 ## Networking
 I forsee a network architecture being useful to implement the separate timelines required for the time travel mechanic.

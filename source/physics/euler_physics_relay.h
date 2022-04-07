@@ -35,25 +35,23 @@ namespace pleep
                 }
 
                 // SHHH... temporary global gravity
-                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
-
-                // TODO: generate euler angle velocities from angular velocity
-                glm::vec3 eulerVelocity(0.0f);
+                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
 
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                data.transform.rotation += eulerVelocity * (float)(deltaTime / 2.0f);
+                // calculate angular speed
+                float angularSpeed = glm::length(data.physics.angularVelocity);
+                data.transform.orientation = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed) * data.transform.orientation;
 
                 // apply acceleration
                 data.physics.velocity += data.physics.acceleration * (float)deltaTime;
                 data.physics.angularVelocity += data.physics.angularAcceleration * (float)deltaTime;
-                // re-generate accelerated euler velocities
-                // does the transform also need to be regenerated...?
-                eulerVelocity = glm::vec3(0.0f);
 
-                // finish step
+                // finish half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                data.transform.rotation += eulerVelocity * (float)(deltaTime / 2.0f);
+                // re-generate accelerated angular speed
+                angularSpeed = glm::length(data.physics.angularVelocity);
+                data.transform.orientation = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed) * data.transform.orientation;
 
                 // Should we clear acceleration here
                 // or leave it for other relays to use?

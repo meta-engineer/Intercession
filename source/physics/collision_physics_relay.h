@@ -92,18 +92,22 @@ namespace pleep
                     const glm::vec3 otherLever = collisionPoint - otherData.transform.origin;
 
                     // STEP 3.2: angular inertia/moment
-                    // TODO: check if infinite mass (aka 0) causes an error
+                    // TODO: can this be optimized? inverse of inverse :(
                     const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform()));
                     const glm::mat3 thisInvMoment = thisImmutable ? glm::mat3(0.0f) 
-                        : glm::transpose(thisInverseModel) 
-                        * (thisData.physics.collider->getInertiaTensor() * thisData.physics.mass)
-                        * thisInverseModel;
+                        : glm::inverse(
+                            glm::transpose(thisInverseModel) 
+                            * (thisData.physics.collider->getInertiaTensor() * thisData.physics.mass)
+                            * thisInverseModel
+                        );
 
                     const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.transform.get_model_transform()));
                     const glm::mat3 otherInvMoment = otherImmutable ? glm::mat3(0.0f)
-                        : glm::transpose(otherInverseModel)
-                        * (otherData.physics.collider->getInertiaTensor() * otherData.physics.mass)
-                        * otherInverseModel;
+                        : glm::inverse(
+                            glm::transpose(otherInverseModel)
+                            * (otherData.physics.collider->getInertiaTensor() * otherData.physics.mass)
+                            * otherInverseModel
+                        );
 
                     // STEP 3.3 relative velocity vector
                     const glm::vec3 relVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever));

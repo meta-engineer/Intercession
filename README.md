@@ -67,6 +67,7 @@ Special thanks to the following resources, programmers, and teachers for their i
 It is amazing what you can learn for free on the internet.
 
 * https://learnopengl.com/ - Fundamentals of Opengl and graphics concepts
+* http://www.opengl-tutorial.org/ - Geometry and graphics concepts/resources
 * https://www.thecherno.com/ - Extensive resources and topics related to game engines, based on the Hazel project
 * https://community.onelonecoder.com/ - Aka Javidx9. Extensive c++ topics and inspiration to build things yourself
 * https://www.youtube.com/c/CodeTechandTutorials - c++ and project management (cmake) walkthroughs
