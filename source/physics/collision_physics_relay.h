@@ -77,19 +77,25 @@ namespace pleep
                     
                     // STEP 1.2: material collision properties
                     // TODO: fetch from physics attributes of both objects
-                    const float frictionFactor = 0.99f;         // energy retained along tangent
-                    const float restitutionFactor = 0.50f;      // energy retained along normal
+                    const float restitutionFactor    = 0.50f;       // energy retained along normal
+                    const float staticFrictionCoeff  = 0.40f;       // max energy absorbed along tangent
+                    const float dynamicFrictionCoeff = 0.30f;       // energy lost along tangent
                     
+
                     // STEP 2: static resolution
                     // collisionNormal is in direction away from "other", towards "this"
                     thisData.transform.origin  += collisionNormal * collisionDepth * (1-massFactor);
                     otherData.transform.origin -= collisionNormal * collisionDepth * massFactor;
                     collisionPoint             -= collisionNormal * collisionDepth * massFactor;
 
+
                     // STEP 3: geometry properties
                     // STEP 3.1: vector describing the "radius" of the rotation
                     const glm::vec3 thisLever = collisionPoint - thisData.transform.origin;
                     const glm::vec3 otherLever = collisionPoint - otherData.transform.origin;
+
+                    PLEEPLOG_DEBUG("Length of this lever: " + std::to_string(glm::length(thisLever)));
+                    PLEEPLOG_DEBUG("Length of other lever: " + std::to_string(glm::length(otherLever)));
 
                     // STEP 3.2: angular inertia/moment
                     // TODO: can this be optimized? inverse of inverse :(
@@ -110,58 +116,102 @@ namespace pleep
                         );
 
                     // STEP 3.3 relative velocity vector
+                    // relative is: this' velocity as viewed by other
                     const glm::vec3 relVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever));
                     PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
 
-                    // STEP 4: determine impulse
-                    const float impulse = (-1.0f * (1+restitutionFactor) * glm::dot(relVelocity, collisionNormal)) /
-                        (otherInvMass + thisInvMass 
-                            + glm::dot(
-                                glm::cross(otherInvMoment * glm::cross(otherLever, collisionNormal), otherLever)
-                                + glm::cross(thisInvMoment * glm::cross(thisLever, collisionNormal), thisLever),
+                    // STEP 4: determine normal impulse
+                    const float normalImpulse = (-1.0f * (1+restitutionFactor) * glm::dot(relVelocity, collisionNormal)) /
+                        (otherInvMass + thisInvMass +
+                            glm::dot(
+                                glm::cross(otherInvMoment * glm::cross(otherLever, collisionNormal), otherLever) +
+                                glm::cross(thisInvMoment * glm::cross(thisLever, collisionNormal), thisLever),
                                 collisionNormal
                             )
                         );
-                    PLEEPLOG_DEBUG("Determined impulse factor to be: " + std::to_string(impulse));
+                    PLEEPLOG_DEBUG("Determined Normal impulse to be: " + std::to_string(normalImpulse));
 
-                    // STEP 5: exponential damping which is stronger approaching 0 velocity (stops jittering)
-                    // Determine component of velocities parallel to collision normal
-/*
-                    // Assuming normals are length 1 we don't need to divide dot product by length
-                    const glm::vec3 thisNormalVelocity = glm::dot(thisData.physics.velocity, collisionNormal) * collisionNormal;
-                    const glm::vec3 otherNormalVelocity = glm::dot(otherData.physics.velocity, collisionNormal) * collisionNormal;
+                    // Step 5: friction
+                    // STEP 5.1: Determine velocity perpendicular to normal (tangent along surface)
+                    const float normalAffinity = glm::dot(relVelocity, collisionNormal);
+                    const glm::vec3 collisionTangent =  normalAffinity == 0.0f ? glm::vec3(0.0f) :
+                        glm::normalize(relVelocity - normalAffinity * collisionNormal);
+                    
+                    PLEEPLOG_DEBUG("Collision Tangent: " + std::to_string(collisionTangent.x) + ", " + std::to_string(collisionTangent.y) + ", " + std::to_string(collisionTangent.z));
 
-                    const float thisDamping = -1.0f / (1.0f +
-                        thisNormalVelocity.x*thisNormalVelocity.x 
-                        + thisNormalVelocity.y*thisNormalVelocity.y
-                        + thisNormalVelocity.z*thisNormalVelocity.z * 16) + 1.0f;
+                    // STEP 5.2: Determine friction impulse
+                    const float tangentImpulse = -1.0f * glm::dot(relVelocity, collisionTangent) /
+                        (otherInvMass + thisInvMass +
+                        glm::dot(
+                            glm::cross(otherInvMoment * glm::cross(otherLever, collisionTangent), otherLever) + 
+                            glm::cross(thisInvMoment * glm::cross(thisLever, collisionTangent), thisLever), 
+                            collisionTangent)
+                        );
                         
-                    const float otherDamping = -1.0f / (1.0f +
-                        otherNormalVelocity.x*otherNormalVelocity.x 
-                        + otherNormalVelocity.y*otherNormalVelocity.y
-                        + otherNormalVelocity.z*otherNormalVelocity.z * 16) + 1.0f;
+                    PLEEPLOG_DEBUG("Calced Friction impulse: " + std::to_string(tangentImpulse));
+                    
+                    // STEP 5.3: Coefficient factors
+                    // if impulse is less than static max, then aply it (this should negate all colinear velocity)
+                    // if impulse is greater than static max, multiply it by dynamic coefficient
+                    //const float mu = 0.5f;
+                    const float frictionCone = staticFrictionCoeff * normalImpulse;
+                    PLEEPLOG_DEBUG("Static friction limit: " + std::to_string(frictionCone));
 
-                    UNREFERENCED_PARAMETER(thisDamping);
-                    UNREFERENCED_PARAMETER(otherDamping);
-*/
+                    //const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionCoeff;
+                    const float frictionImpulse = tangentImpulse * dynamicFrictionCoeff;
+                    PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
+
                     // STEP 6: dynamic resolution
-                    // STEP 6.1: resolve linear impulse response
-                    thisData.physics.velocity  += (impulse*thisInvMass*collisionNormal);
-                    otherData.physics.velocity -= (impulse*otherInvMass*collisionNormal);
+                    // STEP 6.1: resolve linear normal impulse response
+                    thisData.physics.velocity  += thisInvMass * (normalImpulse*collisionNormal);
+                    otherData.physics.velocity -= otherInvMass * (normalImpulse*collisionNormal);
+
+                    // STEP 6.2 resolve linear friction impulse response
+                    thisData.physics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
+                    otherData.physics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
+
+                    // STEP 6.3: resolve angular normal impulse response
+                    const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (normalImpulse*collisionNormal));
+                    const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (normalImpulse*collisionNormal));
+                    thisData.physics.angularVelocity  += thisAngularNormalImpulse;
+                    otherData.physics.angularVelocity -= otherAngularNormalImpulse;
+                    
+                    PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
+                    PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
+                    
+
+                    // STEP 6.4 resolve angular friction impulse response
+                    const glm::vec3 thisAngularFrictionImpulse  = thisInvMoment * glm::cross(thisLever, (frictionImpulse*collisionTangent));
+                    const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
+                    thisData.physics.angularVelocity  += thisAngularFrictionImpulse;
+                    otherData.physics.angularVelocity -= otherAngularFrictionImpulse;
+                    
+                    PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
+                    PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
+
 
                     const glm::vec3 postRelVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever) - otherData.physics.velocity - glm::cross(otherData.physics.angularVelocity, otherLever));
                     PLEEPLOG_DEBUG("Relative Velocity after collision: " + std::to_string(postRelVelocity.x) + ", " + std::to_string(postRelVelocity.y) + ", " + std::to_string(postRelVelocity.z));
 
-                    // STEP 6.2: resolve angular impulse response
-                    glm::vec3 thisAngularImpulse  = impulse*thisInvMoment*glm::cross(thisLever, collisionNormal);
-                    glm::vec3 otherAngularImpulse = impulse*otherInvMoment*glm::cross(otherLever, collisionNormal);
-                    
-                    thisData.physics.angularVelocity += thisAngularImpulse;
-                    otherData.physics.angularVelocity -= otherAngularImpulse;
+                    // STEP 7: Damping
+                    // we have restitution factor in impulse, but we may need extra damping to avoid stuttering and floating point errors
+/*
+                    // exponential damping which is stronger approaching 0 velocity
+                    const float damping = -1.0f / (1.0f +
+                        postRelVelocity.x*postRelVelocity.x 
+                        + postRelVelocity.y*postRelVelocity.y
+                        + postRelVelocity.z*postRelVelocity.z * 32) + 1.0f;
 
-                    PLEEPLOG_DEBUG("This Angular Impulse: " + std::to_string(thisAngularImpulse.x) + ", " + std::to_string(thisAngularImpulse.y) + ", " + std::to_string(thisAngularImpulse.z));
-                    PLEEPLOG_DEBUG("Other Angular Impulse: " + std::to_string(otherAngularImpulse.x) + ", " + std::to_string(otherAngularImpulse.y) + ", " + std::to_string(otherAngularImpulse.z));
+                    PLEEPLOG_DEBUG("Damping factor: " + std::to_string(damping));
+
+                    // dampen velocities
+                    thisData.physics.velocity  *= damping;
+                    otherData.physics.velocity *= damping;
+                    thisData.physics.angularVelocity  *= damping;
+                    otherData.physics.angularVelocity *= damping;
+*/
+
                 }
             }
         }
