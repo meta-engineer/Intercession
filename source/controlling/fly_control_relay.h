@@ -31,9 +31,10 @@ namespace pleep
                     // generate direction vector from euler angles
                     glm::vec3 direction = transform.get_heading();
                     // units/time * time (seconds)
-                    float disp   = 2.0f * (float)deltaTime;
-                    float rot    = 0.15f * (float)deltaTime;
-                    float aspect = 1.2f;
+                    const float disp   = 2.0f * (float)deltaTime;
+                    const float rot    = 0.15f * (float)deltaTime;
+                    const float aspect = 1.2f;
+                    const float gimbalLimit = 0.1f;  // rads
                     glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
                     glm::vec3 tangent = glm::normalize(glm::cross(direction, gimbalUp));
                     
@@ -79,25 +80,50 @@ namespace pleep
                     && !m_inputCache.actions.test(SpacialActions::rotatePitchDown))
                     {
                         transform.orientation = glm::angleAxis(rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchUp), tangent) * transform.orientation;
+                        glm::vec3 newDirection = transform.get_heading();
+
+                        // check if we have skipped past the singularity buffer
+                        // true is positive
+                        const bool oldSign = (direction.x * direction.z) >= 0;
+                        const bool newSign = (newDirection.x * newDirection.z) >= 0;
+                        if (oldSign == newSign && (direction.x / std::abs(direction.x)) != (newDirection.x / std::abs(newDirection.x)))
+                        {
+                            // rotate back around by same amount + small amount into the limit buffer
+                            transform.orientation = glm::angleAxis(-rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchUp) + gimbalLimit/10.0f, tangent) * transform.orientation;
+                            newDirection = transform.get_heading();
+                        }
+
                         // limit pitch around gimbal singularity
                         // if heading & gimbal are normalized, dot product = cosAngle
                         // if angle < K we need to counter-rotate by quat of angle along tangent.
-                        const float gimbalAngle = glm::acos(glm::dot(direction, gimbalUp));
-                        if (gimbalAngle < .1f)
+                        const float gimbalAngle = glm::acos(glm::dot(newDirection, gimbalUp));
+                        if (gimbalAngle < gimbalLimit)
                         {
-                            transform.orientation = glm::angleAxis(-(.1f - gimbalAngle), tangent) * transform.orientation;
+                            transform.orientation = glm::angleAxis(-(gimbalLimit - gimbalAngle), tangent) * transform.orientation;
                         }
                     }
                     if (m_inputCache.actions.test(SpacialActions::rotatePitchDown)
                     && !m_inputCache.actions.test(SpacialActions::rotatePitchUp))
                     {
                         transform.orientation = glm::angleAxis(-rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown), tangent) * transform.orientation;
-                        // use -gimbalUp for pitch down
-                        const float gimbalAngle = glm::acos(glm::dot(direction, -gimbalUp));
-                        if (gimbalAngle < .1f)
+                        glm::vec3 newDirection = transform.get_heading();
+                        
+                        const bool oldSign = (direction.x * direction.z) >= 0;
+                        const bool newSign = (newDirection.x * newDirection.z) >= 0;
+                        if (oldSign == newSign && (direction.x / std::abs(direction.x)) != (newDirection.x / std::abs(newDirection.x)))
                         {
-                            transform.orientation = glm::angleAxis(.1f - gimbalAngle, tangent) * transform.orientation;
+                            // rotate back around by same amount - small amount into the limit buffer
+                            transform.orientation = glm::angleAxis(rot * m_inputCache.actionVals.at(SpacialActions::rotatePitchDown) - gimbalLimit/10.0f, tangent) * transform.orientation;
+                            newDirection = transform.get_heading();
                         }
+
+                        // use -gimbalUp for pitch down
+                        const float gimbalAngle = glm::acos(glm::dot(newDirection, -gimbalUp));
+                        if (gimbalAngle < gimbalLimit)
+                        {
+                            transform.orientation = glm::angleAxis(gimbalLimit - gimbalAngle, tangent) * transform.orientation;
+                        }
+                        
                     }
 
                     // remember Ccw is positive
