@@ -2,7 +2,7 @@
 #define EULER_PHYSICS_RELAY_H
 
 //#include "intercession_pch.h"
-#include <queue>
+#include <vector>
 
 #include "physics/i_physics_relay.h"
 #include "logging/pleep_log.h"
@@ -16,13 +16,9 @@ namespace pleep
         // consume acceleration values and step motion integration forward
         void engage(double deltaTime) override
         {
-            // if deltaTime is too large, we may have to detect and split into
-            // multiple passes. (or if we just want to increase accuracy)
-
-            while (!m_physicsPacketQueue.empty())
+            for (std::vector<PhysicsPacket>::iterator packet_it = m_physicsPackets.begin(); packet_it != m_physicsPackets.end(); packet_it++)
             {
-                PhysicsPacket data = m_physicsPacketQueue.front();
-                m_physicsPacketQueue.pop();
+                PhysicsPacket& data = *packet_it;
 
                 // ensure non-Dynamic Objects never move, or accidentally accumulate velocities/accelerations
                 if (!data.physics.isDynamic)
@@ -36,15 +32,14 @@ namespace pleep
 
                 // SHHH... temporary global gravity
                 data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
-                // Global air drag?
-                //data.physics.velocity *= 0.99;
-                //data.physics.angularVelocity *= 0.99;
 
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
                 // calculate angular speed
                 float angularSpeed = glm::length(data.physics.angularVelocity);
-                data.transform.orientation = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed) * data.transform.orientation;
+                glm::quat quatVelocity = angularSpeed == 0 ? glm::quat(glm::vec3(0.0f)) :
+                    glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                data.transform.orientation = quatVelocity * data.transform.orientation;
 
                 // apply acceleration
                 data.physics.velocity += data.physics.acceleration * (float)deltaTime;
@@ -52,9 +47,15 @@ namespace pleep
 
                 // finish half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                // re-generate accelerated angular speed
+                // re-generate accelerated angular velocity
                 angularSpeed = glm::length(data.physics.angularVelocity);
-                data.transform.orientation = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed) * data.transform.orientation;
+                quatVelocity = angularSpeed == 0 ? glm::quat(glm::vec3(0.0f)) :
+                    glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                data.transform.orientation = quatVelocity * data.transform.orientation;
+
+                // Global air drag?
+                //data.physics.velocity *= 0.99;
+                //data.physics.angularVelocity *= 0.95;
 
                 // Should we clear acceleration here
                 // or leave it for other relays to use?
@@ -63,14 +64,20 @@ namespace pleep
             }
         }
         
-        // store in a simple queue for now
         void submit(PhysicsPacket data) override
         {
-            m_physicsPacketQueue.push(data);
+            m_physicsPackets.push_back(data);
+        }
+
+        // clear packets for next frame
+        void clear() override
+        {
+            m_physicsPackets.clear();
         }
 
     private:
-        std::queue<PhysicsPacket> m_physicsPacketQueue;
+        // becuase of fixed timestep we may need to process packets multiple times, so vector
+        std::vector<PhysicsPacket> m_physicsPackets;
     };
 }
 

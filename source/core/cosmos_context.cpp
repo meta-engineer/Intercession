@@ -222,7 +222,7 @@ namespace pleep
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
         m_currentCosmos->add_component(frog, PhysicsComponent{});
         PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
-        frog_physics.angularVelocity = glm::vec3(0.4f, 0.0f, 0.0f);
+        frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         frog_physics.collider = std::make_shared<BoxCollider>();
 */
 /*
@@ -234,24 +234,26 @@ namespace pleep
 */
 /*
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(1.0f, 1.0f, 1.0f));
-        //crateTransform.orientation = glm::vec3(1.0f, 0.0f, glm::radians(45.0f));
+        TransformComponent crateTransform(glm::vec3(1.0f, 0.0f, 1.0f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
         PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
         //crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
-        crate_physics.angularVelocity = glm::vec3(0.0f, 0.0f, 0.4f);
+        crate_physics.angularVelocity = glm::vec3(0.0f, 0.2f, 0.2f);
         crate_physics.collider = std::make_shared<BoxCollider>();
-        crate_physics.mass = 1000.0f;
+        crate_physics.mass = 100.0f;
 */
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.5f, 1.0f, 1.5f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, 1.5f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(block).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         m_currentCosmos->add_component(block, PhysicsComponent{});
         PhysicsComponent& block_physics = m_currentCosmos->get_component<PhysicsComponent>(block);
-        block_physics.velocity = glm::vec3(1.0f, 0.0f, -1.0f);
-        block_physics.angularVelocity = glm::vec3(0.01f, 0.5f, 0.0f);
+        //block_physics.velocity = glm::vec3(0.6f, 0.0f, -0.6f);
+        //block_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.3f);
         block_physics.collider = std::make_shared<BoxCollider>();
         block_physics.mass = 500.0f;
 
@@ -262,12 +264,14 @@ namespace pleep
         
         Entity wall2 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
-        m_currentCosmos->get_component<TransformComponent>(wall2).orientation = glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_currentCosmos->get_component<TransformComponent>(wall2).orientation = 
+            glm::normalize(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
         m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
 
         Entity floor = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.025f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(floor).orientation = glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+        m_currentCosmos->get_component<TransformComponent>(floor).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
         m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
         m_currentCosmos->add_component(floor, PhysicsComponent{});

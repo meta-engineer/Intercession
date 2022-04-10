@@ -160,12 +160,12 @@ namespace pleep
             // Find all points in contact manifold for each object
 
             std::vector<glm::vec3> thisContactManifold;
-            this->build_contact_manifold(thisLocalTransform, -collisionNormal, thisContactManifold);
+            this->build_contact_manifold(thisLocalTransform, -collisionNormal, collisionDepth, thisContactManifold);
             PLEEPLOG_DEBUG("Found Contact Manifold A of size " + std::to_string(thisContactManifold.size()));
             PLEEPLOG_DEBUG("Example of A: " + std::to_string(thisContactManifold[0].x) + ", " + std::to_string(thisContactManifold[0].y) + ", " + std::to_string(thisContactManifold[0].z));
 
             std::vector<glm::vec3> otherContactManifold;
-            other->build_contact_manifold(otherLocalTransform, collisionNormal, otherContactManifold);
+            other->build_contact_manifold(otherLocalTransform, collisionNormal, collisionDepth, otherContactManifold);
             PLEEPLOG_DEBUG("Found Contact Manifold B of size " + std::to_string(otherContactManifold.size()));
             PLEEPLOG_DEBUG("Example of B: " + std::to_string(otherContactManifold[0].x) + ", " + std::to_string(otherContactManifold[0].y) + ", " + std::to_string(otherContactManifold[0].z));
 
@@ -247,13 +247,15 @@ namespace pleep
 
         // fill dest with all points on plane perpendicular and farthest along axis
         // should we also include points +/- manifoldEpsilon?
-        void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, std::vector<glm::vec3>& dest) const
+        void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, const float depth, std::vector<glm::vec3>& dest) const
         {
             assert(dest.empty());
+            // manfold range dependant on collision depth?
+            UNREFERENCED_PARAMETER(depth);
 
-            // do we want a range to account for floating point errors?
-            //const float manifoldEpsilon = 0.001f;
-            //std::vector<std::pair<float, glm::vec3>> allVertices;
+            // contact manifold range to account for floating point errors?
+            const float manifoldEpsilon = 0.01f;
+            std::vector<std::pair<float, glm::vec3>> allVertices;
 
             float maxCoeff = -INFINITY;
             
@@ -273,44 +275,41 @@ namespace pleep
                         vertex = thisTrans * glm::vec4(vertex, 1.0f);
 
                         const float coeff = glm::dot(vertex, axis);
-                        if (coeff == maxCoeff)
-                        {
-                            dest.push_back(vertex);
-                        }
-                        else if (coeff > maxCoeff)
-                        {
-                            maxCoeff = coeff;
-                            dest.clear();
-                            dest.push_back(vertex);
-                        }
+                        maxCoeff = coeff > maxCoeff ? coeff : maxCoeff;
 
-                        /*
-                        allVertices.push_back({
-                            std::pair<float, glm::vec3>(glm::dot(vertex, axis), vertex)
-                        });
-                        */
+                        // We can greedily cull points GUARENTEED to be outside
+                        // though depending on order recieved this can miss points
+                        // but it is a *slight* optimization
+                        if (coeff >= maxCoeff - manifoldEpsilon)
+                        {
+                            allVertices.push_back({
+                                std::pair<float, glm::vec3>(coeff, vertex)
+                            });
+                        }
                     }
                 }
             }
 
             // sort low to high
-            /*
             std::sort(allVertices.begin(), allVertices.end(), 
                 [](std::pair<float, glm::vec3>& a, std::pair<float, glm::vec3>& b) 
                 {
                     return a.first < b.first;
                 }
             );
-            */
-            /*
+            
+            // read from highest to lowest, pushing until we pass manifold
             for (std::vector<std::pair<float, glm::vec3>>::reverse_iterator it = allVertices.rbegin(); it != allVertices.rend(); ++it)
             {
-                if (it->first >= allVertices.back().first - manifoldEpsilon)
+                if (it->first >= maxCoeff - manifoldEpsilon)
                 {
                     dest.push_back(it->second);
                 }
+                else
+                {
+                    break;
+                }
             }
-            */
         }
 
         // Does not include mass or density

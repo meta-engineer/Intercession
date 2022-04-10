@@ -17,6 +17,10 @@ namespace pleep
         // different relay types might want to store packets in different structures
         virtual void submit(PhysicsPacket data) = 0;
 
+        // relays may be engaged multiply times per frame (fixed time step)
+        // once done they should clear they're packets
+        virtual void clear() = 0;
+
     private:
         
     };

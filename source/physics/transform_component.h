@@ -14,9 +14,9 @@ namespace pleep
     struct TransformComponent
     {
         // should I use my own vec3's?
-        glm::vec3 origin   = glm::vec3(0.0f);
+        glm::vec3 origin      = glm::vec3(0.0f);
         glm::quat orientation = glm::quat(glm::vec3(0.0f));
-        glm::vec3 scale    = glm::vec3(1.0f);
+        glm::vec3 scale       = glm::vec3(1.0f);
 
         // default constructors are needed for ComponentArray
 		TransformComponent() = default;

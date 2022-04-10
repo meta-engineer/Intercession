@@ -16,19 +16,19 @@ namespace pleep
         // test for collision, do static resolution, do dynamic resolution
         void engage(double deltaTime) override
         {
-            // if deltaTime is too large, we may have to detect and split into
-            // multiple passes. (or if we just want to increase accuracy)
+            // unused for discrete collision detection
             UNREFERENCED_PARAMETER(deltaTime);
 
-            while (!m_physicsPacketVector.empty())
+            for (std::vector<PhysicsPacket>::iterator thisPacket_it = m_physicsPackets.begin(); thisPacket_it != m_physicsPackets.end(); thisPacket_it++)
             {
-                // vector is FIFO unlike queue
-                PhysicsPacket thisData = m_physicsPacketVector.back();
-                m_physicsPacketVector.pop_back();
+                PhysicsPacket& thisData = *thisPacket_it;
 
                 // no spacial partitioning :(
-                for (auto& otherData : m_physicsPacketVector)
+                for (std::vector<PhysicsPacket>::iterator otherPacket_it = thisPacket_it + 1; otherPacket_it != m_physicsPackets.end(); otherPacket_it++)
                 {
+                    assert(otherPacket_it != thisPacket_it);
+                    PhysicsPacket& otherData = *otherPacket_it;
+
                     // STEP 0: Get collision data
                     glm::vec3 collisionNormal;
                     float collisionDepth;
@@ -88,13 +88,15 @@ namespace pleep
                     otherData.transform.origin -= collisionNormal * collisionDepth * massFactor;
                     collisionPoint             -= collisionNormal * collisionDepth * massFactor;
 
-
                     // STEP 3: geometry properties
                     // STEP 3.1: vector describing the "radius" of the rotation
-                    const glm::vec3 thisLever = collisionPoint - thisData.transform.origin;
-                    const glm::vec3 otherLever = collisionPoint - otherData.transform.origin;
+                    const glm::vec3 thisLever = (collisionPoint - thisData.transform.origin);
+                    const glm::vec3 otherLever = (collisionPoint - otherData.transform.origin);
 
+                    PLEEPLOG_DEBUG("This lever: " + std::to_string(thisLever.x) + ", " + std::to_string(thisLever.y) + ", " + std::to_string(thisLever.z));
                     PLEEPLOG_DEBUG("Length of this lever: " + std::to_string(glm::length(thisLever)));
+
+                    PLEEPLOG_DEBUG("Other lever: " + std::to_string(otherLever.x) + ", " + std::to_string(otherLever.y) + ", " + std::to_string(otherLever.z));
                     PLEEPLOG_DEBUG("Length of other lever: " + std::to_string(glm::length(otherLever)));
 
                     // STEP 3.2: angular inertia/moment
@@ -117,7 +119,7 @@ namespace pleep
 
                     // STEP 3.3 relative velocity vector
                     // relative is: this' velocity as viewed by other
-                    const glm::vec3 relVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever));
+                    const glm::vec3 relVelocity = ((thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever)));
                     PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
 
@@ -162,16 +164,38 @@ namespace pleep
                     const float frictionImpulse = tangentImpulse * dynamicFrictionCoeff;
                     PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
 
-                    // STEP 6: dynamic resolution
-                    // STEP 6.1: resolve linear normal impulse response
+                    // STEP 6: Damping
+                    // we have restitution/friction coefficients in impulses,
+                    // but we may need extra damping to avoid stuttering and floating point errors
+                    // Unfortunately it seems these kind of values need to be experimentally tweaked,
+                    //   and no single solution works for all cases/scales
+                    // only angular impulse really needs damping applied (See step 7.3)
+                    
+                    // "slop" damping
+                    //const float flatDamping = 0.01f;
+
+                    // static percentage damping
+                    //const float staticDamping = 0.95f;
+
+                    // exponential damping which is stronger approaching 0 relative velocity at collision point
+                    //const float invDampingStrength = 32;
+                    //const float dynamicDamping = calculate_damping(relVelocity, invDampingStrength);
+
+                    // exponential damping relative to difference of angular velocity
+                    //const float relativeAV2 = glm::length2(thisData.physics.angularVelocity - otherData.physics.angularVelocity);
+                    //const float avDamping = -1.0f / (1.0f + relativeAV2 * invDampingStrength) + 1.0f;
+
+
+                    // STEP 7: dynamic resolution
+                    // STEP 7.1: resolve linear normal impulse response
                     thisData.physics.velocity  += thisInvMass * (normalImpulse*collisionNormal);
                     otherData.physics.velocity -= otherInvMass * (normalImpulse*collisionNormal);
 
-                    // STEP 6.2 resolve linear friction impulse response
+                    // STEP 7.2 resolve linear friction impulse response
                     thisData.physics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
                     otherData.physics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
-                    // STEP 6.3: resolve angular normal impulse response
+                    // STEP 7.3: resolve angular normal impulse response
                     const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (normalImpulse*collisionNormal));
                     const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (normalImpulse*collisionNormal));
                     thisData.physics.angularVelocity  += thisAngularNormalImpulse;
@@ -181,7 +205,7 @@ namespace pleep
                     PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
                     
 
-                    // STEP 6.4 resolve angular friction impulse response
+                    // STEP 7.4 resolve angular friction impulse response
                     const glm::vec3 thisAngularFrictionImpulse  = thisInvMoment * glm::cross(thisLever, (frictionImpulse*collisionTangent));
                     const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
                     thisData.physics.angularVelocity  += thisAngularFrictionImpulse;
@@ -194,38 +218,34 @@ namespace pleep
                     const glm::vec3 postRelVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever) - otherData.physics.velocity - glm::cross(otherData.physics.angularVelocity, otherLever));
                     PLEEPLOG_DEBUG("Relative Velocity after collision: " + std::to_string(postRelVelocity.x) + ", " + std::to_string(postRelVelocity.y) + ", " + std::to_string(postRelVelocity.z));
 
-                    // STEP 7: Damping
-                    // we have restitution factor in impulse, but we may need extra damping to avoid stuttering and floating point errors
-/*
-                    // exponential damping which is stronger approaching 0 velocity
-                    const float damping = -1.0f / (1.0f +
-                        postRelVelocity.x*postRelVelocity.x 
-                        + postRelVelocity.y*postRelVelocity.y
-                        + postRelVelocity.z*postRelVelocity.z * 32) + 1.0f;
-
-                    PLEEPLOG_DEBUG("Damping factor: " + std::to_string(damping));
-
-                    // dampen velocities
-                    thisData.physics.velocity  *= damping;
-                    otherData.physics.velocity *= damping;
-                    thisData.physics.angularVelocity  *= damping;
-                    otherData.physics.angularVelocity *= damping;
-*/
-
                 }
             }
+        }
+
+        static float calculate_damping(glm::vec3 vector, float invFactor)
+        {
+            return -1.0f / (1.0f +
+                (vector.x*vector.x 
+                + vector.y*vector.y
+                + vector.z*vector.z) * invFactor) + 1.0f;
         }
 
         
         // store in a simple queue for now
         void submit(PhysicsPacket data) override
         {
-            m_physicsPacketVector.push_back(data);
+            m_physicsPackets.push_back(data);
+        }
+
+        // clear packets for next frame
+        void clear() override
+        {
+            m_physicsPackets.clear();
         }
 
     private:
         // TODO: hey dumb dumb figure out RTrees
-        std::vector<PhysicsPacket> m_physicsPacketVector;
+        std::vector<PhysicsPacket> m_physicsPackets;
     };
 }
 

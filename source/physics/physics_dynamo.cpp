@@ -34,10 +34,30 @@ namespace pleep
     void PhysicsDynamo::run_relays(double deltaTime) 
     {
         // quadtree is now built? process all physical processes
-        
+
+#define FIXED_TIME_STEP
+#ifdef FIXED_TIME_STEP
+        size_t stepsTaken = 0;
+        m_timeRemaining += deltaTime;
+        while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
+        {
+            m_timeRemaining -= m_fixedTimeStep;
+            stepsTaken++;
+
+            // motion first
+            m_motionStep->engage(m_fixedTimeStep);
+            // then detect and resolve collision
+            m_collisionStep->engage(m_fixedTimeStep);
+        }
+#else
         // motion first
         m_motionStep->engage(deltaTime);
         // then detect and resolve collision
         m_collisionStep->engage(deltaTime);
+#endif // FIXED_TIME_STEP
+
+        // after fixed timesteps clear relays
+        m_motionStep->clear();
+        m_collisionStep->clear();
     }
 }

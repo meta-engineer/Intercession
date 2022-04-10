@@ -72,3 +72,4 @@ It is amazing what you can learn for free on the internet.
 * https://community.onelonecoder.com/ - Aka Javidx9. Extensive c++ topics and inspiration to build things yourself
 * https://www.youtube.com/c/CodeTechandTutorials - c++ and project management (cmake) walkthroughs
 * https://austinmorlan.com/ - Walkthrough and intuition of ECS architecture
+* http://hitokageproduction.com/article/11 - Walkthrough and intuitions of 3D collision and physics
