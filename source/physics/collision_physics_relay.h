@@ -132,7 +132,9 @@ namespace pleep
                                 collisionNormal
                             )
                         );
-                    PLEEPLOG_DEBUG("Determined Normal impulse to be: " + std::to_string(normalImpulse));
+
+                    const float contactImpulse = (normalImpulse);
+                    PLEEPLOG_DEBUG("Calculated Contact impulse to be: " + std::to_string(contactImpulse));
 
                     // Step 5: friction
                     // STEP 5.1: Determine velocity perpendicular to normal (tangent along surface)
@@ -151,17 +153,18 @@ namespace pleep
                             collisionTangent)
                         );
                         
-                    PLEEPLOG_DEBUG("Calced Friction impulse: " + std::to_string(tangentImpulse));
+                    PLEEPLOG_DEBUG("Calculated Friction impulse: " + std::to_string(tangentImpulse));
                     
                     // STEP 5.3: Coefficient factors
                     // if impulse is less than static max, then aply it (this should negate all colinear velocity)
                     // if impulse is greater than static max, multiply it by dynamic coefficient
                     //const float mu = 0.5f;
-                    const float frictionCone = staticFrictionCoeff * normalImpulse;
+                    const float frictionCone = staticFrictionCoeff * contactImpulse;
                     PLEEPLOG_DEBUG("Static friction limit: " + std::to_string(frictionCone));
 
-                    //const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionCoeff;
-                    const float frictionImpulse = tangentImpulse * dynamicFrictionCoeff;
+                    const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionCoeff;
+                    // subtract 1.0f from each frames impulse to evoke non-linear energy loss
+                    //const float frictionImpulse = tangentImpulse * dynamicFrictionCoeff;
                     PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
 
                     // STEP 6: Damping
@@ -175,7 +178,7 @@ namespace pleep
                     //const float flatDamping = 0.01f;
 
                     // static percentage damping
-                    //const float staticDamping = 0.95f;
+                    const float staticDamping = 0.97f;
 
                     // exponential damping which is stronger approaching 0 relative velocity at collision point
                     //const float invDampingStrength = 32;
@@ -188,16 +191,16 @@ namespace pleep
 
                     // STEP 7: dynamic resolution
                     // STEP 7.1: resolve linear normal impulse response
-                    thisData.physics.velocity  += thisInvMass * (normalImpulse*collisionNormal);
-                    otherData.physics.velocity -= otherInvMass * (normalImpulse*collisionNormal);
+                    thisData.physics.velocity  += thisInvMass * (contactImpulse*collisionNormal);
+                    otherData.physics.velocity -= otherInvMass * (contactImpulse*collisionNormal);
 
                     // STEP 7.2 resolve linear friction impulse response
                     thisData.physics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
                     otherData.physics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
                     // STEP 7.3: resolve angular normal impulse response
-                    const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (normalImpulse*collisionNormal));
-                    const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (normalImpulse*collisionNormal));
+                    const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*collisionNormal));
+                    const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*collisionNormal));
                     thisData.physics.angularVelocity  += thisAngularNormalImpulse;
                     otherData.physics.angularVelocity -= otherAngularNormalImpulse;
                     
@@ -210,6 +213,11 @@ namespace pleep
                     const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
                     thisData.physics.angularVelocity  += thisAngularFrictionImpulse;
                     otherData.physics.angularVelocity -= otherAngularFrictionImpulse;
+
+                    // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
+                    thisData.physics.angularVelocity  *= staticDamping;
+                    otherData.physics.angularVelocity *= staticDamping;
+                    
                     
                     PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
                     PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));

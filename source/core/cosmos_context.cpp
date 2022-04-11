@@ -232,7 +232,7 @@ namespace pleep
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
         m_currentCosmos->add_component(vamp, ModelComponent(vampModel));
 */
-
+/*
         Entity crate = m_currentCosmos->create_entity();
         TransformComponent crateTransform(glm::vec3(1.0f, 0.0f, 1.0f));
         m_currentCosmos->add_component(crate, crateTransform);
@@ -243,7 +243,7 @@ namespace pleep
         crate_physics.angularVelocity = glm::vec3(0.0f, 0.7f, 0.2f);
         crate_physics.collider = std::make_shared<BoxCollider>();
         crate_physics.mass = 100.0f;
-
+*/
         Entity block = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, 1.5f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).orientation = 

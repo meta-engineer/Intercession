@@ -317,9 +317,10 @@ namespace pleep
         {
             glm::mat3 I(0.0f);
             // x=width, y=height, z=depth
-            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/12.0f;
-            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/12.0f;
-            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/12.0f;
+            // coefficient of 12 is "real", lower (more resistant) may be needed for stability
+            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/3.0f;
+            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/3.0f;
+            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/3.0f;
             return I;
         }
 
