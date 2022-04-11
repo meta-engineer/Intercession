@@ -173,12 +173,16 @@ namespace pleep
                     // Unfortunately it seems these kind of values need to be experimentally tweaked,
                     //   and no single solution works for all cases/scales
                     // only angular impulse really needs damping applied (See step 7.3)
+
+                    // ALSO, the other factors to change if instability occurs is the collider's
+                    // manifold epsilon, and its inertia tensor. A larger epsilon or larger tensor
+                    // values will increase stability
                     
                     // "slop" damping
                     //const float flatDamping = 0.01f;
 
-                    // static percentage damping
-                    const float staticDamping = 0.97f;
+                    // linear percentage damping
+                    const float linearDamping = 0.95f;
 
                     // exponential damping which is stronger approaching 0 relative velocity at collision point
                     //const float invDampingStrength = 32;
@@ -215,8 +219,8 @@ namespace pleep
                     otherData.physics.angularVelocity -= otherAngularFrictionImpulse;
 
                     // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
-                    thisData.physics.angularVelocity  *= staticDamping;
-                    otherData.physics.angularVelocity *= staticDamping;
+                    thisData.physics.angularVelocity  *= linearDamping;
+                    otherData.physics.angularVelocity *= linearDamping;
                     
                     
                     PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
