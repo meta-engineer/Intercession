@@ -39,12 +39,12 @@ namespace pleep
                     {
                         continue;
                     }
-                    PLEEPLOG_DEBUG("Collision Detected!");
-                    PLEEPLOG_DEBUG("Collision Point: " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z));
-                    PLEEPLOG_DEBUG("Collision Normal: " + std::to_string(collisionNormal.x) + ", " + std::to_string(collisionNormal.y) + ", " + std::to_string(collisionNormal.z));
-                    PLEEPLOG_DEBUG("Collision Depth: " + std::to_string(collisionDepth));
-                    PLEEPLOG_DEBUG("This @: " + std::to_string(thisData.transform.origin.x) + ", " + std::to_string(thisData.transform.origin.y) + ", " + std::to_string(thisData.transform.origin.z));
-                    PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
+                    //PLEEPLOG_DEBUG("Collision Detected!");
+                    //PLEEPLOG_DEBUG("Collision Point: " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z));
+                    //PLEEPLOG_DEBUG("Collision Normal: " + std::to_string(collisionNormal.x) + ", " + std::to_string(collisionNormal.y) + ", " + std::to_string(collisionNormal.z));
+                    //PLEEPLOG_DEBUG("Collision Depth: " + std::to_string(collisionDepth));
+                    //PLEEPLOG_DEBUG("This @: " + std::to_string(thisData.transform.origin.x) + ", " + std::to_string(thisData.transform.origin.y) + ", " + std::to_string(thisData.transform.origin.z));
+                    //PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
                     
 
                     // STEP 1: Fetch entity properties
@@ -60,20 +60,20 @@ namespace pleep
                         massFactor = 0;
                     else
                         massFactor = thisData.physics.mass/(thisData.physics.mass + otherData.physics.mass);
-                    PLEEPLOG_DEBUG("MassFactor of this: " + std::to_string(massFactor));
+                    //PLEEPLOG_DEBUG("MassFactor of this: " + std::to_string(massFactor));
                     
                     float thisInvMass = 0;
                     if (!thisImmutable)
                     {
                         thisInvMass = 1.0f/thisData.physics.mass;
                     }
-                    PLEEPLOG_DEBUG("this inverse mass: " + std::to_string(thisInvMass));
+                    //PLEEPLOG_DEBUG("this inverse mass: " + std::to_string(thisInvMass));
                     float otherInvMass = 0;
                     if (!otherImmutable)
                     {
                         otherInvMass = 1.0f/otherData.physics.mass;
                     }
-                    PLEEPLOG_DEBUG("other inverse mass: " + std::to_string(otherInvMass));
+                    //PLEEPLOG_DEBUG("other inverse mass: " + std::to_string(otherInvMass));
                     
                     // STEP 1.2: material collision properties
                     // TODO: fetch from physics attributes of both objects
@@ -93,11 +93,11 @@ namespace pleep
                     const glm::vec3 thisLever = (collisionPoint - thisData.transform.origin);
                     const glm::vec3 otherLever = (collisionPoint - otherData.transform.origin);
 
-                    PLEEPLOG_DEBUG("This lever: " + std::to_string(thisLever.x) + ", " + std::to_string(thisLever.y) + ", " + std::to_string(thisLever.z));
-                    PLEEPLOG_DEBUG("Length of this lever: " + std::to_string(glm::length(thisLever)));
+                    //PLEEPLOG_DEBUG("This lever: " + std::to_string(thisLever.x) + ", " + std::to_string(thisLever.y) + ", " + std::to_string(thisLever.z));
+                    //PLEEPLOG_DEBUG("Length of this lever: " + std::to_string(glm::length(thisLever)));
 
-                    PLEEPLOG_DEBUG("Other lever: " + std::to_string(otherLever.x) + ", " + std::to_string(otherLever.y) + ", " + std::to_string(otherLever.z));
-                    PLEEPLOG_DEBUG("Length of other lever: " + std::to_string(glm::length(otherLever)));
+                    //PLEEPLOG_DEBUG("Other lever: " + std::to_string(otherLever.x) + ", " + std::to_string(otherLever.y) + ", " + std::to_string(otherLever.z));
+                    //PLEEPLOG_DEBUG("Length of other lever: " + std::to_string(glm::length(otherLever)));
 
                     // STEP 3.2: angular inertia/moment
                     // TODO: can this be optimized? inverse of inverse :(
@@ -120,7 +120,7 @@ namespace pleep
                     // STEP 3.3 relative velocity vector
                     // relative is: this' velocity as viewed by other
                     const glm::vec3 relVelocity = ((thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever)));
-                    PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
+                    //PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
 
                     // STEP 4: determine normal impulse
@@ -134,7 +134,7 @@ namespace pleep
                         );
 
                     const float contactImpulse = (normalImpulse);
-                    PLEEPLOG_DEBUG("Calculated Contact impulse to be: " + std::to_string(contactImpulse));
+                    //PLEEPLOG_DEBUG("Calculated Contact impulse to be: " + std::to_string(contactImpulse));
 
                     // Step 5: friction
                     // STEP 5.1: Determine velocity perpendicular to normal (tangent along surface)
@@ -142,7 +142,7 @@ namespace pleep
                     const glm::vec3 collisionTangent =  normalAffinity == 0.0f ? glm::vec3(0.0f) :
                         glm::normalize(relVelocity - normalAffinity * collisionNormal);
                     
-                    PLEEPLOG_DEBUG("Collision Tangent: " + std::to_string(collisionTangent.x) + ", " + std::to_string(collisionTangent.y) + ", " + std::to_string(collisionTangent.z));
+                    //PLEEPLOG_DEBUG("Collision Tangent: " + std::to_string(collisionTangent.x) + ", " + std::to_string(collisionTangent.y) + ", " + std::to_string(collisionTangent.z));
 
                     // STEP 5.2: Determine friction impulse
                     const float tangentImpulse = -1.0f * glm::dot(relVelocity, collisionTangent) /
@@ -153,26 +153,23 @@ namespace pleep
                             collisionTangent)
                         );
                         
-                    PLEEPLOG_DEBUG("Calculated Friction impulse: " + std::to_string(tangentImpulse));
+                    //PLEEPLOG_DEBUG("Calculated Friction impulse: " + std::to_string(tangentImpulse));
                     
                     // STEP 5.3: Coefficient factors
                     // if impulse is less than static max, then aply it (this should negate all colinear velocity)
                     // if impulse is greater than static max, multiply it by dynamic coefficient
-                    //const float mu = 0.5f;
                     const float frictionCone = staticFrictionCoeff * contactImpulse;
-                    PLEEPLOG_DEBUG("Static friction limit: " + std::to_string(frictionCone));
+                    //PLEEPLOG_DEBUG("Static friction limit: " + std::to_string(frictionCone));
 
                     const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionCoeff;
-                    // subtract 1.0f from each frames impulse to evoke non-linear energy loss
-                    //const float frictionImpulse = tangentImpulse * dynamicFrictionCoeff;
-                    PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
+                    //PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
 
                     // STEP 6: Damping
                     // we have restitution/friction coefficients in impulses,
                     // but we may need extra damping to avoid stuttering and floating point errors
                     // Unfortunately it seems these kind of values need to be experimentally tweaked,
                     //   and no single solution works for all cases/scales
-                    // only angular impulse really needs damping applied (See step 7.3)
+                    // only angular impulse really needs damping applied (See step 7.5)
 
                     // ALSO, the other factors to change if instability occurs is the collider's
                     // manifold epsilon, and its inertia tensor. A larger epsilon or larger tensor
@@ -208,8 +205,8 @@ namespace pleep
                     thisData.physics.angularVelocity  += thisAngularNormalImpulse;
                     otherData.physics.angularVelocity -= otherAngularNormalImpulse;
                     
-                    PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
-                    PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
+                    //PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
+                    //PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
                     
 
                     // STEP 7.4 resolve angular friction impulse response
@@ -218,17 +215,13 @@ namespace pleep
                     thisData.physics.angularVelocity  += thisAngularFrictionImpulse;
                     otherData.physics.angularVelocity -= otherAngularFrictionImpulse;
 
+                    // STEP 7.5: apply angular dampening
                     // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
                     thisData.physics.angularVelocity  *= linearDamping;
                     otherData.physics.angularVelocity *= linearDamping;
                     
-                    
-                    PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
-                    PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
-
-
-                    const glm::vec3 postRelVelocity = (thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever) - otherData.physics.velocity - glm::cross(otherData.physics.angularVelocity, otherLever));
-                    PLEEPLOG_DEBUG("Relative Velocity after collision: " + std::to_string(postRelVelocity.x) + ", " + std::to_string(postRelVelocity.y) + ", " + std::to_string(postRelVelocity.z));
+                    //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
+                    //PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
 
                 }
             }

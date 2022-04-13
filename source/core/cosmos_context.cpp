@@ -234,7 +234,7 @@ namespace pleep
 */
 /*
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(1.0f, 0.0f, 1.0f));
+        TransformComponent crateTransform(glm::vec3(0.5f, 0.0f, 0.9f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
@@ -245,7 +245,7 @@ namespace pleep
         crate_physics.mass = 100.0f;
 */
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(-1.0f, 1.5f, 0.0f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(0.0f, 1.5f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);

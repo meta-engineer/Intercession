@@ -39,7 +39,13 @@ namespace pleep
         // we may want to be able to define some model of non-uniform density
         // and/or generate mass from a collider density & precalculated volume
         //   to avoid poorly configured/"eyeballed" masses
+        // TODO: if a physics object has more than 1 collider, these attributes
+        //   may have to be defined per collider
         float mass = 1.0f;
+        //float restitution          = 0.50f;
+        //float staticFriction       = 0.40f;
+        //float dynamicFrictionCoeff = 0.30f;
+
         // does entity update velocity/position
         bool isDynamic = true;
 

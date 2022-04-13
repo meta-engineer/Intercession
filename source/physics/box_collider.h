@@ -161,13 +161,9 @@ namespace pleep
 
             std::vector<glm::vec3> thisContactManifold;
             this->build_contact_manifold(thisLocalTransform, -collisionNormal, collisionDepth, thisContactManifold);
-            PLEEPLOG_DEBUG("Found Contact Manifold A of size " + std::to_string(thisContactManifold.size()));
-            PLEEPLOG_DEBUG("Example of A: " + std::to_string(thisContactManifold[0].x) + ", " + std::to_string(thisContactManifold[0].y) + ", " + std::to_string(thisContactManifold[0].z));
 
             std::vector<glm::vec3> otherContactManifold;
             other->build_contact_manifold(otherLocalTransform, collisionNormal, collisionDepth, otherContactManifold);
-            PLEEPLOG_DEBUG("Found Contact Manifold B of size " + std::to_string(otherContactManifold.size()));
-            PLEEPLOG_DEBUG("Example of B: " + std::to_string(otherContactManifold[0].x) + ", " + std::to_string(otherContactManifold[0].y) + ", " + std::to_string(otherContactManifold[0].z));
 
             // Solve for collisionPoint depending on size of manifolds found
             if (otherContactManifold.size() == 0 || thisContactManifold.size() == 0)
@@ -188,14 +184,55 @@ namespace pleep
             }
             else
             {
+                // before we clip we know that points are sorted high to low
+                // we can regenerate max coeff;
+                const float maxCoeff = glm::dot(otherContactManifold.front(), collisionNormal);
+
                 //ICollider::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
                 PLEEPLOG_WARN("Non trivial Manifolds... expect something to go wrong!");
 
                 // now other is completely clipped
+
+                // "Rounding algorithm" of manifold plane
+                // we want less deep verticies to contribute less to average
+                // assign weights based on their dot product with collisionNormal
+                // relative to the max depth dot product
+
+                // average all points at max depth, set that as manifold origin
+                glm::vec3 manifoldOrigin(0.0f);
+                float originContributors = 0;
+                for (glm::vec3 v : otherContactManifold)
+                {
+                    const float vertCoeff = glm::dot(v, collisionNormal);
+                    if (vertCoeff == maxCoeff)
+                    {
+                        manifoldOrigin += v;
+                        originContributors++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                // TODO: after clipping maxCoeff could no longer be valid
+                assert(originContributors > 0);
+                manifoldOrigin /= originContributors;
+
+                // scale other points' weight based on its dot product to collisionNormal
+                // linearly scaling out to some min % at a distance of m_manifoldDepth
+                const float manifoldRange = 1.0f - m_manifoldMinWeight;
+                
                 collisionPoint = glm::vec3(0.0f);
                 for (glm::vec3 v : otherContactManifold)
-                    collisionPoint += v;
+                {
+                    const float vertCoeff = glm::dot(v, collisionNormal);
+                    const glm::vec3 relativeVertex = v - manifoldOrigin;
+                    // scale dot product coefficient to range [0 : manifoldDepth],
+                    // then scale that range to range [minWeight : 1.0]
+                    collisionPoint += relativeVertex * ((vertCoeff-maxCoeff+m_manifoldDepth) / m_manifoldDepth * manifoldRange + m_manifoldMinWeight);
+                }
                 collisionPoint /= otherContactManifold.size();
+                collisionPoint += manifoldOrigin;
             }
             
             return true;
@@ -246,15 +283,13 @@ namespace pleep
         }
 
         // fill dest with all points on plane perpendicular and farthest along axis
-        // should we also include points +/- manifoldEpsilon?
+        // should we also include points +/- m_manifoldDepth?
         void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, const float depth, std::vector<glm::vec3>& dest) const
         {
             assert(dest.empty());
             // manfold range dependant on collision depth?
             UNREFERENCED_PARAMETER(depth);
 
-            // contact manifold range to account for floating point errors?
-            const float manifoldEpsilon = 0.01f;
             std::vector<std::pair<float, glm::vec3>> allVertices;
 
             float maxCoeff = -INFINITY;
@@ -280,7 +315,7 @@ namespace pleep
                         // We can greedily cull points GUARENTEED to be outside
                         // though depending on order recieved this can miss points
                         // but it is a *slight* optimization
-                        if (coeff >= maxCoeff - manifoldEpsilon)
+                        if (coeff >= maxCoeff - m_manifoldDepth)
                         {
                             allVertices.push_back({
                                 std::pair<float, glm::vec3>(coeff, vertex)
@@ -301,7 +336,7 @@ namespace pleep
             // read from highest to lowest, pushing until we pass manifold
             for (std::vector<std::pair<float, glm::vec3>>::reverse_iterator it = allVertices.rbegin(); it != allVertices.rend(); ++it)
             {
-                if (it->first >= maxCoeff - manifoldEpsilon)
+                if (it->first >= maxCoeff - m_manifoldDepth)
                 {
                     dest.push_back(it->second);
                 }
@@ -327,6 +362,11 @@ namespace pleep
         // distance each face is from origin (in local space) like a radius
         // opposite faces will be uniform distance from entity origin
         glm::vec3 m_dimensions;
+
+        // depth of contact manifold that captures edges at sufficient non-perfect angles
+        const float m_manifoldDepth = 0.03f;
+        // percentage weight of verticies at the max manifold depth
+        const float m_manifoldMinWeight = 0.85f;
     };
 }
 
