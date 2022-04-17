@@ -31,7 +31,7 @@ namespace pleep
                 }
 
                 // SHHH... temporary global gravity
-                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
                 // Global air drag?
                 //data.physics.velocity *= 0.99;
                 //data.physics.angularVelocity *= 0.95;

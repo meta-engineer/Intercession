@@ -213,7 +213,7 @@ namespace pleep
         // create entities
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
-/*
+
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
         m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 2.5f, 1.0f)));
@@ -221,10 +221,14 @@ namespace pleep
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
         m_currentCosmos->add_component(frog, PhysicsComponent{});
+        m_currentCosmos->add_component(frog, ControlComponent{});
         PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
-        frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
+        //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         frog_physics.collider = std::make_shared<BoxCollider>();
-*/
+        frog_physics.mass = 100.0f;
+        frog_physics.collider->m_offsetTransform.scale = glm::vec3(5.0f, 5.0f, 5.0f);
+        frog_physics.collider->m_offsetTransform.origin = glm::vec3(0.0f, 2.0f, 0.0f);
+
 /*
         Entity vamp = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -306,7 +310,7 @@ namespace pleep
         m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 2.5f, 6.0f)));
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
-        m_currentCosmos->add_component(mainCamera, ControlComponent{});
+        //m_currentCosmos->add_component(mainCamera, ControlComponent{});
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
@@ -314,7 +318,7 @@ namespace pleep
         // synchro can maintain camera and pass its data each frame
         
         Event cameraEvent(events::rendering::SET_MAIN_CAMERA);
-        events::rendering::set_main_camera::Params cameraParams {
+        events::rendering::SET_MAIN_CAMERA_params cameraParams {
             mainCamera
         };
         cameraEvent.set_param(cameraParams);

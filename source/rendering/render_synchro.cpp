@@ -94,7 +94,7 @@ namespace pleep
     
     void RenderSynchro::_set_main_camera_handler(Event setCameraEvent) 
     {
-        events::rendering::set_main_camera::Params cameraParams = setCameraEvent.get_param<events::rendering::set_main_camera::Params>();
+        events::rendering::SET_MAIN_CAMERA_params cameraParams = setCameraEvent.get_param<events::rendering::SET_MAIN_CAMERA_params>();
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(cameraParams.cameraEntity) + " }");
 
@@ -109,7 +109,7 @@ namespace pleep
     
     void RenderSynchro::_resize_handler(Event resizeEvent) 
     {
-        events::window::resize::Params resizeParams = resizeEvent.get_param<events::window::resize::Params>();
+        events::window::RESIZE_params resizeParams = resizeEvent.get_param<events::window::RESIZE_params>();
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 

@@ -34,21 +34,16 @@ namespace pleep
     namespace events {
         // outside events from window api
         namespace window {
-            const EventId QUIT = 0;
-            const EventId RESIZE = 1;
-            namespace resize {
-                struct Params {
+            const EventId QUIT = __LINE__;
+            const EventId RESIZE = __LINE__;
+                struct RESIZE_params {
                     int width;
                     int height;
                 };
-            }
-            const EventId INPUT = 2;
-            namespace input {
-                // bitset of keys values? single key values? command abstraction (for remapping/controllers)
-                struct Params {
-                    
+            const EventId INPUT = __LINE__;
+                struct INPUT_params {
+                    // bitset of keys values? single key values? command abstraction (for remapping/controllers)=
                 };
-            }
         }
 
         // cross-concerning events that exist within the virtual verse
@@ -58,12 +53,10 @@ namespace pleep
 
         // events pertaining to the rendering system
         namespace rendering {
-            const EventId SET_MAIN_CAMERA = 3;
-            namespace set_main_camera {
-                struct Params {
+            const EventId SET_MAIN_CAMERA = __LINE__;
+                struct SET_MAIN_CAMERA_params {
                     Entity cameraEntity;
                 };
-            }
         }
     }
 }

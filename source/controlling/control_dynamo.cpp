@@ -270,7 +270,7 @@ namespace pleep
 
         // Send event to Render Dynamo
         Event resizeEvent(events::window::RESIZE);
-        events::window::resize::Params resizeParams { width, height };
+        events::window::RESIZE_params resizeParams { width, height };
         resizeEvent.set_param(resizeParams);
 
         m_sharedBroker->send_event(resizeEvent);

@@ -69,9 +69,9 @@ namespace pleep
             // projection of v1 onto v2:
             // v1_proj = cos(angle) * |v1| * norm(v2)
 
-            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform();
+            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform() * this->m_offsetTransform.get_model_transform();
             glm::mat3 thisNormalTransform  = glm::transpose(glm::inverse(glm::mat3(thisLocalTransform)));
-            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform();
+            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform() * other->m_offsetTransform.get_model_transform();
             glm::mat3 otherNormalTransform = glm::transpose(glm::inverse(glm::mat3(otherLocalTransform)));
 
             std::array<glm::vec3, 15> axes;

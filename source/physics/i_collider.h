@@ -76,7 +76,12 @@ namespace pleep
             // we'll use a unit sphere as default
             return glm::mat3(2.0f/5.0f);
         }
-        
+
+        // ***** Universal collider attributes *****
+
+        // nested transform component "offset" from the local space of entity
+        // entities centre is still centre of mass?
+        TransformComponent m_offsetTransform;
         
         // ***** collider helpers *****
 

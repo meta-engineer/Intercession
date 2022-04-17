@@ -124,7 +124,7 @@ namespace pleep
     
     void RenderDynamo::_resize_handler(Event resizeEvent) 
     {
-        events::window::resize::Params resizeParams = resizeEvent.get_param<events::window::resize::Params>();
+        events::window::RESIZE_params resizeParams = resizeEvent.get_param<events::window::RESIZE_params>();
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 
