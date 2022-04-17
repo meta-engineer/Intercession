@@ -232,9 +232,9 @@ namespace pleep
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
         m_currentCosmos->add_component(vamp, ModelComponent(vampModel));
 */
-/*
+
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(0.5f, 0.0f, 0.9f));
+        TransformComponent crateTransform(glm::vec3(2.5f, 0.0f, 0.9f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         m_currentCosmos->add_component(crate, PhysicsComponent{});
@@ -243,9 +243,9 @@ namespace pleep
         crate_physics.angularVelocity = glm::vec3(0.0f, 0.7f, 0.2f);
         crate_physics.collider = std::make_shared<BoxCollider>();
         crate_physics.mass = 100.0f;
-*/
+
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(0.0f, 1.5f, 0.0f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, 1.5f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
@@ -281,6 +281,20 @@ namespace pleep
         // TODO: in general generate mass from known density
         floor_physics.mass = 5.0f * 500.0f;
         floor_physics.isDynamic = false;
+        
+        Entity floor2 = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(floor2, TransformComponent(glm::vec3(5.01f, -2.525f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(floor2).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(floor2).scale = glm::vec3(5.0f, 5.0f, 0.05f);
+        m_currentCosmos->add_component(floor2, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
+        m_currentCosmos->add_component(floor2, PhysicsComponent{});
+        PhysicsComponent& floor2_physics = m_currentCosmos->get_component<PhysicsComponent>(floor2);
+        floor2_physics.collider = std::make_shared<BoxCollider>();
+        // TODO: what mass to assign to non-dynamic objects?
+        // TODO: in general generate mass from known density
+        floor2_physics.mass = 5.0f * 500.0f;
+        floor2_physics.isDynamic = false;
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));

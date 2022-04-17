@@ -51,8 +51,6 @@ namespace pleep
             float& collisionDepth,
             glm::vec3& collisionPoint) const override
         {
-            //PLEEPLOG_DEBUG("Testing collision between types: box and box");
-
             // TODO: dynamic switch between algorithms
 
             // SAT algorithm (actually Separating Plane Theorum)
@@ -176,46 +174,64 @@ namespace pleep
                 // single penetrating vertex on other
                 // prefer using single vertex of other first
                 collisionPoint = otherContactManifold.front();
+                return true;
             }
             else if (thisContactManifold.size() == 1)
             {
                 // single penetrating vertex on this
                 collisionPoint = thisContactManifold.front();
+                return true;
             }
             else
             {
-                // before we clip we know that points are sorted high to low
-                // we can regenerate max coeff;
-                const float maxCoeff = glm::dot(otherContactManifold.front(), collisionNormal);
+                //PLEEPLOG_WARN("Non trivial Manifolds... expect something to go wrong!");
 
-                //ICollider::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
-                PLEEPLOG_WARN("Non trivial Manifolds... expect something to go wrong!");
+                // use this' manifold to clip other's manifold
+                ICollider::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
 
-                // now other is completely clipped
+                // something went wrong :(
+                assert(!otherContactManifold.empty());
+                // TODO: for "production" we may want a emergency clause to use simple average if clipping fails
+
+                // now other is completely clipped, use it to find "average" contact point
+
+                // if clipped manifold is only 1 vertex then we can short-cut as the above cases do
+                if (otherContactManifold.size() == 1)
+                {
+                    collisionPoint = otherContactManifold.front();
+                    return true;
+                }
 
                 // "Rounding algorithm" of manifold plane
                 // we want less deep verticies to contribute less to average
                 // assign weights based on their dot product with collisionNormal
                 // relative to the max depth dot product
 
-                // average all points at max depth, set that as manifold origin
+                // generate max coeff from clipped manifold
+                // and accumulate average of points at max depth, set that as manifold origin
+                float maxCoeff = -INFINITY;
                 glm::vec3 manifoldOrigin(0.0f);
                 float originContributors = 0;
                 for (glm::vec3 v : otherContactManifold)
                 {
                     const float vertCoeff = glm::dot(v, collisionNormal);
-                    if (vertCoeff == maxCoeff)
+                    if (vertCoeff > maxCoeff)
+                    {
+                        // reset max & origin
+                        manifoldOrigin = v;
+                        originContributors = 1;
+                        maxCoeff = vertCoeff;
+                    }
+                    else if (vertCoeff == maxCoeff)
                     {
                         manifoldOrigin += v;
                         originContributors++;
                     }
-                    else
-                    {
-                        break;
-                    }
+                    // ignore points under current max
                 }
-                // TODO: after clipping maxCoeff could no longer be valid
+                // ensure maxCoeff calculation was valid
                 assert(originContributors > 0);
+                // safe from divide by zero
                 manifoldOrigin /= originContributors;
 
                 // scale other points' weight based on its dot product to collisionNormal
@@ -228,14 +244,21 @@ namespace pleep
                     const float vertCoeff = glm::dot(v, collisionNormal);
                     const glm::vec3 relativeVertex = v - manifoldOrigin;
                     // scale dot product coefficient to range [0 : manifoldDepth],
+                    // then scale that range to range [0 : 1.0]
+                    float vertWeight = (vertCoeff-maxCoeff+m_manifoldDepth) / m_manifoldDepth;
+                    // make weight non-linear?
+                    //vertWeight *= vertWeight;
                     // then scale that range to range [minWeight : 1.0]
-                    collisionPoint += relativeVertex * ((vertCoeff-maxCoeff+m_manifoldDepth) / m_manifoldDepth * manifoldRange + m_manifoldMinWeight);
+                    collisionPoint += relativeVertex * (vertWeight * manifoldRange + m_manifoldMinWeight);
                 }
                 collisionPoint /= otherContactManifold.size();
                 collisionPoint += manifoldOrigin;
+
+                return true;
             }
-            
-            return true;
+
+            // we should never get here
+            return false;
         }
 
         // return the coefficents (lengths) of the interval of the box collider's projection along an axis
@@ -283,7 +306,7 @@ namespace pleep
         }
 
         // fill dest with all points on plane perpendicular and farthest along axis
-        // should we also include points +/- m_manifoldDepth?
+        // Manifold must be returned in winding order around the perimeter
         void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, const float depth, std::vector<glm::vec3>& dest) const
         {
             assert(dest.empty());
@@ -293,56 +316,49 @@ namespace pleep
             std::vector<std::pair<float, glm::vec3>> allVertices;
 
             float maxCoeff = -INFINITY;
+
+            // Manifold MUST be built with a winding order!
+            // either direction is fine, but it needs to trace the perimeter!
+            glm::vec3 dimensions(-1, -1, -1);
+            const int order[] = {0,1,0,2,0,1,0,2};
             
-            for (int i = -1; i < 2; i+=2)
+            for (int index : order)
             {
-                for (int j = -1; j < 2; j+=2)
+                glm::vec3 vertex = {
+                    this->m_dimensions.x * dimensions.x,
+                    this->m_dimensions.y * dimensions.y,
+                    this->m_dimensions.z * dimensions.z
+                };
+
+                // we have to do this matrix multiply again...
+                vertex = thisTrans * glm::vec4(vertex, 1.0f);
+
+                const float coeff = glm::dot(vertex, axis);
+                maxCoeff = coeff > maxCoeff ? coeff : maxCoeff;
+
+                // We can greedily cull points GUARENTEED to be outside
+                // though depending on order recieved this can miss points
+                // but it is a *slight* optimization
+                if (coeff >= maxCoeff - m_manifoldDepth)
                 {
-                    for (int k = -1; k < 2; k+=2)
-                    {
-                        glm::vec3 vertex = {
-                            this->m_dimensions.x * i,
-                            this->m_dimensions.y * j,
-                            this->m_dimensions.z * k
-                        };
-
-                        // we have to do this matrix multiply again...
-                        vertex = thisTrans * glm::vec4(vertex, 1.0f);
-
-                        const float coeff = glm::dot(vertex, axis);
-                        maxCoeff = coeff > maxCoeff ? coeff : maxCoeff;
-
-                        // We can greedily cull points GUARENTEED to be outside
-                        // though depending on order recieved this can miss points
-                        // but it is a *slight* optimization
-                        if (coeff >= maxCoeff - m_manifoldDepth)
-                        {
-                            allVertices.push_back({
-                                std::pair<float, glm::vec3>(coeff, vertex)
-                            });
-                        }
-                    }
+                    allVertices.push_back({
+                        std::pair<float, glm::vec3>(coeff, vertex)
+                    });
                 }
+
+                // flip dimension at this index in the order
+                dimensions[index] = dimensions[index] < 0.0f ? 1.0f : -1.0f;
             }
 
-            // sort low to high
-            std::sort(allVertices.begin(), allVertices.end(), 
-                [](std::pair<float, glm::vec3>& a, std::pair<float, glm::vec3>& b) 
-                {
-                    return a.first < b.first;
-                }
-            );
+            // We cannot sort the verticies becuase it can destroy the winding order
+            // this means that the farthest vertex in the manifold has no guarenteed index
             
-            // read from highest to lowest, pushing until we pass manifold
+            // read all, pushing within manifold
             for (std::vector<std::pair<float, glm::vec3>>::reverse_iterator it = allVertices.rbegin(); it != allVertices.rend(); ++it)
             {
                 if (it->first >= maxCoeff - m_manifoldDepth)
                 {
                     dest.push_back(it->second);
-                }
-                else
-                {
-                    break;
                 }
             }
         }
@@ -353,9 +369,9 @@ namespace pleep
             glm::mat3 I(0.0f);
             // x=width, y=height, z=depth
             // coefficient of 12 is "real", lower (more resistant) may be needed for stability
-            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/3.0f;
-            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/3.0f;
-            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/3.0f;
+            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
+            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
+            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
             return I;
         }
 
@@ -364,9 +380,10 @@ namespace pleep
         glm::vec3 m_dimensions;
 
         // depth of contact manifold that captures edges at sufficient non-perfect angles
-        const float m_manifoldDepth = 0.03f;
+        //   (in units of dot product with normal, not actual distance units)
+        const float m_manifoldDepth = 0.04f;
         // percentage weight of verticies at the max manifold depth
-        const float m_manifoldMinWeight = 0.85f;
+        const float m_manifoldMinWeight = 0.80f;
     };
 }
 

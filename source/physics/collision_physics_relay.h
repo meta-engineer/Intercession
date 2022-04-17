@@ -83,6 +83,9 @@ namespace pleep
                     
 
                     // STEP 2: static resolution
+                    // TODO: static resolution can cause objects in complex scenarios to "walk around" and not
+                    //   abide by the stability of the dynamic resolution, this can only be fixed with
+                    //   a continuous intersect detection and continuous resolution, so its a major refactor
                     // collisionNormal is in direction away from "other", towards "this"
                     thisData.transform.origin  += collisionNormal * collisionDepth * (1-massFactor);
                     otherData.transform.origin -= collisionNormal * collisionDepth * massFactor;
@@ -179,7 +182,7 @@ namespace pleep
                     //const float flatDamping = 0.01f;
 
                     // linear percentage damping
-                    const float linearDamping = 0.95f;
+                    const float percentDamping = 0.98f;
 
                     // exponential damping which is stronger approaching 0 relative velocity at collision point
                     //const float invDampingStrength = 32;
@@ -217,8 +220,8 @@ namespace pleep
 
                     // STEP 7.5: apply angular dampening
                     // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
-                    thisData.physics.angularVelocity  *= linearDamping;
-                    otherData.physics.angularVelocity *= linearDamping;
+                    thisData.physics.angularVelocity  *= percentDamping;
+                    otherData.physics.angularVelocity *= percentDamping;
                     
                     //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
                     //PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));

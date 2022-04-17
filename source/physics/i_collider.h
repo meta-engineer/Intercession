@@ -42,6 +42,8 @@ namespace pleep
 
         // Derived colliders should Double-Dispatch on other->intersects
         // collisionNormal will always be in direction other -> this
+        // NOTE: This intersect check is for a STATIC collision, and does not
+        //   determine the inter-frame time of collision (for continuous resolution)
         virtual bool intersects(
             const ICollider* other, 
             const TransformComponent& thisTransform,
@@ -78,37 +80,154 @@ namespace pleep
         
         // ***** collider helpers *****
 
-        // clip clipper polygon against clipper polygon as if they are flattenned along axis
-        static void pseudo_clip_polyhedra(std::vector<glm::vec3>& clipper, std::vector<glm::vec3>& clippee, const glm::vec3& axis)
+        // clip clippee polygon against clipper polygon as if they are flattened along axis
+        static void pseudo_clip_polyhedra(const std::vector<glm::vec3>& clipper, std::vector<glm::vec3>& clippee, const glm::vec3& axis)
         {
+            // this and other must have at least 2 points
             assert(clipper.size() >= 2);
             assert(clippee.size() >= 2);
 
-            // this and other have at least 2 points,
-            // clip other manifold by this manifold completely, then average the points
+            // trace along clipper, use each edge to build a plane (combined with axis)
+            // determine which side of plane is inside 
+            //   (assuming convex shapes we can sample average of all points,
+            //    if clipper is size 2 then pass twice, alternating which side is "in")
+            // for each clipper plane, trace clippee:
+            // if clippee edge crosses plane, add a point for the edge-plane intersection to clipped
+            // if clippe edge ends on the "inside" of the plane, add end point to clipped
+
+            // determine centre of clipper
+            // given clipper is convex, it will always be the "inside" of each edge plane
+            glm::vec3 clipperCentre(0.0f);
             for (size_t i = 0; i < clipper.size(); i++)
             {
-                // build plane along thisContactManifold[i] and [i+1]
-                const glm::vec3 thisPlaneNormal = glm::normalize(glm::cross(axis, clipper[(i+1) % clipper.size()] - clipper[i]));
-                // determine the "in"-side of the plane with another polygon point
-                // if this is just a line then always clip
-                //float insideCoeff;
+                clipperCentre += clipper[i];
+            }
+            clipperCentre /= clipper.size();
 
-                // maintain other's previous coeff
-                //float prevOtherCoeff = 0;
-
-                // go through all points in other and clip them to this plane
-                for (size_t j = 0; i < clippee.size(); j++)
+            for (size_t i = 0; i < clipper.size(); i++)
+            {
+                // avoid clipping along any perpendicular edges
+                const glm::vec3 clipperEdgeTangent = glm::cross(axis, clipper[(i+1) % clipper.size()] - clipper[i]);
+                if (clipperEdgeTangent == glm::vec3(0.0f))
                 {
-                    // determine which side the point is on
-
-                    // if current point is in and prev was out
+                    continue;
                 }
 
-                // if one point of other is in and one is out, clip out to the plane
+                // build plane along clipper[i] and [i+1]
+                glm::vec4 thisPlane = glm::vec4(
+                    glm::normalize(clipperEdgeTangent),
+                    0.0f
+                );
+                // complete plane equation
+                thisPlane.w = -1.0f * 
+                    (thisPlane.x * clipper[i].x + 
+                    thisPlane.y * clipper[i].y + 
+                    thisPlane.z * clipper[i].z);
+                // determine the "inside" of the plane using clipper centre
+                float insideCoeff = 0.0f;
+                if (clipper.size() > 2)
+                {
+                    // but if it is a shape with volume use centre
+                    insideCoeff = 
+                        thisPlane.x * clipperCentre.x + 
+                        thisPlane.y * clipperCentre.y + 
+                        thisPlane.z * clipperCentre.z +
+                        thisPlane.w;
+                }
+                // if clipper is just a line then clip one side on first edge pass
+                // and clip other side on second edge pass (using a static coeff)
+                if (insideCoeff == 0.0f)
+                {
+                    insideCoeff = INFINITY;
+                }
 
-                //if (glm::intersectRayPlane(clippee[0], clippee[1] - clippee[0], clipper[i], thisPlaneNormal, ...))
-                
+                // to avoid inplace manipulating clipee
+                std::vector<glm::vec3> clipped;
+                // it may be more efficient to do it inplace? but more complicated
+
+                // maintain previous clippee coeff
+                float prevClippeeCoeff = -INFINITY;
+
+                // for first point ONLY check for edge end
+                // but return to first point again at the end, ONLY checking for plane crossing
+                // all other points check both
+                for (size_t j = 0; j < clippee.size() + 1; j++)
+                {
+                    // if clippee is a line segment (only 2 verticies)
+                    // don't check past second point (it is the same edge)
+                    if (clippee.size() == 2 && j >= 2)
+                    {
+                        break;
+                    }
+
+                    // get j that accounts for wrapping
+                    size_t J = j % clippee.size();
+                    // determine which side the point is on
+                    float clippeeCoeff = 
+                        thisPlane.x * clippee[J].x + 
+                        thisPlane.y * clippee[J].y + 
+                        thisPlane.z * clippee[J].z +
+                        thisPlane.w;
+
+                    // determine case for this edge
+                    // buffer for floating point/rounding error, preferring inside
+                    const float e = 0.000001f;
+                    const bool prevInside = (prevClippeeCoeff >= 0-e && insideCoeff >= 0-e)
+                                         || (prevClippeeCoeff <= 0+e && insideCoeff <= 0+e);
+                    const bool currInside = (clippeeCoeff     >= 0-e && insideCoeff >= 0-e)
+                                         || (clippeeCoeff     <= 0+e && insideCoeff <= 0+e);
+
+                    // we only need inside info, set this for next edge
+                    prevClippeeCoeff = clippeeCoeff;
+
+                    // if current is in  & previous is in
+                    //      add current
+                    // if current is in  & previous is out
+                    //      add intersection, and add current
+                    // if current is out & previous is in
+                    //      add intersection
+                    // if current is out & previous is out
+                    //      continue
+
+                    // clippee crosses from inside to outside plane or visa-versa (^ -> XOR)
+                    //  (don't check intercept on first vertex)
+                    if ((currInside ^ prevInside) && j != 0)
+                    {
+                        // ensure ray is outside -> inside
+                        glm::vec3 insideVertex = clippee[(J-1) % clippee.size()];
+                        glm::vec3 outsideVertex = clippee[J];
+                        if (currInside)
+                        {
+                            insideVertex = clippee[J];
+                            outsideVertex = clippee[(J-1) % clippee.size()];
+                        }
+
+                        // find & add intersection
+                        glm::vec3 edgeDirection = glm::normalize(insideVertex - outsideVertex);
+                        float intersectDist;
+                        if (glm::intersectRayPlane(
+                            outsideVertex, edgeDirection, 
+                            clipper[i], glm::vec3(thisPlane.x, thisPlane.y, thisPlane.z),
+                            intersectDist))
+                        {
+                            clipped.push_back(outsideVertex + edgeDirection*intersectDist);
+                        }
+                        else
+                        {
+                            PLEEPLOG_WARN("intersectRayPlane did not find a solution. Coefficient determinant failed or manifolds aren't convex.");
+                        }
+                    }
+                    
+                    // after checking crossing, if we land inside add that vertex
+                    //  (don't check current on second pass of first index)
+                    if (currInside && j < clippee.size())
+                    {
+                        clipped.push_back(clippee[J]);
+                    }
+                }
+
+                // set clippee as clipped for next clipper edge
+                clippee = clipped;
             }
         }
     };
