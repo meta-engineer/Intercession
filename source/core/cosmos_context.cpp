@@ -286,19 +286,19 @@ namespace pleep
         floor_physics.mass = 5.0f * 500.0f;
         floor_physics.isDynamic = false;
         
-        Entity floor2 = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(floor2, TransformComponent(glm::vec3(5.01f, -2.525f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(floor2).orientation = 
+        Entity snow = m_currentCosmos->create_entity();
+        m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.525f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(floor2).scale = glm::vec3(5.0f, 5.0f, 0.05f);
-        m_currentCosmos->add_component(floor2, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
-        m_currentCosmos->add_component(floor2, PhysicsComponent{});
-        PhysicsComponent& floor2_physics = m_currentCosmos->get_component<PhysicsComponent>(floor2);
-        floor2_physics.collider = std::make_shared<BoxCollider>();
+        m_currentCosmos->get_component<TransformComponent>(snow).scale = glm::vec3(5.0f, 5.0f, 0.05f);
+        m_currentCosmos->add_component(snow, ModelComponent(model_builder::create_quad("resources/snow-packed12-Base_Color.png", "resources/snow-packed12-Specular.png", "resources/snow-packed12-normal-ogl.png", "resources/snow-packed12-Height.png")));
+        m_currentCosmos->add_component(snow, PhysicsComponent{});
+        PhysicsComponent& snow_physics = m_currentCosmos->get_component<PhysicsComponent>(snow);
+        snow_physics.collider = std::make_shared<BoxCollider>();
         // TODO: what mass to assign to non-dynamic objects?
         // TODO: in general generate mass from known density
-        floor2_physics.mass = 5.0f * 500.0f;
-        floor2_physics.isDynamic = false;
+        snow_physics.mass = 5.0f * 500.0f;
+        snow_physics.isDynamic = false;
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
@@ -308,9 +308,13 @@ namespace pleep
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 2.5f, 6.0f)));
+        m_currentCosmos->add_component(mainCamera, PhysicsComponent{});
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         //m_currentCosmos->add_component(mainCamera, ControlComponent{});
+        //ControlComponent& mainCamera_control = m_currentCosmos->get_component<ControlComponent>(mainCamera);
+        //mainCamera_control.target = snow;
+        //mainCamera_control.relayType = SotcCameraControlRelay;
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker

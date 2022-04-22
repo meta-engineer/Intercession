@@ -10,6 +10,7 @@ namespace pleep
         , m_windowApi(windowApi)
         // setup relays with access to my input buffers (we need to ecplicitly know which buffers relay needs)
         , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))
+        , m_cameraController(std::make_unique<SotcCameraControlRelay>(m_spacialInputBuffer))
     {
         PLEEPLOG_TRACE("Setup Control pipeline");
         // we have "lease" of api to override callbacks
@@ -28,7 +29,9 @@ namespace pleep
     
     void ControlDynamo::submit(ControlPacket data) 
     {
+        // dispatch packet to designated relay
         m_flyController->submit(data);
+        //m_cameraController->submit(data);
     }
 
     void ControlDynamo::run_relays(double deltaTime) 
@@ -42,6 +45,7 @@ namespace pleep
 
         // run through each relay in my configuration
         m_flyController->engage(deltaTime);
+        m_cameraController->engage(deltaTime);
 
         // prepare input for next frame
         // key members should be cleared on "release"

@@ -8,6 +8,7 @@
 #include "core/i_dynamo.h"
 #include "controlling/control_packet.h"
 #include "controlling/fly_control_relay.h"
+#include "controlling/sotc_camera_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 
 namespace pleep
@@ -62,6 +63,7 @@ namespace pleep
         // TODO: this should probably be in a specific ControlDynamo subclass built by the context
         // TODO: I should source these from some sort of relay library
         std::unique_ptr<FlyControlRelay> m_flyController;
+        std::unique_ptr<SotcCameraControlRelay> m_cameraController;
     };
 }
 

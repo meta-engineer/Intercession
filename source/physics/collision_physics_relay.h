@@ -22,12 +22,18 @@ namespace pleep
             for (std::vector<PhysicsPacket>::iterator thisPacket_it = m_physicsPackets.begin(); thisPacket_it != m_physicsPackets.end(); thisPacket_it++)
             {
                 PhysicsPacket& thisData = *thisPacket_it;
+                if (thisData.physics.collider == nullptr)
+                    continue;
 
                 // no spacial partitioning :(
                 for (std::vector<PhysicsPacket>::iterator otherPacket_it = thisPacket_it + 1; otherPacket_it != m_physicsPackets.end(); otherPacket_it++)
                 {
                     assert(otherPacket_it != thisPacket_it);
                     PhysicsPacket& otherData = *otherPacket_it;
+
+                    // check if object has a collider
+                    if (otherData.physics.collider == nullptr)
+                        continue;
 
                     // STEP 0: Get collision data
                     glm::vec3 collisionNormal;
