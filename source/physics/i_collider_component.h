@@ -1,5 +1,5 @@
-#ifndef I_COLLIDER_H
-#define I_COLLIDER_H
+#ifndef I_COLLIDER_COMPONENT_H
+#define I_COLLIDER_COMPONENT_H
 
 //#include "intercession_pch.h"
 #include <memory>
@@ -11,11 +11,8 @@
 
 namespace pleep
 {
-    // we want a singular class pointer to store in component,
-    // but we also need specific data individual to each type,
-    // intersect method needs to double dispatch both colliders
-
-    enum ColliderType
+    // subclasses need to "register" themselves here
+    enum class ColliderType
     {
         none,
         //AABB,
@@ -23,44 +20,64 @@ namespace pleep
         //sphere,
         //mesh
     };
-
+    
     // Forward declare all class types to dispatch to
-    //class AABBCollider;
-    class BoxCollider;
-    //class SphereCollider;
-    //class MeshCollider;
+    //struct AABBColliderComponent;
+    struct BoxColliderComponent;
+    //struct SphereColliderComponent;
+    //struct MeshColliderComponent;
 
-    class ICollider
+    struct IColliderComponent
     {
-    public:
-        // type should be none if subclass forgets to define it
-        ICollider(const ColliderType thisType = ColliderType::none)
-            : type(thisType)
-        {}
-        // immutable type for identifying ICollider pointer
-        const ColliderType type;
+        // ***** Universal collider attributes *****
+        // Suggestion to Dynamo for how to respond to a detected collision
+        // This may be best implemented with a table/map between response type pairs and functions
+        //CollisionResponseType responseType;
 
-        // Derived colliders should Double-Dispatch on other->intersects
-        // collisionNormal will always be in direction other -> this
-        // NOTE: This intersect check is for a STATIC collision, and does not
-        //   determine the inter-frame time of collision (for continuous resolution)
-        virtual bool intersects(
-            const ICollider* other, 
+        // nested transform component "offset" (in local space) from entity's origin
+        // Transform scale makes geometrically defined collider shapes 
+        // NOTE: centre of mass may or may not correlate
+        TransformComponent m_localTransform;
+        
+        
+        // "Getter" for inertia tensor
+        // Does not include mass or density
+        virtual glm::mat3 get_inertia_tensor() const
+        {
+            // we'll use a unit sphere as default
+            return glm::mat3(2.0f/5.0f);
+        }
+        
+        // "Read-only" type
+        // no default implementation, subclasses must have a registered type!
+        // Virtual functions ARE SLOWER, but we actually need dispatch from interface pointer
+        // can be replaced with unprotected variable for optimization
+        virtual const ColliderType get_type() const = 0;
+
+        // ***** Intersection methods *****
+        // TODO: virtual method dispatching may be inefficient
+        // It may be optimal to have a custom function dispatch table in the dynamo...
+
+        // Double-Dispatch derived colliders
+        // collisionNormal will always be in the direction of other -> this
+        // For now specify non-continuous (static) time intersection detection
+        virtual bool static_intersect(
+            const IColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
             glm::vec3& collisionPoint) const = 0;
 
-        virtual bool intersects(
-            const BoxCollider* other, 
+        virtual bool static_intersect(
+            const BoxColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
             glm::vec3& collisionPoint) const
         {
-            PLEEPLOG_WARN("No implementation for collision between type (?) and BoxCollider");
+            PLEEPLOG_WARN("No implementation for collision between this type (?) and BoxColliderComponent");
             UNREFERENCED_PARAMETER(other);
             UNREFERENCED_PARAMETER(thisTransform);
             UNREFERENCED_PARAMETER(otherTransform);
@@ -70,21 +87,8 @@ namespace pleep
             return false;
         }
 
-        // Does not include mass or density
-        virtual glm::mat3 getInertiaTensor() const
-        {
-            // we'll use a unit sphere as default
-            return glm::mat3(2.0f/5.0f);
-        }
-
-        // ***** Universal collider attributes *****
-
-        // nested transform component "offset" from the local space of entity
-        // entities centre is still centre of mass?
-        TransformComponent m_offsetTransform;
-        
-        // ***** collider helpers *****
-
+        // ***** collider helper utils *****
+        // TODO: this might be better placed in some physics/3d/geometry utils file
         // clip clippee polygon against clipper polygon as if they are flattened along axis
         static void pseudo_clip_polyhedra(const std::vector<glm::vec3>& clipper, std::vector<glm::vec3>& clippee, const glm::vec3& axis)
         {
@@ -236,7 +240,6 @@ namespace pleep
             }
         }
     };
-
 }
 
-#endif // I_COLLIDER_H
+#endif // I_COLLIDER_COMPONENT_H

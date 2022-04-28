@@ -12,12 +12,12 @@
 
 namespace pleep
 {
-    void RenderSynchro::update(double deltaTime)
+    void RenderSynchro::update()
     {
         // No owner is a fatal error
         if (m_ownerCosmos == nullptr)
         {
-            PLEEPLOG_ERROR("Render Synchro does not owner Cosmos");
+            PLEEPLOG_ERROR("Render Synchro has no owner Cosmos");
             throw std::runtime_error("Render Synchro started update without owner Cosmos");
         }
 
@@ -60,11 +60,8 @@ namespace pleep
             }
         }
 
-        // once command queue is implemented this will flush them through relays
-        m_attachedRenderDynamo->run_relays(deltaTime);
-
-        // Do not flush Dynamo yet as other components (Context) may draw further
-        // and then Context will flush at frame end
+        // CosmosContext will flush dynamo relays once all synchros are done
+        // Other components (Context) may draw further and then Context will flush at frame end
     }
     
     void RenderSynchro::attach_dynamo(RenderDynamo* contextDynamo) 

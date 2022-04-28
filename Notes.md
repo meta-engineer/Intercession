@@ -93,7 +93,7 @@ localVariables:     camelCase
 functionParameters: camelCase (even if they are const)
 classVariables:     camelCase (m_ prefix would be clear but i don't like it)
 g_globalVariables:  g_ prefix or other relevant, camelCase
-static_variables:   static_ prefix, camelCase
+static::variables:  use class namespace resolution, camelCase
 CONST_DEFINITIONS:  UPPER_WITH_UNDER (may be confusing with macros) (again not function params)
 #MACRO_DEFINES:     UPPER_WITH_UNDER
 

@@ -10,6 +10,7 @@
 #include "events/event_broker.h"
 #include "physics/physics_packet.h"
 #include "physics/euler_physics_relay.h"
+#include "physics/collider_packet.h"
 #include "physics/collision_physics_relay.h"
 
 namespace pleep
@@ -22,6 +23,9 @@ namespace pleep
 
         // pass in all physics information
         void submit(PhysicsPacket data);
+
+        // pass in all collider information
+        void submit(ColliderPacket data);
 
         // process render command queue
         void run_relays(double deltaTime) override;

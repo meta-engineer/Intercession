@@ -22,19 +22,23 @@ namespace pleep
     
     void PhysicsDynamo::submit(PhysicsPacket data) 
     {
-        // continue to build quad tree?
-
-        // dispatch to physics relays
+        // dispatch to motion integration relays
+        // *All packets to improved euler relay
         m_motionStep->submit(data);
-        
-        if (data.physics.collider != nullptr)
-            m_collisionStep->submit(data);
+    }
+    
+    void PhysicsDynamo::submit(ColliderPacket data)
+    {
+        // build BVH in dynamo? or pass BVH container to a broad phase relay?
+
+        // *All packets to narrow phase for now
+        m_collisionStep->submit(data);
     }
     
     void PhysicsDynamo::run_relays(double deltaTime) 
     {
-        // quadtree is now built? process all physical processes
-
+        // BVH is now built? process all physical processes
+        
 #define FIXED_TIME_STEP
 #ifdef FIXED_TIME_STEP
         size_t stepsTaken = 0;

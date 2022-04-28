@@ -1,14 +1,13 @@
-#ifndef PHYSICS_SYNCHRO_H
-#define PHYSICS_SYNCHRO_H
+#ifndef BOX_COLLIDER_SYNCHRO_H
+#define BOX_COLLIDER_SYNCHRO_H
 
 //#include "intercession_pch.h"
 #include "ecs/i_synchro.h"
 #include "physics/physics_dynamo.h"
 
-
 namespace pleep
 {
-    class PhysicsSynchro : public ISynchro
+    class BoxColliderSynchro : public ISynchro
     {
     public:
         // explicitly inherit constructors
@@ -28,4 +27,4 @@ namespace pleep
     };
 }
 
-#endif // PHYSICS_SYNCHRO_H
+#endif // BOX_COLLIDER_SYNCHRO_H

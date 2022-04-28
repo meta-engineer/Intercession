@@ -18,7 +18,7 @@ namespace pleep
 
         // initalize control related window config
         // set mouse capture mode
-        glfwSetInputMode(m_windowApi, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(m_windowApi, GLFW_CURSOR, m_glfwMouseMode);
         
         PLEEPLOG_TRACE("Done Control pipeline setup");
     }
@@ -27,11 +27,30 @@ namespace pleep
     {
     }
     
-    void ControlDynamo::submit(ControlPacket data) 
+    void ControlDynamo::submit(CameraControlPacket data)
     {
         // dispatch packet to designated relay
-        m_flyController->submit(data);
-        //m_cameraController->submit(data);
+        switch (data.controller.m_type)
+        {
+            case CameraControlType::sotc:
+                m_cameraController->submit(data);
+                break;
+            default:
+                PLEEPLOG_WARN("Dynamo has no handler for Camera Controller type: " + std::to_string(data.controller.m_type) + ". Default behaviour is to ignore.");
+        }
+    }
+
+    void ControlDynamo::submit(PhysicsControlPacket data)
+    {
+        // dispatch packet to designated relay
+        switch (data.controller.m_type)
+        {
+            case PhysicsControlType::position:
+                m_flyController->submit(data);
+                break;
+            default:
+                PLEEPLOG_WARN("Dynamo has no handler for Physics Controller type: " + std::to_string(data.controller.m_type) + ". Default behaviour is to ignore.");
+        }
     }
 
     void ControlDynamo::run_relays(double deltaTime) 
@@ -42,6 +61,12 @@ namespace pleep
         glfwPollEvents();
 
         // callbacks will have translated raw input into input buffers now
+
+        // Only send SpacialActions with locked mouse
+        if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
+        {
+            m_spacialInputBuffer.clear();
+        }
 
         // run through each relay in my configuration
         m_flyController->engage(deltaTime);
@@ -199,9 +224,22 @@ namespace pleep
         // we''l probably NEVER want to use keyboard auto-repeat (maybe for typing?)
         if (action == GLFW_REPEAT) return;
 
+        // Hardcoded actions
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
             this->_window_should_close_callback(w);
+        }
+        if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
+        {
+            if (m_glfwMouseMode != GLFW_CURSOR_NORMAL)
+            {
+                m_glfwMouseMode = GLFW_CURSOR_NORMAL;
+            }
+            else
+            {
+                m_glfwMouseMode = GLFW_CURSOR_DISABLED;
+            }
+            glfwSetInputMode(m_windowApi, GLFW_CURSOR, m_glfwMouseMode);
         }
 
         // fill input buffer actions

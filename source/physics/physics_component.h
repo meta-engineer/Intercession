@@ -4,7 +4,7 @@
 //#include "intercession_pch.h"
 #include <glm/glm.hpp>
 #include "ecs/ecs_types.h"
-#include "physics/i_collider.h"
+#include "physics/i_collider_component.h"
 
 namespace pleep
 {
@@ -30,10 +30,18 @@ namespace pleep
     struct PhysicsComponent
     {
         // Motion attributes
-        glm::vec3 velocity;
-        glm::vec3 acceleration;
-        glm::vec3 angularVelocity;      // in RADS! Quaternion?
-        glm::vec3 angularAcceleration;  // in RADS! Quaternion?
+        glm::vec3 velocity              = glm::vec3(0.0f);
+        glm::vec3 acceleration          = glm::vec3(0.0f);
+        glm::vec3 angularVelocity       = glm::vec3(0.0f);  // in RADS!
+        glm::vec3 angularAcceleration   = glm::vec3(0.0f);  // in RADS!
+
+        // Drag Factors. 
+        // TODO: Can these be determined by the environment (eg. air vs water)
+        float linearDrag            = 0.00f;
+        float angularDrag           = 0.00f;
+        // only applied after collision resolution
+        float collisionLinearDrag   = 0.00f;
+        float collisionAngularDrag  = 0.03f;
 
         // Material attributes
         // we may want to be able to define some model of non-uniform density
@@ -47,15 +55,7 @@ namespace pleep
         //float dynamicFrictionCoeff = 0.30f;
 
         // does entity update velocity/position
-        bool isDynamic = true;
-
-        // Interaction attributes
-        std::shared_ptr<ICollider> collider = nullptr;
-        // collider behaviour
-        //bool isTrigger = false;
-        //Entity onTrigger = NULL_ENTITY;
-        // could use a function pointer? finding the script component SHOULD only be O(1)
-         
+        bool isAsleep = false;
     };
 }
 

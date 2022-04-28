@@ -1,40 +1,67 @@
-#ifndef BOX_COLLIDER_H
-#define BOX_COLLIDER_H
+#ifndef BOX_COLLIDER_COMPONENT_H
+#define BOX_COLLIDER_COMPONENT_H
 
 //#include "intercession_pch.h"
 #include <string>
 #include <array>
 
-#include "physics/i_collider.h"
+#include "physics/i_collider_component.h"
 #include "logging/pleep_log.h"
 
 namespace pleep
 {
-    class BoxCollider : public ICollider
+    struct BoxColliderComponent : public IColliderComponent
     {
-    public:
-        BoxCollider()
-            : ICollider(ColliderType::box)
-            , m_dimensions(glm::vec3(0.5f))
-        {
-        }
-        // dimensions is actually optional with default glm::vec3(0.5f) (aka. all sidelengths 1.0)
-        BoxCollider(glm::vec3 dimensions)
-            : BoxCollider()
+        // dimensions default 0.5i, 0.5j, 0.5k (aka. all sidelengths 1.0)
+        BoxColliderComponent(glm::vec3 dimensions = glm::vec3(0.5f))
         {
             m_dimensions = dimensions;
         }
+        
+        // ***** Box specific Attributes *****
+        // distance each face is from origin (in local space) like a radius
+        // opposite faces will be uniform distance from entity origin
+        glm::vec3 m_dimensions;
 
+    private:
+        // callibrations for manifold checking
+        // depth of contact manifold to captures edges at non-perfect angles
+        //   (in units of dot product with normal, not actual distance units)
+        float m_manifoldDepth = 0.04f;
+        // percentage weight of verticies at the max manifold depth
+        float m_manifoldMinWeight = 0.80f;
+
+    public:
+        // Does not include mass or density
+        inline virtual glm::mat3 get_inertia_tensor() const override
+        {
+            glm::mat3 I(0.0f);
+            // x=width, y=height, z=depth
+            // coefficient of 12 is "real", lower (more resistant) may be needed for stability
+            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
+            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
+            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
+            return I;
+        }
+        
+        const ColliderType get_type() const override
+        {
+            return ColliderType::box;
+        }
+
+
+        // ***** Intersection methods *****
+        // Implement dispatches for other collider types
         // Double dispatch other
-        bool intersects(
-            const ICollider* other, 
+        bool static_intersect(
+            const IColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
             glm::vec3& collisionPoint) const override
         {
-            if (other->intersects(this, otherTransform, thisTransform, collisionNormal, collisionDepth, collisionPoint))
+            if (other->static_intersect(this, otherTransform, thisTransform, collisionNormal, collisionDepth, collisionPoint))
             {
                 // any integral return values should be inverted due to double dispatch
                 collisionNormal *= -1.0f;
@@ -43,16 +70,14 @@ namespace pleep
             return false;
         }
         
-        bool intersects(
-            const BoxCollider* other, 
+        bool static_intersect(
+            const BoxColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
             glm::vec3& collisionPoint) const override
         {
-            // TODO: dynamic switch between algorithms
-
             // SAT algorithm (actually Separating Plane Theorum)
             // we can optimize SPT given our polyhedra are rectangular prisms
             // the size of the projected interval of a prism along its own face normal
@@ -69,9 +94,9 @@ namespace pleep
             // projection of v1 onto v2:
             // v1_proj = cos(angle) * |v1| * norm(v2)
 
-            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform() * this->m_offsetTransform.get_model_transform();
+            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform() * this->m_localTransform.get_model_transform();
             glm::mat3 thisNormalTransform  = glm::transpose(glm::inverse(glm::mat3(thisLocalTransform)));
-            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform() * other->m_offsetTransform.get_model_transform();
+            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform() * other->m_localTransform.get_model_transform();
             glm::mat3 otherNormalTransform = glm::transpose(glm::inverse(glm::mat3(otherLocalTransform)));
 
             std::array<glm::vec3, 15> axes;
@@ -187,7 +212,7 @@ namespace pleep
                 //PLEEPLOG_WARN("Non trivial Manifolds... expect something to go wrong!");
 
                 // use this' manifold to clip other's manifold
-                ICollider::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
+                IColliderComponent::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
 
                 // something went wrong :(
                 assert(!otherContactManifold.empty());
@@ -260,6 +285,9 @@ namespace pleep
             // we should never get here
             return false;
         }
+
+    private:
+        // ***** intersection helper methods *****
 
         // return the coefficents (lengths) of the interval of the box collider's projection along an axis
         glm::vec2 project_self(const glm::mat4& thisTrans, const glm::vec3& axis) const
@@ -362,29 +390,7 @@ namespace pleep
                 }
             }
         }
-
-        // Does not include mass or density
-        virtual glm::mat3 getInertiaTensor() const override
-        {
-            glm::mat3 I(0.0f);
-            // x=width, y=height, z=depth
-            // coefficient of 12 is "real", lower (more resistant) may be needed for stability
-            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
-            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
-            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
-            return I;
-        }
-
-        // distance each face is from origin (in local space) like a radius
-        // opposite faces will be uniform distance from entity origin
-        glm::vec3 m_dimensions;
-
-        // depth of contact manifold that captures edges at sufficient non-perfect angles
-        //   (in units of dot product with normal, not actual distance units)
-        const float m_manifoldDepth = 0.04f;
-        // percentage weight of verticies at the max manifold depth
-        const float m_manifoldMinWeight = 0.80f;
     };
 }
 
-#endif // BOX_COLLIDER_H
+#endif // BOX_COLLIDER_COMPONENT_H

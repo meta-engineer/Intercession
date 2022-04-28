@@ -20,8 +20,10 @@ set(ALL_SOURCE_FILES
     source/rendering/shader_manager.cpp
 
     source/controlling/control_dynamo.cpp
-    source/controlling/control_synchro.cpp
+    source/controlling/camera_control_synchro.cpp
+    source/controlling/physics_control_synchro.cpp
 
     source/physics/physics_dynamo.cpp
     source/physics/physics_synchro.cpp
+    source/physics/box_collider_synchro.cpp
 )

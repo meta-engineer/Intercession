@@ -4,8 +4,11 @@
 //#include "intercession_pch.h"
 #include <vector>
 
-#include "physics/i_physics_relay.h"
 #include "logging/pleep_log.h"
+#include "physics/i_physics_relay.h"
+#include "physics/collider_packet.h"
+#include "physics/physics_component.h"
+#include "core/cosmos.h"
 
 namespace pleep
 {
@@ -19,20 +22,20 @@ namespace pleep
             // unused for discrete collision detection
             UNREFERENCED_PARAMETER(deltaTime);
 
-            for (std::vector<PhysicsPacket>::iterator thisPacket_it = m_physicsPackets.begin(); thisPacket_it != m_physicsPackets.end(); thisPacket_it++)
+            for (std::vector<ColliderPacket>::iterator thisPacket_it = m_colliderPackets.begin(); thisPacket_it != m_colliderPackets.end(); thisPacket_it++)
             {
-                PhysicsPacket& thisData = *thisPacket_it;
-                if (thisData.physics.collider == nullptr)
+                ColliderPacket& thisData = *thisPacket_it;
+                if (thisData.collider->get_type() == ColliderType::none)
                     continue;
 
                 // no spacial partitioning :(
-                for (std::vector<PhysicsPacket>::iterator otherPacket_it = thisPacket_it + 1; otherPacket_it != m_physicsPackets.end(); otherPacket_it++)
+                for (std::vector<ColliderPacket>::iterator otherPacket_it = thisPacket_it + 1; otherPacket_it != m_colliderPackets.end(); otherPacket_it++)
                 {
                     assert(otherPacket_it != thisPacket_it);
-                    PhysicsPacket& otherData = *otherPacket_it;
+                    ColliderPacket& otherData = *otherPacket_it;
 
-                    // check if object has a collider
-                    if (otherData.physics.collider == nullptr)
+                    // check other collider type (for removing double-dispatch later)
+                    if (otherData.collider->get_type() == ColliderType::none)
                         continue;
 
                     // STEP 0: Get collision data
@@ -40,8 +43,8 @@ namespace pleep
                     float collisionDepth;
                     glm::vec3 collisionPoint;
                     // Colliders double dispatch to their true type
-                    // we can change intersection algorithm at runtime with a static collider member
-                    if (!(thisData.physics.collider->intersects(otherData.physics.collider.get(), thisData.transform, otherData.transform, collisionNormal, collisionDepth, collisionPoint)))
+                    // we could change intersection algorithm at runtime with a static collider member
+                    if (!(thisData.collider->static_intersect(otherData.collider, thisData.transform, otherData.transform, collisionNormal, collisionDepth, collisionPoint)))
                     {
                         continue;
                     }
@@ -51,13 +54,21 @@ namespace pleep
                     //PLEEPLOG_DEBUG("Collision Depth: " + std::to_string(collisionDepth));
                     //PLEEPLOG_DEBUG("This @: " + std::to_string(thisData.transform.origin.x) + ", " + std::to_string(thisData.transform.origin.y) + ", " + std::to_string(thisData.transform.origin.z));
                     //PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
+
+                    // Now we need to forward these collisions to be resolved according to the collider's
+                    // response type. ALSO, that may require fetching another component
                     
+                    // For now we'll always do rigid body response
+                    // TODO: Make this exception safe! colliders without physics components will throw!
+                    PhysicsComponent& thisPhysics = thisData.owner->get_component<PhysicsComponent>(thisData.collidee);
+                    PhysicsComponent& otherPhysics = otherData.owner->get_component<PhysicsComponent>(otherData.collidee);
 
                     // STEP 1: Fetch entity properties
                     // STEP 1.1: material physics properties
                     float massFactor;
-                    bool thisImmutable = thisData.physics.mass == INFINITE_MASS || !thisData.physics.isDynamic;
-                    bool otherImmutable = otherData.physics.mass == INFINITE_MASS || !otherData.physics.isDynamic;
+                    // TODO: use collider's resolution type instead of sleep state
+                    bool thisImmutable = thisPhysics.mass == INFINITE_MASS || thisPhysics.isAsleep;
+                    bool otherImmutable = otherPhysics.mass == INFINITE_MASS || otherPhysics.isAsleep;
                     if (thisImmutable && otherImmutable)
                         continue;   // no possible resolution
                     else if (thisImmutable)
@@ -65,19 +76,19 @@ namespace pleep
                     else if (otherImmutable)
                         massFactor = 0;
                     else
-                        massFactor = thisData.physics.mass/(thisData.physics.mass + otherData.physics.mass);
+                        massFactor = thisPhysics.mass/(thisPhysics.mass + otherPhysics.mass);
                     //PLEEPLOG_DEBUG("MassFactor of this: " + std::to_string(massFactor));
                     
                     float thisInvMass = 0;
                     if (!thisImmutable)
                     {
-                        thisInvMass = 1.0f/thisData.physics.mass;
+                        thisInvMass = 1.0f/thisPhysics.mass;
                     }
                     //PLEEPLOG_DEBUG("this inverse mass: " + std::to_string(thisInvMass));
                     float otherInvMass = 0;
                     if (!otherImmutable)
                     {
-                        otherInvMass = 1.0f/otherData.physics.mass;
+                        otherInvMass = 1.0f/otherPhysics.mass;
                     }
                     //PLEEPLOG_DEBUG("other inverse mass: " + std::to_string(otherInvMass));
                     
@@ -93,14 +104,22 @@ namespace pleep
                     //   abide by the stability of the dynamic resolution, this can only be fixed with
                     //   a continuous intersect detection and continuous resolution, so its a major refactor
                     // collisionNormal is in direction away from "other", towards "this"
+
+                    // STEP 2.1: resolve transform origin and collision point (on other)
                     thisData.transform.origin  += collisionNormal * collisionDepth * (1-massFactor);
                     otherData.transform.origin -= collisionNormal * collisionDepth * massFactor;
                     collisionPoint             -= collisionNormal * collisionDepth * massFactor;
 
+                    // STEP 2.2: regenerate centre of masses after static resolution
+                    // TODO: for a compound collider this will be more involved
+                    //   for now take entity origin + collider origin?
+                    const glm::vec3 thisCentreOfMass = thisData.transform.origin;
+                    const glm::vec3 otherCentreOfMass = otherData.transform.origin;
+
                     // STEP 3: geometry properties
                     // STEP 3.1: vector describing the "radius" of the rotation
-                    const glm::vec3 thisLever = (collisionPoint - thisData.transform.origin);
-                    const glm::vec3 otherLever = (collisionPoint - otherData.transform.origin);
+                    const glm::vec3 thisLever = (collisionPoint - thisCentreOfMass);
+                    const glm::vec3 otherLever = (collisionPoint - otherCentreOfMass);
 
                     //PLEEPLOG_DEBUG("This lever: " + std::to_string(thisLever.x) + ", " + std::to_string(thisLever.y) + ", " + std::to_string(thisLever.z));
                     //PLEEPLOG_DEBUG("Length of this lever: " + std::to_string(glm::length(thisLever)));
@@ -110,11 +129,13 @@ namespace pleep
 
                     // STEP 3.2: angular inertia/moment
                     // TODO: can this be optimized? inverse of inverse :(
+                    // TODO: moment doesn't behave correct with scaled transforms
+                    //   (and maybe also collider offset transforms)
                     const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform()));
                     const glm::mat3 thisInvMoment = thisImmutable ? glm::mat3(0.0f) 
                         : glm::inverse(
                             glm::transpose(thisInverseModel) 
-                            * (thisData.physics.collider->getInertiaTensor() * thisData.physics.mass)
+                            * (thisData.collider->get_inertia_tensor() * thisPhysics.mass)
                             * thisInverseModel
                         );
 
@@ -122,13 +143,13 @@ namespace pleep
                     const glm::mat3 otherInvMoment = otherImmutable ? glm::mat3(0.0f)
                         : glm::inverse(
                             glm::transpose(otherInverseModel)
-                            * (otherData.physics.collider->getInertiaTensor() * otherData.physics.mass)
+                            * (otherData.collider->get_inertia_tensor() * otherPhysics.mass)
                             * otherInverseModel
                         );
 
                     // STEP 3.3 relative velocity vector
                     // relative is: this' velocity as viewed by other
-                    const glm::vec3 relVelocity = ((thisData.physics.velocity + glm::cross(thisData.physics.angularVelocity, thisLever)) - (otherData.physics.velocity + glm::cross(otherData.physics.angularVelocity, otherLever)));
+                    const glm::vec3 relVelocity = ((thisPhysics.velocity + glm::cross(thisPhysics.angularVelocity, thisLever)) - (otherPhysics.velocity + glm::cross(otherPhysics.angularVelocity, otherLever)));
                     //PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
 
@@ -188,31 +209,31 @@ namespace pleep
                     //const float flatDamping = 0.01f;
 
                     // linear percentage damping
-                    const float percentDamping = 0.98f;
+                    //const float percentDamping = 0.98f;
 
                     // exponential damping which is stronger approaching 0 relative velocity at collision point
                     //const float invDampingStrength = 32;
                     //const float dynamicDamping = calculate_damping(relVelocity, invDampingStrength);
 
                     // exponential damping relative to difference of angular velocity
-                    //const float relativeAV2 = glm::length2(thisData.physics.angularVelocity - otherData.physics.angularVelocity);
+                    //const float relativeAV2 = glm::length2(thisPhysics.angularVelocity - otherPhysics.angularVelocity);
                     //const float avDamping = -1.0f / (1.0f + relativeAV2 * invDampingStrength) + 1.0f;
 
 
                     // STEP 7: dynamic resolution
                     // STEP 7.1: resolve linear normal impulse response
-                    thisData.physics.velocity  += thisInvMass * (contactImpulse*collisionNormal);
-                    otherData.physics.velocity -= otherInvMass * (contactImpulse*collisionNormal);
+                    thisPhysics.velocity  += thisInvMass * (contactImpulse*collisionNormal);
+                    otherPhysics.velocity -= otherInvMass * (contactImpulse*collisionNormal);
 
                     // STEP 7.2 resolve linear friction impulse response
-                    thisData.physics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
-                    otherData.physics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
+                    thisPhysics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
+                    otherPhysics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
                     // STEP 7.3: resolve angular normal impulse response
                     const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*collisionNormal));
                     const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*collisionNormal));
-                    thisData.physics.angularVelocity  += thisAngularNormalImpulse;
-                    otherData.physics.angularVelocity -= otherAngularNormalImpulse;
+                    thisPhysics.angularVelocity  += thisAngularNormalImpulse;
+                    otherPhysics.angularVelocity -= otherAngularNormalImpulse;
                     
                     //PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
                     //PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
@@ -221,13 +242,13 @@ namespace pleep
                     // STEP 7.4 resolve angular friction impulse response
                     const glm::vec3 thisAngularFrictionImpulse  = thisInvMoment * glm::cross(thisLever, (frictionImpulse*collisionTangent));
                     const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
-                    thisData.physics.angularVelocity  += thisAngularFrictionImpulse;
-                    otherData.physics.angularVelocity -= otherAngularFrictionImpulse;
+                    thisPhysics.angularVelocity  += thisAngularFrictionImpulse;
+                    otherPhysics.angularVelocity -= otherAngularFrictionImpulse;
 
                     // STEP 7.5: apply angular dampening
                     // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
-                    thisData.physics.angularVelocity  *= percentDamping;
-                    otherData.physics.angularVelocity *= percentDamping;
+                    thisPhysics.angularVelocity  *= 1.0f - thisPhysics.collisionAngularDrag;
+                    otherPhysics.angularVelocity *= 1.0f - otherPhysics.collisionAngularDrag;
                     
                     //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
                     //PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
@@ -236,6 +257,7 @@ namespace pleep
             }
         }
 
+        // potentially useful exponential damping factor?
         static float calculate_damping(glm::vec3 vector, float invFactor)
         {
             return -1.0f / (1.0f +
@@ -246,20 +268,20 @@ namespace pleep
 
         
         // store in a simple queue for now
-        void submit(PhysicsPacket data) override
+        void submit(ColliderPacket data)
         {
-            m_physicsPackets.push_back(data);
+            m_colliderPackets.push_back(data);
         }
 
         // clear packets for next frame
         void clear() override
         {
-            m_physicsPackets.clear();
+            m_colliderPackets.clear();
         }
 
     private:
         // TODO: hey dumb dumb figure out RTrees
-        std::vector<PhysicsPacket> m_physicsPackets;
+        std::vector<ColliderPacket> m_colliderPackets;
     };
 }
 

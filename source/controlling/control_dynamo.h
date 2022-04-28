@@ -6,7 +6,8 @@
 #include <GLFW/glfw3.h>
 
 #include "core/i_dynamo.h"
-#include "controlling/control_packet.h"
+#include "controlling/camera_control_packet.h"
+#include "controlling/physics_control_packet.h"
 #include "controlling/fly_control_relay.h"
 #include "controlling/sotc_camera_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
@@ -34,7 +35,8 @@ namespace pleep
 
         // should control components be "submitted" or statically "registered"
         // "immediate mode" vs "retained mode"
-        void submit(ControlPacket data);
+        void submit(CameraControlPacket data);
+        void submit(PhysicsControlPacket data);
 
         // poll event queue and process relays
         // THROWS runtime_error if m_windowApi is null
@@ -58,6 +60,8 @@ namespace pleep
         // collection of input information from this frame
         // this is an abstraction of the raw api input that my relays will have references to
         SpacialInputBuffer m_spacialInputBuffer;
+
+        int m_glfwMouseMode = GLFW_CURSOR_NORMAL;
 
         // Specific Relays
         // TODO: this should probably be in a specific ControlDynamo subclass built by the context

@@ -4,8 +4,9 @@
 //#include "intercession_pch.h"
 #include <vector>
 
-#include "physics/i_physics_relay.h"
 #include "logging/pleep_log.h"
+#include "physics/i_physics_relay.h"
+#include "physics/physics_packet.h"
 
 namespace pleep
 {
@@ -21,7 +22,7 @@ namespace pleep
                 PhysicsPacket& data = *packet_it;
 
                 // ensure non-Dynamic Objects never move, or accidentally accumulate velocities/accelerations
-                if (!data.physics.isDynamic)
+                if (data.physics.isAsleep)
                 {
                     data.physics.velocity            = glm::vec3(0.0f);
                     data.physics.angularVelocity     = glm::vec3(0.0f);
@@ -30,11 +31,10 @@ namespace pleep
                     continue;
                 }
 
+                ////////////////////////////////////////////////////////////////
                 // SHHH... temporary global gravity
-                //data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
-                // Global air drag?
-                //data.physics.velocity *= 0.99;
-                //data.physics.angularVelocity *= 0.95;
+                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+                ////////////////////////////////////////////////////////////////
 
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
@@ -56,14 +56,17 @@ namespace pleep
                     glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
                 data.transform.orientation = quatVelocity * data.transform.orientation;
 
-                // Should we clear acceleration here
-                // or leave it for other relays to use?
+                // Should we clear acceleration here or leave it for other relays to use deductively?
                 data.physics.acceleration = glm::vec3(0.0f);
                 data.physics.angularAcceleration = glm::vec3(0.0f);
+                
+                // Per frame drag
+                data.physics.velocity        *= 1.0f - data.physics.linearDrag;
+                data.physics.angularVelocity *= 1.0f - data.physics.angularDrag;
             }
         }
         
-        void submit(PhysicsPacket data) override
+        void submit(PhysicsPacket data)
         {
             m_physicsPackets.push_back(data);
         }

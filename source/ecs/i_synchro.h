@@ -33,7 +33,7 @@ namespace pleep
         {}
 
         // Cosmos will call this universally for all synchros
-        virtual void update(double deltaTime) = 0;
+        virtual void update() = 0;
 
         std::set<Entity> m_entities;
         

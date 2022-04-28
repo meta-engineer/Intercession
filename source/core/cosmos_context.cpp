@@ -3,15 +3,18 @@
 #include "logging/pleep_log.h"
 
 // TODO: This is temporary for building hard-coded entities
-#include "controlling/control_synchro.h"
+#include "controlling/camera_control_synchro.h"
+#include "controlling/physics_control_synchro.h"
 #include "rendering/render_synchro.h"
 #include "rendering/lighting_synchro.h"
 #include "physics/physics_synchro.h"
+#include "physics/box_collider_synchro.h"
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
-#include "physics/box_collider.h"
-#include "controlling/control_component.h"
+#include "physics/box_collider_component.h"
+#include "controlling/physics_control_component.h"
+#include "controlling/camera_control_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
@@ -84,7 +87,12 @@ namespace pleep
 
             // ***** Cosmos Update *****
             // invokes all registered synchros to process their entities
-            m_currentCosmos->update(deltaTime);
+            m_currentCosmos->update();
+
+            // flush dynamos of all synchro submissions
+            m_controlDynamo->run_relays(deltaTime);
+            m_physicsDynamo->run_relays(deltaTime);
+            m_renderDynamo->run_relays(deltaTime);
 
             // ***** Post Processing *****
             // top ui layer in context for debug
@@ -156,11 +164,13 @@ namespace pleep
         
         // register components
         m_currentCosmos->register_component<TransformComponent>();
-        m_currentCosmos->register_component<ControlComponent>();
+        m_currentCosmos->register_component<CameraControlComponent>();
+        m_currentCosmos->register_component<PhysicsControlComponent>();
         m_currentCosmos->register_component<ModelComponent>();
         m_currentCosmos->register_component<CameraComponent>();
         m_currentCosmos->register_component<LightSourceComponent>();
         m_currentCosmos->register_component<PhysicsComponent>();
+        m_currentCosmos->register_component<BoxColliderComponent>();
         // register tag component as a normal component
         m_currentCosmos->register_component<TagComponent>();
 
@@ -169,16 +179,31 @@ namespace pleep
         // we'll only access through Cosmos
         // any other functionallity should be in dynamos
         PLEEPLOG_TRACE("Create Synchros");
-        std::shared_ptr<ControlSynchro> controlSynchro = m_currentCosmos->register_synchro<ControlSynchro>();
-        controlSynchro->attach_dynamo(m_controlDynamo);
+        // TODO: get synchros to maintain their own signatures to fetch for registration
+
+        std::shared_ptr<CameraControlSynchro> cameraControlSynchro = m_currentCosmos->register_synchro<CameraControlSynchro>();
+        cameraControlSynchro->attach_dynamo(m_controlDynamo);
         {
             Signature sign;
-            sign.set(m_currentCosmos->get_component_type<ControlComponent>());
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<CameraControlComponent>());
 
-            m_currentCosmos->set_synchro_signature<ControlSynchro>(sign);
+            m_currentCosmos->set_synchro_signature<CameraControlSynchro>(sign);
+        }
+        
+        std::shared_ptr<PhysicsControlSynchro> physicsControlSynchro = m_currentCosmos->register_synchro<PhysicsControlSynchro>();
+        physicsControlSynchro->attach_dynamo(m_controlDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<PhysicsComponent>());
+            sign.set(m_currentCosmos->get_component_type<PhysicsControlComponent>());
+
+            m_currentCosmos->set_synchro_signature<PhysicsControlSynchro>(sign);
         }
 
         // synchros are in a map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
+        // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
         std::shared_ptr<LightingSynchro> lightingSynchro = m_currentCosmos->register_synchro<LightingSynchro>();
         lightingSynchro->attach_dynamo(m_renderDynamo);
         {
@@ -199,6 +224,7 @@ namespace pleep
             m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
         }
 
+        // TODO: maybe specify this is "motion integration" not just all physics
         std::shared_ptr<PhysicsSynchro> physicsSynchro = m_currentCosmos->register_synchro<PhysicsSynchro>();
         physicsSynchro->attach_dynamo(m_physicsDynamo);
         {
@@ -209,6 +235,16 @@ namespace pleep
             m_currentCosmos->set_synchro_signature<PhysicsSynchro>(sign);
         }
 
+        std::shared_ptr<BoxColliderSynchro> boxColliderSynchro = m_currentCosmos->register_synchro<BoxColliderSynchro>();
+        boxColliderSynchro->attach_dynamo(m_physicsDynamo);
+        {
+            Signature sign;
+            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
+            sign.set(m_currentCosmos->get_component_type<BoxColliderComponent>());
+
+            m_currentCosmos->set_synchro_signature<BoxColliderSynchro>(sign);
+        }
+
         PLEEPLOG_TRACE("Create Entities");
         // create entities
         // create component and pass or construct inline
@@ -217,17 +253,19 @@ namespace pleep
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
         m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 2.5f, 1.0f)));
+        // TODO: moment of inertia is not correct with scaled transform, scale has to be squared?
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
         m_currentCosmos->add_component(frog, ModelComponent(frogModel));
-        m_currentCosmos->add_component(frog, PhysicsComponent{});
-        m_currentCosmos->add_component(frog, ControlComponent{});
-        PhysicsComponent& frog_physics = m_currentCosmos->get_component<PhysicsComponent>(frog);
+        //m_currentCosmos->add_component(frog, PhysicsControlComponent{});
+        PhysicsComponent frog_physics;
+        frog_physics.mass = 30.0f;
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
-        frog_physics.collider = std::make_shared<BoxCollider>();
-        frog_physics.mass = 100.0f;
-        frog_physics.collider->m_offsetTransform.scale = glm::vec3(5.0f, 5.0f, 5.0f);
-        frog_physics.collider->m_offsetTransform.origin = glm::vec3(0.0f, 2.0f, 0.0f);
+        m_currentCosmos->add_component(frog, frog_physics);
+        BoxColliderComponent frog_collider;
+        frog_collider.m_localTransform.scale = glm::vec3(5.0f, 5.0f, 5.0f);
+        frog_collider.m_localTransform.origin = glm::vec3(0.0f, 2.0f, 0.0f);
+        m_currentCosmos->add_component(frog, frog_collider);
 
 /*
         Entity vamp = m_currentCosmos->create_entity();
@@ -241,12 +279,12 @@ namespace pleep
         TransformComponent crateTransform(glm::vec3(2.5f, 0.0f, 0.9f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
-        m_currentCosmos->add_component(crate, PhysicsComponent{});
-        PhysicsComponent& crate_physics = m_currentCosmos->get_component<PhysicsComponent>(crate);
+        PhysicsComponent crate_physics;
         //crate_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
         crate_physics.angularVelocity = glm::vec3(0.0f, 0.7f, 0.2f);
-        crate_physics.collider = std::make_shared<BoxCollider>();
         crate_physics.mass = 100.0f;
+        m_currentCosmos->add_component(crate, crate_physics);
+        m_currentCosmos->add_component(crate, BoxColliderComponent{});
 
         Entity block = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, 1.5f, 0.0f)));
@@ -254,12 +292,12 @@ namespace pleep
             glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
-        m_currentCosmos->add_component(block, PhysicsComponent{});
-        PhysicsComponent& block_physics = m_currentCosmos->get_component<PhysicsComponent>(block);
+        PhysicsComponent block_physics;
         //block_physics.velocity = glm::vec3(0.6f, 0.0f, -0.6f);
         //block_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.3f);
-        block_physics.collider = std::make_shared<BoxCollider>();
         block_physics.mass = 500.0f;
+        m_currentCosmos->add_component(block, block_physics);
+        m_currentCosmos->add_component(block, BoxColliderComponent{});
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
@@ -278,13 +316,14 @@ namespace pleep
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
         m_currentCosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
-        m_currentCosmos->add_component(floor, PhysicsComponent{});
-        PhysicsComponent& floor_physics = m_currentCosmos->get_component<PhysicsComponent>(floor);
-        floor_physics.collider = std::make_shared<BoxCollider>();
-        // TODO: what mass to assign to non-dynamic objects?
+        PhysicsComponent floor_physics;
+        // TODO: what mass to assign to non-dynamic objects? same as otherwise?
         // TODO: in general generate mass from known density
         floor_physics.mass = 5.0f * 500.0f;
-        floor_physics.isDynamic = false;
+        // TODO: update to use collider response type, sleep is for internal
+        floor_physics.isAsleep = true;
+        m_currentCosmos->add_component(floor, floor_physics);
+        m_currentCosmos->add_component(floor, BoxColliderComponent{});
         
         Entity snow = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.525f, 0.0f)));
@@ -292,13 +331,13 @@ namespace pleep
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).scale = glm::vec3(5.0f, 5.0f, 0.05f);
         m_currentCosmos->add_component(snow, ModelComponent(model_builder::create_quad("resources/snow-packed12-Base_Color.png", "resources/snow-packed12-Specular.png", "resources/snow-packed12-normal-ogl.png", "resources/snow-packed12-Height.png")));
-        m_currentCosmos->add_component(snow, PhysicsComponent{});
-        PhysicsComponent& snow_physics = m_currentCosmos->get_component<PhysicsComponent>(snow);
-        snow_physics.collider = std::make_shared<BoxCollider>();
+        PhysicsComponent snow_physics;
         // TODO: what mass to assign to non-dynamic objects?
         // TODO: in general generate mass from known density
         snow_physics.mass = 5.0f * 500.0f;
-        snow_physics.isDynamic = false;
+        snow_physics.isAsleep = true;
+        m_currentCosmos->add_component(snow, snow_physics);
+        m_currentCosmos->add_component(snow, BoxColliderComponent{});
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
@@ -308,13 +347,14 @@ namespace pleep
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 2.5f, 6.0f)));
-        m_currentCosmos->add_component(mainCamera, PhysicsComponent{});
+        PhysicsComponent mainCamera_physics;
+        mainCamera_physics.isAsleep = true;
+        m_currentCosmos->add_component(mainCamera, mainCamera_physics);
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
-        //m_currentCosmos->add_component(mainCamera, ControlComponent{});
-        //ControlComponent& mainCamera_control = m_currentCosmos->get_component<ControlComponent>(mainCamera);
-        //mainCamera_control.target = snow;
-        //mainCamera_control.relayType = SotcCameraControlRelay;
+        CameraControlComponent mainCamera_control;
+        mainCamera_control.m_target = frog;
+        m_currentCosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker

@@ -10,19 +10,19 @@
 
 namespace pleep
 {
-    void LightingSynchro::update(double deltaTime) 
+    void LightingSynchro::update() 
     {
         // No owner is a fatal error
         if (m_ownerCosmos == nullptr)
         {
-            PLEEPLOG_ERROR("Render Synchro does not owner Cosmos");
-            throw std::runtime_error("Render Synchro started update without owner Cosmos");
+            PLEEPLOG_ERROR("Lighting Synchro has no owner Cosmos");
+            throw std::runtime_error("Lighting Synchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
         if (m_attachedRenderDynamo == nullptr)
         {
-            PLEEPLOG_WARN("Render Synchro update was called without an attached Dynamo");
+            PLEEPLOG_WARN("Lighting Synchro update was called without an attached Dynamo");
             return;
         }
 
@@ -35,12 +35,10 @@ namespace pleep
             m_attachedRenderDynamo->submit(LightSourcePacket{ transform, light });
         }
 
-        // this is pre-processing and needs to be run before RenderSynchro's update
-        // it will then call the final run_relays() on dynamo
+        // this is pre-processing and SHOULD be run before RenderSynchro's update
         // this means light sources are used in an "immediate mode" and are
         //   re-submitted every frame. Assuming light sources would frequently
         //   update anyway, this isn't THAT much overhead
-        UNREFERENCED_PARAMETER(deltaTime);
     }
     
     void LightingSynchro::attach_dynamo(RenderDynamo* contextDynamo) 

@@ -18,7 +18,7 @@ namespace pleep
         // registry smart pointers cleared 
     }
     
-    void Cosmos::update(double deltaTime) 
+    void Cosmos::update() 
     {
         // get synchro map from registry
         auto synchroIter = m_synchroRegistry->get_synchros_ref().begin();
@@ -30,7 +30,7 @@ namespace pleep
             // we can only call ISynchro methods
             // otherwise Context will have to keep and call each specialized synchro
             // context should only need to manage its dynamos
-            synchroIter->second->update(deltaTime);
+            synchroIter->second->update();
         }
     }
 

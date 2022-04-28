@@ -28,7 +28,7 @@ namespace pleep
         // synchros have access to parent (me) to access components for their entities
         // and can be provided access (after registering) to a dynamo for
         //   external resources (like sending events)
-        void update(double deltaTime);
+        void update();
 
         // cosmos does not receive/know dynamos
         // context that registers synchros will receive returned synchros and

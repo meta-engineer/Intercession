@@ -18,7 +18,7 @@ namespace pleep
         // Provide entities of my sign, and registered ones to dynamo
         // exits early if there was no attached dynamo to use
         // THROWS runtime error if m_ownerCosmos is null
-        void update(double deltaTime) override;
+        void update() override;
 
         // synchro needs a RenderDynamo to operate on
         void attach_dynamo(RenderDynamo* contextDynamo);
