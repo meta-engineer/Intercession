@@ -89,6 +89,26 @@ namespace pleep
         }
     }
     
+    Signature RenderSynchro::get_signature(Cosmos* cosmos) 
+    {
+        Signature sign;
+
+        try
+        {
+            sign.set(cosmos->get_component_type<TransformComponent>());
+            sign.set(cosmos->get_component_type<ModelComponent>());
+        }
+        catch(const std::exception& e)
+        {
+            // Component Registry already logs error
+            UNREFERENCED_PARAMETER(e);
+            sign.reset();
+            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and ModelComponent been registered?");
+        }
+        
+        return sign;
+    }
+    
     void RenderSynchro::_set_main_camera_handler(Event setCameraEvent) 
     {
         events::rendering::SET_MAIN_CAMERA_params cameraParams = setCameraEvent.get_param<events::rendering::SET_MAIN_CAMERA_params>();

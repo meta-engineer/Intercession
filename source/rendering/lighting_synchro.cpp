@@ -45,4 +45,24 @@ namespace pleep
     {
         m_attachedRenderDynamo = contextDynamo;
     }
+    
+    Signature LightingSynchro::get_signature(Cosmos* cosmos) 
+    {
+        Signature sign;
+
+        try
+        {
+            sign.set(cosmos->get_component_type<TransformComponent>());
+            sign.set(cosmos->get_component_type<LightSourceComponent>());
+        }
+        catch(const std::exception& e)
+        {
+            // Component Registry already logs error
+            UNREFERENCED_PARAMETER(e);
+            sign.reset();
+            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and LightSourceComponent been registered?");
+        }
+        
+        return sign;
+    }
 }

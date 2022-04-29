@@ -101,7 +101,7 @@ namespace pleep
 
             // add to synchro's known entities if it matches signatures
             // match -> entitySign equal to or superset of synchroSign
-            if ((entitySign & synchroSign) == synchroSign)
+            if ((entitySign & synchroSign) == synchroSign && synchroSign.any())
             {
                 synchro->m_entities.insert(entity);
             }

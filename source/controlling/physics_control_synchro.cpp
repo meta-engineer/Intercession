@@ -38,4 +38,25 @@ namespace pleep
     {
         m_attachedControlDynamo = contextDynamo;
     }
+    
+    Signature PhysicsControlSynchro::get_signature(Cosmos* cosmos) 
+    {
+        Signature sign;
+
+        try
+        {
+            sign.set(cosmos->get_component_type<TransformComponent>());
+            sign.set(cosmos->get_component_type<PhysicsComponent>());
+            sign.set(cosmos->get_component_type<PhysicsControlComponent>());
+        }
+        catch(const std::exception& e)
+        {
+            sign.reset();
+            // Component Registry already logs error
+            UNREFERENCED_PARAMETER(e);
+            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent, PhysicsComponent, and PhysicsControlComponent been registered?");
+        }
+        
+        return sign;
+    }
 }

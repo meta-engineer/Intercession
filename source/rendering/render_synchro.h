@@ -23,6 +23,10 @@ namespace pleep
         // synchro needs a RenderDynamo to operate on
         void attach_dynamo(RenderDynamo* contextDynamo);
         
+        // synchro can suggest to registry what signature to use from known cosmos
+        // returns empty bitset if desired components could not be found
+        static Signature get_signature(Cosmos* cosmos);
+
     private:
         // Register Cosmos/CosmosBuilder setting the entity of the main camera
         void _set_main_camera_handler(Event setCameraEvent);

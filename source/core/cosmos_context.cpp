@@ -182,67 +182,42 @@ namespace pleep
         // TODO: get synchros to maintain their own signatures to fetch for registration
 
         std::shared_ptr<CameraControlSynchro> cameraControlSynchro = m_currentCosmos->register_synchro<CameraControlSynchro>();
-        cameraControlSynchro->attach_dynamo(m_controlDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<CameraControlComponent>());
-
-            m_currentCosmos->set_synchro_signature<CameraControlSynchro>(sign);
+            cameraControlSynchro->attach_dynamo(m_controlDynamo);
+            m_currentCosmos->set_synchro_signature<CameraControlSynchro>(CameraControlSynchro::get_signature(m_currentCosmos));
         }
         
         std::shared_ptr<PhysicsControlSynchro> physicsControlSynchro = m_currentCosmos->register_synchro<PhysicsControlSynchro>();
-        physicsControlSynchro->attach_dynamo(m_controlDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<PhysicsComponent>());
-            sign.set(m_currentCosmos->get_component_type<PhysicsControlComponent>());
-
-            m_currentCosmos->set_synchro_signature<PhysicsControlSynchro>(sign);
+            physicsControlSynchro->attach_dynamo(m_controlDynamo);
+            m_currentCosmos->set_synchro_signature<PhysicsControlSynchro>(PhysicsControlSynchro::get_signature(m_currentCosmos));
         }
 
         // synchros are in a map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
         // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
         std::shared_ptr<LightingSynchro> lightingSynchro = m_currentCosmos->register_synchro<LightingSynchro>();
-        lightingSynchro->attach_dynamo(m_renderDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<LightSourceComponent>());
-
-            m_currentCosmos->set_synchro_signature<LightingSynchro>(sign);
+            lightingSynchro->attach_dynamo(m_renderDynamo);
+            m_currentCosmos->set_synchro_signature<LightingSynchro>(LightingSynchro::get_signature(m_currentCosmos));
         }
 
         std::shared_ptr<RenderSynchro> renderSynchro = m_currentCosmos->register_synchro<RenderSynchro>();
-        renderSynchro->attach_dynamo(m_renderDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<ModelComponent>());
-
-            m_currentCosmos->set_synchro_signature<RenderSynchro>(sign);
+            renderSynchro->attach_dynamo(m_renderDynamo);
+            m_currentCosmos->set_synchro_signature<RenderSynchro>(RenderSynchro::get_signature(m_currentCosmos));
         }
 
         // TODO: maybe specify this is "motion integration" not just all physics
         std::shared_ptr<PhysicsSynchro> physicsSynchro = m_currentCosmos->register_synchro<PhysicsSynchro>();
-        physicsSynchro->attach_dynamo(m_physicsDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<PhysicsComponent>());
-
-            m_currentCosmos->set_synchro_signature<PhysicsSynchro>(sign);
+            physicsSynchro->attach_dynamo(m_physicsDynamo);
+            m_currentCosmos->set_synchro_signature<PhysicsSynchro>(PhysicsSynchro::get_signature(m_currentCosmos));
         }
 
         std::shared_ptr<BoxColliderSynchro> boxColliderSynchro = m_currentCosmos->register_synchro<BoxColliderSynchro>();
-        boxColliderSynchro->attach_dynamo(m_physicsDynamo);
         {
-            Signature sign;
-            sign.set(m_currentCosmos->get_component_type<TransformComponent>());
-            sign.set(m_currentCosmos->get_component_type<BoxColliderComponent>());
-
-            m_currentCosmos->set_synchro_signature<BoxColliderSynchro>(sign);
+            boxColliderSynchro->attach_dynamo(m_physicsDynamo);
+            m_currentCosmos->set_synchro_signature<BoxColliderSynchro>(BoxColliderSynchro::get_signature(m_currentCosmos));
         }
 
         PLEEPLOG_TRACE("Create Entities");

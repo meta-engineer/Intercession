@@ -81,7 +81,8 @@ namespace pleep
         std::shared_ptr<T> register_synchro();
 
         // set synchro T to have entity signature sign.
-        // this does NOT recalculate its entities accordingly
+        // empty sign will not recieve any entities
+        // CAREFUL! this does NOT recalculate its entities accordingly! Build synchros BEFORE components
         template<typename T>
         void set_synchro_signature(Signature sign);
 
