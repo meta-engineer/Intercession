@@ -54,6 +54,11 @@ namespace pleep
         //float staticFriction       = 0.40f;
         //float dynamicFrictionCoeff = 0.30f;
 
+        // Constraints
+        bool lockOrigin             = false;
+        glm::vec3 lockedOrigin      = glm::vec3(0.0f);
+        bool lockOrientation        = false;
+        glm::quat lockedOrientation = glm::quat(glm::vec3(0.0f));
         // does entity update velocity/position
         bool isAsleep = false;
     };

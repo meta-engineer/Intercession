@@ -263,13 +263,16 @@ namespace pleep
 
         Entity block = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, 1.5f, 0.0f)));
-        m_currentCosmos->get_component<TransformComponent>(block).orientation = 
-            glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        m_currentCosmos->get_component<TransformComponent>(block).orientation = glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         PhysicsComponent block_physics;
         //block_physics.velocity = glm::vec3(0.6f, 0.0f, -0.6f);
         //block_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.3f);
+        block_physics.lockOrigin = true;
+        block_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(block).origin;
+        //block_physics.lockOrientation = true;
+        //block_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(block).orientation;
         block_physics.mass = 500.0f;
         m_currentCosmos->add_component(block, block_physics);
         m_currentCosmos->add_component(block, BoxColliderComponent{});
@@ -294,9 +297,11 @@ namespace pleep
         PhysicsComponent floor_physics;
         // TODO: what mass to assign to non-dynamic objects? same as otherwise?
         // TODO: in general generate mass from known density
-        floor_physics.mass = 5.0f * 500.0f;
-        // TODO: update to use collider response type, sleep is for internal
-        floor_physics.isAsleep = true;
+        floor_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        floor_physics.lockOrigin = true;
+        floor_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(floor).origin;
+        floor_physics.lockOrientation = true;
+        floor_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(floor).orientation;
         m_currentCosmos->add_component(floor, floor_physics);
         m_currentCosmos->add_component(floor, BoxColliderComponent{});
         
@@ -309,8 +314,11 @@ namespace pleep
         PhysicsComponent snow_physics;
         // TODO: what mass to assign to non-dynamic objects?
         // TODO: in general generate mass from known density
-        snow_physics.mass = 5.0f * 500.0f;
-        snow_physics.isAsleep = true;
+        snow_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        snow_physics.lockOrigin = true;
+        snow_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(snow).origin;
+        snow_physics.lockOrientation = true;
+        snow_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(snow).orientation;
         m_currentCosmos->add_component(snow, snow_physics);
         m_currentCosmos->add_component(snow, BoxColliderComponent{});
 
@@ -328,7 +336,7 @@ namespace pleep
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         CameraControlComponent mainCamera_control;
-        mainCamera_control.m_target = frog;
+        mainCamera_control.m_target = block;
         m_currentCosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)

@@ -21,28 +21,47 @@ namespace pleep
             {
                 PhysicsPacket& data = *packet_it;
 
-                // ensure non-Dynamic Objects never move, or accidentally accumulate velocities/accelerations
-                if (data.physics.isAsleep)
-                {
-                    data.physics.velocity            = glm::vec3(0.0f);
-                    data.physics.angularVelocity     = glm::vec3(0.0f);
-                    data.physics.acceleration        = glm::vec3(0.0f);
-                    data.physics.angularAcceleration = glm::vec3(0.0f);
-                    continue;
-                }
-
+                // skip, but don't clear sleeping objects
+                if (data.physics.isAsleep) continue;
+                
                 ////////////////////////////////////////////////////////////////
                 // SHHH... temporary global gravity
                 data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
                 ////////////////////////////////////////////////////////////////
 
+                // Apply locking constraints
+                if (data.physics.lockOrigin)
+                {
+                    data.physics.velocity            = glm::vec3(0.0f);
+                    data.physics.acceleration        = glm::vec3(0.0f);
+                    // to compensate for static collision resolution (or anything else)
+                    // apply constraint position exactly
+                    data.transform.origin = data.physics.lockedOrigin;
+
+                    // or integrate/interpolate towards locked position
+                    //data.transform.origin += (data.physics.lockedOrigin - data.transform.origin) * (float)deltaTime;
+                }
+                if (data.physics.lockOrientation)
+                {
+                    data.physics.angularVelocity     = glm::vec3(0.0f);
+                    data.physics.angularAcceleration = glm::vec3(0.0f);
+                    // static collision resolution does not effect orientation, but other systems could
+                    // apply constraint orientation exactly
+                    data.transform.orientation = data.physics.lockedOrientation;
+
+                    // or integrate/interpolate towards locked orientation?
+                    //data.transform.orientation = glm::mix(data.transform.orientation, data.physics.lockedOrientation, std::min((float)deltaTime, 1.0f));
+                }
+
                 // half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
                 // calculate angular speed
-                float angularSpeed = glm::length(data.physics.angularVelocity);
-                glm::quat quatVelocity = angularSpeed == 0 ? glm::quat(glm::vec3(0.0f)) :
-                    glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
-                data.transform.orientation = quatVelocity * data.transform.orientation;
+                if (data.physics.angularVelocity != glm::vec3(0.0f))
+                {
+                    float angularSpeed = glm::length(data.physics.angularVelocity);
+                    glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                    data.transform.orientation = quatVelocity * data.transform.orientation;
+                }
 
                 // apply acceleration
                 data.physics.velocity += data.physics.acceleration * (float)deltaTime;
@@ -50,11 +69,12 @@ namespace pleep
 
                 // finish half-step
                 data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                // re-generate accelerated angular velocity
-                angularSpeed = glm::length(data.physics.angularVelocity);
-                quatVelocity = angularSpeed == 0 ? glm::quat(glm::vec3(0.0f)) :
-                    glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
-                data.transform.orientation = quatVelocity * data.transform.orientation;
+                if (data.physics.angularVelocity != glm::vec3(0.0f))
+                {
+                    float angularSpeed = glm::length(data.physics.angularVelocity);
+                    glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                    data.transform.orientation = quatVelocity * data.transform.orientation;
+                }
 
                 // Should we clear acceleration here or leave it for other relays to use deductively?
                 data.physics.acceleration = glm::vec3(0.0f);

@@ -55,38 +55,33 @@ namespace pleep
                     //PLEEPLOG_DEBUG("This @: " + std::to_string(thisData.transform.origin.x) + ", " + std::to_string(thisData.transform.origin.y) + ", " + std::to_string(thisData.transform.origin.z));
                     //PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
 
-                    // Now we need to forward these collisions to be resolved according to the collider's
-                    // response type. ALSO, that may require fetching another component
+                    // Now we need to forward these collisions to be resolved according to the
+                    // collider's response type. ALSO, that may require fetching another component
                     
                     // For now we'll always do rigid body response
                     // TODO: Make this exception safe! colliders without physics components will throw!
                     PhysicsComponent& thisPhysics = thisData.owner->get_component<PhysicsComponent>(thisData.collidee);
                     PhysicsComponent& otherPhysics = otherData.owner->get_component<PhysicsComponent>(otherData.collidee);
 
+                    // wake physics since collision has occurred?
+                    //thisPhysics.isAsleep = false;
+                    //otherPhysics.isAsleep = false;
+
                     // STEP 1: Fetch entity properties
                     // STEP 1.1: material physics properties
-                    float massFactor;
-                    // TODO: use collider's resolution type instead of sleep state
-                    bool thisImmutable = thisPhysics.mass == INFINITE_MASS || thisPhysics.isAsleep;
-                    bool otherImmutable = otherPhysics.mass == INFINITE_MASS || otherPhysics.isAsleep;
-                    if (thisImmutable && otherImmutable)
-                        continue;   // no possible resolution
-                    else if (thisImmutable)
-                        massFactor = 1;
-                    else if (otherImmutable)
-                        massFactor = 0;
-                    else
-                        massFactor = thisPhysics.mass/(thisPhysics.mass + otherPhysics.mass);
-                    //PLEEPLOG_DEBUG("MassFactor of this: " + std::to_string(massFactor));
+                    // check mutability of each object (& test for early exit)
+                    if (thisPhysics.mass == INFINITE_MASS && otherPhysics.mass == INFINITE_MASS)
+                        continue;
                     
+                    // calculate inverse mass for convenience (account for Infinite mass)
                     float thisInvMass = 0;
-                    if (!thisImmutable)
+                    if (thisPhysics.mass != INFINITE_MASS)
                     {
                         thisInvMass = 1.0f/thisPhysics.mass;
                     }
                     //PLEEPLOG_DEBUG("this inverse mass: " + std::to_string(thisInvMass));
                     float otherInvMass = 0;
-                    if (!otherImmutable)
+                    if (otherPhysics.mass != INFINITE_MASS)
                     {
                         otherInvMass = 1.0f/otherPhysics.mass;
                     }
@@ -98,17 +93,22 @@ namespace pleep
                     const float staticFrictionCoeff  = 0.40f;       // max energy absorbed along tangent
                     const float dynamicFrictionCoeff = 0.30f;       // energy lost along tangent
                     
-
                     // STEP 2: static resolution
                     // TODO: static resolution can cause objects in complex scenarios to "walk around" and not
                     //   abide by the stability of the dynamic resolution, this can only be fixed with
                     //   a continuous intersect detection and continuous resolution, so its a major refactor
-                    // collisionNormal is in direction away from "other", towards "this"
 
                     // STEP 2.1: resolve transform origin and collision point (on other)
-                    thisData.transform.origin  += collisionNormal * collisionDepth * (1-massFactor);
-                    otherData.transform.origin -= collisionNormal * collisionDepth * massFactor;
-                    collisionPoint             -= collisionNormal * collisionDepth * massFactor;
+                    // share static resolution based on relative mass proportion
+                    // we are guarenteed to have at least one not be INFINITE_MASS 
+                    // 1 -> move only this, 0 -> move only other
+                    float massRatio = thisInvMass/(thisInvMass + otherInvMass);
+                    //PLEEPLOG_DEBUG("MassRatio of this: " + std::to_string(massRatio));
+
+                    // collisionNormal is in direction away from "other", towards "this"
+                    thisData.transform.origin  += collisionNormal * collisionDepth * massRatio;
+                    otherData.transform.origin -= collisionNormal * collisionDepth * (1-massRatio);
+                    collisionPoint             -= collisionNormal * collisionDepth * (1-massRatio);
 
                     // STEP 2.2: regenerate centre of masses after static resolution
                     // TODO: for a compound collider this will be more involved
@@ -127,12 +127,24 @@ namespace pleep
                     //PLEEPLOG_DEBUG("Other lever: " + std::to_string(otherLever.x) + ", " + std::to_string(otherLever.y) + ", " + std::to_string(otherLever.z));
                     //PLEEPLOG_DEBUG("Length of other lever: " + std::to_string(glm::length(otherLever)));
 
-                    // STEP 3.2: angular inertia/moment
+                    // STEP 3.2 relative velocity vector
+                    // relative is: this' velocity as viewed by other
+                    const glm::vec3 relVelocity = ((thisPhysics.velocity + glm::cross(thisPhysics.angularVelocity, thisLever)) - (otherPhysics.velocity + glm::cross(otherPhysics.angularVelocity, otherLever)));
+                    //PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
+
+                    // early exit if colliders are already moving away from eachother at collisionPoint
+                    if (glm::dot(relVelocity, collisionNormal) > 0)
+                    {
+                        //PLEEPLOG_DEBUG("Colliding rigid bodies are already moving away from one another, so I won't interupt");
+                        continue;
+                    }
+
+                    // STEP 3.3: angular inertia/moment
                     // TODO: can this be optimized? inverse of inverse :(
                     // TODO: moment doesn't behave correct with scaled transforms
                     //   (and maybe also collider offset transforms)
                     const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform()));
-                    const glm::mat3 thisInvMoment = thisImmutable ? glm::mat3(0.0f) 
+                    const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
                         : glm::inverse(
                             glm::transpose(thisInverseModel) 
                             * (thisData.collider->get_inertia_tensor() * thisPhysics.mass)
@@ -140,17 +152,12 @@ namespace pleep
                         );
 
                     const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.transform.get_model_transform()));
-                    const glm::mat3 otherInvMoment = otherImmutable ? glm::mat3(0.0f)
+                    const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
                         : glm::inverse(
                             glm::transpose(otherInverseModel)
                             * (otherData.collider->get_inertia_tensor() * otherPhysics.mass)
                             * otherInverseModel
                         );
-
-                    // STEP 3.3 relative velocity vector
-                    // relative is: this' velocity as viewed by other
-                    const glm::vec3 relVelocity = ((thisPhysics.velocity + glm::cross(thisPhysics.angularVelocity, thisLever)) - (otherPhysics.velocity + glm::cross(otherPhysics.angularVelocity, otherLever)));
-                    //PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
 
                     // STEP 4: determine normal impulse
