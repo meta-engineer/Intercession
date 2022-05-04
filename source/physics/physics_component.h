@@ -8,21 +8,17 @@
 
 namespace pleep
 {
-    // possible properties of a physics enabled object:
-    // motion updates?
-    //   does/doesn't apply velocities
-    //   maximum velocities?
-    //   motion integration technique? scaling with velocity?
-    // collision detection?
-    //   multiple colliders? (composite)
-    //   triggers on collision? (pass collider and collidee to script?)
-    //     collideStart trigger?
-    //     collideUpdate trigger?
-    //   rigid body collision resolution?
-    //   force field collision resolution? (is this just a trigger?)
-    // force generators?
+    // Having a PhysicsComponent (& TransformComponent) natively enables motion integration
+    // Also composing a "Collider" Component (of whatever shape) enableds
+    //   triggering collisions
+    // Also composing a "Body" component allows for physical responses to other Bodies
+    // assigning the response type in the collider component ties the 
+    // physics, collider, and body comonents together to provide complete motion dynamics
+
+    // TODO: force generators/gravity/magnetism?
     //   different collider for force field (always a sphere?)
     //   can force effect self?
+    //   force field collision resolution? (is this just a trigger?)
 
     const float INFINITE_MASS = 0;
 
@@ -36,23 +32,19 @@ namespace pleep
         glm::vec3 angularAcceleration   = glm::vec3(0.0f);  // in RADS!
 
         // Drag Factors. 
-        // TODO: Can these be determined by the environment (eg. air vs water)
+        // TODO: Should these be determined by the environment (eg. air vs water)
         float linearDrag            = 0.00f;
         float angularDrag           = 0.00f;
         // only applied after collision resolution
         float collisionLinearDrag   = 0.00f;
         float collisionAngularDrag  = 0.03f;
 
-        // Material attributes
-        // we may want to be able to define some model of non-uniform density
+        float mass = 1.0f;
+        // TODO: we may want to be able to define some model of non-uniform density
         // and/or generate mass from a collider density & precalculated volume
         //   to avoid poorly configured/"eyeballed" masses
-        // TODO: if a physics object has more than 1 collider, these attributes
-        //   may have to be defined per collider
-        float mass = 1.0f;
-        //float restitution          = 0.50f;
-        //float staticFriction       = 0.40f;
-        //float dynamicFrictionCoeff = 0.30f;
+        // if a physics object has more than 1 collider, total collider volume
+        //   needs to be taken into account
 
         // Constraints
         bool lockOrigin             = false;

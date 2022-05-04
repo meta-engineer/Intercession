@@ -1,6 +1,7 @@
 #include "pleep_logger.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
@@ -30,6 +31,8 @@ namespace pleep
         s_coreLogger = spdlog::stdout_color_mt("INTERCESSION");
         s_coreLogger->set_pattern("[%T.%e][%s:%#][%^%l%$] %v");
         s_coreLogger->set_level(PLEEPLOG_LEVEL);
+
+        PLEEPLOG_TRACE("Initialized pleep logger!");
     }
     
     std::shared_ptr<spdlog::logger>& PleepLogger::GetPleepLogger() 

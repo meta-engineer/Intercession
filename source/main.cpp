@@ -15,7 +15,6 @@
 int main(int argc, char** argv)
 {
     INIT_PLEEPLOG();
-    PLEEPLOG_TRACE("Initialized pleep logger!");
 
     PLEEPLOG_INFO(argv[0]);
     PLEEPLOG_INFO("Build version: " + std::to_string(BUILD_VERSION_MAJOR) + "." + std::to_string(BUILD_VERSION_MINOR));
@@ -24,6 +23,8 @@ int main(int argc, char** argv)
     PLEEPLOG_INFO("Build config:  Debug");
 #elif defined(NDEBUG)
     PLEEPLOG_INFO("Build config:  Release");
+#else
+    PLEEPLOG_INFO("Build config:  Undefined");
 #endif
 
     // parse cmd arguments

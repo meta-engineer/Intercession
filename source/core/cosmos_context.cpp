@@ -13,6 +13,7 @@
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
 #include "physics/box_collider_component.h"
+#include "physics/rigid_body_component.h"
 #include "controlling/physics_control_component.h"
 #include "controlling/camera_control_component.h"
 #include "rendering/model_component.h"
@@ -171,6 +172,7 @@ namespace pleep
         m_currentCosmos->register_component<LightSourceComponent>();
         m_currentCosmos->register_component<PhysicsComponent>();
         m_currentCosmos->register_component<BoxColliderComponent>();
+        m_currentCosmos->register_component<RigidBodyComponent>();
         // register tag component as a normal component
         m_currentCosmos->register_component<TagComponent>();
 
@@ -227,7 +229,7 @@ namespace pleep
 
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.0f, 2.5f, 1.0f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 2.5f, 1.0f)));
         // TODO: moment of inertia is not correct with scaled transform, scale has to be squared?
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
@@ -238,9 +240,10 @@ namespace pleep
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         m_currentCosmos->add_component(frog, frog_physics);
         BoxColliderComponent frog_collider;
-        frog_collider.m_localTransform.scale = glm::vec3(5.0f, 5.0f, 5.0f);
-        frog_collider.m_localTransform.origin = glm::vec3(0.0f, 2.0f, 0.0f);
+        frog_collider.m_localTransform.scale = glm::vec3(4.0f, 3.0f, 5.0f);
+        frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
         m_currentCosmos->add_component(frog, frog_collider);
+        m_currentCosmos->add_component(frog, RigidBodyComponent{});
 
 /*
         Entity vamp = m_currentCosmos->create_entity();
@@ -251,7 +254,7 @@ namespace pleep
 */
 
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(2.5f, 0.0f, 0.9f));
+        TransformComponent crateTransform(glm::vec3(1.0f, 0.0f, 0.9f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         PhysicsComponent crate_physics;
@@ -260,6 +263,7 @@ namespace pleep
         crate_physics.mass = 100.0f;
         m_currentCosmos->add_component(crate, crate_physics);
         m_currentCosmos->add_component(crate, BoxColliderComponent{});
+        m_currentCosmos->add_component(crate, RigidBodyComponent{});
 
         Entity block = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, 1.5f, 0.0f)));
@@ -269,13 +273,14 @@ namespace pleep
         PhysicsComponent block_physics;
         //block_physics.velocity = glm::vec3(0.6f, 0.0f, -0.6f);
         //block_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.3f);
-        block_physics.lockOrigin = true;
-        block_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(block).origin;
+        //block_physics.lockOrigin = true;
+        //block_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(block).origin;
         //block_physics.lockOrientation = true;
         //block_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(block).orientation;
         block_physics.mass = 500.0f;
         m_currentCosmos->add_component(block, block_physics);
         m_currentCosmos->add_component(block, BoxColliderComponent{});
+        m_currentCosmos->add_component(block, RigidBodyComponent{});
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
@@ -289,7 +294,7 @@ namespace pleep
         m_currentCosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
 
         Entity floor = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.025f, 0.0f)));
+        m_currentCosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
@@ -304,9 +309,11 @@ namespace pleep
         floor_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(floor).orientation;
         m_currentCosmos->add_component(floor, floor_physics);
         m_currentCosmos->add_component(floor, BoxColliderComponent{});
+        m_currentCosmos->get_component<BoxColliderComponent>(floor).m_localTransform.origin.z = -0.499f;
+        m_currentCosmos->add_component(floor, RigidBodyComponent{});
         
         Entity snow = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.525f, 0.0f)));
+        m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.5f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).scale = glm::vec3(5.0f, 5.0f, 0.05f);
@@ -321,6 +328,8 @@ namespace pleep
         snow_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(snow).orientation;
         m_currentCosmos->add_component(snow, snow_physics);
         m_currentCosmos->add_component(snow, BoxColliderComponent{});
+        m_currentCosmos->get_component<BoxColliderComponent>(snow).m_localTransform.origin.z = -0.5f;
+        m_currentCosmos->add_component(snow, RigidBodyComponent{});
 
         Entity torus = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
@@ -336,7 +345,7 @@ namespace pleep
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         CameraControlComponent mainCamera_control;
-        mainCamera_control.m_target = block;
+        mainCamera_control.m_target = crate;
         m_currentCosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)

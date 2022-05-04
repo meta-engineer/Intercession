@@ -10,18 +10,12 @@
 
 namespace pleep
 {
+    const float CUBE_RADIUS = 0.5f;
+
     struct BoxColliderComponent : public IColliderComponent
     {
-        // dimensions default 0.5i, 0.5j, 0.5k (aka. all sidelengths 1.0)
-        BoxColliderComponent(glm::vec3 dimensions = glm::vec3(0.5f))
-        {
-            m_dimensions = dimensions;
-        }
-        
         // ***** Box specific Attributes *****
-        // distance each face is from origin (in local space) like a radius
-        // opposite faces will be uniform distance from entity origin
-        glm::vec3 m_dimensions;
+        // box is unit cube, use m_localTransform.scale to set side lengths
 
     private:
         // callibrations for manifold checking
@@ -36,11 +30,17 @@ namespace pleep
         inline virtual glm::mat3 get_inertia_tensor() const override
         {
             glm::mat3 I(0.0f);
+            // TODO: do we have to have correct dimensions here if we scale the whole
+            //   tensor by the combined entity transform after?
+            I[0][0] = (2.0f)/4.0f;
+            I[1][1] = (2.0f)/4.0f;
+            I[2][2] = (2.0f)/4.0f;
+
             // x=width, y=height, z=depth
             // coefficient of 12 is "real", lower (more resistant) may be needed for stability
-            I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
-            I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
-            I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
+            //I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
+            //I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
+            //I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
             return I;
         }
         
@@ -94,6 +94,7 @@ namespace pleep
             // projection of v1 onto v2:
             // v1_proj = cos(angle) * |v1| * norm(v2)
 
+            // entity transform non-uniform scale might not be applicable to certain colliders
             glm::mat4 thisLocalTransform   = thisTransform.get_model_transform() * this->m_localTransform.get_model_transform();
             glm::mat3 thisNormalTransform  = glm::transpose(glm::inverse(glm::mat3(thisLocalTransform)));
             glm::mat4 otherLocalTransform  = otherTransform.get_model_transform() * other->m_localTransform.get_model_transform();
@@ -311,9 +312,9 @@ namespace pleep
                     for (int k = -1; k < 2; k+=2)
                     {
                         glm::vec3 vertex = {
-                            this->m_dimensions.x * i,
-                            this->m_dimensions.y * j,
-                            this->m_dimensions.z * k
+                            CUBE_RADIUS * i,
+                            CUBE_RADIUS * j,
+                            CUBE_RADIUS * k
                         };
 
                         vertex = thisTrans * glm::vec4(vertex, 1.0f);
@@ -353,9 +354,9 @@ namespace pleep
             for (int index : order)
             {
                 glm::vec3 vertex = {
-                    this->m_dimensions.x * dimensions.x,
-                    this->m_dimensions.y * dimensions.y,
-                    this->m_dimensions.z * dimensions.z
+                    CUBE_RADIUS * dimensions.x,
+                    CUBE_RADIUS * dimensions.y,
+                    CUBE_RADIUS * dimensions.z
                 };
 
                 // we have to do this matrix multiply again...

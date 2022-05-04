@@ -27,18 +27,28 @@ namespace pleep
     //struct SphereColliderComponent;
     //struct MeshColliderComponent;
 
+    // define collision behaviours, each type must dispatch to a different behaviour component
+    enum CollisionResponseType
+    {
+        none,       // stop detection early!
+        rigid,      // find & call entity's Rigid Body component
+        spring,     // find & call entity's Spring Body component
+        force,      // find & call entity's Force Generator component
+        //soft,       // find & call entity's Soft Body component
+        //trigger,    // find & call entity's Script componnet (is this mutually exclusive?)
+    };
+
     struct IColliderComponent
     {
         // ***** Universal collider attributes *****
         // Suggestion to Dynamo for how to respond to a detected collision
         // This may be best implemented with a table/map between response type pairs and functions
-        //CollisionResponseType responseType;
+        CollisionResponseType m_responseType = CollisionResponseType::rigid;
 
         // nested transform component "offset" (in local space) from entity's origin
         // Transform scale makes geometrically defined collider shapes 
         // NOTE: centre of mass may or may not correlate
         TransformComponent m_localTransform;
-        
         
         // "Getter" for inertia tensor
         // Does not include mass or density
