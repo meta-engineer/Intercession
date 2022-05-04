@@ -9,15 +9,20 @@ namespace pleep
     // define attributes needed for rigidbody physics response
     struct RigidBodyComponent : public IPhysicsResponseComponent
     {
-        float restitution       = 0.30f;
-        float staticFriction    = 0.80f;
-        float dynamicFriction   = 0.70f;
+        // proportion of energy *retained* normal response
+        float restitution       = 0.50f;
+        // proportion of energy *lost* through friction
+        float staticFriction    = 0.20f;
+        float dynamicFriction   = 0.20f;
 
+        // ***** Collision Response methods *****
         // double dispatch other
         void collision_response(IPhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override
         {
-            // switch collisionNormal
-            otherBody->collision_response(this, otherData, thisData, collisionNormal, collisionDepth, collisionPoint);
+            // switch collisionNormal & collisionPoint
+            glm::vec3 invCollisionNormal = -collisionNormal;
+            glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
+            otherBody->collision_response(this, otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
         }
         
         void collision_response(RigidBodyComponent* otherRigidBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)
@@ -52,11 +57,13 @@ namespace pleep
             //PLEEPLOG_DEBUG("other inverse mass: " + std::to_string(otherInvMass));
             
             // STEP 1.2: material collision properties
-            // TODO: fetch from physics attributes of both objects
-            UNREFERENCED_PARAMETER(otherRigidBody);
-            const float restitutionFactor    = 0.50f;       // energy retained along normal
-            const float staticFrictionCoeff  = 0.40f;       // max energy absorbed along tangent
-            const float dynamicFrictionCoeff = 0.30f;       // energy lost along tangent
+            // TODO: average or product of material properties?
+            // energy retained along normal
+            const float restitutionFactor     = (this->restitution + otherRigidBody->restitution) / 2.0f;
+            // max energy lost along tangent
+            const float staticFrictionFactor  = (this->staticFriction + otherRigidBody->staticFriction) / 2.0f;
+            // energy lost along tangent
+            const float dynamicFrictionFactor = (this->dynamicFriction + otherRigidBody->dynamicFriction) / 2.0f;
             
             // STEP 2: static resolution
             // TODO: static resolution can cause objects in complex scenarios to "walk around" and not
@@ -70,10 +77,10 @@ namespace pleep
             float massRatio = thisInvMass/(thisInvMass + otherInvMass);
             //PLEEPLOG_DEBUG("MassRatio of this: " + std::to_string(massRatio));
 
-            // -collisionNormal is in direction away from "other", towards "this"
-            thisData.transform.origin  += -collisionNormal * collisionDepth * massRatio;
-            collisionPoint             += -collisionNormal * collisionDepth * massRatio;
-            otherData.transform.origin -= -collisionNormal * collisionDepth * (1-massRatio);
+            // collisionNormal is in direction away from "other", towards "this"
+            thisData.transform.origin  += collisionNormal * collisionDepth * massRatio;
+            otherData.transform.origin -= collisionNormal * collisionDepth * (1-massRatio);
+            collisionPoint             -= collisionNormal * collisionDepth * (1-massRatio);
 
             // STEP 2.2: regenerate centre of masses after static resolution
             // TODO: for a compound collider this will be more involved
@@ -98,7 +105,7 @@ namespace pleep
             //PLEEPLOG_DEBUG("Relative Velocity at collision: " + std::to_string(relVelocity.x) + ", " + std::to_string(relVelocity.y) + ", " + std::to_string(relVelocity.z));
 
             // early exit if colliders are already moving away from eachother at collisionPoint
-            if (glm::dot(relVelocity, -collisionNormal) > 0)
+            if (glm::dot(relVelocity, collisionNormal) > 0)
             {
                 //PLEEPLOG_DEBUG("Colliding rigid bodies are already moving away from one another, so I won't interupt");
                 return;
@@ -108,7 +115,7 @@ namespace pleep
             // TODO: can this be optimized? inverse of inverse :(
             // TODO: moment doesn't behave correct with scaled transforms
             //   (and maybe also collider offset transforms)
-            const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform()));
+            const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform() * thisData.collider->m_localTransform.get_model_transform()));
             const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
                 : glm::inverse(
                     glm::transpose(thisInverseModel) 
@@ -116,7 +123,7 @@ namespace pleep
                     * thisInverseModel
                 );
 
-            const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.transform.get_model_transform()));
+            const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.transform.get_model_transform() * otherData.collider->m_localTransform.get_model_transform()));
             const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
                 : glm::inverse(
                     glm::transpose(otherInverseModel)
@@ -126,12 +133,12 @@ namespace pleep
 
 
             // STEP 4: determine normal impulse
-            const float normalImpulse = (-1.0f * (1+restitutionFactor) * glm::dot(relVelocity, -collisionNormal)) /
+            const float normalImpulse = (-1.0f * (1+restitutionFactor) * glm::dot(relVelocity, collisionNormal)) /
                 (otherInvMass + thisInvMass +
                     glm::dot(
-                        glm::cross(otherInvMoment * glm::cross(otherLever, -collisionNormal), otherLever) +
-                        glm::cross(thisInvMoment * glm::cross(thisLever, -collisionNormal), thisLever),
-                        -collisionNormal
+                        glm::cross(otherInvMoment * glm::cross(otherLever, collisionNormal), otherLever) +
+                        glm::cross(thisInvMoment * glm::cross(thisLever, collisionNormal), thisLever),
+                        collisionNormal
                     )
                 );
 
@@ -140,9 +147,9 @@ namespace pleep
 
             // Step 5: friction
             // STEP 5.1: Determine velocity perpendicular to normal (tangent along surface)
-            const float normalAffinity = glm::dot(relVelocity, -collisionNormal);
+            const float normalAffinity = glm::dot(relVelocity, collisionNormal);
             const glm::vec3 collisionTangent =  normalAffinity == 0.0f ? glm::vec3(0.0f) :
-                glm::normalize(relVelocity - normalAffinity * -collisionNormal);
+                glm::normalize(relVelocity - normalAffinity * collisionNormal);
             
             //PLEEPLOG_DEBUG("Collision Tangent: " + std::to_string(collisionTangent.x) + ", " + std::to_string(collisionTangent.y) + ", " + std::to_string(collisionTangent.z));
 
@@ -160,10 +167,10 @@ namespace pleep
             // STEP 5.3: Coefficient factors
             // if impulse is less than static max, then aply it (this should negate all colinear velocity)
             // if impulse is greater than static max, multiply it by dynamic coefficient
-            const float frictionCone = staticFrictionCoeff * contactImpulse;
+            const float frictionCone = (1.0f - staticFrictionFactor) * contactImpulse;
             //PLEEPLOG_DEBUG("Static friction limit: " + std::to_string(frictionCone));
 
-            const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionCoeff;
+            const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * (1.0f - dynamicFrictionFactor);
             //PLEEPLOG_DEBUG("Limited Friction impulse: " + std::to_string(frictionImpulse));
 
             // STEP 6: Damping
@@ -194,16 +201,16 @@ namespace pleep
 
             // STEP 7: dynamic resolution
             // STEP 7.1: resolve linear normal impulse response
-            thisPhysics.velocity  += thisInvMass * (contactImpulse*-collisionNormal);
-            otherPhysics.velocity -= otherInvMass * (contactImpulse*-collisionNormal);
+            thisPhysics.velocity  += thisInvMass * (contactImpulse*collisionNormal);
+            otherPhysics.velocity -= otherInvMass * (contactImpulse*collisionNormal);
 
             // STEP 7.2 resolve linear friction impulse response
             thisPhysics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
             otherPhysics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
             // STEP 7.3: resolve angular normal impulse response
-            const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*-collisionNormal));
-            const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*-collisionNormal));
+            const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*collisionNormal));
+            const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*collisionNormal));
             thisPhysics.angularVelocity  += thisAngularNormalImpulse;
             otherPhysics.angularVelocity -= otherAngularNormalImpulse;
             

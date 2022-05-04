@@ -229,7 +229,7 @@ namespace pleep
 
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(0.0f, 2.5f, 1.0f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.5f, 2.0f, -0.5f)));
         // TODO: moment of inertia is not correct with scaled transform, scale has to be squared?
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
@@ -254,7 +254,7 @@ namespace pleep
 */
 
         Entity crate = m_currentCosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(1.0f, 0.0f, 0.9f));
+        TransformComponent crateTransform(glm::vec3(2.9f, 0.0f, 0.3f));
         m_currentCosmos->add_component(crate, crateTransform);
         m_currentCosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
         PhysicsComponent crate_physics;
@@ -266,15 +266,15 @@ namespace pleep
         m_currentCosmos->add_component(crate, RigidBodyComponent{});
 
         Entity block = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, 1.5f, 0.0f)));
+        m_currentCosmos->add_component(block, TransformComponent(glm::vec3(2.0f, -1.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).orientation = glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
         m_currentCosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         PhysicsComponent block_physics;
         //block_physics.velocity = glm::vec3(0.6f, 0.0f, -0.6f);
         //block_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.3f);
-        //block_physics.lockOrigin = true;
-        //block_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(block).origin;
+        block_physics.lockOrigin = true;
+        block_physics.lockedOrigin = m_currentCosmos->get_component<TransformComponent>(block).origin;
         //block_physics.lockOrientation = true;
         //block_physics.lockedOrientation = m_currentCosmos->get_component<TransformComponent>(block).orientation;
         block_physics.mass = 500.0f;
@@ -313,7 +313,7 @@ namespace pleep
         m_currentCosmos->add_component(floor, RigidBodyComponent{});
         
         Entity snow = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.5f, 0.0f)));
+        m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).scale = glm::vec3(5.0f, 5.0f, 0.05f);
