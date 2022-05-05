@@ -27,20 +27,24 @@ namespace pleep
 
     public:
         // Does not include mass or density
-        inline virtual glm::mat3 get_inertia_tensor() const override
+        inline virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const override
         {
-            glm::mat3 I(0.0f);
-            // TODO: do we have to have correct dimensions here if we scale the whole
-            //   tensor by the combined entity transform after?
-            I[0][0] = (2.0f)/4.0f;
-            I[1][1] = (2.0f)/4.0f;
-            I[2][2] = (2.0f)/4.0f;
-
             // x=width, y=height, z=depth
+            // assuming box is a unit cube
+            const float width  = scale.x;
+            const float height = scale.y;
+            const float depth  = scale.z;
+            glm::mat3 I(0.0f);
+            // Do we have to have adjust dimensions here if we scale the whole
+            //   tensor by the combined entity transform after?
+            //I[1][1] = (2.0f)/4.0f;
+            //I[0][0] = (2.0f)/4.0f;
+            //I[2][2] = (2).0f)/4.0f;
+
             // coefficient of 12 is "real", lower (more resistant) may be needed for stability
-            //I[0][0] = (m_dimensions.y*m_dimensions.y + m_dimensions.z*m_dimensions.z)/1.0f;
-            //I[1][1] = (m_dimensions.x*m_dimensions.x + m_dimensions.z*m_dimensions.z)/1.0f;
-            //I[2][2] = (m_dimensions.x*m_dimensions.x + m_dimensions.y*m_dimensions.y)/1.0f;
+            I[0][0] = (height*height +  depth*depth ) / 4.0f;
+            I[1][1] = ( width*width  +  depth*depth ) / 4.0f;
+            I[2][2] = ( width*width  + height*height) / 4.0f;
             return I;
         }
         

@@ -173,6 +173,7 @@ namespace pleep
         m_currentCosmos->register_component<PhysicsComponent>();
         m_currentCosmos->register_component<BoxColliderComponent>();
         m_currentCosmos->register_component<RigidBodyComponent>();
+        m_currentCosmos->register_component<SpringBodyComponent>();
         // register tag component as a normal component
         m_currentCosmos->register_component<TagComponent>();
 
@@ -282,6 +283,23 @@ namespace pleep
         m_currentCosmos->add_component(block, BoxColliderComponent{});
         m_currentCosmos->add_component(block, RigidBodyComponent{});
 
+        Entity torus = m_currentCosmos->create_entity();
+        TransformComponent torus_transform;
+        torus_transform.origin = glm::vec3(0.0f, 1.0f, 0.0f);
+        torus_transform.orientation = glm::angleAxis(glm::radians(10.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+        torus_transform.scale = glm::vec3(1.5f, 0.5f, 3.5f);
+        m_currentCosmos->add_component(torus, torus_transform);
+        std::shared_ptr<Model> torusModel = std::make_shared<Model>("resources/torus.obj");
+        m_currentCosmos->add_component(torus, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));
+        PhysicsComponent torus_physics;
+        torus_physics.mass = 150.0f;
+        m_currentCosmos->add_component(torus, torus_physics);
+        BoxColliderComponent torus_collider;
+        //torus_collider.m_localTransform.scale = glm::vec3(3.5f, 0.5f, 1.5f);
+        torus_collider.m_responseType = CollisionResponseType::rigid;
+        m_currentCosmos->add_component(torus, torus_collider);
+        m_currentCosmos->add_component(torus, RigidBodyComponent{});
+
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         m_currentCosmos->get_component<TransformComponent>(wall1).orientation = glm::angleAxis(1.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
@@ -311,7 +329,7 @@ namespace pleep
         m_currentCosmos->add_component(floor, BoxColliderComponent{});
         m_currentCosmos->get_component<BoxColliderComponent>(floor).m_localTransform.origin.z = -0.499f;
         m_currentCosmos->add_component(floor, RigidBodyComponent{});
-        
+
         Entity snow = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.0f, 0.0f)));
         m_currentCosmos->get_component<TransformComponent>(snow).orientation = 
@@ -331,11 +349,6 @@ namespace pleep
         m_currentCosmos->get_component<BoxColliderComponent>(snow).m_localTransform.origin.z = -0.5f;
         m_currentCosmos->add_component(snow, RigidBodyComponent{});
 
-        Entity torus = m_currentCosmos->create_entity();
-        m_currentCosmos->add_component(torus, TransformComponent(glm::vec3(-1.0f)));
-        std::shared_ptr<Model> torusModel = std::make_shared<Model>("resources/torus.obj");
-        m_currentCosmos->add_component(torus, ModelComponent(torusModel));
-
         // Scene needs to create an entity with camera component
         Entity mainCamera = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(mainCamera, TransformComponent(glm::vec3(0.0f, 2.5f, 6.0f)));
@@ -345,7 +358,7 @@ namespace pleep
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         CameraControlComponent mainCamera_control;
-        mainCamera_control.m_target = crate;
+        mainCamera_control.m_target = torus;
         m_currentCosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)

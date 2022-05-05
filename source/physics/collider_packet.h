@@ -4,6 +4,7 @@
 //#include "intercession_pch.h"
 #include "physics/transform_component.h"
 #include "physics/i_collider_component.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {

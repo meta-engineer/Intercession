@@ -8,8 +8,8 @@
 #include "physics/i_physics_relay.h"
 #include "physics/collider_packet.h"
 #include "core/cosmos.h"
-#include "physics/physics_component.h"
 #include "physics/rigid_body_component.h"
+#include "physics/spring_body_component.h"
 
 namespace pleep
 {
@@ -70,6 +70,9 @@ namespace pleep
                             case CollisionResponseType::rigid:
                                 thisResponse = &(thisData.owner->get_component<RigidBodyComponent>(thisData.collidee));
                                 break;
+                            case CollisionResponseType::spring:
+                                thisResponse = &(thisData.owner->get_component<SpringBodyComponent>(thisData.collidee));
+                                break;
                             default:
                                 // leave as nullptr
                                 break;
@@ -89,6 +92,9 @@ namespace pleep
                             case CollisionResponseType::rigid:
                                 otherResponse = &(otherData.owner->get_component<RigidBodyComponent>(otherData.collidee));
                                 break;
+                            case CollisionResponseType::spring:
+                                otherResponse = &(otherData.owner->get_component<SpringBodyComponent>(otherData.collidee));
+                                break;
                             default:
                                 // leave as nullptr
                                 break;
@@ -104,7 +110,7 @@ namespace pleep
 
                     if (thisResponse == nullptr || otherResponse == nullptr)
                     {
-                        // one of the colliders is non=physical
+                        // one of the colliders is non-physical
                         continue;
                     }
 

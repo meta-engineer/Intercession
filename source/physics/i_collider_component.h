@@ -52,10 +52,11 @@ namespace pleep
         
         // "Getter" for inertia tensor
         // Does not include mass or density
-        virtual glm::mat3 get_inertia_tensor() const
+        virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const
         {
             // we'll use a unit sphere as default
-            return glm::mat3(2.0f/5.0f);
+            const float radius = glm::min(glm::min(scale.x, scale.y), scale.z);
+            return glm::mat3(radius*radius * (2.0f/5.0f));
         }
         
         // "Read-only" type
