@@ -9,12 +9,14 @@ namespace pleep
     struct SpringBodyComponent : public IPhysicsResponseComponent
     {
         // maximum length of the spring is defined by the entity's associated collider
-        float restLength = 0.9f;
-        float stiffness  = 1.0f;
-        float damping    = 0.1f;
+        // rest length is distance from surface along penetration normal
+        // any distance > 0 will have a "pulling" force
+        float restLength = 0.1f;
+        float stiffness  = 100.0f;
+        float damping    = 10.0f;
         // proportion of energy *lost* through friction
-        float staticFriction    = 0.00f;
-        float dynamicFriction   = 0.00f;
+        float staticFriction    = 0.05f;
+        float dynamicFriction   = 0.05f;
 
         // ***** Collision Response methods *****
         // double dispatch other

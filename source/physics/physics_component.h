@@ -47,9 +47,12 @@ namespace pleep
         //   needs to be taken into account
 
         // Constraints
-        bool lockOrigin             = false;
+        // Because we don't have direct control of entity's transform attributes
+        // Using known lock values motion integration relay can "catch" and restore
+        // even if other systems don't respect the constraint
+        bool      lockOrigin        = false;
         glm::vec3 lockedOrigin      = glm::vec3(0.0f);
-        bool lockOrientation        = false;
+        bool      lockOrientation   = false;
         glm::quat lockedOrientation = glm::quat(glm::vec3(0.0f));
         // does entity update velocity/position
         bool isAsleep = false;

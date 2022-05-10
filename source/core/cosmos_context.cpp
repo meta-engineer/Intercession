@@ -244,7 +244,8 @@ namespace pleep
         frog_collider.m_localTransform.scale = glm::vec3(4.0f, 3.0f, 5.0f);
         frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
         m_currentCosmos->add_component(frog, frog_collider);
-        m_currentCosmos->add_component(frog, RigidBodyComponent{});
+        RigidBodyComponent frog_rigidBody;
+        m_currentCosmos->add_component(frog, frog_rigidBody);
 
 /*
         Entity vamp = m_currentCosmos->create_entity();
@@ -285,20 +286,27 @@ namespace pleep
 
         Entity torus = m_currentCosmos->create_entity();
         TransformComponent torus_transform;
-        torus_transform.origin = glm::vec3(0.0f, 1.0f, 0.0f);
-        torus_transform.orientation = glm::angleAxis(glm::radians(10.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-        torus_transform.scale = glm::vec3(1.5f, 0.5f, 3.5f);
+        torus_transform.origin = glm::vec3(0.1f, 1.0f, 0.0f);
+        torus_transform.orientation = glm::angleAxis(glm::radians(30.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+        //torus_transform.scale = glm::vec3(1.0f, 1.35f, 0.75f);
         m_currentCosmos->add_component(torus, torus_transform);
         std::shared_ptr<Model> torusModel = std::make_shared<Model>("resources/torus.obj");
-        m_currentCosmos->add_component(torus, ModelComponent(model_builder::create_cube("resources/blending_transparent_window.png")));
+        m_currentCosmos->add_component(torus, ModelComponent(torusModel));
         PhysicsComponent torus_physics;
         torus_physics.mass = 150.0f;
+        //torus_physics.velocity = glm::vec3(1.0f, 0.0f, 0.0f);
         m_currentCosmos->add_component(torus, torus_physics);
         BoxColliderComponent torus_collider;
-        //torus_collider.m_localTransform.scale = glm::vec3(3.5f, 0.5f, 1.5f);
-        torus_collider.m_responseType = CollisionResponseType::rigid;
+        torus_collider.m_localTransform.scale = glm::vec3(2.4f, 0.6f, 2.4f);
+        torus_collider.m_responseType = CollisionResponseType::spring;
+        torus_collider.m_inheritOrientation = true;
         m_currentCosmos->add_component(torus, torus_collider);
-        m_currentCosmos->add_component(torus, RigidBodyComponent{});
+        SpringBodyComponent torus_springBody;
+        torus_springBody.restLength = 0.0f;
+        torus_springBody.stiffness  = 20000.0f;
+        torus_springBody.damping    = 400.0f;
+        torus_springBody.m_influenceOrientation = true;
+        m_currentCosmos->add_component(torus, torus_springBody);
 
         Entity wall1 = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));

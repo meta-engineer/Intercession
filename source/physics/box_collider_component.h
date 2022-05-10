@@ -39,7 +39,7 @@ namespace pleep
             //   tensor by the combined entity transform after?
             //I[1][1] = (2.0f)/4.0f;
             //I[0][0] = (2.0f)/4.0f;
-            //I[2][2] = (2).0f)/4.0f;
+            //I[2][2] = (2.0f)/4.0f;
 
             // coefficient of 12 is "real", lower (more resistant) may be needed for stability
             I[0][0] = (height*height +  depth*depth ) / 4.0f;
@@ -99,9 +99,9 @@ namespace pleep
             // v1_proj = cos(angle) * |v1| * norm(v2)
 
             // entity transform non-uniform scale might not be applicable to certain colliders
-            glm::mat4 thisLocalTransform   = thisTransform.get_model_transform() * this->m_localTransform.get_model_transform();
+            glm::mat4 thisLocalTransform   = this->compose_transform(thisTransform);
             glm::mat3 thisNormalTransform  = glm::transpose(glm::inverse(glm::mat3(thisLocalTransform)));
-            glm::mat4 otherLocalTransform  = otherTransform.get_model_transform() * other->m_localTransform.get_model_transform();
+            glm::mat4 otherLocalTransform  = other->compose_transform(otherTransform);
             glm::mat3 otherNormalTransform = glm::transpose(glm::inverse(glm::mat3(otherLocalTransform)));
 
             std::array<glm::vec3, 15> axes;

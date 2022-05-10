@@ -46,9 +46,12 @@ namespace pleep
         CollisionResponseType m_responseType = CollisionResponseType::rigid;
 
         // nested transform component "offset" (in local space) from entity's origin
-        // Transform scale makes geometrically defined collider shapes 
+        // Transform scale makes geometrically defined collider shapes
         // NOTE: centre of mass may or may not correlate
         TransformComponent m_localTransform;
+        // Entity can have unlocked orientation, but this collider maintains alignment
+        //  (you may also want the collision response to not influence orientation)
+        bool m_inheritOrientation = true;
         
         // "Getter" for inertia tensor
         // Does not include mass or density
@@ -100,6 +103,20 @@ namespace pleep
 
         // ***** collider helper utils *****
         // TODO: this might be better placed in some physics/3d/geometry utils file
+
+        // Combine parent transform with m_localTransform according to collider's options
+        // return product of transform matrices
+        glm::mat4 compose_transform(TransformComponent parentTransform) const
+        {
+            // modify transform copy with options
+            if (!m_inheritOrientation)
+            {
+                parentTransform.orientation = glm::quat(glm::vec3(0.0f));
+            }
+            // allow non-uniform scaling
+            return parentTransform.get_model_transform() * m_localTransform.get_model_transform();
+        }
+
         // clip clippee polygon against clipper polygon as if they are flattened along axis
         static void pseudo_clip_polyhedra(const std::vector<glm::vec3>& clipper, std::vector<glm::vec3>& clippee, const glm::vec3& axis)
         {

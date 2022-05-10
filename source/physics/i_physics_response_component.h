@@ -17,6 +17,11 @@ namespace pleep
 
     struct IPhysicsResponseComponent
     {
+        // ***** Universal response attributes *****
+        // Entity may want unlocked orientation (for kinematic motion)
+        // but not want physics responses to cause orientation changes
+        bool m_influenceOrientation = true;
+
         // double dispatch for each response subclass
         virtual void collision_response(IPhysicsResponseComponent* otherPhysicsResponse, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) = 0;
         
