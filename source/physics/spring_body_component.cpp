@@ -74,6 +74,10 @@ namespace pleep
         const glm::vec3 thisCenterOfMass = thisData.transform.origin;
         const glm::vec3 otherCenterOfMass = otherData.transform.origin;
         
+        // STEP 2.2: Collision Point Rationalizing
+        // Because there is no static resolution, set collision point to midway point
+        collisionPoint = collisionPoint - (collisionNormal * collisionDepth)/2.0f;
+
         // STEP 3.2: vector describing the "radius" of the rotation
         const glm::vec3 thisLever = (collisionPoint - thisCenterOfMass);
         const glm::vec3 otherLever = (collisionPoint - otherCenterOfMass);
@@ -90,21 +94,19 @@ namespace pleep
         //   copy transforms, extract scale, build inertia tensor with scale
         //   then transform tensor with scale-less model transform
         // each collider can restrict it as they see fit
-        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.transform.get_model_transform() * thisData.collider->m_localTransform.get_model_transform()));
-        const glm::vec3 thisLocalScale = thisData.transform.scale * thisData.collider->m_localTransform.scale;
+        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.collider->compose_transform(thisData.transform)));
         const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
             : glm::inverse(
                 glm::transpose(thisInverseModel) 
-                * (thisData.collider->get_inertia_tensor(thisLocalScale) * thisPhysics.mass)
+                * (thisData.collider->get_inertia_tensor(thisData.transform.scale) * thisPhysics.mass)
                 * thisInverseModel
             );
 
-        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.transform.get_model_transform() * otherData.collider->m_localTransform.get_model_transform()));
-        const glm::vec3 otherLocalScale = otherData.transform.scale * otherData.collider->m_localTransform.scale;
+        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.collider->compose_transform(otherData.transform)));
         const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
             : glm::inverse(
                 glm::transpose(otherInverseModel)
-                * (otherData.collider->get_inertia_tensor(otherLocalScale) * otherPhysics.mass)
+                * (otherData.collider->get_inertia_tensor(otherData.transform.scale) * otherPhysics.mass)
                 * otherInverseModel
             );
 

@@ -9,10 +9,12 @@
 #include "rendering/lighting_synchro.h"
 #include "physics/physics_synchro.h"
 #include "physics/box_collider_synchro.h"
+#include "physics/ray_collider_synchro.h"
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
 #include "physics/box_collider_component.h"
+#include "physics/ray_collider_component.h"
 #include "physics/rigid_body_component.h"
 #include "controlling/physics_control_component.h"
 #include "controlling/camera_control_component.h"
@@ -172,6 +174,7 @@ namespace pleep
         m_currentCosmos->register_component<LightSourceComponent>();
         m_currentCosmos->register_component<PhysicsComponent>();
         m_currentCosmos->register_component<BoxColliderComponent>();
+        m_currentCosmos->register_component<RayColliderComponent>();
         m_currentCosmos->register_component<RigidBodyComponent>();
         m_currentCosmos->register_component<SpringBodyComponent>();
         // register tag component as a normal component
@@ -222,6 +225,12 @@ namespace pleep
             boxColliderSynchro->attach_dynamo(m_physicsDynamo);
             m_currentCosmos->set_synchro_signature<BoxColliderSynchro>(BoxColliderSynchro::get_signature(m_currentCosmos));
         }
+        
+        std::shared_ptr<RayColliderSynchro> rayColliderSynchro = m_currentCosmos->register_synchro<RayColliderSynchro>();
+        {
+            rayColliderSynchro->attach_dynamo(m_physicsDynamo);
+            m_currentCosmos->set_synchro_signature<RayColliderSynchro>(RayColliderSynchro::get_signature(m_currentCosmos));
+        }
 
         PLEEPLOG_TRACE("Create Entities");
         // create entities
@@ -230,7 +239,7 @@ namespace pleep
 
         Entity frog = m_currentCosmos->create_entity();
         m_currentCosmos->add_component(frog, TagComponent{ "froog" });
-        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(1.5f, 2.0f, -0.5f)));
+        m_currentCosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
         // TODO: moment of inertia is not correct with scaled transform, scale has to be squared?
         m_currentCosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
@@ -240,12 +249,29 @@ namespace pleep
         frog_physics.mass = 30.0f;
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         m_currentCosmos->add_component(frog, frog_physics);
-        BoxColliderComponent frog_collider;
-        frog_collider.m_localTransform.scale = glm::vec3(4.0f, 3.0f, 5.0f);
-        frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
-        m_currentCosmos->add_component(frog, frog_collider);
+
+        // frog "body"
+        BoxColliderComponent frog_box;
+        frog_box.m_localTransform.scale = glm::vec3(0.5f, 0.2f, 0.5f);
+        frog_box.m_responseType = CollisionResponseType::rigid;
+        m_currentCosmos->add_component(frog, frog_box);
         RigidBodyComponent frog_rigidBody;
+        frog_rigidBody.m_influenceOrientation = false;
         m_currentCosmos->add_component(frog, frog_rigidBody);
+
+        // frog "legs"
+        RayColliderComponent frog_ray;
+        frog_ray.m_localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        frog_ray.m_localTransform.scale = glm::vec3(1.0f, 1.0f, 2.0f);
+        //frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
+        frog_ray.m_responseType = CollisionResponseType::spring;
+        m_currentCosmos->add_component(frog, frog_ray);
+        SpringBodyComponent frog_springBody;
+        frog_springBody.m_influenceOrientation = false;
+        frog_springBody.stiffness = 10000.0f;
+        frog_springBody.damping = 500.0f;
+        frog_springBody.restLength = 0.1f; // therefore ride height of 1.9
+        m_currentCosmos->add_component(frog, frog_springBody);
 
 /*
         Entity vamp = m_currentCosmos->create_entity();
@@ -286,7 +312,7 @@ namespace pleep
 
         Entity torus = m_currentCosmos->create_entity();
         TransformComponent torus_transform;
-        torus_transform.origin = glm::vec3(0.1f, 1.0f, 0.0f);
+        torus_transform.origin = glm::vec3(0.3f, 1.0f, 0.0f);
         torus_transform.orientation = glm::angleAxis(glm::radians(30.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
         //torus_transform.scale = glm::vec3(1.0f, 1.35f, 0.75f);
         m_currentCosmos->add_component(torus, torus_transform);
@@ -366,7 +392,7 @@ namespace pleep
         m_currentCosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         m_currentCosmos->add_component(mainCamera, CameraComponent());
         CameraControlComponent mainCamera_control;
-        mainCamera_control.m_target = torus;
+        mainCamera_control.m_target = frog;
         m_currentCosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)

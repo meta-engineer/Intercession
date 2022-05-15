@@ -23,6 +23,7 @@ namespace pleep
         bool m_influenceOrientation = true;
 
         // double dispatch for each response subclass
+        // expects collision metadata to be relative to other...
         virtual void collision_response(IPhysicsResponseComponent* otherPhysicsResponse, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) = 0;
         
         // implement subclass's response with Rigid Body

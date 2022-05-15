@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <memory>
+#define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
 
@@ -18,6 +19,7 @@ namespace pleep
         //AABB,
         box,
         //sphere,
+        ray,
         //mesh
     };
     
@@ -25,6 +27,7 @@ namespace pleep
     //struct AABBColliderComponent;
     struct BoxColliderComponent;
     //struct SphereColliderComponent;
+    struct RayColliderComponent;
     //struct MeshColliderComponent;
 
     // define collision behaviours, each type must dispatch to a different behaviour component
@@ -53,10 +56,11 @@ namespace pleep
         //  (you may also want the collision response to not influence orientation)
         bool m_inheritOrientation = true;
         
-        // "Getter" for inertia tensor
+        // "Getter" for inertia tensor, accepts inherited scale
         // Does not include mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const
         {
+            scale = scale * m_localTransform.scale;
             // we'll use a unit sphere as default
             const float radius = glm::min(glm::min(scale.x, scale.y), scale.z);
             return glm::mat3(radius*radius * (2.0f/5.0f));
@@ -73,7 +77,10 @@ namespace pleep
         // It may be optimal to have a custom function dispatch table in the dynamo...
 
         // Double-Dispatch derived colliders
+        // each dispatch step should return the collision metadata as such:
         // collisionNormal will always be in the direction of other -> this
+        // collisionPoint will always be on surface of other
+        // collisionDepth -> surface of this = collisionPoint - (collisionDepth * collisionNormal)
         // For now specify non-continuous (static) time intersection detection
         virtual bool static_intersect(
             const IColliderComponent* other, 
@@ -84,7 +91,7 @@ namespace pleep
             glm::vec3& collisionPoint) const = 0;
 
         virtual bool static_intersect(
-            const BoxColliderComponent* other, 
+            const BoxColliderComponent* otherBox, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
@@ -92,7 +99,25 @@ namespace pleep
             glm::vec3& collisionPoint) const
         {
             PLEEPLOG_WARN("No implementation for collision between this type (?) and BoxColliderComponent");
-            UNREFERENCED_PARAMETER(other);
+            UNREFERENCED_PARAMETER(otherBox);
+            UNREFERENCED_PARAMETER(thisTransform);
+            UNREFERENCED_PARAMETER(otherTransform);
+            UNREFERENCED_PARAMETER(collisionNormal);
+            UNREFERENCED_PARAMETER(collisionDepth);
+            UNREFERENCED_PARAMETER(collisionPoint);
+            return false;
+        }
+        
+        virtual bool static_intersect(
+            const RayColliderComponent* otherRay, 
+            const TransformComponent& thisTransform,
+            const TransformComponent& otherTransform,
+            glm::vec3& collisionNormal,
+            float& collisionDepth,
+            glm::vec3& collisionPoint) const
+        {
+            PLEEPLOG_WARN("No implementation for collision between this type (?) and RayColliderComponent");
+            UNREFERENCED_PARAMETER(otherRay);
             UNREFERENCED_PARAMETER(thisTransform);
             UNREFERENCED_PARAMETER(otherTransform);
             UNREFERENCED_PARAMETER(collisionNormal);
@@ -102,7 +127,6 @@ namespace pleep
         }
 
         // ***** collider helper utils *****
-        // TODO: this might be better placed in some physics/3d/geometry utils file
 
         // Combine parent transform with m_localTransform according to collider's options
         // return product of transform matrices

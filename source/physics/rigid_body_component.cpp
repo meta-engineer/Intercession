@@ -7,7 +7,7 @@ namespace pleep
 {
     void RigidBodyComponent::collision_response(IPhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)
     {
-        // switch collisionNormal & collisionPoint
+        // switch collisionNormal & collisionPoint to be relative to passed this (which becomes other)
         glm::vec3 invCollisionNormal = -collisionNormal;
         glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
         otherBody->collision_response(this, otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
@@ -106,20 +106,18 @@ namespace pleep
         //   then transform tensor with scale-less model transform
         // each collider can restrict it as they see fit
         const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.collider->compose_transform(thisData.transform)));
-        const glm::vec3 thisLocalScale = thisData.transform.scale * thisData.collider->m_localTransform.scale;
         const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
             : glm::inverse(
                 glm::transpose(thisInverseModel) 
-                * (thisData.collider->get_inertia_tensor(thisLocalScale) * thisPhysics.mass)
+                * (thisData.collider->get_inertia_tensor(thisData.transform.scale) * thisPhysics.mass)
                 * thisInverseModel
             );
 
         const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.collider->compose_transform(otherData.transform)));
-        const glm::vec3 otherLocalScale = otherData.transform.scale * otherData.collider->m_localTransform.scale;
         const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
             : glm::inverse(
                 glm::transpose(otherInverseModel)
-                * (otherData.collider->get_inertia_tensor(otherLocalScale) * otherPhysics.mass)
+                * (otherData.collider->get_inertia_tensor(otherData.transform.scale) * otherPhysics.mass)
                 * otherInverseModel
             );
 
@@ -212,15 +210,14 @@ namespace pleep
         {
             const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*collisionNormal));
             thisPhysics.angularVelocity  += thisAngularNormalImpulse;
+            //PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
         }
         if (otherRigidBody->m_influenceOrientation)
         {
             const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*collisionNormal));
             otherPhysics.angularVelocity -= otherAngularNormalImpulse;
+            //PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
         }
-        
-        //PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
-        //PLEEPLOG_DEBUG("Other Normal Angular Impulse: " + std::to_string(-otherAngularNormalImpulse.x) + ", " + std::to_string(-otherAngularNormalImpulse.y) + ", " + std::to_string(-otherAngularNormalImpulse.z));
         
 
         // STEP 7.4 resolve angular friction impulse response
@@ -228,11 +225,13 @@ namespace pleep
         {
             const glm::vec3 thisAngularFrictionImpulse  = thisInvMoment * glm::cross(thisLever, (frictionImpulse*collisionTangent));
             thisPhysics.angularVelocity  += thisAngularFrictionImpulse;
+            //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
         }
         if (otherRigidBody->m_influenceOrientation)
         {
             const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
             otherPhysics.angularVelocity -= otherAngularFrictionImpulse;
+            //PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
         }
 
         // STEP 7.5: apply angular dampening
@@ -246,9 +245,6 @@ namespace pleep
         {
             otherPhysics.angularVelocity *= 1.0f - otherPhysics.collisionAngularDrag;
         }
-        
-        //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
-        //PLEEPLOG_DEBUG("Other Friction Angular Impulse: " + std::to_string(-otherAngularFrictionImpulse.x) + ", " + std::to_string(-otherAngularFrictionImpulse.y) + ", " + std::to_string(-otherAngularFrictionImpulse.z));
     }
 
     void RigidBodyComponent::collision_response(SpringBodyComponent* otherSpringBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)

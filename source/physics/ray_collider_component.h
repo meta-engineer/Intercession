@@ -1,5 +1,5 @@
-#ifndef BOX_COLLIDER_COMPONENT_H
-#define BOX_COLLIDER_COMPONENT_H
+#ifndef RAY_COLLIDER_COMPONENT_H
+#define RAY_COLLIDER_COMPONENT_H
 
 //#include "intercession_pch.h"
 
@@ -7,33 +7,22 @@
 
 namespace pleep
 {
-    const float CUBE_RADIUS = 0.5f;
-
-    struct BoxColliderComponent : public IColliderComponent
+    struct RayColliderComponent : public IColliderComponent
     {
-        // ***** Box specific Attributes *****
-        // box is unit cube, use m_localTransform.scale to set side lengths
+        // ***** Ray Specific Attributes *****
+        // ray is unit vector (0,0,1), use m_localTransform to rotate and scale ray
+        // This would mean that x & y scale have no effect...
+        // what if we want an "infinite" length ray?
 
-    private:
-        // callibrations for manifold checking
-        // TODO: these may need to be non-const and mutable/unique to different sizes of collider
-        // depth of contact manifold to captures edges at non-perfect angles
-        //   (in units of dot product with normal, not actual distance units)
-        static const float manifoldDepth;
-        // percentage weight of verticies at the max manifold depth
-        static const float manifoldMinWeight;
-
-    public:
-        // "Getter" for inertia tensor, accepts inherited scale
-        // Does not include mass or density
+        // Does not invlude mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const override;
         
         virtual const ColliderType get_type() const override
         {
-            return ColliderType::box;
+            return ColliderType::ray;
         }
-
-
+        
+        
         // ***** Intersection methods *****
         // Implement dispatches for other collider types
         // Double dispatch other
@@ -52,7 +41,8 @@ namespace pleep
             glm::vec3& collisionNormal,
             float& collisionDepth,
             glm::vec3& collisionPoint) const override;
-        
+
+        // is it useful for rays to collider with other rays?
         virtual bool static_intersect(
             const RayColliderComponent* otherRay, 
             const TransformComponent& thisTransform,
@@ -61,18 +51,18 @@ namespace pleep
             float& collisionDepth,
             glm::vec3& collisionPoint) const override;
 
+    private:
         // ***** intersection helper methods *****
 
-        // return the coefficents (lengths) of the interval of a box collider's projection along an axis
+        // return the coefficients (lengths) of the interval of a ray collider's projection along an axis
         // DOES NOT compose transform! Expects it to already be composed!
-        // always returns [min,max]
+        // always returns [origin,end]
         static glm::vec2 project(const glm::mat4& thisTrans, const glm::vec3& axis);
 
-        // fill dest with all points on plane perpendicular and farthest along axis
-        // Manifold must be returned in winding order around the perimeter
-        // uses static manifold calibrations (shared with static_intersect)
-        static void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, const float depth, std::vector<glm::vec3>& dest);
+        // solve ray segment location for parametric variable t
+        // we'll allow parameter ouside of [0,1] and leave it at user's risk
+        //glm::vec3 solve_parametric(const float t) const;
     };
 }
 
-#endif // BOX_COLLIDER_COMPONENT_H
+#endif // RAY_COLLIDER_COMPONENT_H

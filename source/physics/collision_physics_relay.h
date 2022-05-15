@@ -34,9 +34,15 @@ namespace pleep
                 {
                     assert(otherPacket_it != thisPacket_it);
                     ColliderPacket& otherData = *otherPacket_it;
+                    assert(thisData.owner == otherData.owner);
 
                     // check other collider type (for removing double-dispatch later)
                     if (otherData.collider->get_type() == ColliderType::none)
+                        continue;
+
+                    // check for colliders of same entity
+                    // TODO: check for colliders in same entity heirarchy
+                    if (thisData.collidee == otherData.collidee)
                         continue;
 
                     // STEP 0: Get collision data
