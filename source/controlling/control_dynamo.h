@@ -8,8 +8,10 @@
 #include "core/i_dynamo.h"
 #include "controlling/camera_control_packet.h"
 #include "controlling/physics_control_packet.h"
+#include "controlling/biped_control_packet.h"
 #include "controlling/fly_control_relay.h"
 #include "controlling/sotc_camera_control_relay.h"
+#include "controlling/basic_biped_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 
 namespace pleep
@@ -37,6 +39,7 @@ namespace pleep
         // "immediate mode" vs "retained mode"
         void submit(CameraControlPacket data);
         void submit(PhysicsControlPacket data);
+        void submit(BipedControlPacket data);
 
         // poll event queue and process relays
         // THROWS runtime_error if m_windowApi is null
@@ -68,6 +71,7 @@ namespace pleep
         // TODO: I should source these from some sort of relay library
         std::unique_ptr<FlyControlRelay> m_flyController;
         std::unique_ptr<SotcCameraControlRelay> m_cameraController;
+        std::unique_ptr<BasicBipedControlRelay> m_bipedController;
     };
 }
 

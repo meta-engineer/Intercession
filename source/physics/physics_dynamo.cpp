@@ -39,8 +39,8 @@ namespace pleep
     {
         // BVH is now built? process all physical processes
         
-#define FIXED_TIME_STEP
-#ifdef FIXED_TIME_STEP
+#define PHYSICS_FIXED_TIMESTEP
+#ifdef PHYSICS_FIXED_TIMESTEP
         size_t stepsTaken = 0;
         m_timeRemaining += deltaTime;
         while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
@@ -58,7 +58,7 @@ namespace pleep
         m_motionStep->engage(deltaTime);
         // then detect and resolve collision
         m_collisionStep->engage(deltaTime);
-#endif // FIXED_TIME_STEP
+#endif // PHYSICS_FIXED_TIMESTEP
 
         // after fixed timesteps clear relays
         m_motionStep->clear();

@@ -3,10 +3,6 @@
 
 //#include "intercession_pch.h"
 #include "controlling/i_control_component.h"
-#define GLM_FORCE_SILENT_WARNINGS
-#include <glm/glm.hpp>
-#include "logging/pleep_log.h"
-#include "ecs/ecs_types.h"
 
 namespace pleep
 {

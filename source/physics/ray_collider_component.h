@@ -51,7 +51,6 @@ namespace pleep
             float& collisionDepth,
             glm::vec3& collisionPoint) const override;
 
-    private:
         // ***** intersection helper methods *****
 
         // return the coefficients (lengths) of the interval of a ray collider's projection along an axis

@@ -22,6 +22,7 @@ set(ALL_SOURCE_FILES
     source/controlling/control_dynamo.cpp
     source/controlling/camera_control_synchro.cpp
     source/controlling/physics_control_synchro.cpp
+    source/controlling/biped_control_synchro.cpp
 
     source/physics/physics_dynamo.cpp
     source/physics/physics_synchro.cpp

@@ -162,7 +162,7 @@ namespace pleep
         // I don't think ill need to remember more than 1 of these
         // we store reference to buffer from dynamo
         // (this is like assigning a framebuffer resources for rendering)
-        const SpacialInputBuffer & m_inputCache;
+        const SpacialInputBuffer& m_inputCache;
         
         // store all entities receiving controls this frame and defer processing after all are submitted
         // this might not be necessary, are there any control schemes which are non-greedy?

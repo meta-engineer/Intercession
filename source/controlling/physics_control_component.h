@@ -2,6 +2,7 @@
 #define PHYSICS_CONTROL_COMPONENT_H
 
 //#include "intercession_pch.h"
+#include "controlling/i_control_component.h"
 
 namespace pleep
 {

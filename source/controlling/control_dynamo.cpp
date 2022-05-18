@@ -11,6 +11,7 @@ namespace pleep
         // setup relays with access to my input buffers (we need to ecplicitly know which buffers relay needs)
         , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))
         , m_cameraController(std::make_unique<SotcCameraControlRelay>(m_spacialInputBuffer))
+        , m_bipedController(std::make_unique<BasicBipedControlRelay>(m_spacialInputBuffer))
     {
         PLEEPLOG_TRACE("Setup Control pipeline");
         // we have "lease" of api to override callbacks
@@ -52,11 +53,21 @@ namespace pleep
                 PLEEPLOG_WARN("Dynamo has no handler for Physics Controller type: " + std::to_string(data.controller.m_type) + ". Default behaviour is to ignore.");
         }
     }
+    
+    void ControlDynamo::submit(BipedControlPacket data)
+    {
+        // no subtype for biped components, so we'll just dispatch to our known capable relay
+        m_bipedController->submit(data);
+    }
 
     void ControlDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
 
+//#define CONTROL_FIXED_TIMESTEP
+#ifdef CONTROL_FIXED_TIMESTEP
+        PLEEPLOG_WARN("Control Dynmo fixed timestep not implemented");
+#else
         // this will call all triggered callbacks
         glfwPollEvents();
 
@@ -71,10 +82,12 @@ namespace pleep
         // run through each relay in my configuration
         m_flyController->engage(deltaTime);
         m_cameraController->engage(deltaTime);
+        m_bipedController->engage(deltaTime);
 
         // prepare input for next frame
         // key members should be cleared on "release"
         m_spacialInputBuffer.resolve();
+#endif // CONTROL_FIXED_TIME_STEP
 
         // check for interactions with window frame (not captured specifically by callbacks)
         // glfwWindowShouldClose will be set after glfwPollEvents
@@ -162,12 +175,10 @@ namespace pleep
         if (xoffset > 0)
         {
             m_spacialInputBuffer.set(SpacialActions::rotateYawRight, true, (float)abs(xoffset));
-            m_spacialInputBuffer.set(SpacialActions::rotateRollCw, true, (float)abs(xoffset));
         }
         else
         {
             m_spacialInputBuffer.set(SpacialActions::rotateYawLeft, true, (float)abs(xoffset));
-            m_spacialInputBuffer.set(SpacialActions::rotateRollCcw, true, (float)abs(xoffset));
         }
     }
     
@@ -188,29 +199,38 @@ namespace pleep
         // NOTE: mods is key mods (shift, control alt, super, caps, numlock)
         UNREFERENCED_PARAMETER(mods);
 
-        if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS)
+        // action is one of GLFW_PRESS || GLFW_RELEASE
+        // Relay will have to track when press starts vs held
+
+        if (button == GLFW_MOUSE_BUTTON_1)
         {
-            PLEEPLOG_TRACE("Left mouse press!");
+            //PLEEPLOG_TRACE("Left mouse press!");
+            m_spacialInputBuffer.set(SpacialActions::action0, action,  1);
         }
-        if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_2)
         {
-            PLEEPLOG_TRACE("Right mouse press!");
+            //PLEEPLOG_TRACE("Right mouse press!");
+            m_spacialInputBuffer.set(SpacialActions::action1, action,  1);
         }
-        if (button == GLFW_MOUSE_BUTTON_3 && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_3)
         {
-            PLEEPLOG_TRACE("Middle mouse press!");
+            //PLEEPLOG_TRACE("Middle mouse press!");
+            m_spacialInputBuffer.set(SpacialActions::action2, action,  1);
         }
-        if (button == GLFW_MOUSE_BUTTON_4 && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_4)
         {
-            PLEEPLOG_TRACE("Mouse button 4 press!");
+            //PLEEPLOG_TRACE("Mouse button 4 press!");
+            m_spacialInputBuffer.set(SpacialActions::action3, action,  1);
         }
-        if (button == GLFW_MOUSE_BUTTON_5 && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_5)
         {
-            PLEEPLOG_TRACE("Mouse button 5 press!");
+            //PLEEPLOG_TRACE("Mouse button 5 press!");
+            m_spacialInputBuffer.set(SpacialActions::action4, action,  1);
         }
-        if (button == GLFW_MOUSE_BUTTON_6 && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_6)
         {
-            PLEEPLOG_TRACE("Mouse button 6 press!");
+            //PLEEPLOG_TRACE("Mouse button 6 press!");
+            m_spacialInputBuffer.set(SpacialActions::action5, action,  1);
         }
     }
     

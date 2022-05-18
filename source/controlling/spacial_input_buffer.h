@@ -30,6 +30,14 @@ namespace pleep
         rotateRollCw,
         rotateRollCcw,
 
+        // generic
+        action0,
+        action1,
+        action2,
+        action3,
+        action4,
+        action5,
+
         // etc...
 
         count
@@ -55,7 +63,7 @@ namespace pleep
         // move "hot" states to "ground" value
         void resolve()
         {
-            // rotations controlled by mouse need to be reset (there is no mouse "release")
+            // rotations controlled by mouse need to be reset (there is no mousemove "release")
             actions.set(SpacialActions::rotatePitchUp,   false);
             actions.set(SpacialActions::rotatePitchDown, false);
             actions.set(SpacialActions::rotateYawLeft,   false);
@@ -64,7 +72,7 @@ namespace pleep
             actions.set(SpacialActions::rotateRollCcw,   false);
         }
 
-        void set(SpacialActions action, bool state, float value)
+        void set(SpacialActions action, bool state, float value = 0.0f)
         {
             actions.set(action, state);
             actionVals.at(action) = value;
