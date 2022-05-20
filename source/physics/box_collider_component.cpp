@@ -30,12 +30,12 @@ namespace pleep
 
 
     bool BoxColliderComponent::static_intersect(
-        const IColliderComponent* other, 
+        IColliderComponent* other, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         if (other->static_intersect(this, otherTransform, thisTransform, collisionNormal, collisionDepth, collisionPoint))
         {
@@ -48,12 +48,12 @@ namespace pleep
     }
     
     bool BoxColliderComponent::static_intersect(
-        const BoxColliderComponent* otherBox, 
+        BoxColliderComponent* otherBox, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         // SAT algorithm (actually Separating Plane Theorum)
         // we can optimize SPT given our polyhedra are rectangular prisms
@@ -266,12 +266,12 @@ namespace pleep
     }
     
     bool BoxColliderComponent::static_intersect(
-        const RayColliderComponent* otherRay, 
+        RayColliderComponent* otherRay, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         // defer to Ray Collider's implementation
         if (otherRay->static_intersect(this, otherTransform, thisTransform, collisionNormal, collisionDepth, collisionPoint))

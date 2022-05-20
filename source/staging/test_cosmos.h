@@ -130,7 +130,7 @@ namespace pleep
 
         // frog "body"
         BoxColliderComponent frog_box;
-        frog_box.m_localTransform.scale = glm::vec3(0.5f, 0.2f, 0.5f);
+        frog_box.m_localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
         frog_box.m_responseType = CollisionResponseType::rigid;
         cosmos->add_component(frog, frog_box);
         RigidBodyComponent frog_rigidBody;
@@ -140,15 +140,18 @@ namespace pleep
         // frog "legs"
         RayColliderComponent frog_ray;
         frog_ray.m_localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        frog_ray.m_localTransform.scale = glm::vec3(1.0f, 1.0f, 2.0f);
+        frog_ray.m_localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
         //frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
         frog_ray.m_responseType = CollisionResponseType::spring;
+        frog_ray.m_inheritOrientation = false;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
         frog_springBody.m_influenceOrientation = false;
         frog_springBody.stiffness = 10000.0f;
         frog_springBody.damping = 500.0f;
-        frog_springBody.restLength = 0.1f; // therefore ride height of 1.9
+        frog_springBody.restLength = 0.1f; // therefore ride height of 0.9
+        frog_springBody.staticFriction = 0.0f;
+        frog_springBody.dynamicFriction = 0.0f;
         cosmos->add_component(frog, frog_springBody);
 
 /*
@@ -227,7 +230,7 @@ namespace pleep
         cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(5.0f, 5.0f, 0.05f);
+        cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(10.0f, 10.0f, 0.05f);
         cosmos->add_component(floor, ModelComponent(model_builder::create_quad("resources/brickwall.jpg", "resources/brickwall_specular.jpg", "resources/brickwall_normal_up.jpg")));//, "resources/spiral_disp.jpg")));
         PhysicsComponent floor_physics;
         // TODO: what mass to assign to non-dynamic objects? same as otherwise?
@@ -243,10 +246,10 @@ namespace pleep
         cosmos->add_component(floor, RigidBodyComponent{});
 
         Entity snow = cosmos->create_entity();
-        cosmos->add_component(snow, TransformComponent(glm::vec3(5.01f, -2.0f, 0.0f)));
+        cosmos->add_component(snow, TransformComponent(glm::vec3(10.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(5.0f, 5.0f, 0.05f);
+        cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(10.0f, 10.0f, 0.05f);
         cosmos->add_component(snow, ModelComponent(model_builder::create_quad("resources/snow-packed12-Base_Color.png", "resources/snow-packed12-Specular.png", "resources/snow-packed12-normal-ogl.png", "resources/snow-packed12-Height.png")));
         PhysicsComponent snow_physics;
         // TODO: what mass to assign to non-dynamic objects?

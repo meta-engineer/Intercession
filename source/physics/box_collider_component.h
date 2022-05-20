@@ -38,28 +38,28 @@ namespace pleep
         // Implement dispatches for other collider types
         // Double dispatch other
         virtual bool static_intersect(
-            const IColliderComponent* other, 
+            IColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
         
         virtual bool static_intersect(
-            const BoxColliderComponent* otherBox, 
+            BoxColliderComponent* otherBox, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
         
         virtual bool static_intersect(
-            const RayColliderComponent* otherRay, 
+            RayColliderComponent* otherRay, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
 
         // ***** intersection helper methods *****
 

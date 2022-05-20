@@ -83,20 +83,20 @@ namespace pleep
         // collisionDepth -> surface of this = collisionPoint - (collisionDepth * collisionNormal)
         // For now specify non-continuous (static) time intersection detection
         virtual bool static_intersect(
-            const IColliderComponent* other, 
+            IColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const = 0;
+            glm::vec3& collisionPoint) = 0;
 
         virtual bool static_intersect(
-            const BoxColliderComponent* otherBox, 
+            BoxColliderComponent* otherBox, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const
+            glm::vec3& collisionPoint)
         {
             PLEEPLOG_WARN("No implementation for collision between this type (?) and BoxColliderComponent");
             UNREFERENCED_PARAMETER(otherBox);
@@ -109,12 +109,12 @@ namespace pleep
         }
         
         virtual bool static_intersect(
-            const RayColliderComponent* otherRay, 
+            RayColliderComponent* otherRay, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const
+            glm::vec3& collisionPoint)
         {
             PLEEPLOG_WARN("No implementation for collision between this type (?) and RayColliderComponent");
             UNREFERENCED_PARAMETER(otherRay);

@@ -94,7 +94,8 @@ namespace pleep
         //   copy transforms, extract scale, build inertia tensor with scale
         //   then transform tensor with scale-less model transform
         // each collider can restrict it as they see fit
-        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.collider->compose_transform(thisData.transform)));
+        const glm::mat3 thisModel = thisData.collider->compose_transform(thisData.transform);
+        const glm::mat3 thisInverseModel = glm::inverse(thisModel);
         const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
             : glm::inverse(
                 glm::transpose(thisInverseModel) 
@@ -120,7 +121,10 @@ namespace pleep
         // STEP 4: Spring Force
         // spring body may have a preference for direction
         // for now we can apply along surface normal
-        const float springForceMagnitude = (collisionDepth - this->restLength) * this->stiffness;
+        glm::vec3 restVector = glm::vec3(0.0f, 0.0f, this->restLength);     // mirrors default ray
+        restVector = thisModel * restVector;
+        const float scaledRestLength = glm::length(restVector);
+        const float springForceMagnitude = (collisionDepth - scaledRestLength) * this->stiffness;
         const glm::vec3 springForce = springForceMagnitude * collisionNormal;
         const glm::vec3 dampedSpringForce = springForce - this->damping * deltaCollisionDepth;
 

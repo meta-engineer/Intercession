@@ -2,6 +2,7 @@
 #define BIPED_CONTROL_COMPONENT_H
 
 //#include "intercession_pch.h"
+#include <glm/gtx/quaternion.hpp>
 #include "controlling/i_control_component.h"
 
 namespace pleep
@@ -18,7 +19,7 @@ namespace pleep
         //   but not acceleration due to contact
         // it may also have to inform collider/entity orientation
         glm::vec3 supportAxis = glm::vec3(0.0f, -1.0f, 0.0f);
-        glm::vec3 aimAxis     = glm::vec3(0.0f,  0.0f, 1.0f);
+        glm::quat aimOrientation = glm::quat(glm::vec3(0.0f));
         float horizontalRotationFactor = 1.2f;
         float verticalRotationFactor   = 1.0f;
         float rotationGimbalLimit      = 0.1f;

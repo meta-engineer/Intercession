@@ -20,12 +20,12 @@ namespace pleep
     }
     
     bool RayColliderComponent::static_intersect(
-        const IColliderComponent* other, 
+        IColliderComponent* other, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         if (other->static_intersect(this, otherTransform, thisTransform, collisionNormal, collisionDepth, collisionPoint))
         {
@@ -38,12 +38,12 @@ namespace pleep
     }
     
     bool RayColliderComponent::static_intersect(
-        const BoxColliderComponent* otherBox, 
+        BoxColliderComponent* otherBox, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         // Perform SAT only on the box's axes
         
@@ -60,9 +60,7 @@ namespace pleep
         // Maintain data from positive collision tests
         glm::vec3 minPenetrateNormal(0.0f);   // vector of collision force? world-space
         float minPenetrateDepth = INFINITY;   // depth along best normal?
-        glm::vec2 minBoxInterval(0.0f);       // in lieu of box contact manifold
-        glm::vec2 minRayProject(0.0f);        // in lieu of ray contact manifold
-        bool flippedAxis = true;              // store object ordering for calculating colliionPoint
+        float maxRayParametricValue = 0.0f;   // in lieu of contact manifold
 
         for (int a = 0; a < 3; a++)
         {
@@ -72,89 +70,119 @@ namespace pleep
             glm::vec2 boxInterval = BoxColliderComponent::project(otherLocalTransform, axes[a]);
 
             float penetration = 0;
+            float rayParametricValue = 0;
             bool flipAxis = false;
-            // determine direction of penetration by midpoints until we account for velocities
-            if (rayProject.x > (boxInterval.x + boxInterval.y)/2.0f)
+
+            // determine direction of penetration with ray origin until we account for velocities
+            if (rayProject.x < (boxInterval.x + boxInterval.y)/2.0f)
             {
-                penetration = boxInterval.y - rayProject.y;
-            }
-            else
-            {
-                penetration = rayProject.y - boxInterval.x;
                 // if box is ahead of ray, flip axis so it points away from box
                 flipAxis = true;
             }
 
-            // is there a seperating plane for this axis?
-            if (penetration <= 0)
+            // if ray origin is inside of box then rayParameter is 0 and penetration is: 
+            //      if flipAxis==false min(ray origin, ray end) -> box top
+            //      if flipAxis== true box bottom -> max(ray origin, ray end)
+            // if ray origin is outside of box (but ray end is inside) then:
+            //      if flipAxis==false rayParameter = max(box top, ray end) -> ray origin
+            //                      & penetration = ray end -> box top (negative means no collision)
+            //      if flipAxis== true rayParameter = ray origin -> min(box bottom, ray end)
+            //                      & penetration = box bottom -> ray end (negative means no collision)
+
+            // origin is inside
+            if (rayProject.x >= boxInterval.x && rayProject.x <= boxInterval.y)
             {
-                return false;
+                rayParametricValue = 0;
+                if (!flipAxis)
+                {
+                    penetration = boxInterval.y - glm::min(rayProject.x, rayProject.y);
+                }
+                else
+                {
+                    penetration = glm::max(rayProject.x, rayProject.y) - boxInterval.x;
+                }
+
+                // collision must always happen
+                //assert(penetration >= 0);
+                if (penetration < 0)
+                {
+                    PLEEPLOG_WARN("Negative penetration for enclosed ray origin");
+                    return false;
+                }
+            }
+            // origin is outside
+            else
+            {
+                if (!flipAxis)
+                {
+                    const float rayRange = rayProject.x - glm::max(boxInterval.y, rayProject.y);
+                    const float rayPointDelta = (rayProject.x - rayProject.y);
+                    if (rayPointDelta != 0.0f)
+                        rayParametricValue = rayRange / rayPointDelta;
+                    penetration = boxInterval.y - rayProject.y;
+                }
+                else
+                {
+                    const float rayRange = glm::min(boxInterval.x, rayProject.y) - rayProject.x;
+                    const float rayPointDelta = (rayProject.y - rayProject.x);
+                    if (rayPointDelta != 0.0f)
+                        rayParametricValue = rayRange / rayPointDelta;
+                    penetration = rayProject.y - boxInterval.x;
+                }
+
+                // neither origin OR end are within box interval -> seperating plane for this axis
+                if (penetration < 0)
+                    return false;
             }
 
-            // does this axes have the best overlap?
-            if (penetration < minPenetrateDepth)
+            // does this axes have the best overlap? max ray parameter -> min penetration (like usual SAT)
+            if (rayParametricValue > maxRayParametricValue)
             {
+                maxRayParametricValue = rayParametricValue;
                 minPenetrateDepth = penetration;
                 minPenetrateNormal = flipAxis ? -axes[a] : axes[a];
-                minBoxInterval = boxInterval;
-                minRayProject = rayProject;
-                flippedAxis = flipAxis;
             }
         }
         // write to references for collision normal, depth
         collisionNormal = minPenetrateNormal;
         collisionDepth = minPenetrateDepth;
 
+        // parametric value must always be valid
+        //assert(maxRayParametricValue >= 0 && maxRayParametricValue <= 1);
+        if (maxRayParametricValue < 0 || maxRayParametricValue > 1)
+        {
+            PLEEPLOG_WARN("Ray parametric value outside of possible range [0,1]");
+            return false;
+        }
+
+        // remember closest parametric value this physics step to avoid double collision
+        if (maxRayParametricValue >= m_minParametricValue)
+        {
+            return false;
+        }
+        m_minParametricValue = maxRayParametricValue;
+
         // TODO: dispatch this to raycollider?
+        //return this->solve_parametric(rayParametricValue);
+
+        // inline solve parametric equation
         // recalculate ray points
         glm::vec3 rayOrigin = thisLocalTransform * glm::vec4(0,0,0, 1.0f);
         glm::vec3 rayEnd    = thisLocalTransform * glm::vec4(0,0,1, 1.0f);
+        collisionPoint = rayOrigin + maxRayParametricValue * (rayEnd-rayOrigin);
 
-        //PLEEPLOG_DEBUG("Interval of Box: " + std::to_string(minBoxInterval.x) + ", " + std::to_string(minBoxInterval.y));
-        
-        //PLEEPLOG_DEBUG("Interval of Ray (origin,end): " + std::to_string(minRayProject.x) + ", " + std::to_string(minRayProject.y));
-
-        // if origin is inside boxInterval collisionPoint is origin
-        if (minBoxInterval.x <= minRayProject.x && minRayProject.x <= minBoxInterval.y)
-        {
-            collisionPoint = rayOrigin;
-            return true;
-        }
-        // otherwise solve for collision point where ray collides box surface
-        else
-        {
-            float rayParametricCoeff;
-            // ray is "above" box interval, use box upper
-            if (!flippedAxis)
-            {
-                rayParametricCoeff = (minBoxInterval.y - minRayProject.x) / (minRayProject.y - minRayProject.x);
-            }
-            // ray is "below" box interval, use box lower
-            else
-            {
-                rayParametricCoeff = (minBoxInterval.x - minRayProject.x) / (minRayProject.y - minRayProject.x);
-            }
-            // rayParametric can be outside of bounds if rayOrigin penetrates
-            
-            // inline solve parametric equation
-            //return this->solve_parametric(rayParametricCoeff);
-            collisionPoint = rayOrigin + rayParametricCoeff * (rayEnd-rayOrigin);
-            //PLEEPLOG_DEBUG("Ray Collision Point: " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z));
-            return true;
-        }
-
-        // we should never get here
-        //return false;
+        //PLEEPLOG_DEBUG("Ray Collision Point: " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z));
+        return true;
     }
 
     // is it useful for rays to collider with other rays?
     bool RayColliderComponent::static_intersect(
-        const RayColliderComponent* otherRay, 
+        RayColliderComponent* otherRay, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
         float& collisionDepth,
-        glm::vec3& collisionPoint) const
+        glm::vec3& collisionPoint)
     {
         PLEEPLOG_WARN("No implementation for ray-ray collision, skipping...");
         UNREFERENCED_PARAMETER(otherRay);

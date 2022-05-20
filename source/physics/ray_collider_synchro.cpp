@@ -28,6 +28,9 @@ namespace pleep
         {
             TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
             RayColliderComponent& ray = m_ownerCosmos->get_component<RayColliderComponent>(entity);
+
+            // RESET ray max collider distance before sending each frame
+            ray.reset();
             
             m_attachedPhysicsDynamo->submit(ColliderPacket{ transform, &ray, entity, m_ownerCosmos });
         }

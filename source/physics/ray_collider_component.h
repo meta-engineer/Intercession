@@ -14,6 +14,10 @@ namespace pleep
         // This would mean that x & y scale have no effect...
         // what if we want an "infinite" length ray?
 
+        // Track parametric value for CLOSEST collision to avoid multiple collisions
+        // Synchro resets this value upon submitting
+        float m_minParametricValue = 1.0f;
+
         // Does not invlude mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const override;
         
@@ -27,29 +31,29 @@ namespace pleep
         // Implement dispatches for other collider types
         // Double dispatch other
         virtual bool static_intersect(
-            const IColliderComponent* other, 
+            IColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
         
         virtual bool static_intersect(
-            const BoxColliderComponent* otherBox, 
+            BoxColliderComponent* otherBox, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
 
         // is it useful for rays to collider with other rays?
         virtual bool static_intersect(
-            const RayColliderComponent* otherRay, 
+            RayColliderComponent* otherRay, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,
             float& collisionDepth,
-            glm::vec3& collisionPoint) const override;
+            glm::vec3& collisionPoint) override;
 
         // ***** intersection helper methods *****
 
@@ -61,6 +65,12 @@ namespace pleep
         // solve ray segment location for parametric variable t
         // we'll allow parameter ouside of [0,1] and leave it at user's risk
         //glm::vec3 solve_parametric(const float t) const;
+
+        // reset parametric value between frames
+        void reset()
+        {
+            m_minParametricValue = 1.0f;
+        }
     };
 }
 
