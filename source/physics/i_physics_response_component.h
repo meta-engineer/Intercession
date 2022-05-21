@@ -20,7 +20,7 @@ namespace pleep
         // ***** Universal response attributes *****
         // Entity may want unlocked orientation (for kinematic motion)
         // but not want physics responses to cause orientation changes
-        bool m_influenceOrientation = true;
+        bool influenceOrientation = true;
 
         // double dispatch for each response subclass
         // expects collision metadata to be relative to other...

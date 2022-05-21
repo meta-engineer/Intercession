@@ -23,11 +23,11 @@ namespace pleep
         // use TransformComponent.position and .orientation
         ProjectionType projectionType = ProjectionType::perspective;
         glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0f);
-        float viewNear          = 0.1f;
-        float viewFar           = 100.0f;
+        float        viewNear   = 0.1f;
+        float        viewFar    = 100.0f;
         unsigned int viewWidth  = 1024;
         unsigned int viewHeight = 1024;
-        float viewFov           = 45.0f;
+        float        viewFov    = 45.0f;
     };
 
     // Helper function for camera use

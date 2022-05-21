@@ -12,6 +12,7 @@
 #include "controlling/fly_control_relay.h"
 #include "controlling/sotc_camera_control_relay.h"
 #include "controlling/basic_biped_control_relay.h"
+#include "controlling/biped3p_camera_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 
 namespace pleep
@@ -72,6 +73,7 @@ namespace pleep
         std::unique_ptr<FlyControlRelay> m_flyController;
         std::unique_ptr<SotcCameraControlRelay> m_cameraController;
         std::unique_ptr<BasicBipedControlRelay> m_bipedController;
+        std::unique_ptr<Biped3pCameraControlRelay> m_bipedCameraController;
     };
 }
 

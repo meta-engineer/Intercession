@@ -156,11 +156,11 @@ namespace pleep
         }
 
         // remember closest parametric value this physics step to avoid double collision
-        if (maxRayParametricValue >= m_minParametricValue)
+        if (maxRayParametricValue >= this->minParametricValue)
         {
             return false;
         }
-        m_minParametricValue = maxRayParametricValue;
+        this->minParametricValue = maxRayParametricValue;
 
         // TODO: dispatch this to raycollider?
         //return this->solve_parametric(rayParametricValue);

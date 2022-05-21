@@ -168,32 +168,32 @@ namespace pleep
         otherPhysics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
         // STEP 6.3 resolve angular spring force
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             thisPhysics.angularAcceleration  += thisInvMoment * glm::cross(thisLever, dampedSpringForce);
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             otherPhysics.angularAcceleration -= otherInvMoment * glm::cross(otherLever, dampedSpringForce);
         }
 
         // STEP 6.4 resolve angular friction impulse response
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             thisPhysics.angularVelocity  += thisInvMoment * glm::cross(thisLever, frictionImpulse*collisionTangent);
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             otherPhysics.angularVelocity -= otherInvMoment * glm::cross(otherLever, frictionImpulse*collisionTangent);
         }
 
         // STEP 6.5: apply angular dampening
         // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             thisPhysics.angularVelocity  *= 1.0f - thisPhysics.collisionAngularDrag;
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             otherPhysics.angularVelocity *= 1.0f - otherPhysics.collisionAngularDrag;
         }

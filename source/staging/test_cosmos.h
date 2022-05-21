@@ -134,7 +134,7 @@ namespace pleep
         frog_box.m_responseType = CollisionResponseType::rigid;
         cosmos->add_component(frog, frog_box);
         RigidBodyComponent frog_rigidBody;
-        frog_rigidBody.m_influenceOrientation = false;
+        frog_rigidBody.influenceOrientation = false;
         cosmos->add_component(frog, frog_rigidBody);
 
         // frog "legs"
@@ -146,7 +146,7 @@ namespace pleep
         frog_ray.m_inheritOrientation = false;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
-        frog_springBody.m_influenceOrientation = false;
+        frog_springBody.influenceOrientation = false;
         frog_springBody.stiffness = 10000.0f;
         frog_springBody.damping = 500.0f;
         frog_springBody.restLength = 0.1f; // therefore ride height of 0.9
@@ -212,7 +212,7 @@ namespace pleep
         torus_springBody.restLength = 0.0f;
         torus_springBody.stiffness  = 20000.0f;
         torus_springBody.damping    = 400.0f;
-        torus_springBody.m_influenceOrientation = true;
+        torus_springBody.influenceOrientation = true;
         cosmos->add_component(torus, torus_springBody);
 
         Entity wall1 = cosmos->create_entity();
@@ -273,8 +273,9 @@ namespace pleep
         cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         cosmos->add_component(mainCamera, CameraComponent());
         CameraControlComponent mainCamera_control;
-        mainCamera_control.m_target = snow;
-        //cosmos->add_component(mainCamera, mainCamera_control);
+        mainCamera_control.target = frog;
+        mainCamera_control.type = CameraControlType::biped3p;
+        cosmos->add_component(mainCamera, mainCamera_control);
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker

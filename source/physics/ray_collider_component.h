@@ -16,7 +16,7 @@ namespace pleep
 
         // Track parametric value for CLOSEST collision to avoid multiple collisions
         // Synchro resets this value upon submitting
-        float m_minParametricValue = 1.0f;
+        float minParametricValue = 1.0f;
 
         // Does not invlude mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const override;
@@ -69,7 +69,7 @@ namespace pleep
         // reset parametric value between frames
         void reset()
         {
-            m_minParametricValue = 1.0f;
+            this->minParametricValue = 1.0f;
         }
     };
 }

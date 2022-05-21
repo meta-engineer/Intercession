@@ -91,9 +91,16 @@ namespace pleep
                     
                     //PLEEPLOG_DEBUG("targetGroundVelocity: " + std::to_string(targetGroundVelocity.x) + ", " + std::to_string(targetGroundVelocity.y) + ", " + std::to_string(targetGroundVelocity.z));
 
-                    // accelerate ground velocity towards target
+                    // derive ground velocity
+                    const glm::vec3 groundVelocity = data.physics.velocity - (glm::dot(data.physics.velocity, data.controller.supportAxis) * data.controller.supportAxis);
+
+                    // accelerate ground velocity towards target groudn velocity
                     // TODO: must only apply perpendicular to supportAxis
-                    data.physics.acceleration += targetGroundVelocity * 5.0f;
+                    const glm::vec3 deltaGroundVelocity = targetGroundVelocity - groundVelocity;
+
+                    // clamp deltaGroundVelocity with max acceleration
+
+                    data.physics.acceleration += deltaGroundVelocity * data.controller.groundAcceleration;
 
                     // rotate entity towards its velocity
 
@@ -104,11 +111,16 @@ namespace pleep
                         // temporarily disable leg collider?
 
                         // account for "known" fixed deltaTime?
-                        data.physics.velocity += glm::vec3(0.0f, 0.5f, 0.0f);
+                        data.physics.velocity += glm::vec3(0.0f, 0.3f, 0.0f);
                     }
 
                     // treat down as crouch
                     // change my "leg spring" collider size (ridelength)
+                    if (m_inputCache.actions.test(SpacialActions::moveDown))
+                    {
+                        // account for "known" fixed deltaTime?
+                        data.physics.velocity -= glm::vec3(0.0f, 0.3f, 0.0f);
+                    }
                 }
 
 

@@ -21,7 +21,7 @@ namespace pleep
     {
         // ***** Universal Controller Attributes *****
         // bool to ignore controller influence
-        bool m_isActive = true;
+        bool isActive = true;
     };
 }
 

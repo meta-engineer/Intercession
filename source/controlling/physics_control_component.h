@@ -17,11 +17,11 @@ namespace pleep
     struct PhysicsControlComponent : public IControlComponent
     {
         // ***** physics controller specific attributes *****
-        float m_acceleration    = 5.0f;
-        float m_maxVelocity     = 10.0f;
+        float acceleration    = 5.0f;
+        float maxVelocity     = 10.0f;
 
         // designate desired relay type dispatched by dynamo
-        PhysicsControlType m_type = PhysicsControlType::position;
+        PhysicsControlType type = PhysicsControlType::position;
     };
 }
 

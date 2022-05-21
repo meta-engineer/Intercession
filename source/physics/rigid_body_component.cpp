@@ -206,13 +206,13 @@ namespace pleep
         otherPhysics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
         // STEP 7.3: resolve angular normal impulse response
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             const glm::vec3 thisAngularNormalImpulse  = thisInvMoment * glm::cross(thisLever, (contactImpulse*collisionNormal));
             thisPhysics.angularVelocity  += thisAngularNormalImpulse;
             //PLEEPLOG_DEBUG("This Normal Angular Impulse: " + std::to_string(thisAngularNormalImpulse.x) + ", " + std::to_string(thisAngularNormalImpulse.y) + ", " + std::to_string(thisAngularNormalImpulse.z));
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             const glm::vec3 otherAngularNormalImpulse = otherInvMoment * glm::cross(otherLever, (contactImpulse*collisionNormal));
             otherPhysics.angularVelocity -= otherAngularNormalImpulse;
@@ -221,13 +221,13 @@ namespace pleep
         
 
         // STEP 7.4 resolve angular friction impulse response
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             const glm::vec3 thisAngularFrictionImpulse  = thisInvMoment * glm::cross(thisLever, (frictionImpulse*collisionTangent));
             thisPhysics.angularVelocity  += thisAngularFrictionImpulse;
             //PLEEPLOG_DEBUG("This Friction Angular Impulse: " + std::to_string(thisAngularFrictionImpulse.x) + ", " + std::to_string(thisAngularFrictionImpulse.y) + ", " + std::to_string(thisAngularFrictionImpulse.z));
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             const glm::vec3 otherAngularFrictionImpulse = otherInvMoment * glm::cross(otherLever, (frictionImpulse*collisionTangent));
             otherPhysics.angularVelocity -= otherAngularFrictionImpulse;
@@ -237,11 +237,11 @@ namespace pleep
         // STEP 7.5: apply angular dampening
         // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
         
-        if (this->m_influenceOrientation)
+        if (this->influenceOrientation)
         {
             thisPhysics.angularVelocity  *= 1.0f - thisPhysics.collisionAngularDrag;
         }
-        if (otherRigidBody->m_influenceOrientation)
+        if (otherRigidBody->influenceOrientation)
         {
             otherPhysics.angularVelocity *= 1.0f - otherPhysics.collisionAngularDrag;
         }

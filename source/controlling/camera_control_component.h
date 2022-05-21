@@ -11,7 +11,8 @@ namespace pleep
     {
         basic,
         sotc,
-        drone
+        biped3p
+        //drone
     };
 
     struct CameraControlComponent : public IControlComponent
@@ -20,18 +21,18 @@ namespace pleep
         // not to be confused with camera rendering attributes
 
         // track another entity(s) in view
-        Entity m_target             = NULL_ENTITY;
+        Entity target             = NULL_ENTITY;
         // local offset from target origin to track (their head for example)
         // This may have to be fetched from that entity when targeting starts...
-        glm::vec3 m_targetOffset    = glm::vec3(0.0f);
+        glm::vec3 targetOffset    = glm::vec3(0.0f);
         // flexable offset to allow dynamic framing of target
         // Again, parameters for framing might need to be fetched somehow...
         //glm::vec3 m_dynamicOffset   = glm::vec3(0.0f);
         //float m_maxDynamicOffset    = 0.0f;
         // Depth away from target + offsets along negative camera heading
-        float m_range               = 10.0f;
-        float m_minRange            = 2.0f;
-        float m_maxRange            = 10.0f;
+        float range               = 6.0f;
+        float minRange            = 2.0f;
+        float maxRange            = 10.0f;
 
         // strength of non-linear movements
         float springConstant = 4.0f;
@@ -43,7 +44,7 @@ namespace pleep
         // camera controller may also modify CameraComponent members of same entity (in packet)
 
         // designate desired relay type dispatched by dynamo
-        CameraControlType m_type = CameraControlType::sotc;
+        CameraControlType type = CameraControlType::sotc;
     };
 }
 

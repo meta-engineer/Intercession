@@ -24,7 +24,7 @@ namespace pleep
         float verticalRotationFactor   = 1.0f;
         float rotationGimbalLimit      = 0.1f;
 
-        // State-machine to be output to animation system
+        // State-machine to be read by animation system
         //BipedState state;
 
         bool isGrounded = true;
@@ -34,9 +34,9 @@ namespace pleep
         glm::vec3 groundVelocity = glm::vec3(0.0f);
 
         // units roughly equate to meters and seconds
-        float groundAcceleration    = 3.0f;
-        float groundDeceleration    = 6.0f; // is this additive or replacing normal acceleration?
-        float groundMaxSpeed        = 9.0f; // non-controller forces can accelerate faster
+        float groundAcceleration    = 10.0f;
+        float groundDeceleration    = 10.0f; // is this additive or replacing normal acceleration?
+        float groundMaxSpeed        = 8.0f; // non-controller forces can accelerate faster
 
         float airAcceleration       = 1.0f;
         //float airDeceleration       = 1.0f;

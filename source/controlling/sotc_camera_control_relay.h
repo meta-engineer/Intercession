@@ -38,7 +38,7 @@ namespace pleep
                 glm::vec3 viewDir = data.transform.get_heading();
                 // determine coordinate where view is currently focused
                 glm::vec3 viewFocus = data.transform.origin
-                        + (viewDir * data.controller.m_range);
+                        + (viewDir * data.controller.range);
                 
                 glm::vec3 tangent = glm::normalize(glm::cross(viewDir, data.controller.gimbalUp));
                 glm::vec3 targetDir = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -54,11 +54,11 @@ namespace pleep
                 glm::vec3 targetPosition = viewFocus;
 
                 // get TransformComponent of target
-                if (data.controller.m_target != NULL_ENTITY)
+                if (data.controller.target != NULL_ENTITY)
                 {
                     try 
                     {
-                        TransformComponent& targetTransform = data.owner->get_component<TransformComponent>(data.controller.m_target);
+                        TransformComponent& targetTransform = data.owner->get_component<TransformComponent>(data.controller.target);
                         targetPosition = targetTransform.origin;
                         targetDir = targetTransform.get_heading();
                     }
@@ -67,15 +67,15 @@ namespace pleep
                         UNREFERENCED_PARAMETER(err);
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Control component has target which is invalid or has no TransformComponent, clearing and skipping");
-                        data.controller.m_target = NULL_ENTITY;
+                        data.controller.target = NULL_ENTITY;
                     }
                 }
                 // get PhysicsComponent of target
-                if (data.controller.m_target != NULL_ENTITY)
+                if (data.controller.target != NULL_ENTITY)
                 {
                     try 
                     {
-                        PhysicsComponent& targetPhysics = data.owner->get_component<PhysicsComponent>(data.controller.m_target);
+                        PhysicsComponent& targetPhysics = data.owner->get_component<PhysicsComponent>(data.controller.target);
                         targetVel = targetPhysics.velocity;
                         if (targetVel != glm::vec3(0.0f))
                             targetVelTangent = glm::normalize(glm::cross(targetVel, data.controller.gimbalUp));
@@ -164,12 +164,12 @@ namespace pleep
                 // non-linear factor
                 rangeFactor *= rangeFactor;
                 // determine target position based on rangeFactor
-                const float rangeTarget = rangeFactor * (data.controller.m_maxRange - data.controller.m_minRange) + data.controller.m_minRange;
-                const float rangeOffset = (rangeTarget - data.controller.m_range) * (float)deltaTime;
-                data.controller.m_range += data.controller.springConstant * rangeOffset;
+                const float rangeTarget = rangeFactor * (data.controller.maxRange - data.controller.minRange) + data.controller.minRange;
+                const float rangeOffset = (rangeTarget - data.controller.range) * (float)deltaTime;
+                data.controller.range += data.controller.springConstant * rangeOffset;
 
                 // after camera is oriented and viewFocus is adjusted restore origin to viewFocus
-                data.transform.origin = viewFocus - (viewDir * data.controller.m_range);
+                data.transform.origin = viewFocus - (viewDir * data.controller.range);
             }
         }
         

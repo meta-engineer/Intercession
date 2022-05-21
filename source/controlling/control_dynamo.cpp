@@ -12,6 +12,7 @@ namespace pleep
         , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))
         , m_cameraController(std::make_unique<SotcCameraControlRelay>(m_spacialInputBuffer))
         , m_bipedController(std::make_unique<BasicBipedControlRelay>(m_spacialInputBuffer))
+        , m_bipedCameraController(std::make_unique<Biped3pCameraControlRelay>(m_spacialInputBuffer))
     {
         PLEEPLOG_TRACE("Setup Control pipeline");
         // we have "lease" of api to override callbacks
@@ -31,26 +32,29 @@ namespace pleep
     void ControlDynamo::submit(CameraControlPacket data)
     {
         // dispatch packet to designated relay
-        switch (data.controller.m_type)
+        switch (data.controller.type)
         {
             case CameraControlType::sotc:
                 m_cameraController->submit(data);
                 break;
+            case CameraControlType::biped3p:
+                m_bipedCameraController->submit(data);
+                break;
             default:
-                PLEEPLOG_WARN("Dynamo has no handler for Camera Controller type: " + std::to_string(data.controller.m_type) + ". Default behaviour is to ignore.");
+                PLEEPLOG_WARN("Dynamo has no handler for Camera Controller type: " + std::to_string(data.controller.type) + ". Default behaviour is to ignore.");
         }
     }
 
     void ControlDynamo::submit(PhysicsControlPacket data)
     {
         // dispatch packet to designated relay
-        switch (data.controller.m_type)
+        switch (data.controller.type)
         {
             case PhysicsControlType::position:
                 m_flyController->submit(data);
                 break;
             default:
-                PLEEPLOG_WARN("Dynamo has no handler for Physics Controller type: " + std::to_string(data.controller.m_type) + ". Default behaviour is to ignore.");
+                PLEEPLOG_WARN("Dynamo has no handler for Physics Controller type: " + std::to_string(data.controller.type) + ". Default behaviour is to ignore.");
         }
     }
     
@@ -83,6 +87,7 @@ namespace pleep
         m_flyController->engage(deltaTime);
         m_cameraController->engage(deltaTime);
         m_bipedController->engage(deltaTime);
+        m_bipedCameraController->engage(deltaTime);
 
         // prepare input for next frame
         // key members should be cleared on "release"
