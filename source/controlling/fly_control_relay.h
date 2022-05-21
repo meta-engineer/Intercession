@@ -2,7 +2,7 @@
 #define FLY_CONTROL_RELAY_H
 
 //#include "intercession_pch.h"
-#include <queue>
+#include <vector>
 #include "controlling/i_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 #include "controlling/physics_control_packet.h"
@@ -20,15 +20,14 @@ namespace pleep
         
         void submit(PhysicsControlPacket data)
         {
-            m_controlPacketQueue.push(data);
+            m_controlPackets.push_back(data);
         }
 
         void engage(double deltaTime) override
         {
-            while (!m_controlPacketQueue.empty())
+            for (std::vector<PhysicsControlPacket>::iterator packet_it = m_controlPackets.begin(); packet_it != m_controlPackets.end(); packet_it++)
             {
-                PhysicsControlPacket data = m_controlPacketQueue.front();
-                m_controlPacketQueue.pop();
+                PhysicsControlPacket& data = *packet_it;
 
                 TransformComponent& transform = data.transform;
 
@@ -157,6 +156,12 @@ namespace pleep
 */
             }
         }
+        
+        // clear packets for next frame
+        void clear() override
+        {
+            m_controlPackets.clear();
+        }
 
     private:
         // I don't think ill need to remember more than 1 of these
@@ -166,7 +171,7 @@ namespace pleep
         
         // store all entities receiving controls this frame and defer processing after all are submitted
         // this might not be necessary, are there any control schemes which are non-greedy?
-        std::queue<PhysicsControlPacket> m_controlPacketQueue;
+        std::vector<PhysicsControlPacket> m_controlPackets;
     };
 }
 

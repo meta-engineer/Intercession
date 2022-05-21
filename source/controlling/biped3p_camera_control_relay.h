@@ -2,7 +2,7 @@
 #define BIPED3P_CAMERA_CONTROL_RELAY_H
 
 //#include "intercession_pch.h"
-#include <queue>
+#include <vector>
 #include "controlling/i_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 #include "controlling/camera_control_packet.h"
@@ -21,21 +21,20 @@ namespace pleep
 
         void submit(CameraControlPacket data)
         {
-            m_controlPacketQueue.push(data);
+            m_controlPackets.push_back(data);
         }
         
         void engage(double deltaTime) override
         {
             // check target entity for biped controller and align with the biped
             
-            while (!m_controlPacketQueue.empty())
+            for (std::vector<CameraControlPacket>::iterator packet_it = m_controlPackets.begin(); packet_it != m_controlPackets.end(); packet_it++)
             {
-                CameraControlPacket data = m_controlPacketQueue.front();
-                m_controlPacketQueue.pop();
+                CameraControlPacket& data = *packet_it;
 
                 if (data.controller.target == pleep::NULL_ENTITY)
                 {
-                    continue; //?
+                    continue; // do nothing without target?
                 }
 
                 // get entire controller or just extract what's necessary?
@@ -70,15 +69,20 @@ namespace pleep
             }
         }
         
+        // clear packets for next frame
+        void clear() override
+        {
+            m_controlPackets.clear();
+        }
 
     private:
         // reference to data updated in dynamo
         // this could be copied each update for safety, but this is probably technically faster
-        const SpacialInputBuffer & m_inputCache;
+        const SpacialInputBuffer& m_inputCache;
         
         // store all entities receiving controls this frame and defer processing after all are submitted
         // this might not be necessary, are there any control schemes which are non-greedy?
-        std::queue<CameraControlPacket> m_controlPacketQueue;
+        std::vector<CameraControlPacket> m_controlPackets;
     };
 }
 

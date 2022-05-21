@@ -48,6 +48,9 @@ namespace pleep
         void run_relays(double deltaTime) override;
 
     private:
+        // subroutine to engage all relays in my configuration
+        void engage_all(double deltaTime);
+
         // take over window user pointer and bind all callbacks below
         void _set_my_window_callbacks();
         void _mouse_move_callback(GLFWwindow* w, double x, double y);
@@ -74,6 +77,11 @@ namespace pleep
         std::unique_ptr<SotcCameraControlRelay> m_cameraController;
         std::unique_ptr<BasicBipedControlRelay> m_bipedController;
         std::unique_ptr<Biped3pCameraControlRelay> m_bipedCameraController;
+
+        // Fixed timestep should by synced with all other fixed updates
+        const double m_fixedTimeStep = 0.005;
+        double m_timeRemaining = 0.0;
+        const size_t m_maxSteps = 30;
     };
 }
 

@@ -48,20 +48,22 @@ namespace pleep
             m_timeRemaining -= m_fixedTimeStep;
             stepsTaken++;
 
-            // motion first
-            m_motionStep->engage(m_fixedTimeStep);
-            // then detect and resolve collision
-            m_collisionStep->engage(m_fixedTimeStep);
+            this->engage_all(m_fixedTimeStep);
         }
 #else
+        this->engage_all(deltaTime);
+#endif // PHYSICS_FIXED_TIMESTEP
+
+        // after 1+ timesteps clear relays
+        m_motionStep->clear();
+        m_collisionStep->clear();
+    }
+    
+    void PhysicsDynamo::engage_all(double deltaTime) 
+    {
         // motion first
         m_motionStep->engage(deltaTime);
         // then detect and resolve collision
         m_collisionStep->engage(deltaTime);
-#endif // PHYSICS_FIXED_TIMESTEP
-
-        // after fixed timesteps clear relays
-        m_motionStep->clear();
-        m_collisionStep->clear();
     }
 }

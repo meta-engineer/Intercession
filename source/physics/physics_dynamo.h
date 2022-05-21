@@ -31,6 +31,9 @@ namespace pleep
         void run_relays(double deltaTime) override;
 
     private:
+        // subroutine to engage all relays in my configuration
+        void engage_all(double deltaTime);
+
         // should I store entities for optimal spacial partitioning?
 
         // RELAY STEP 1

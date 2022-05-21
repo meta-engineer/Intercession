@@ -2,8 +2,9 @@
 #define BASIC_BIPED_CONTROL_RELAY_H
 
 //#include "intercession_pch.h"
-#include <queue>
+#include <vector>
 #include <glm/gtx/rotate_vector.hpp>
+#include "controlling/biped_control_packet.h"
 
 namespace pleep
 {
@@ -16,15 +17,14 @@ namespace pleep
         
         void submit(BipedControlPacket data)
         {
-            m_controlPacketQueue.push(data);
+            m_controlPackets.push_back(data);
         }
 
         void engage(double deltaTime) override
         {
-            while (!m_controlPacketQueue.empty())
+            for (std::vector<BipedControlPacket>::iterator packet_it = m_controlPackets.begin(); packet_it != m_controlPackets.end(); packet_it++)
             {
-                BipedControlPacket data = m_controlPacketQueue.front();
-                m_controlPacketQueue.pop();
+                BipedControlPacket& data = *packet_it;
                 
                 // generate aim "heading" from aimOrientation and support vector
                 // movement axes while airborn may depend on camera gimbal axis?
@@ -128,6 +128,12 @@ namespace pleep
             
             UNREFERENCED_PARAMETER(deltaTime);
         }
+        
+        // clear packets for next frame
+        void clear() override
+        {
+            m_controlPackets.clear();
+        }
 
     private:
         // we store reference to buffer from dynamo
@@ -140,7 +146,7 @@ namespace pleep
         
         // store all entities receiving controls this frame and defer processing after all are submitted
         // this might not be necessary, are there any control schemes which are non-greedy?
-        std::queue<BipedControlPacket> m_controlPacketQueue;
+        std::vector<BipedControlPacket> m_controlPackets;
     };
 }
 
