@@ -136,7 +136,7 @@ namespace pleep
             }
 
             // does this axes have the best overlap? max ray parameter -> min penetration (like usual SAT)
-            if (rayParametricValue > maxRayParametricValue)
+            if (rayParametricValue >= maxRayParametricValue)
             {
                 maxRayParametricValue = rayParametricValue;
                 minPenetrateDepth = penetration;

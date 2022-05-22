@@ -16,6 +16,8 @@ namespace pleep
 
         virtual void run_relays(double deltaTime) = 0;
 
+        virtual void reset_relays() = 0;
+
         // synchros get broker reference from respective dynamo
         EventBroker* get_shared_broker();
 

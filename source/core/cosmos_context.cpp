@@ -73,10 +73,27 @@ namespace pleep
             // invokes all registered synchros to process their entities
             m_currentCosmos->update();
 
-            // flush dynamos of all synchro submissions
-            m_controlDynamo->run_relays(deltaTime);
-            m_physicsDynamo->run_relays(deltaTime);
+            // ***** Run fixed timesteps for dynamos *****
+            // TODO: give each dynamo a run "fixed" method so we don't need to explicitly know
+            //   which dynamos to call fixed and which to call on frametime
+            size_t stepsTaken = 0;
+            m_timeRemaining += deltaTime;
+            while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
+            {
+                m_timeRemaining -= m_fixedTimeStep;
+                stepsTaken++;
+
+                m_physicsDynamo->run_relays(m_fixedTimeStep);
+                m_controlDynamo->run_relays(m_fixedTimeStep);
+            }
+
+            // ***** Run "frame time" timsteps for dynamos *****
             m_renderDynamo->run_relays(deltaTime);
+            
+            // flush dynamos of all synchro submissions
+            m_controlDynamo->reset_relays();
+            m_physicsDynamo->reset_relays();
+            m_renderDynamo->reset_relays();
 
             // ***** Post Processing *****
             // top ui layer in context for debug

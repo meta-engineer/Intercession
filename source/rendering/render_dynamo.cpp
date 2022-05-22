@@ -112,6 +112,15 @@ namespace pleep
         if (err) { PLEEPLOG_ERROR("glError after screen pass: " + std::to_string(err)); }
     }
     
+    void RenderDynamo::reset_relays()
+    {
+        // TODO: render relays are not setup to have fixed timestep (multiple iterations per frame)
+        // so they clear themselves automatically
+        //m_forwardPass->clear();
+        //m_bloomPass->clear();
+        //m_screenPass->clear();
+    }
+    
     void RenderDynamo::flush_frame() 
     {
         glfwSwapBuffers(m_windowApi);

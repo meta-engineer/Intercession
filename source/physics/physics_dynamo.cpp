@@ -39,31 +39,16 @@ namespace pleep
     {
         // BVH is now built? process all physical processes
         
-#define PHYSICS_FIXED_TIMESTEP
-#ifdef PHYSICS_FIXED_TIMESTEP
-        size_t stepsTaken = 0;
-        m_timeRemaining += deltaTime;
-        while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
-        {
-            m_timeRemaining -= m_fixedTimeStep;
-            stepsTaken++;
-
-            this->engage_all(m_fixedTimeStep);
-        }
-#else
-        this->engage_all(deltaTime);
-#endif // PHYSICS_FIXED_TIMESTEP
-
-        // after 1+ timesteps clear relays
-        m_motionStep->clear();
-        m_collisionStep->clear();
-    }
-    
-    void PhysicsDynamo::engage_all(double deltaTime) 
-    {
         // motion first
         m_motionStep->engage(deltaTime);
         // then detect and resolve collision
         m_collisionStep->engage(deltaTime);
+    }
+    
+    void PhysicsDynamo::reset_relays()
+    {
+        // after 1+ timesteps clear relays
+        m_motionStep->clear();
+        m_collisionStep->clear();
     }
 }

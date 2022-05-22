@@ -70,32 +70,36 @@ namespace pleep
         const float dynamicFrictionFactor = this->dynamicFriction * otherRigidBody->dynamicFriction;
 
         // STEP 2: Geometry Properties
-        // STEP 2.1: center of mass
-        const glm::vec3 thisCenterOfMass = thisData.transform.origin;
-        const glm::vec3 otherCenterOfMass = otherData.transform.origin;
+        // STEP 2.1: transform
+        const glm::mat4 thisModel = thisData.collider->compose_transform(thisData.transform);
+        const glm::mat4 otherModel = otherData.collider->compose_transform(otherData.transform);
+        // STEP 2.2: center of mass
+        // TODO: for a compound collider this will be more involved
+        //   for now take origin of collider
+        const glm::vec3 thisCenterOfMass = thisModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
+        const glm::vec3 otherCenterOfMass = otherModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
         
-        // STEP 2.2: Collision Point Rationalizing
+        // STEP 2.3: Collision Point Rationalizing
         // Because there is no static resolution, set collision point to midway point
         collisionPoint = collisionPoint - (collisionNormal * collisionDepth)/2.0f;
 
-        // STEP 3.2: vector describing the "radius" of the rotation
+        // STEP 2.4: vector describing the "radius" of the rotation
         const glm::vec3 thisLever = (collisionPoint - thisCenterOfMass);
         const glm::vec3 otherLever = (collisionPoint - otherCenterOfMass);
-        
-        // STEP 3.3 relative velocity vector
+
+        // STEP 2.5 relative velocity vector
         // relative is: this' velocity as viewed by other
         const glm::vec3 relVelocity = ((thisPhysics.velocity + glm::cross(thisPhysics.angularVelocity, thisLever)) - (otherPhysics.velocity + glm::cross(otherPhysics.angularVelocity, otherLever)));
 
         // NO early exit on negative relVelocity because springs will penetrate
         
-        // STEP 3.4: angular inertia/moment
+        // STEP 2.6: angular inertia/moment
         // TODO: can this be optimized? inverse of inverse :(
         // TODO: moment doesn't behave correct with scaled transforms
         //   copy transforms, extract scale, build inertia tensor with scale
         //   then transform tensor with scale-less model transform
         // each collider can restrict it as they see fit
-        const glm::mat3 thisModel = thisData.collider->compose_transform(thisData.transform);
-        const glm::mat3 thisInverseModel = glm::inverse(thisModel);
+        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisModel));
         const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
             : glm::inverse(
                 glm::transpose(thisInverseModel) 
@@ -103,7 +107,7 @@ namespace pleep
                 * thisInverseModel
             );
 
-        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.collider->compose_transform(otherData.transform)));
+        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherModel));
         const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
             : glm::inverse(
                 glm::transpose(otherInverseModel)
@@ -111,25 +115,25 @@ namespace pleep
                 * otherInverseModel
             );
 
-        // STEP 3.5: Spring properties
+        // STEP 2.7: Spring properties
         // spring length = collisionDepth
         // delta spring length is relativeVelocity along collision Normal
         const glm::vec3 deltaCollisionDepth = glm::dot(relVelocity, collisionNormal) * collisionNormal;
         // if dot product is posative -> this is movign away from other
         // therefore spring is changing posatively
 
-        // STEP 4: Spring Force
+        // STEP 3: Spring Force
         // spring body may have a preference for direction
         // for now we can apply along surface normal
         glm::vec3 restVector = glm::vec3(0.0f, 0.0f, this->restLength);     // mirrors default ray
-        restVector = thisModel * restVector;
+        restVector = glm::mat3(thisModel) * restVector;
         const float scaledRestLength = glm::length(restVector);
         const float springForceMagnitude = (collisionDepth - scaledRestLength) * this->stiffness;
         const glm::vec3 springForce = springForceMagnitude * collisionNormal;
         const glm::vec3 dampedSpringForce = springForce - this->damping * deltaCollisionDepth;
 
-        // STEP 5: Friction
-        // STEP 5.1: Determine velocity perpendicular to normal (tangent along surface)
+        // STEP 4: Friction
+        // STEP 4.1: Determine velocity perpendicular to normal (tangent along surface)
         const glm::vec3 tangentCross = glm::cross(relVelocity, collisionNormal);
         glm::vec3 collisionTangent = glm::vec3(0.0f);
         if (glm::length2(tangentCross) != 0.0f)
@@ -141,7 +145,7 @@ namespace pleep
                 collisionTangent = glm::normalize(collisionTangent);
         }
         
-        // STEP 5.2: Determine friction impulse
+        // STEP 4.2: Determine friction impulse
         const float tangentImpulse = -1.0f * glm::dot(relVelocity, collisionTangent) /
             (otherInvMass + thisInvMass +
             glm::dot(
@@ -150,7 +154,7 @@ namespace pleep
                 collisionTangent)
             );
             
-        // STEP 5.3: Coefficient factors
+        // STEP 4.3: Coefficient factors
         // if impulse is less than static max, then apply it (this should negate all colinear velocity)
         // if impulse is greater than static max, multiply it by dynamic coefficient
         const float frictionCone = staticFrictionFactor * springForceMagnitude;
@@ -158,16 +162,16 @@ namespace pleep
 
         const float frictionImpulse = std::abs(tangentImpulse) < std::abs(frictionCone) ? tangentImpulse : tangentImpulse * dynamicFrictionFactor;
 
-        // STEP 6: Dynamic resolution
-        // STEP 6.1: resolve linear spring force
+        // STEP 5: Dynamic resolution
+        // STEP 5.1: resolve linear spring force
         thisPhysics.acceleration  +=  thisInvMass * dampedSpringForce;
         otherPhysics.acceleration -= otherInvMass * dampedSpringForce;
 
-        // STEP 6.2 resolve linear friction impulse response
+        // STEP 5.2 resolve linear friction impulse response
         thisPhysics.velocity  += thisInvMass * (frictionImpulse*collisionTangent);
         otherPhysics.velocity -= otherInvMass * (frictionImpulse*collisionTangent);
 
-        // STEP 6.3 resolve angular spring force
+        // STEP 5.3 resolve angular spring force
         if (this->influenceOrientation)
         {
             thisPhysics.angularAcceleration  += thisInvMoment * glm::cross(thisLever, dampedSpringForce);
@@ -177,7 +181,7 @@ namespace pleep
             otherPhysics.angularAcceleration -= otherInvMoment * glm::cross(otherLever, dampedSpringForce);
         }
 
-        // STEP 6.4 resolve angular friction impulse response
+        // STEP 5.4 resolve angular friction impulse response
         if (this->influenceOrientation)
         {
             thisPhysics.angularVelocity  += thisInvMoment * glm::cross(thisLever, frictionImpulse*collisionTangent);
@@ -187,7 +191,7 @@ namespace pleep
             otherPhysics.angularVelocity -= otherInvMoment * glm::cross(otherLever, frictionImpulse*collisionTangent);
         }
 
-        // STEP 6.5: apply angular dampening
+        // STEP 5.5: apply angular dampening
         // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
         if (this->influenceOrientation)
         {

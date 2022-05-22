@@ -71,11 +71,14 @@ namespace pleep
         collisionPoint             -= collisionNormal * collisionDepth * (1-massRatio);
 
         // STEP 3: geometry properties
+        // STEP 3.1: transform
+        const glm::mat4 thisModel = thisData.collider->compose_transform(thisData.transform);
+        const glm::mat4 otherModel = otherData.collider->compose_transform(otherData.transform);
         // STEP 3.1: center of mass
         // TODO: for a compound collider this will be more involved
-        //   for now take entity origin + collider origin?
-        const glm::vec3 thisCenterOfMass = thisData.transform.origin;
-        const glm::vec3 otherCenterOfMass = otherData.transform.origin;
+        //   for now take origin of collider
+        const glm::vec3 thisCenterOfMass = thisModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
+        const glm::vec3 otherCenterOfMass = otherModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
 
         // STEP 3.2: vector describing the "radius" of the rotation
         const glm::vec3 thisLever = (collisionPoint - thisCenterOfMass);
@@ -105,7 +108,7 @@ namespace pleep
         //   copy transforms, extract scale, build inertia tensor with scale
         //   then transform tensor with scale-less model transform
         // each collider can restrict it as they see fit
-        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisData.collider->compose_transform(thisData.transform)));
+        const glm::mat3 thisInverseModel = glm::inverse(glm::mat3(thisModel));
         const glm::mat3 thisInvMoment = thisInvMass == 0 ? glm::mat3(0.0f) 
             : glm::inverse(
                 glm::transpose(thisInverseModel) 
@@ -113,7 +116,7 @@ namespace pleep
                 * thisInverseModel
             );
 
-        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherData.collider->compose_transform(otherData.transform)));
+        const glm::mat3 otherInverseModel = glm::inverse(glm::mat3(otherModel));
         const glm::mat3 otherInvMoment = otherInvMass == 0 ? glm::mat3(0.0f)
             : glm::inverse(
                 glm::transpose(otherInverseModel)

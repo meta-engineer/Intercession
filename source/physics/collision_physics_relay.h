@@ -90,6 +90,7 @@ namespace pleep
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(thisData.collider->m_responseType) + ", clearing and skipping");
                         thisData.collider->m_responseType = CollisionResponseType::none;
+                        continue;
                     }
                     try
                     {
@@ -112,11 +113,6 @@ namespace pleep
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(otherData.collider->m_responseType) + ", clearing and skipping");
                         otherData.collider->m_responseType = CollisionResponseType::none;
-                    }
-
-                    if (thisResponse == nullptr || otherResponse == nullptr)
-                    {
-                        // one of the colliders is non-physical
                         continue;
                     }
 

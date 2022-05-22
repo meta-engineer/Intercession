@@ -74,7 +74,14 @@ namespace pleep
         //NetworkApi* m_netApi;
         //NetworkDynamo* m_netDynamo;
 
+        // runtime calibrations
         bool m_running;
+        // Fixed timestep for stability. 200hz?
+        const double m_fixedTimeStep = 0.005;
+        // mechanism for tracking how many timesteps to process
+        double m_timeRemaining = 0.0;
+        // max number of iterations to catchup before letting system progress/respond
+        const size_t m_maxSteps = 30;
     };
 }
 

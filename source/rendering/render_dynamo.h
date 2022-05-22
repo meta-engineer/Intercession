@@ -42,6 +42,8 @@ namespace pleep
 
         // process render command queue
         void run_relays(double deltaTime) override;
+        // prepare relays for next frame
+        void reset_relays() override;
         // stagger the final flush to allow context to debug
         void flush_frame();
         

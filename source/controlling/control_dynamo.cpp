@@ -68,32 +68,6 @@ namespace pleep
     {
         UNREFERENCED_PARAMETER(deltaTime);
 
-#define CONTROL_FIXED_TIMESTEP
-#ifdef CONTROL_FIXED_TIMESTEP
-        size_t stepsTaken = 0;
-        m_timeRemaining += deltaTime;
-        while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
-        {
-            m_timeRemaining -= m_fixedTimeStep;
-            stepsTaken++;
-
-            // this will call all triggered callbacks
-            glfwPollEvents();
-            // callbacks will have translated raw input into input buffers now
-            
-            // Only send SpacialActions with locked mouse
-            if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
-            {
-                m_spacialInputBuffer.clear();
-            }
-
-            this->engage_all(m_fixedTimeStep);
-
-            // prepare input for next frame
-            // key members should be cleared only on "release" action
-            m_spacialInputBuffer.resolve();
-        }
-#else
         // this will call all triggered callbacks
         glfwPollEvents();
 
@@ -105,18 +79,14 @@ namespace pleep
             m_spacialInputBuffer.clear();
         }
 
-        this->engage_all(deltaTime);
+        m_flyController->engage(deltaTime);
+        m_cameraController->engage(deltaTime);
+        m_bipedController->engage(deltaTime);
+        m_bipedCameraController->engage(deltaTime);
 
         // prepare input for next frame
             // key members should be cleared only on "release" action
         m_spacialInputBuffer.resolve();
-#endif // CONTROL_FIXED_TIME_STEP
-
-        // after 1+ timesteps clear relays
-        m_flyController->clear();
-        m_cameraController->clear();
-        m_bipedController->clear();
-        m_bipedCameraController->clear();
 
         // check for interactions with window frame (not captured specifically by callbacks)
         // glfwWindowShouldClose will be set after glfwPollEvents
@@ -126,13 +96,14 @@ namespace pleep
             this->_window_should_close_callback(m_windowApi);
         }
     }
-    
-    void ControlDynamo::engage_all(double deltaTime) 
+
+    void ControlDynamo::reset_relays()
     {
-        m_flyController->engage(deltaTime);
-        m_cameraController->engage(deltaTime);
-        m_bipedController->engage(deltaTime);
-        m_bipedCameraController->engage(deltaTime);
+        // after 1+ timesteps clear relays
+        m_flyController->clear();
+        m_cameraController->clear();
+        m_bipedController->clear();
+        m_bipedCameraController->clear();
     }
 
     void ControlDynamo::_set_my_window_callbacks()
