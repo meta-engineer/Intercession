@@ -28,8 +28,7 @@ namespace pleep
         //BipedState state;
 
         bool isGrounded = true;
-        // given as closest (dot product) vector to Transform heading along the ground collider
-        glm::vec3 lastGroundGradient = glm::vec3(0.0f, 0.0f, 1.0f);
+        glm::vec3 groundNormal = glm::vec3(0.0f, 1.0f, 0.0f);
         // may have to recalculate collisionPoint relative velocity
         glm::vec3 groundVelocity = glm::vec3(0.0f);
 

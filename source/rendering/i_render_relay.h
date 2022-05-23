@@ -2,7 +2,7 @@
 #define RENDER_RELAY_H
 
 //#include "intercession_pch.h"
-#include <queue>
+#include <vector>
 
 #include "rendering/render_packet.h"
 #include "rendering/light_source_packet.h"
@@ -46,8 +46,17 @@ namespace pleep
         // viewportDims[4] should be used to set default viewport
         // each relay is different, enforce implementation to avoid confusion
         virtual void engage(int* viewportDims) = 0;
+        
+        // once engage is done they should clear their packets
+        // render relays don't have multi-timestep engages, but on engage failure clear is needed
+        // if subclasses store additional packets they should override
+        virtual void clear()
+        {
+            m_modelPackets.clear();
+            m_lightSourcePackets.clear();
+        }
 
-        // pass in camera to render with (overwrites last cubmitted camera)
+        // pass in camera to render with (overwrites last submitted camera)
         void submit(CameraPacket data)
         {
             m_viewPos = data.transform.origin;
@@ -72,12 +81,12 @@ namespace pleep
         // Should there be a limit to this?
         void submit(RenderPacket data)
         {
-            m_modelPacketQueue.push(data);
+            m_modelPackets.push_back(data);
         }
 
         void submit(LightSourcePacket data)
         {
-            m_LightSourcePacketQueue.push(data);
+            m_lightSourcePackets.push_back(data);
         }
 
     protected:
@@ -91,8 +100,8 @@ namespace pleep
         unsigned int m_viewHeight = 1024;
 
         // collect packets during render submitting
-        std::queue<RenderPacket> m_modelPacketQueue;
-        std::queue<LightSourcePacket> m_LightSourcePacketQueue;
+        std::vector<RenderPacket> m_modelPackets;
+        std::vector<LightSourcePacket> m_lightSourcePackets;
     };
 }
 

@@ -101,10 +101,9 @@ namespace pleep
         unsigned int m_viewTransformUboId;
 
         // Data for UBO
-        // Camera data is not live ( dynamo can't access ECS)
-        // but synchro will update each frame (or when neccessary)
-        glm::mat4 m_world_to_view;
-        glm::mat4 m_projection;
+        // Camera data is not live (dynamo can't access ECS)
+        // but synchro will update each frame, and relay reset should clear at the end of the frame
+        std::unique_ptr<CameraPacket> m_cameraData;
     };
 }
 

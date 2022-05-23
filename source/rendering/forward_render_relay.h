@@ -155,10 +155,9 @@ namespace pleep
             m_numRayLights = 0;
             m_numPointLights = 0;
             m_numSpotLights = 0;
-            while (!m_LightSourcePacketQueue.empty())
+            for (std::vector<LightSourcePacket>::iterator packet_it = m_lightSourcePackets.begin(); packet_it != m_lightSourcePackets.end(); packet_it++)
             {
-                LightSourcePacket data = m_LightSourcePacketQueue.front();
-                m_LightSourcePacketQueue.pop();
+                LightSourcePacket& data = *packet_it;
                 std::string lightUni;
 
                 switch(data.light.type)
@@ -209,10 +208,9 @@ namespace pleep
             m_sm.deactivate();
 
             // Render through all models
-            while (!m_modelPacketQueue.empty())
+            for (std::vector<RenderPacket>::iterator packet_it = m_modelPackets.begin(); packet_it != m_modelPackets.end(); packet_it++)
             {
-                RenderPacket data = m_modelPacketQueue.front();
-                m_modelPacketQueue.pop();
+                RenderPacket& data = *packet_it;
 
                 m_sm.activate();
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());

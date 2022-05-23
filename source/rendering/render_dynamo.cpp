@@ -72,10 +72,9 @@ namespace pleep
         m_screenPass->submit(data);
         m_bloomPass->submit(data);
 
-        // I also need to save some data to set UBO
-        // these calulated mat4s are no longer volatile, so they're ok
-        m_world_to_view = get_lookAt(data.transform, data.camera);
-        m_projection    = get_projection(data.camera);
+        // store CameraPacket for Uniform Buffer (every submittion overrides)
+        // the ECS references are volatile so they must be cleared with relay packets
+        m_cameraData = std::make_unique<CameraPacket>(data);
     }
 
     
@@ -88,11 +87,21 @@ namespace pleep
         //   then close the frame
         UNREFERENCED_PARAMETER(deltaTime);
 
+        // if there is no camera data then... exit early
+        // make sure relays are still reset after!
+        if (m_cameraData == nullptr)
+        {
+            return;
+        }
+
+        // Calculate uniform buffer data
+        glm::mat4 world_to_view = get_lookAt(m_cameraData->transform, m_cameraData->camera);
+        glm::mat4 projection    = get_projection(m_cameraData->camera);
         // Update uniform buffer for registered relays
         // could optimize further by only resetting if transform/fov changes
         glBindBuffer(GL_UNIFORM_BUFFER, m_viewTransformUboId);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &m_world_to_view);
-        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &m_projection);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0,                 sizeof(glm::mat4), &world_to_view);
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &projection);
 
         // run through each relay in my configured order
         GLenum err;
@@ -116,9 +125,12 @@ namespace pleep
     {
         // TODO: render relays are not setup to have fixed timestep (multiple iterations per frame)
         // so they clear themselves automatically
-        //m_forwardPass->clear();
-        //m_bloomPass->clear();
-        //m_screenPass->clear();
+        m_forwardPass->clear();
+        m_bloomPass->clear();
+        m_screenPass->clear();
+
+        // clear volatile camera data from ecs
+        m_cameraData.reset();
     }
     
     void RenderDynamo::flush_frame() 

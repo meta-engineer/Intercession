@@ -77,7 +77,6 @@ namespace pleep
                     {
                         targetGroundVelocity -= aimProjection * m_inputCache.actionVals.at(SpacialActions::moveBackward);
                     }
-
                     if (m_inputCache.actions.test(SpacialActions::moveLeft))
                     {
                         targetGroundVelocity -= aimTangent * m_inputCache.actionVals.at(SpacialActions::moveLeft);
@@ -86,6 +85,7 @@ namespace pleep
                     {
                         targetGroundVelocity += aimTangent * m_inputCache.actionVals.at(SpacialActions::moveRight);
                     }
+
                     if (targetGroundVelocity != glm::vec3(0.0f))
                         targetGroundVelocity = glm::normalize(targetGroundVelocity) * data.controller.groundMaxSpeed;
                     
@@ -94,8 +94,8 @@ namespace pleep
                     // derive ground velocity
                     const glm::vec3 groundVelocity = data.physics.velocity - (glm::dot(data.physics.velocity, data.controller.supportAxis) * data.controller.supportAxis);
 
-                    // accelerate ground velocity towards target groudn velocity
-                    // TODO: must only apply perpendicular to supportAxis
+                    // accelerate ground velocity towards target ground velocity
+                    // TODO: Should entities moving faster than their max slow down? Or should they trip/soft knockdown(ukemi)/not slow down if they slide?
                     const glm::vec3 deltaGroundVelocity = targetGroundVelocity - groundVelocity;
 
                     // clamp deltaGroundVelocity with max acceleration

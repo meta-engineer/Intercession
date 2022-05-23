@@ -74,8 +74,8 @@ namespace pleep
             m_currentCosmos->update();
 
             // ***** Run fixed timesteps for dynamos *****
-            // TODO: give each dynamo a run "fixed" method so we don't need to explicitly know
-            //   which dynamos to call fixed and which to call on frametime
+            // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
+            //   know which dynamos to call fixed and which to call on frametime
             size_t stepsTaken = 0;
             m_timeRemaining += deltaTime;
             while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
