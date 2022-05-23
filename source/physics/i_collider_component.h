@@ -221,8 +221,10 @@ namespace pleep
                         break;
                     }
 
-                    // get j that accounts for wrapping
-                    size_t J = j % clippee.size();
+                    // get j that accounts for wrapping (must be signed)
+                    int J = j % clippee.size();
+                    // get previous index (account for wrapping again)
+                    int J_1 = J==0 ? clippee.size() - 1 : J-1;
                     // determine which side the point is on
                     float clippeeCoeff = 
                         thisPlane.x * clippee[J].x + 
@@ -232,7 +234,7 @@ namespace pleep
 
                     // determine case for this edge
                     // buffer for floating point/rounding error, preferring inside
-                    const float e = 0.000001f;
+                    const float e = 0.00005f;
                     const bool prevInside = (prevClippeeCoeff >= 0-e && insideCoeff >= 0-e)
                                          || (prevClippeeCoeff <= 0+e && insideCoeff <= 0+e);
                     const bool currInside = (clippeeCoeff     >= 0-e && insideCoeff >= 0-e)
@@ -255,12 +257,12 @@ namespace pleep
                     if ((currInside ^ prevInside) && j != 0)
                     {
                         // ensure ray is outside -> inside
-                        glm::vec3 insideVertex = clippee[(J-1) % clippee.size()];
+                        glm::vec3 insideVertex = clippee[J_1];
                         glm::vec3 outsideVertex = clippee[J];
                         if (currInside)
                         {
                             insideVertex = clippee[J];
-                            outsideVertex = clippee[(J-1) % clippee.size()];
+                            outsideVertex = clippee[J_1];
                         }
 
                         // find & add intersection
