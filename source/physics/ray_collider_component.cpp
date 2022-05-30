@@ -7,7 +7,7 @@ namespace pleep
 {
     glm::mat3 RayColliderComponent::get_inertia_tensor(glm::vec3 scale) const
     {
-        scale = scale * m_localTransform.scale;
+        scale = scale * localTransform.scale;
         glm::mat3 I(0.0f);
 
         // assumes rod is along z axis

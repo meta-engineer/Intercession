@@ -11,7 +11,7 @@ namespace pleep
 
     glm::mat3 BoxColliderComponent::get_inertia_tensor(glm::vec3 scale) const
     {
-        scale = scale * m_localTransform.scale;
+        scale = scale * localTransform.scale;
         // x=width, y=height, z=depth
         // assuming box is a unit cube
         const float width  = scale.x;

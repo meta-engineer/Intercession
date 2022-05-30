@@ -33,13 +33,13 @@ namespace pleep
         glm::vec3 groundVelocity = glm::vec3(0.0f);
 
         // units roughly equate to meters and seconds
-        float groundAcceleration    = 10.0f;
-        float groundDeceleration    = 10.0f; // is this additive or replacing normal acceleration?
-        float groundMaxSpeed        = 8.0f; // non-controller forces can accelerate faster
+        float groundAcceleration    = 20.0f;
+        //float groundDeceleration    = 40.0f; // is this additive or replacing normal acceleration?
+        float groundMaxSpeed        = 8.0f;  // non-controller forces can accelerate faster
 
         float airAcceleration       = 1.0f;
         //float airDeceleration       = 1.0f;
-        float airMaxSpeed           = 20.0f;
+        float airMaxSpeed           = 4.0f;
     };
 }
 

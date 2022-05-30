@@ -9,6 +9,7 @@
 
 #include "logging/pleep_log.h"
 #include "physics/transform_component.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {
@@ -33,12 +34,11 @@ namespace pleep
     // define collision behaviours, each type must dispatch to a different behaviour component
     enum CollisionResponseType
     {
-        none,       // stop detection early!
+        none,       // (or script trigger only)
         rigid,      // find & call entity's Rigid Body component
         spring,     // find & call entity's Spring Body component
         force,      // find & call entity's Force Generator component
         //soft,       // find & call entity's Soft Body component
-        //trigger,    // find & call entity's Script componnet (is this mutually exclusive?)
     };
 
     struct IColliderComponent
@@ -46,21 +46,27 @@ namespace pleep
         // ***** Universal collider attributes *****
         // Suggestion to Dynamo for how to respond to a detected collision
         // This may be best implemented with a table/map between response type pairs and functions
-        CollisionResponseType m_responseType = CollisionResponseType::rigid;
+        CollisionResponseType responseType = CollisionResponseType::rigid;
+        
+        // Flag for external components to temporarily disable
+        bool isActive = true;
+
+        // Other entity (or self) that contains a script component to call
+        Entity scriptTarget = NULL_ENTITY;
 
         // nested transform component "offset" (in local space) from entity's origin
         // Transform scale makes geometrically defined collider shapes
         // NOTE: centre of mass may or may not correlate
-        TransformComponent m_localTransform;
+        TransformComponent localTransform;
         // Entity can have unlocked orientation, but this collider maintains alignment
         //  (you may also want the collision response to not influence orientation)
-        bool m_inheritOrientation = true;
+        bool inheritOrientation = true;
         
         // "Getter" for inertia tensor, accepts inherited scale
         // Does not include mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const
         {
-            scale = scale * m_localTransform.scale;
+            scale = scale * localTransform.scale;
             // we'll use a unit sphere as default
             const float radius = glm::min(glm::min(scale.x, scale.y), scale.z);
             return glm::mat3(radius*radius * (2.0f/5.0f));
@@ -128,17 +134,17 @@ namespace pleep
 
         // ***** collider helper utils *****
 
-        // Combine parent transform with m_localTransform according to collider's options
+        // Combine parent transform with localTransform according to collider's options
         // return product of transform matrices
         glm::mat4 compose_transform(TransformComponent parentTransform) const
         {
             // modify transform copy with options
-            if (!m_inheritOrientation)
+            if (!inheritOrientation)
             {
                 parentTransform.orientation = glm::quat(glm::vec3(0.0f));
             }
             // allow non-uniform scaling
-            return parentTransform.get_model_transform() * m_localTransform.get_model_transform();
+            return parentTransform.get_model_transform() * localTransform.get_model_transform();
         }
 
         // clip clippee polygon against clipper polygon as if they are flattened along axis

@@ -12,7 +12,7 @@ namespace pleep
     struct BoxColliderComponent : public IColliderComponent
     {
         // ***** Box specific Attributes *****
-        // box is unit cube, use m_localTransform.scale to set side lengths
+        // box is unit cube, use localTransform.scale to set side lengths
 
     private:
         // callibrations for manifold checking

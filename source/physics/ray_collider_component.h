@@ -10,7 +10,7 @@ namespace pleep
     struct RayColliderComponent : public IColliderComponent
     {
         // ***** Ray Specific Attributes *****
-        // ray is unit vector (0,0,1), use m_localTransform to rotate and scale ray
+        // ray is unit vector (0,0,1), use localTransform to rotate and scale ray
         // This would mean that x & y scale have no effect...
         // what if we want an "infinite" length ray?
 

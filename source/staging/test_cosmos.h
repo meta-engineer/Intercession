@@ -28,6 +28,9 @@
 #include "rendering/light_source_component.h"
 #include "ecs/tag_component.h"
 
+#include "scripting/script_component.h"
+#include "scripting/biped_scripts.h"
+
 namespace pleep
 {
     void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, ControlDynamo* controlDynamo, PhysicsDynamo* physicsDynamo)
@@ -49,6 +52,7 @@ namespace pleep
         cosmos->register_component<SpringBodyComponent>();
         // register tag component as a normal component?
         cosmos->register_component<TagComponent>();
+        cosmos->register_component<ScriptComponent>();
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -108,6 +112,8 @@ namespace pleep
             cosmos->set_synchro_signature<RayColliderSynchro>(RayColliderSynchro::get_signature(cosmos));
         }
 
+        // TODO: script synchro for fixed time and frame time updates?
+
         PLEEPLOG_TRACE("Create Entities");
         // create entities
         // create component and pass or construct inline
@@ -116,10 +122,11 @@ namespace pleep
         Entity frog = cosmos->create_entity();
         cosmos->add_component(frog, TagComponent{ "froog" });
         cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
-        // TODO: moment of inertia is not correct with scaled transform, scale has to be squared?
-        cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
-        std::shared_ptr<Model> frogModel = std::make_shared<Model>("resources/normal_frog.obj");
-        cosmos->add_component(frog, ModelComponent(frogModel));
+        //cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.5f, 1.0f, 0.5f);
+        //std::shared_ptr<Model> frog_model = std::make_shared<Model>("resources/normal_frog.obj");
+        std::shared_ptr<Model> frog_model = model_builder::create_cube("resources/container.jpg");
+        cosmos->add_component(frog, ModelComponent(frog_model));
         //cosmos->add_component(frog, PhysicsControlComponent{});
         PhysicsComponent frog_physics;
         frog_physics.mass = 30.0f;
@@ -130,20 +137,27 @@ namespace pleep
 
         // frog "body"
         BoxColliderComponent frog_box;
-        frog_box.m_localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
-        frog_box.m_responseType = CollisionResponseType::rigid;
+        //frog_box.localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
+        frog_box.responseType = CollisionResponseType::rigid;
         cosmos->add_component(frog, frog_box);
         RigidBodyComponent frog_rigidBody;
         frog_rigidBody.influenceOrientation = false;
         cosmos->add_component(frog, frog_rigidBody);
 
+        // script to link collider events to controller
+        ScriptComponent frog_scripts;
+        frog_scripts.handlers = std::make_shared<BipedScripts>();
+        // store script in self
+        cosmos->add_component(frog, frog_scripts);
+
         // frog "legs"
         RayColliderComponent frog_ray;
-        frog_ray.m_localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        frog_ray.m_localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
-        //frog_collider.m_localTransform.origin = glm::vec3(0.0f, 1.5f, 0.0f);
-        frog_ray.m_responseType = CollisionResponseType::spring;
-        frog_ray.m_inheritOrientation = false;
+        frog_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        //frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
+        frog_ray.responseType = CollisionResponseType::spring;
+        frog_ray.inheritOrientation = false;
+        // link to biped script
+        frog_ray.scriptTarget = frog;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
         frog_springBody.influenceOrientation = false;
@@ -204,9 +218,9 @@ namespace pleep
         //torus_physics.velocity = glm::vec3(1.0f, 0.0f, 0.0f);
         cosmos->add_component(torus, torus_physics);
         BoxColliderComponent torus_collider;
-        torus_collider.m_localTransform.scale = glm::vec3(2.4f, 0.6f, 2.4f);
-        torus_collider.m_responseType = CollisionResponseType::spring;
-        torus_collider.m_inheritOrientation = true;
+        torus_collider.localTransform.scale = glm::vec3(2.4f, 0.6f, 2.4f);
+        torus_collider.responseType = CollisionResponseType::spring;
+        torus_collider.inheritOrientation = true;
         cosmos->add_component(torus, torus_collider);
         SpringBodyComponent torus_springBody;
         torus_springBody.restLength = 0.0f;
@@ -242,7 +256,7 @@ namespace pleep
         floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
         cosmos->add_component(floor, floor_physics);
         cosmos->add_component(floor, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor).m_localTransform.origin.z = -0.499f;
+        cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
         cosmos->add_component(floor, RigidBodyComponent{});
 
         Entity snow = cosmos->create_entity();
@@ -261,7 +275,7 @@ namespace pleep
         snow_physics.lockedOrientation = cosmos->get_component<TransformComponent>(snow).orientation;
         cosmos->add_component(snow, snow_physics);
         cosmos->add_component(snow, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(snow).m_localTransform.origin.z = -0.5f;
+        cosmos->get_component<BoxColliderComponent>(snow).localTransform.origin.z = -0.5f;
         cosmos->add_component(snow, RigidBodyComponent{});
 
         // Scene needs to create an entity with camera component
