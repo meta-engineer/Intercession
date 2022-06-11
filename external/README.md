@@ -80,3 +80,10 @@ NOTE: spdlog invludes minwindef.h which defines APIENTRY.
 glfw also defined APIENTRY. winwindef.h does not have a redefine guard.
 So in pleep_logger.h I manually #undef APIENTRY to fix it.
 Hopefully this causes no long term bugs...
+
+# asio
+asio is the api used for networking. The library is downloaded directly from the website:
+https://think-async.com/Asio/
+and unzipped into external/asio/
+
+It is header only so it can be directly included.

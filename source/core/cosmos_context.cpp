@@ -12,6 +12,7 @@ namespace pleep
         , m_renderDynamo(nullptr)
         , m_controlDynamo(nullptr)
         , m_physicsDynamo(nullptr)
+        , m_networkDynamo(nullptr)
     {
         m_running = false;
 
@@ -30,6 +31,7 @@ namespace pleep
         m_renderDynamo  = new RenderDynamo(m_eventBroker, windowApi);
         m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
+        m_networkDynamo = new NetworkDynamo(m_eventBroker);
         
         // build empty starting cosmos
         m_currentCosmos = new Cosmos();
@@ -47,6 +49,7 @@ namespace pleep
         delete m_physicsDynamo;
         delete m_controlDynamo;
         delete m_renderDynamo;
+        delete m_networkDynamo;
 
         delete m_eventBroker;
     }
@@ -83,6 +86,7 @@ namespace pleep
                 m_timeRemaining -= m_fixedTimeStep;
                 stepsTaken++;
 
+                m_networkDynamo->run_relays(m_fixedTimeStep);
                 m_physicsDynamo->run_relays(m_fixedTimeStep);
                 m_controlDynamo->run_relays(m_fixedTimeStep);
             }
@@ -91,8 +95,9 @@ namespace pleep
             m_renderDynamo->run_relays(deltaTime);
             
             // flush dynamos of all synchro submissions
-            m_controlDynamo->reset_relays();
+            m_networkDynamo->reset_relays();
             m_physicsDynamo->reset_relays();
+            m_controlDynamo->reset_relays();
             m_renderDynamo->reset_relays();
 
             // ***** Post Processing *****
@@ -161,7 +166,7 @@ namespace pleep
     {
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_controlDynamo, m_physicsDynamo);
+        //build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_controlDynamo, m_physicsDynamo);
         // use imgui input in main loop do add more at runtime
     }
     

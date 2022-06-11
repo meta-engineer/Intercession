@@ -17,6 +17,7 @@
 #include "rendering/render_dynamo.h"
 #include "controlling/control_dynamo.h"
 #include "physics/physics_dynamo.h"
+#include "networking/network_dynamo.h"
 
 namespace pleep
 {
@@ -67,6 +68,7 @@ namespace pleep
         RenderDynamo* m_renderDynamo;
         ControlDynamo* m_controlDynamo;
         PhysicsDynamo* m_physicsDynamo;
+        NetworkDynamo* m_networkDynamo;
 
         //AudioApi* m_audioApi;
         //AudioDynamo* m_audioDynamo;

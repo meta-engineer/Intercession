@@ -45,7 +45,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external
 
 # GLAD
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glad/src/glad.c")
-    message(FATAL_ERROR "The GLAD is not available! Please see external/README.md to regenerate it.")
+    message(FATAL_ERROR "The GLAD library is not available! Please see external/README.md to regenerate it.")
 endif()
 
 # include cpp headers. NOTE: glad also has source files accounted for in ./source_files.cmake
@@ -119,3 +119,12 @@ endif()
 # no CMakeLists.txt, source is added in source_files.cmake
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends)
+
+
+# ASIO
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/asio/include/asio.hpp")
+message(FATAL_ERROR "The ASIO library is not available! Please see external/README.md and manually download it")
+endif()
+
+# header only
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/asio/include)

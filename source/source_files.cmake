@@ -32,4 +32,6 @@ set(ALL_SOURCE_FILES
     source/physics/ray_collider_component.cpp
     source/physics/rigid_body_component.cpp
     source/physics/spring_body_component.cpp
+
+    source/networking/network_dynamo.cpp
 )

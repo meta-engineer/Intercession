@@ -11,5 +11,6 @@ external/glm/*
 external/assimp/*
 external/spdlog/*
 external/imgui/*
+external/asio/*
 
 .vscode
