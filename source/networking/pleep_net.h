@@ -15,7 +15,7 @@ namespace pleep
 namespace net
 {
     // PleepNet that abstracts network access via asio
-    void test();
+    void test_sockets();
 }
 }
 

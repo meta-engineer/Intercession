@@ -1,13 +1,13 @@
 
 set(ALL_SOURCE_FILES
-    source/logging/pleep_logger.cpp
-
     source/main.cpp
     source/core/app_gateway.cpp
 
     source/core/cosmos_context.cpp
     source/core/cosmos.cpp
     source/core/i_dynamo.cpp
+
+    source/logging/pleep_logger.cpp
 
     source/events/event_broker.cpp
 
@@ -34,4 +34,5 @@ set(ALL_SOURCE_FILES
     source/physics/spring_body_component.cpp
 
     source/networking/network_dynamo.cpp
+    source/networking/pleep_net.cpp
 )

@@ -7,7 +7,7 @@
 #include <memory>
 
 // Access PleepNet ...
-#include "pleep_net/pleep_net.h"
+#include "networking/pleep_net.h"
 
 #include "core/i_dynamo.h"
 #include "events/event_broker.h"

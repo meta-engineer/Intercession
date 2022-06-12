@@ -1,16 +1,15 @@
 #include "pleep_net.h"
 
-// can't include pleeplog as a standalone library because we don't have access
-// to the init'd logger instance
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
 namespace net
 {
-    void test() 
+    void test_sockets() 
     {
         // Testing
-        //PLEEPLOG_DEBUG("//////////////////////////");
+        PLEEPLOG_DEBUG("//////////////////////////");
         asio::error_code err;
         // platform ambiguous interface
         asio::io_context asioContext;
@@ -24,11 +23,11 @@ namespace net
 
         if (!err)
         {
-            //PLEEPLOG_DEBUG("asio connected");
+            PLEEPLOG_DEBUG("asio connected");
         }
         else
         {
-            //PLEEPLOG_DEBUG("asio failed to connect: " + err.message());
+            PLEEPLOG_DEBUG("asio failed to connect: " + err.message());
         }
 
         // use connected socket
@@ -51,17 +50,17 @@ namespace net
                     std::vector<char> responseBuffer(numBytes);
                     socket.read_some(asio::buffer(responseBuffer.data(), responseBuffer.size()), err);
 
-                    std::string response;
+                    std::string responseString;
                     for (char c : responseBuffer)
-                        response += c;
-                    //PLEEPLOG_DEBUG(response);
+                        responseString += c;
+                    PLEEPLOG_DEBUG("HTTP response:\n" + responseString);
                 }
         }
 
         // immediately stop whole context for testing
         // TODO: create general quit event?
         //m_sharedBroker->send_event(events::window::QUIT);
-        //PLEEPLOG_DEBUG("//////////////////////////");
+        PLEEPLOG_DEBUG("//////////////////////////");
         
     }
 }

@@ -1,5 +1,5 @@
-// Cannot use PROJECT_NAME macro here, it won't reslve nested macros
+// Cannot use PROJECT_NAME macro here, cmake won't resolve nested macros
 #define BUILD_VERSION_MAJOR @INTERCESSION_VERSION_MAJOR@
 #define BUILD_VERSION_MINOR @INTERCESSION_VERSION_MINOR@
 
-#cmakedefine USE_PLEEP_NET
+#cmakedefine USE_PLEEP_LIB
