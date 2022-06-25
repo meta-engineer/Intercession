@@ -10,7 +10,7 @@ namespace pleep
         PLEEPLOG_TRACE("Setup Networking pipeline");
         // setup relays
 
-        pleep::net::test_sockets();
+        pleep::net::test_net();
         
         PLEEPLOG_TRACE("Done Networking pipeline setup");
     }
