@@ -37,10 +37,10 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/build")
 endif()
 
 # if we precompile glfw into a static library can we link there directly
-target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/build/src/${CONFIGURATION})
-target_link_libraries(${PROJECT_NAME} glfw3)
+target_link_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/build/src/${CONFIGURATION})
+target_link_libraries(${ENGINE_NAME} glfw3)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glfw/include)
 
 
 # GLAD
@@ -49,7 +49,7 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glad/src/glad.c")
 endif()
 
 # include cpp headers. NOTE: glad also has source files accounted for in ./source_files.cmake
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glad/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glad/include)
 
 # GLM
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glm/CMakeLists.txt")
@@ -59,10 +59,10 @@ endif()
 # glm is header only?
 #add_subdirectory(glm)
 #target_link_libraries(${PROJECT_NAME} glm)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glm)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/glm)
 
 # STB_IMAGE
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/stb_image)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/stb_image)
 
 # ASSIMP
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/assimp/CMakeLists.txt")
@@ -81,21 +81,21 @@ if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/assimp/build")
 endif()
 
 # if we precompile assimp into a dll or static lib can we link there directly
-target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/lib/${CONFIGURATION})
+target_link_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/lib/${CONFIGURATION})
 # Assimp uses a debug postfix "d"
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${ENGINE_NAME}
     debug assimp-vc141-mtd
     optimized assimp-vc141-mt
 )
 # include cmake generated header
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/include)
 # include cpp headers
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/include)
 
 # also required to build and link zlib if assimp was built into static lib
-target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/contrib/zlib/${CONFIGURATION})
+target_link_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/contrib/zlib/${CONFIGURATION})
 # Zlib will also use a debug postfix "d"
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${ENGINE_NAME}
     debug zlibstaticd
     optimized zlibstatic
 )
@@ -108,7 +108,7 @@ endif()
 
 # spdlog is header only?
 # include cpp headers
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/spdlog/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/spdlog/include)
 
 
 # IMGUI
@@ -117,8 +117,8 @@ message(FATAL_ERROR "The imgui submodule was not downloaded! GIT_SUBMODULE was t
 endif()
 
 # no CMakeLists.txt, source is added in source_files.cmake
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends)
 
 
 # ASIO
@@ -127,4 +127,4 @@ message(FATAL_ERROR "The ASIO library is not available! Please see external/READ
 endif()
 
 # header only
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/asio/include)
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/asio/include)

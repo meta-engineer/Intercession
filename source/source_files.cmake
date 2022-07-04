@@ -1,6 +1,5 @@
 
-set(ALL_SOURCE_FILES
-    source/main.cpp
+set(COMMON_SOURCE_FILES
     source/core/app_gateway.cpp
 
     source/core/cosmos_context.cpp
@@ -35,4 +34,16 @@ set(ALL_SOURCE_FILES
 
     source/networking/network_dynamo.cpp
     source/networking/pleep_net.cpp
+)
+
+set(CLIENT_SOURCE_FILES
+    source/client_main.cpp
+    source/client/client_app_gateway.cpp
+    source/client/client_cosmos_context.cpp
+)
+
+set(SERVER_SOURCE_FILES
+    source/server_main.cpp
+    source/server/server_app_gateway.cpp
+    source/server/server_cosmos_context.cpp
 )

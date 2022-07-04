@@ -29,13 +29,16 @@ set(CPACK_NSIS_MUI_FINISHPAGE_RUN ${PROJECT_NAME})
 #set(CPACK_NSIS_MODIFY_PATH ON)  # doesn't create shortcut, and throws PATH too long to append
 
 # Shortcut in install directory and desktop (no user option because of above)
+# Only CLIENT will get a desktop shortcut
 set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-    CreateShortCut \\\"$INSTDIR\\\\${CPACK_PACKAGE_NAME}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\${PROJECT_NAME}.exe\\\"
-    CreateShortCut \\\"$DESKTOP\\\\${CPACK_PACKAGE_NAME}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\${PROJECT_NAME}.exe\\\"
+    CreateShortCut \\\"$INSTDIR\\\\${SERVER_NAME}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\${SERVER_NAME}.exe\\\"
+    CreateShortCut \\\"$INSTDIR\\\\${CLIENT_NAME}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\${CLIENT_NAME}.exe\\\"
+    CreateShortCut \\\"$DESKTOP\\\\${CLIENT_NAME}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\${CLIENT_NAME}.exe\\\"
 ")
 set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
-    Delete \\\"$INSTDIR\\\\${CPACK_PACKAGE_NAME}.lnk\\\"
-    Delete \\\"$DESKTOP\\\\${CPACK_PACKAGE_NAME}.lnk\\\"
+    Delete \\\"$INSTDIR\\\\${SERVER_NAME}.lnk\\\"
+    Delete \\\"$INSTDIR\\\\${CLIENT_NAME}.lnk\\\"
+    Delete \\\"$DESKTOP\\\\${CLIENT_NAME}.lnk\\\"
 ")
 
 # These didn't seem to be used by NSIS

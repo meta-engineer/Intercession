@@ -17,6 +17,7 @@ namespace pleep
     class NetworkDynamo : public IDynamo
     {
     public:
+        // TODO: accept networking api (iocontext) from AppGateway
         NetworkDynamo(EventBroker* sharedBroker);
         ~NetworkDynamo();
 

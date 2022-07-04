@@ -1,20 +1,20 @@
  ____________________________________________________
-|           ________ ___                             |
-|          /  __   //  /                             |
-|         /  /_/  //  /_____   _____   ________      |
-|        /  _____//  //  __ \ /  __ \ /  __   /      |
-|       /  /     /  //  ____//  ____//  /_/  /       |
-|      /__/     /__/ \_____/ \_____//  _____/        |
-|                                  /  /              |
-|                                 /__/               |
+|                           _______  __                                                         |
+|                          /    __     //   /                                                         |
+|                         /    /_/    //   /____    ____     _______                   |
+|                        /    ____//   //  __  \  /  __  \  /    __     /                   |
+|                       /    /       /    //  ____//  ____//    /_/    /                    |
+|                      /__/       /__/ \____/  \____/ /    ____/                      |
+|                                                                  /    /                                |
+|                                                                 /__/                                 |
 |____________________________________________________|
-
     Project Intercession
-
 This product is protected under copyright by Pleep 
 Software and Pleep Studios, subsidiaries of Pleep Inc.
 Copyright (c) 2021-2022
 ______________________________________________________
+
+Pleep Software License v0.2
 
 * This software is provided "as is" and any warranties
 are disclaimed. In no event shall the copyright 

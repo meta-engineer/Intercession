@@ -2,13 +2,14 @@
 #define PLEEP_NET_H
 
 //#include "intercession_pch.h"
+#include <cstdint>
 
 namespace pleep
 {
 namespace net
 {
     // define some messagetype enum
-    enum class PleepMessageType : uint32_t
+    enum class PleepMessageType : std::uint32_t
     {
         update,
         intercession

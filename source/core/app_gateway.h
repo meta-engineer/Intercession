@@ -3,7 +3,6 @@
 
 // std
 #include <memory>
-#include <iostream>
 #include <cassert>
 
 // external
@@ -24,49 +23,49 @@
 
 namespace pleep
 {
-    // root app class
+    // Abstract base class for the root "app"
     // maintains apis for external resources (windowing, audio, networking, file system)
-    // provides CosmosContext access to these resources
+    // provides CosmosContext (constructs with) access to these resources
     class AppGateway
     {
-    public:
+    protected:
         AppGateway();
+    public:
         ~AppGateway();
 
+    public:
         void run();
         void stop();
         void reset();
 
-    private:
+    protected:
+        // Create/configure all api resources, and then construct m_ctx using them
+        virtual void _build_gateway() {};
+        virtual void _clean_gateway() {};
+
         // For now we'll assume apis are static and won't change after the Gateway is constructed
-        // they will be directly given to a context on construction
-        // building an api after building context will not attach it, context must be rebuilt
+        // they will be build by subclass _build_gateway and directly given to a context on construction
+        // context must be built AFTER api
+        // cleaning apis without cleaning context first (or informing it) has undefined behaviour
         void _build_window_api();
         void _clean_window_api();
-
         //void _build_audio_api();
         //void _build_network_api();
 
-        // on context build we give "lease" of all current apis' to context
-        // (only 1 context per gateway should exist at a time)
-        // if an api hasn't been constructed the context will recieve a nullptr for that api
-        void _build_context();
-        // we might have to check and wait for cxt thread to join.
-        void _clean_context();
 
         bool m_running;
 
-    private:
-        // should have a window abstraction layer
-        // hard-code to use glfw for now...
+        // should have a window abstraction layer, hard-code to use glfw for now...
         // are smart pointers better? I only want this class to have "ownership"
-        // I only want this class to manage the emeory, 
-        // and I want all other references to be nulled (stopping undefined behaviour) if I delete it.
+        // and only want this class to manage the memory
+        // Ideally all other references would be nulled (stopping undefined behaviour) if I delete it.
         GLFWwindow* m_windowApi;
-
         //AudioApi* m_audioApi;
         //NetApi*   m_netApi;
 
+        // Subclasses construct context with pointers to apis, giving them a "lease"
+        // (Only AppGateway manages memory)
+        // Only 1 context should exist per gateway so there aren't "race conditions" between two contexts (singleton?)
         CosmosContext* m_ctx;
     };
 }

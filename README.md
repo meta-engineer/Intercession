@@ -51,7 +51,7 @@ This section needs further thought: How to propagate dynamic objects states into
 ---
 
 ## System Architecture
-Entry point is main.cpp::main() which parses commandline args, builds and runs the app root "AppGateway".
+Entry point is source/client_main.cpp::main() and source/server_main.cpp::main() which parses commandline args, builds and runs the app root "AppGateway".
 
 "AppGateway" manages external system resource apis (windowing, audio, networking) and owns the "CosmosContext".
 

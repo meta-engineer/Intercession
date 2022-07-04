@@ -5,24 +5,22 @@
 namespace pleep
 {
     AppGateway::AppGateway()
-        : m_running(false)
+        : m_windowApi(nullptr)
         , m_ctx(nullptr)
-        , m_windowApi(nullptr)
+        , m_running(false)
     {
-        this->_build_window_api();
-
-        this->_build_context();
+        this->_build_gateway();
     }
-    
+
     AppGateway::~AppGateway()
     {
-        this->_clean_context();
-
-        this->_clean_window_api();
+        this->_clean_gateway();
     }
 
     void AppGateway::run() 
     {
+        assert(m_ctx);
+
         m_running = true;
         PLEEPLOG_TRACE("App run begin");
 
@@ -31,6 +29,7 @@ namespace pleep
             m_ctx->run();
 
             // handle context closing, check context for signal for next context?
+            // TEMP: always handle context stopping, by stopping ourselves
             this->stop();
         }
 
@@ -39,16 +38,14 @@ namespace pleep
     
     void AppGateway::stop() 
     {
+        if (m_ctx) m_ctx->stop();
         m_running = false;
     }
     
     void AppGateway::reset() 
     {
-        this->_clean_context();
-        this->_clean_window_api();
-
-        this->_build_window_api();
-        this->_build_context();
+        this->_clean_gateway();
+        this->_build_gateway();
     }
     
     void AppGateway::_build_window_api()
@@ -115,24 +112,5 @@ namespace pleep
         m_windowApi = nullptr;
 
         glfwTerminate();
-    }
-    
-    void AppGateway::_build_context() 
-    {
-        // be strict and LOUD with misuse!
-        assert(!m_ctx);
-        
-        m_ctx = new CosmosContext(m_windowApi);
-    }
-    
-    void AppGateway::_clean_context() 
-    {
-        assert(m_ctx);
-
-        m_ctx->stop();
-
-        // wait for thread join
-        delete m_ctx;
-        //m_ctx.reset();
     }
 }

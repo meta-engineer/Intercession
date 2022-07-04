@@ -17,6 +17,8 @@ It may make sense to separate the utils into a "PleepNet" library.
 
 Especially because those "common" definitions will have to be inherited by each of the applications
 
+Because servers & clients have different behaviour there is no network_dynamo.h, but instead source/server/server_network_dynamo.h, and source/client/client_network_dynamo.h, which are used by their respective contexts.
+
 ## Architecture
 Intercession will require a client (simulation with rendering), a server (simulation without rendering), and a dispatch server (no simulation). So we need a way to setup this project to produce multiple executables which all borrow from a common codebase.
 

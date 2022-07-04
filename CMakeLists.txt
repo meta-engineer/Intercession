@@ -2,28 +2,46 @@ cmake_minimum_required(VERSION 3.19.1)
 
 project(INTERCESSION VERSION 0.2)
 
+set(ENGINE_NAME ${PROJECT_NAME}_ENGINE)
+set(SERVER_NAME ${PROJECT_NAME}_SERVER)
+set(CLIENT_NAME ${PROJECT_NAME}_CLIENT)
+set(DISPATCHER_NAME ${PROJECT_NAME}_DISPATCHER)
+
 # use known executable name to be linked to by sub-libraries
-# update source)files.cmake with everything to compile
+# update source_files.cmake with everything to compile
 include(source/source_files.cmake)
 include(external/source_files.cmake)
-add_executable(${PROJECT_NAME} ${ALL_SOURCE_FILES} ${ALL_EXTERNAL_SOURCE_FILES} config/AppIcon.rc)
+
+# TODO: common engine code should probably be compiled into a shared library
+add_library(${ENGINE_NAME} ${COMMON_SOURCE_FILES} ${EXTERNAL_SOURCE_FILES})
+# and client and server link to it instead of compiling the same common/external sources
+add_executable(${SERVER_NAME} ${SERVER_SOURCE_FILES} config/AppIcon.rc)
+target_link_libraries(${SERVER_NAME} ${ENGINE_NAME})
+add_executable(${CLIENT_NAME} ${CLIENT_SOURCE_FILES} config/AppIcon.rc)
+target_link_libraries(${CLIENT_NAME} ${ENGINE_NAME})
 
 # global compiler warning options
 if(MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+  target_compile_options(${ENGINE_NAME} PRIVATE /W4)
+  target_compile_options(${SERVER_NAME} PRIVATE /W4)
+  target_compile_options(${CLIENT_NAME} PRIVATE /W4)
   # /W4 for warnings, /WX for warnings as errors
 else()
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+  target_compile_options(${ENGINE_NAME} PRIVATE -Wall)
+  target_compile_options(${SERVER_NAME} PRIVATE -Wall)
+  target_compile_options(${CLIENT_NAME} PRIVATE -Wall)
   # -Wall -Wextra -Wpedantic -Werror
 endif()
+
 
 # link to internal source and libraries
 add_subdirectory(source)
 
 # define config after variables from source tree have been set
 configure_file(config/build_config.h.in source/build_config.h)
-# config gets generated to binary directory's source
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
+# config gets generated to binary directory's source for ALL targets
+target_include_directories(${SERVER_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
+target_include_directories(${CLIENT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
 
 
 # link to external libraries (submodule)
@@ -39,7 +57,8 @@ add_subdirectory(external)
 
 
 # cmake install
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS ${SERVER_NAME} DESTINATION bin)
+install(TARGETS ${CLIENT_NAME} DESTINATION bin)
 install(FILES "${PROJECT_BINARY_DIR}/source/build_config.h" DESTINATION include)
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/resources/" DESTINATION "resources")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/source/shaders/" DESTINATION "source/shaders")

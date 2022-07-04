@@ -1,5 +1,6 @@
 #!/bin/bash
 # config and build
+# pass specified targets to build as each commandline argument, or none for all targets
 # try running fresh_cmake_configure.sh to troubleshoot
 
 # push working directory
@@ -16,10 +17,24 @@ else
     exit
 fi
 
+# concat select targets as cmake cmd options
+TARGETS=""
+TARGET_OPTIONS=""
+for TARGET in "$@"
+do
+    TARGETS+=" $TARGET"
+    TARGET_OPTIONS+=" --target $TARGET"
+done
+
 if [ -d "./build" ]
 then
     echo "-- Building Intercession in Release mode"
-    cmake --build build --config Release
+    if [[ $# -ne 0 ]]
+    then
+        echo "-- Only targets:$TARGETS"
+    fi
+
+    cmake --build build --config Release $TARGET_OPTIONS
 else
     echo "-- Build files do not exist, run fresh_cmake_configure.sh first"
 fi
