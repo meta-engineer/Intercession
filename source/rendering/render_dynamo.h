@@ -12,7 +12,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "core/i_dynamo.h"
+#include "core/a_dynamo.h"
 #include "events/event_broker.h"
 #include "rendering/render_packet.h"
 #include "rendering/light_source_packet.h"
@@ -24,7 +24,7 @@
 
 namespace pleep
 {
-    class RenderDynamo : public IDynamo
+    class RenderDynamo : public A_Dynamo
     {
     public:
         // any use dynamically attaching apis to a dynamo?

@@ -2,7 +2,7 @@
 #define CAMERA_CONTROL_COMPONENT_H
 
 //#include "intercession_pch.h"
-#include "controlling/i_control_component.h"
+#include "controlling/a_control_component.h"
 
 namespace pleep
 {
@@ -15,7 +15,7 @@ namespace pleep
         //drone
     };
 
-    struct CameraControlComponent : public IControlComponent
+    struct CameraControlComponent : public A_ControlComponent
     {
         // ***** camera CONTROLLER specific attributes *****
         // not to be confused with camera rendering attributes

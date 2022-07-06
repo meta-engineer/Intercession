@@ -20,7 +20,7 @@ namespace pleep
     }
     
     bool RayColliderComponent::static_intersect(
-        IColliderComponent* other, 
+        I_ColliderComponent* other, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,

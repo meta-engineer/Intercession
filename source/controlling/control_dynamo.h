@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "core/i_dynamo.h"
+#include "core/a_dynamo.h"
 #include "controlling/camera_control_packet.h"
 #include "controlling/physics_control_packet.h"
 #include "controlling/biped_control_packet.h"
@@ -30,7 +30,7 @@ namespace pleep
     //   and stores it into "action buffers" each frame
     // All relays owned by dynamo will have reference to action buffer(s)
     //   which it will use to determine operation
-    class ControlDynamo : public IDynamo
+    class ControlDynamo : public A_Dynamo
     {
     public:
         ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi);

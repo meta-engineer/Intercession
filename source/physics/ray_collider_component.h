@@ -7,7 +7,7 @@
 
 namespace pleep
 {
-    struct RayColliderComponent : public IColliderComponent
+    struct RayColliderComponent : public I_ColliderComponent
     {
         // ***** Ray Specific Attributes *****
         // ray is unit vector (0,0,1), use localTransform to rotate and scale ray
@@ -31,7 +31,7 @@ namespace pleep
         // Implement dispatches for other collider types
         // Double dispatch other
         virtual bool static_intersect(
-            IColliderComponent* other, 
+            I_ColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,

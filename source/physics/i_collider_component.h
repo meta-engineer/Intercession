@@ -41,8 +41,13 @@ namespace pleep
         //soft,       // find & call entity's Soft Body component
     };
 
-    struct IColliderComponent
+    struct I_ColliderComponent
     {
+    protected:
+        I_ColliderComponent() = default;
+    public:
+        virtual ~I_ColliderComponent() = default;
+
         // ***** Universal collider attributes *****
         // Suggestion to Dynamo for how to respond to a detected collision
         // This may be best implemented with a table/map between response type pairs and functions
@@ -89,7 +94,7 @@ namespace pleep
         // collisionDepth -> surface of this = collisionPoint - (collisionDepth * collisionNormal)
         // For now specify non-continuous (static) time intersection detection
         virtual bool static_intersect(
-            IColliderComponent* other, 
+            I_ColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,

@@ -9,12 +9,12 @@
 // Access PleepNet ...
 #include "networking/pleep_net.h"
 
-#include "core/i_dynamo.h"
+#include "core/a_dynamo.h"
 #include "events/event_broker.h"
 
 namespace pleep
 {
-    class NetworkDynamo : public IDynamo
+    class NetworkDynamo : public A_Dynamo
     {
     public:
         // TODO: accept networking api (iocontext) from AppGateway

@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <glm/gtx/quaternion.hpp>
-#include "controlling/i_control_component.h"
+#include "controlling/a_control_component.h"
 
 namespace pleep
 {
@@ -13,7 +13,7 @@ namespace pleep
     // also may include properties which imply arms (like mantling/climbing)
 
     // Biped needs to have components: transform, physics
-    struct BipedControlComponent : public IControlComponent
+    struct BipedControlComponent : public A_ControlComponent
     {
         // this property may have to align with net world forces (gravity/bouyancy/mangnetism?)
         //   but not acceleration due to contact

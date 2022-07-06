@@ -1,25 +1,25 @@
-#include "cosmos_context.h"
+#include "i_cosmos_context.h"
 
 #include "logging/pleep_log.h"
 
 namespace pleep
 {
-    CosmosContext::CosmosContext()
+    I_CosmosContext::I_CosmosContext()
         : m_currentCosmos(nullptr)
         , m_running(false)
     {
         // build event listener
         m_eventBroker = new EventBroker();
         // setup context's "fallback" listeners
-        m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, CosmosContext::_quit_handler));
+        m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, I_CosmosContext::_quit_handler));
     }
     
-    CosmosContext::~CosmosContext()
+    I_CosmosContext::~I_CosmosContext()
     {
         delete m_eventBroker;
     }
     
-    void CosmosContext::run()
+    void I_CosmosContext::run()
     {
         m_running = true;
 
@@ -65,12 +65,12 @@ namespace pleep
         // any non-destructor cleanup?
     }
     
-    void CosmosContext::stop()
+    void I_CosmosContext::stop()
     {
         m_running = false;
     }
     
-    void CosmosContext::_quit_handler(Event quitEvent)
+    void I_CosmosContext::_quit_handler(Event quitEvent)
     {
         // should only be subscribed to events given with type:
         // events::window::QUIT

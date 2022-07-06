@@ -1,23 +1,25 @@
-#ifndef RENDER_RELAY_H
-#define RENDER_RELAY_H
+#ifndef A_RENDER_RELAY_H
+#define A_RENDER_RELAY_H
 
 //#include "intercession_pch.h"
 #include <vector>
 
-#include "rendering/render_packet.h"
-#include "rendering/light_source_packet.h"
 #include "rendering/camera_packet.h"
 
 namespace pleep
 {
-    // Are RenderRealys generalizable enough to have an interface?
+    // Are all RenderRelays generalizable enough to have an common base?
     // should they only ever need 1 framebuffer/texture from previous steps
     //   do they only ever output to 1 framebuffer/texture?
 
-    // Interface for render pipeline phase
-    class IRenderRelay
+    // Abstract base class for render pipeline phase
+    class A_RenderRelay
     {
+    protected:
+        A_RenderRelay() = default;
     public:
+        virtual ~A_RenderRelay() = default;
+
         // Set rendered texture resources for input to this relay
         virtual void set_input_tex_id(unsigned int texId, unsigned int index = 0)
         {
@@ -50,11 +52,7 @@ namespace pleep
         // once engage is done they should clear their packets
         // render relays don't have multi-timestep engages, but on engage failure clear is needed
         // if subclasses store additional packets they should override
-        virtual void clear()
-        {
-            m_modelPackets.clear();
-            m_lightSourcePackets.clear();
-        }
+        virtual void clear() {}
 
         // pass in camera to render with (overwrites last submitted camera)
         void submit(CameraPacket data)
@@ -76,18 +74,9 @@ namespace pleep
                 this->resize_render_resources();
             }
         }
-        
-        // Accept Mesh data to render to
-        // Should there be a limit to this?
-        void submit(RenderPacket data)
-        {
-            m_modelPackets.push_back(data);
-        }
 
-        void submit(LightSourcePacket data)
-        {
-            m_lightSourcePackets.push_back(data);
-        }
+        // subclasses should overload submit(...) with their required packets
+        // (make sure to "using A_RenderRelay::submit" to be able to overload)
 
     protected:
         // Subclass should have owned ShaderManagers (possibly more than 1)
@@ -95,14 +84,12 @@ namespace pleep
         // Camera info passed from dynamo
         // ECS components are volatile, so copy in needed info
         //   (subclasses can override for more)
-        glm::vec3 m_viewPos       = glm::vec3(0.0f);
+        glm::vec3    m_viewPos    = glm::vec3(0.0f);
         unsigned int m_viewWidth  = 1024;
         unsigned int m_viewHeight = 1024;
 
-        // collect packets during render submitting
-        std::vector<RenderPacket> m_modelPackets;
-        std::vector<LightSourcePacket> m_lightSourcePackets;
+        // subclasses should own containers to submitted packets they require
     };
 }
 
-#endif // RENDER_RELAY_H
+#endif // A_RENDER_RELAY_H

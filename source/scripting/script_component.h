@@ -12,7 +12,7 @@ namespace pleep
     //   cannot account for them all with individual synchros
     struct ScriptComponent
     {
-        std::shared_ptr<IScriptDrivetrain> handlers;
+        std::shared_ptr<I_ScriptDrivetrain> handlers;
     };
 }
 

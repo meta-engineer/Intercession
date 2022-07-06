@@ -2,7 +2,7 @@
 #define PHYSICS_CONTROL_COMPONENT_H
 
 //#include "intercession_pch.h"
-#include "controlling/i_control_component.h"
+#include "controlling/a_control_component.h"
 
 namespace pleep
 {
@@ -14,7 +14,7 @@ namespace pleep
         accelleration,
     };
 
-    struct PhysicsControlComponent : public IControlComponent
+    struct PhysicsControlComponent : public A_ControlComponent
     {
         // ***** physics controller specific attributes *****
         float acceleration    = 5.0f;

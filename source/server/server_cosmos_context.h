@@ -2,7 +2,7 @@
 #define SERVER_COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
-#include "core/cosmos_context.h"
+#include "core/i_cosmos_context.h"
 
 #include "controlling/control_dynamo.h"
 #include "physics/physics_dynamo.h"
@@ -10,7 +10,7 @@
 
 namespace pleep
 {
-    class ServerCosmosContext : public CosmosContext
+    class ServerCosmosContext : public I_CosmosContext
     {
     public:
         // Accept all apis to use for lifetime,

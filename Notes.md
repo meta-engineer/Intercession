@@ -82,22 +82,23 @@ stroustrup uses lower_with_under for variables and functions
 Here's what I'm thinking:
 
 file_names:         lower_with_under
+namespaces:         lower_with_under
 function_names:     lower_with_under (to match std, and it works gramatically like a sentence)
 ClassNames:         PascalCase
-class_method:       lower_with_under, private methods prefixed with _
+I_InterfaceClass:   PascalCase, I_ prefix. Abstract base class who's pointer is used for subclasses
+A_AbstractClass:    PascalCase, A_ prefix. Abstract base class who's pointer is never used
+class_method:       lower_with_under, private/protected methods prefixed with _
 
-variables:          camelCase (looks like the uncapitalized type, EX: Model* model = ...
+localVariables:     camelCase (looks like the uncapitalized type, EX: Model* model = ...
     this keeps each single variable "one word", can use an underscore sparingly for an attribute
-    would otherwise be a member of a struct. EX: bigChickenStore_id)
-localVariables:     camelCase
-functionParameters: camelCase (even if they are const)
-classVariables:     camelCase (m_ prefix would be clear but i don't like it)
-g_globalVariables:  g_ prefix or other relevant, camelCase
-static::variables:  use class namespace resolution, camelCase
-CONST_DEFINITIONS:  UPPER_WITH_UNDER (may be confusing with macros) (again not function params)
+    that would otherwise be a member of a struct. EX: bigChickenStore_id)
+functionParameters: same as local variables (with Ref suffix if passed by reference?)
+m_classVariables:   camelCase, m_ prefix (m for member)
+g_globalVariables:  camelCase, g_ prefix
+static::members:    camelCase, use explicit class namespace resolution
 #MACRO_DEFINES:     UPPER_WITH_UNDER
 
-Abbriviations & acronyms: treat as normal word
+Abbriviations & acronyms: treat as normal word (Not all caps)
 
 Exceptions:
     gl buffer object ids can use all caps because they shouldn't be changed by *us*
@@ -118,10 +119,10 @@ logging/        : pleep logger based on spdlog
 cosmos/         : ECS and world logic
 rendering/      : render dynamo/relays
 controlling/    : input and entity control dynamo/relays
-net/            : networking tools
+networking/     : networking tools
 
 AppConfigBuilder:
- provide functions to create specific subclass of abstract ones
+ provide functions for AppGateway to create specific subclass of abstract ones
  (WindowApi -> GlfwWindowApi, RenderDynamo -> OpenGlRenderDynamo)
 
 top level AppGateway class:

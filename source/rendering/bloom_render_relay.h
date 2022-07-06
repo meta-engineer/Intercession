@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <assert.h>
-#include "rendering/i_render_relay.h"
+#include "rendering/a_render_relay.h"
 #include "logging/pleep_log.h"
 #include "rendering/shader_manager.h"
 #include "rendering/model_builder.h"
@@ -11,7 +11,7 @@
 
 namespace pleep
 {
-    class BloomRenderRelay : public IRenderRelay
+    class BloomRenderRelay : public A_RenderRelay
     {
     public:
         BloomRenderRelay()

@@ -4,13 +4,13 @@
 //#include "intercession_pch.h"
 #include <memory>
 
-#include "rendering/i_render_relay.h"
+#include "rendering/a_render_relay.h"
 #include "rendering/model_builder.h"
 #include "rendering/vertex_group.h"
 
 namespace pleep
 {
-    class ScreenRenderRelay : public IRenderRelay
+    class ScreenRenderRelay : public A_RenderRelay
     {
     public:
         ScreenRenderRelay()

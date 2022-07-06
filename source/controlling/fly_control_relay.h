@@ -3,14 +3,14 @@
 
 //#include "intercession_pch.h"
 #include <vector>
-#include "controlling/i_control_relay.h"
+#include "controlling/a_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 #include "controlling/physics_control_packet.h"
 #include "core/cosmos.h"
 
 namespace pleep
 {
-    class FlyControlRelay : public IControlRelay
+    class FlyControlRelay : public A_ControlRelay
     {
     public:
         // initialize safe references to my caller(dynamo)'s input buffers

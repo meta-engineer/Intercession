@@ -6,13 +6,13 @@
 namespace pleep
 {
     ClientCosmosContext::ClientCosmosContext(GLFWwindow* windowApi)
-        : CosmosContext()
+        : I_CosmosContext()
         , m_renderDynamo(nullptr)
         , m_controlDynamo(nullptr)
         , m_physicsDynamo(nullptr)
         , m_networkDynamo(nullptr)
     {
-        // CosmosContext() has setup broker
+        // I_CosmosContext() has setup broker
         
         // construct dynamos
         m_renderDynamo  = new RenderDynamo(m_eventBroker, windowApi);
@@ -106,7 +106,7 @@ namespace pleep
     
     void ClientCosmosContext::_clean_frame() 
     {
-        // Maybe IDynamo should have a generic "flush" method
+        // TODO: Maybe A_Dynamo should have a generic "flush" method
         //   and we invoke all dynamos (to avoid having to specify)
         
         // flush dynamos of all synchro submissions

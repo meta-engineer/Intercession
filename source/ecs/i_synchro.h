@@ -25,12 +25,15 @@ namespace pleep
     // forward declare parent/owner
     class Cosmos;
 
-    class ISynchro
+    // Interface for synchros to be invoked by cosmos
+    class I_Synchro
     {
     public:
-        ISynchro(Cosmos* owner)
+        // subclasses should "using I_Synchro::I_Synchro" or overload with constructor which calls here
+        I_Synchro(Cosmos* owner)
             : m_ownerCosmos(owner)
         {}
+        virtual ~I_Synchro() = default;
 
         // Cosmos will call this universally for all synchros
         virtual void update() = 0;

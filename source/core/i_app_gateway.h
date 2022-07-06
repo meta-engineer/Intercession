@@ -1,5 +1,5 @@
-#ifndef APP_GATEWAY_H
-#define APP_GATEWAY_H
+#ifndef I_APP_GATEWAY_H
+#define I_APP_GATEWAY_H
 
 // std
 #include <memory>
@@ -13,7 +13,7 @@
 #include <GLFW/glfw3.h>
 
 //internal
-#include "cosmos_context.h"
+#include "core/i_cosmos_context.h"
 
 // these should be defined in some use config file and part of a window abstraction layer
 #define DEFAULT_WINDOW_WIDTH 1290
@@ -26,23 +26,19 @@ namespace pleep
     // Abstract base class for the root "app"
     // maintains apis for external resources (windowing, audio, networking, file system)
     // provides CosmosContext (constructs with) access to these resources
-    class AppGateway
+    class I_AppGateway
     {
     protected:
-        AppGateway();
+        // Create/configure all api resources, and then construct m_ctx using them
+        I_AppGateway();
     public:
-        ~AppGateway();
+        virtual ~I_AppGateway();
 
     public:
         void run();
         void stop();
-        void reset();
 
     protected:
-        // Create/configure all api resources, and then construct m_ctx using them
-        virtual void _build_gateway() {};
-        virtual void _clean_gateway() {};
-
         // For now we'll assume apis are static and won't change after the Gateway is constructed
         // they will be build by subclass _build_gateway and directly given to a context on construction
         // context must be built AFTER api
@@ -66,8 +62,8 @@ namespace pleep
         // Subclasses construct context with pointers to apis, giving them a "lease"
         // (Only AppGateway manages memory)
         // Only 1 context should exist per gateway so there aren't "race conditions" between two contexts (singleton?)
-        CosmosContext* m_ctx;
+        I_CosmosContext* m_ctx;
     };
 }
 
-#endif // APP_GATEWAY_H
+#endif // I_APP_GATEWAY_H

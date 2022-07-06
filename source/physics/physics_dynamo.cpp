@@ -5,7 +5,7 @@
 namespace pleep
 {
     PhysicsDynamo::PhysicsDynamo(EventBroker* sharedBroker)
-        : IDynamo(sharedBroker)
+        : A_Dynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Setup Physics pipeline");
         

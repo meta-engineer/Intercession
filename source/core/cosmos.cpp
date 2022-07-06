@@ -27,7 +27,7 @@ namespace pleep
         // update all registered synchros
         for (synchroIter; synchroIter != synchroEnd; synchroIter++)
         {
-            // we can only call ISynchro methods
+            // we can only call I_Synchro methods
             // otherwise Context will have to keep and call each specialized synchro
             // context should only need to manage its dynamos
             synchroIter->second->update();

@@ -14,15 +14,16 @@ namespace pleep
 namespace net
 {
     template <typename MsgType>
-    class IClient
+    class I_Client
     {
-    public:
-        IClient() 
+    protected:
+        I_Client() 
         : m_socket(m_asioContext)
         {
             // construct asio socket with context
         }
-        ~IClient()
+    public:
+        virtual ~I_Client()
         {
             disconnect();
         }

@@ -2,16 +2,16 @@
 #define CLIENT_APP_GATEWAY_H
 
 //#include "intercession_pch.h"
-#include "core/app_gateway.h"
+#include "core/i_app_gateway.h"
 #include "client/client_cosmos_context.h"
 
 namespace pleep
 {
-    class ClientAppGateway : public AppGateway
-    {    
-    protected:
-        void _build_gateway() override;
-        void _clean_gateway() override;
+    class ClientAppGateway : public I_AppGateway
+    {
+    public:
+        ClientAppGateway();
+        ~ClientAppGateway() override;
     };
 }
 

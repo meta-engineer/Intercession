@@ -8,7 +8,7 @@
 
 namespace pleep
 {
-    class BasicBipedControlRelay : public IControlRelay
+    class BasicBipedControlRelay : public A_ControlRelay
     {
     public:
         BasicBipedControlRelay(const SpacialInputBuffer& actions)

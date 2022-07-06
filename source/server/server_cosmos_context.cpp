@@ -3,12 +3,12 @@
 namespace pleep
 {
     ServerCosmosContext::ServerCosmosContext() 
-        : CosmosContext()
+        : I_CosmosContext()
         //, m_controlDynamo(nullptr)
         , m_physicsDynamo(nullptr)
         , m_networkDynamo(nullptr)
     {
-        // CosmosContext() has setup broker
+        // I_CosmosContext() has setup broker
         
         // construct dynamos
         //m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);

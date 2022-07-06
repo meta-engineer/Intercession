@@ -1,15 +1,21 @@
-#ifndef I_DYNAMO_H
-#define I_DYNAMO_H
+#ifndef A_DYNAMO_H
+#define A_DYNAMO_H
 
 //#include "intercession_pch.h"
 #include "events/event_broker.h"
 
 namespace pleep
 {
-    class IDynamo
+    class A_Dynamo
     {
+    protected:
+        A_Dynamo(EventBroker* sharedBroker)
+            : m_sharedBroker(sharedBroker)
+        {
+            // no guarentees sharedBroker isn't null
+        }
     public:
-        IDynamo(EventBroker* sharedBroker);
+        virtual ~A_Dynamo() = default;
 
         // universal pre-frame init for dynamos
         //virtual void prime();
@@ -19,11 +25,14 @@ namespace pleep
         virtual void reset_relays() = 0;
 
         // synchros get broker reference from respective dynamo
-        EventBroker* get_shared_broker();
+        EventBroker* get_shared_broker()
+        {
+            return m_sharedBroker;
+        }
 
     protected:
         EventBroker* m_sharedBroker;
     };
 }
 
-#endif // I_DYNAMO_H
+#endif // A_DYNAMO_H

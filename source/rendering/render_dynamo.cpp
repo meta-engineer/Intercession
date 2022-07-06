@@ -6,7 +6,7 @@
 namespace pleep
 {
     RenderDynamo::RenderDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi)
-        : IDynamo(sharedBroker)
+        : A_Dynamo(sharedBroker)
         , m_windowApi(windowApi)
     {
         // subscribe to events

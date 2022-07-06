@@ -7,11 +7,11 @@
 
 namespace pleep
 {
-    class RayColliderSynchro : public ISynchro
+    class RayColliderSynchro : public I_Synchro
     {
     public:
         // explicitly inherit constructors
-        using ISynchro::ISynchro;
+        using I_Synchro::I_Synchro;
 
         // Provide entities of my sign, and registered ones to dynamo
         // exits early if there was no attached dynamo to use

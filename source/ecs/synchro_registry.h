@@ -37,7 +37,7 @@ namespace pleep
 
         // return reference to internal synchro map
         // this is potentially dangerous, but cosmos needs access to iterate
-        std::unordered_map<const char*, std::shared_ptr<ISynchro>>& get_synchros_ref();
+        std::unordered_map<const char*, std::shared_ptr<I_Synchro>>& get_synchros_ref();
 
     private:
         // synchro typeid -> synchros desired entity signature
@@ -45,7 +45,7 @@ namespace pleep
         
         // synchro typeid -> synchro pointer
         // shares pointer between caller and registry so that it can be called externally
-        std::unordered_map<const char*, std::shared_ptr<ISynchro>> m_synchros{};
+        std::unordered_map<const char*, std::shared_ptr<I_Synchro>> m_synchros{};
     };
     
 
@@ -81,10 +81,10 @@ namespace pleep
     
     inline void SynchroRegistry::clear_entity(Entity entity)
     {
-        // typeid & ISynchro pointer
+        // typeid & I_Synchro pointer
         for (auto const& pair : m_synchros)
         {
-            std::shared_ptr<ISynchro> const& synchro = pair.second;
+            std::shared_ptr<I_Synchro> const& synchro = pair.second;
 
             synchro->m_entities.erase(entity);
         }
@@ -92,11 +92,11 @@ namespace pleep
 
     inline void SynchroRegistry::change_entity_signature(Entity entity, Signature entitySign)
     {
-        // typeid & ISynchro pointer
+        // typeid & I_Synchro pointer
         for (auto const& pair : m_synchros)
         {
             const char* const& synchroTypeid = pair.first;
-            std::shared_ptr<ISynchro> const& synchro = pair.second;
+            std::shared_ptr<I_Synchro> const& synchro = pair.second;
             Signature const& synchroSign = m_signatures[synchroTypeid];
 
             // add to synchro's known entities if it matches signatures
@@ -113,7 +113,7 @@ namespace pleep
         }
     }
     
-    inline std::unordered_map<const char*, std::shared_ptr<ISynchro>>& SynchroRegistry::get_synchros_ref()
+    inline std::unordered_map<const char*, std::shared_ptr<I_Synchro>>& SynchroRegistry::get_synchros_ref()
     {
         return m_synchros;
     }

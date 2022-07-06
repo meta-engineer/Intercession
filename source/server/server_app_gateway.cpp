@@ -2,7 +2,7 @@
 
 namespace pleep
 {
-    void ServerAppGateway::_build_gateway() 
+    ServerAppGateway::ServerAppGateway() 
     {
         PLEEPLOG_TRACE("Configuring Server App Gateway");
         // no apis needed for now...
@@ -13,7 +13,7 @@ namespace pleep
         m_ctx = new ServerCosmosContext();
     }
     
-    void ServerAppGateway::_clean_gateway() 
+    ServerAppGateway::~ServerAppGateway() 
     {
         // inline _clean_context
         assert(m_ctx);
@@ -23,6 +23,4 @@ namespace pleep
         
         // no apis to clean for now...
     }
-
-    
 }

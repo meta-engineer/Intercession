@@ -9,7 +9,7 @@ namespace pleep
 {
     const float CUBE_RADIUS = 0.5f;
 
-    struct BoxColliderComponent : public IColliderComponent
+    struct BoxColliderComponent : public I_ColliderComponent
     {
         // ***** Box specific Attributes *****
         // box is unit cube, use localTransform.scale to set side lengths
@@ -38,7 +38,7 @@ namespace pleep
         // Implement dispatches for other collider types
         // Double dispatch other
         virtual bool static_intersect(
-            IColliderComponent* other, 
+            I_ColliderComponent* other, 
             const TransformComponent& thisTransform,
             const TransformComponent& otherTransform,
             glm::vec3& collisionNormal,

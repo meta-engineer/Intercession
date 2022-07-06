@@ -5,7 +5,7 @@
 
 namespace pleep
 {
-    void SpringBodyComponent::collision_response(IPhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)
+    void SpringBodyComponent::collision_response(I_PhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)
     {
             // switch collisionNormal & collisionPoint
             glm::vec3 invCollisionNormal = -collisionNormal;

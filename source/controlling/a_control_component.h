@@ -1,5 +1,5 @@
-#ifndef I_CONTROL_COMPONENT_H
-#define I_CONTROL_COMPONENT_H
+#ifndef A_CONTROL_COMPONENT_H
+#define A_CONTROL_COMPONENT_H
 
 //#include "intercession_pch.h"
 #define GLM_FORCE_SILENT_WARNINGS
@@ -17,12 +17,19 @@ namespace pleep
     // We'll avoid as much inheritance & casting as possible while allowing the dispatch
     // (unlike IColliders who need to cross-polinate so casting is necessary)
 
-    struct IControlComponent
+    struct A_ControlComponent
     {
+    protected:
+        A_ControlComponent() = default;
+    public:
+        virtual ~A_ControlComponent() = default;
+
         // ***** Universal Controller Attributes *****
         // bool to ignore controller influence
         bool isActive = true;
+
+        // no universal submit() method, but subclasses should overload submit() for their desired packets
     };
 }
 
-#endif // I_CONTROL_COMPONENT_H
+#endif // A_CONTROL_COMPONENT_H

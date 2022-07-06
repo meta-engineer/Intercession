@@ -30,7 +30,7 @@ namespace pleep
 
 
     bool BoxColliderComponent::static_intersect(
-        IColliderComponent* other, 
+        I_ColliderComponent* other, 
         const TransformComponent& thisTransform,
         const TransformComponent& otherTransform,
         glm::vec3& collisionNormal,
@@ -191,7 +191,7 @@ namespace pleep
             //PLEEPLOG_WARN("Non trivial Manifolds... expect something to go wrong!");
 
             // use this' manifold to clip otherBox's manifold
-            IColliderComponent::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
+            I_ColliderComponent::pseudo_clip_polyhedra(thisContactManifold, otherContactManifold, collisionNormal);
 
             // something went wrong :(
             assert(!otherContactManifold.empty());

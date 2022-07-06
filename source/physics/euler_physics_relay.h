@@ -5,13 +5,13 @@
 #include <vector>
 
 #include "logging/pleep_log.h"
-#include "physics/i_physics_relay.h"
+#include "physics/a_physics_relay.h"
 #include "physics/physics_packet.h"
 
 namespace pleep
 {
     // This is "Improved Euler" method for motion integration on entities with physics
-    class EulerPhysicsRelay : public IPhysicsRelay
+    class EulerPhysicsRelay : public A_PhysicsRelay
     {
     public:
         // consume acceleration values and step motion integration forward

@@ -17,7 +17,7 @@ namespace pleep
     {
         TransformComponent& transform;
         // dynamo/relay can read collider->type from base pointer
-        IColliderComponent* collider;
+        I_ColliderComponent* collider;
 
         // provide access to ecs for different collision responses
         Entity collidee;

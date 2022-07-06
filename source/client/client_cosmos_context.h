@@ -2,7 +2,7 @@
 #define CLIENT_COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
-#include "core/cosmos_context.h"
+#include "core/i_cosmos_context.h"
 
 #include "rendering/render_dynamo.h"
 #include "controlling/control_dynamo.h"
@@ -11,7 +11,7 @@
 
 namespace pleep
 {
-    class ClientCosmosContext : public CosmosContext
+    class ClientCosmosContext : public I_CosmosContext
     {
     public:
         // Accept all apis to use for lifetime,
@@ -32,6 +32,7 @@ namespace pleep
         void _build_cosmos();
 
         // Client specific Dynamos
+        // keep concrete, non-interface references incase we need to retrieve specific data
         // Dynamos possess relevant api references passed in on construction from AppGateway
         // Our cosmos shares these dynamos with their synchros
         RenderDynamo*  m_renderDynamo;

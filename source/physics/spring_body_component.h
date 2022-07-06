@@ -6,7 +6,7 @@
 
 namespace pleep
 {
-    struct SpringBodyComponent : public IPhysicsResponseComponent
+    struct SpringBodyComponent : public I_PhysicsResponseComponent
     {
         // maximum length of the spring is defined by the entity's associated collider
         // rest length is distance from surface along penetration normal
@@ -20,7 +20,7 @@ namespace pleep
 
         // ***** Collision Response methods *****
         // double dispatch other
-        virtual void collision_response(IPhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;
+        virtual void collision_response(I_PhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;
 
         // spring-spring response
         virtual void collision_response(SpringBodyComponent* otherSpringBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;

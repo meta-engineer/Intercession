@@ -1,5 +1,5 @@
-#ifndef COSMOS_CONTEXT_H
-#define COSMOS_CONTEXT_H
+#ifndef I_COSMOS_CONTEXT_H
+#define I_COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
 
@@ -23,7 +23,7 @@ namespace pleep
     // manages loading cosmoses and handling transitioning between different ones
     // runs main game loop
     // subclasses should maintain the dynamos and their api resources (render, audio, networking) to be used by the cosmos
-    class CosmosContext
+    class I_CosmosContext
     {
         // I need to know some kind of configuration to know what cosmos to build first,
         //   dynamos/synchros I can expect, and a state machine for handling cosmos transition events
@@ -31,9 +31,9 @@ namespace pleep
 
     protected:
         // Setup shared resources (event broker)
-        CosmosContext();
+        I_CosmosContext();
     public:
-        ~CosmosContext();
+        virtual ~I_CosmosContext();
 
     public:
         // main loop
@@ -77,4 +77,4 @@ namespace pleep
     };
 }
 
-#endif // COSMOS_CONTEXT_H
+#endif // I_COSMOS_CONTEXT_H

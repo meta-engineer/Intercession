@@ -6,7 +6,7 @@
 // external
 #include <memory>
 
-#include "core/i_dynamo.h"
+#include "core/a_dynamo.h"
 #include "events/event_broker.h"
 #include "physics/physics_packet.h"
 #include "physics/euler_physics_relay.h"
@@ -15,7 +15,7 @@
 
 namespace pleep
 {
-    class PhysicsDynamo : public IDynamo
+    class PhysicsDynamo : public A_Dynamo
     {
     public:
         PhysicsDynamo(EventBroker* sharedBroker);

@@ -6,7 +6,7 @@
 namespace pleep
 {
     ControlDynamo::ControlDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi)
-        : IDynamo(sharedBroker)
+        : A_Dynamo(sharedBroker)
         , m_windowApi(windowApi)
         // setup relays with access to my input buffers (we need to ecplicitly know which buffers relay needs)
         , m_flyController(std::make_unique<FlyControlRelay>(m_spacialInputBuffer))

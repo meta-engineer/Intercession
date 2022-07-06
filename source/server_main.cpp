@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     }
 
     // Construct server specific AppGateway
-    pleep::AppGateway* intercessionServer = nullptr;
+    pleep::I_AppGateway* intercessionServer = nullptr;
 
     // top level, last-resort catch to safely handle errors
     try

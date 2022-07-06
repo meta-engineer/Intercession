@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <vector>
-#include "controlling/i_control_relay.h"
+#include "controlling/a_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 #include "controlling/camera_control_packet.h"
 #include "physics/physics_component.h"
@@ -12,7 +12,7 @@
 
 namespace pleep
 {
-    class Biped3pCameraControlRelay : public IControlRelay
+    class Biped3pCameraControlRelay : public A_ControlRelay
     {
     public:
         Biped3pCameraControlRelay(const SpacialInputBuffer& actions)

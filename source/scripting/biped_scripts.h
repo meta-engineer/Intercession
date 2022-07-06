@@ -9,7 +9,7 @@
 
 namespace pleep
 {
-    class BipedScripts : public IScriptDrivetrain
+    class BipedScripts : public I_ScriptDrivetrain
     {
     public:
         BipedScripts()

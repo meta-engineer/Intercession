@@ -1,13 +1,17 @@
-#ifndef I_CONTROL_RELAY_H
-#define I_CONTROL_RELAY_H
+#ifndef A_CONTROL_RELAY_H
+#define A_CONTROL_RELAY_H
 
 //#include "intercession_pch.h"
 
 namespace pleep
 {
-    class IControlRelay
+    class A_ControlRelay
     {
+    protected:
+        A_ControlRelay() = default;
     public:
+        virtual ~A_ControlRelay() = default;
+
         // submittions are done, invoke controls
         // engage as in "engage the clutch"
         // each relay is different, enforce implementation to avoid confusion
@@ -22,4 +26,4 @@ namespace pleep
     };
 }
 
-#endif // I_CONTROL_RELAY_H
+#endif // A_CONTROL_RELAY_H

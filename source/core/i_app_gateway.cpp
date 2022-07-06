@@ -1,24 +1,23 @@
-#include "app_gateway.h"
+#include "i_app_gateway.h"
 
 #include "logging/pleep_log.h"
 
 namespace pleep
 {
-    AppGateway::AppGateway()
+    I_AppGateway::I_AppGateway()
         : m_windowApi(nullptr)
         , m_ctx(nullptr)
         , m_running(false)
     {
-        this->_build_gateway();
     }
 
-    AppGateway::~AppGateway()
+    I_AppGateway::~I_AppGateway()
     {
-        this->_clean_gateway();
     }
 
-    void AppGateway::run() 
+    void I_AppGateway::run() 
     {
+        if (!m_ctx) PLEEPLOG_ERROR("AppGateway was not successfully built");
         assert(m_ctx);
 
         m_running = true;
@@ -36,19 +35,13 @@ namespace pleep
         PLEEPLOG_TRACE("App run finish");
     }
     
-    void AppGateway::stop() 
+    void I_AppGateway::stop() 
     {
         if (m_ctx) m_ctx->stop();
         m_running = false;
     }
     
-    void AppGateway::reset() 
-    {
-        this->_clean_gateway();
-        this->_build_gateway();
-    }
-    
-    void AppGateway::_build_window_api()
+    void I_AppGateway::_build_window_api()
     {
         assert(!m_windowApi);
 
@@ -98,7 +91,7 @@ namespace pleep
         ImGui::StyleColorsClassic();
     }
     
-    void AppGateway::_clean_window_api() 
+    void I_AppGateway::_clean_window_api() 
     {
         // what to do if already null?
         assert(m_windowApi);

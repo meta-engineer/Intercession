@@ -7,11 +7,11 @@
 
 namespace pleep
 {
-    class BipedControlSynchro : public ISynchro
+    class BipedControlSynchro : public I_Synchro
     {
     public:
         // explicitly inherit constructors
-        using ISynchro::ISynchro;
+        using I_Synchro::I_Synchro;
 
         // exits early if there was no attached dynamo to use
         // THROWS runtime error if m_ownerCosmos is null

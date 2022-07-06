@@ -4,13 +4,14 @@
 //#include "intercession_pch.h"
 
 #include "logging/pleep_log.h"
-#include "rendering/i_render_relay.h"
+#include "rendering/a_render_relay.h"
 #include "rendering/shader_manager.h"
-#include "rendering/light_source_component.h"
+#include "rendering/render_packet.h"
+#include "rendering/light_source_packet.h"
 
 namespace pleep
 {
-    class ForwardRenderRelay : public IRenderRelay
+    class ForwardRenderRelay : public A_RenderRelay
     {
     public:
         ForwardRenderRelay()
@@ -230,6 +231,27 @@ namespace pleep
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
+
+        // explicitly inherit CameraPakcet submit
+        using A_RenderRelay::submit;
+        
+        // Accept Mesh data to render to
+        // Should there be a limit to this?
+        void submit(RenderPacket data)
+        {
+            m_modelPackets.push_back(data);
+        }
+
+        void submit(LightSourcePacket data)
+        {
+            m_lightSourcePackets.push_back(data);
+        }
+
+        void clear() override
+        {
+            m_modelPackets.clear();
+            m_lightSourcePackets.clear();
+        }
         
     private:
         // Foreward pass needs light position/direction, viewPos, shadow transform/farplane/shadowmap
@@ -239,7 +261,6 @@ namespace pleep
         ShaderManager m_normalVisualizerSm;
 
         // definitions known by my shader
-        // IRenderRelay has LightSourcePacketQueue
         const size_t MAX_RAY_LIGHTS   = 1;
         size_t m_numRayLights = 0;
         const size_t MAX_POINT_LIGHTS = 4;
@@ -252,6 +273,10 @@ namespace pleep
         unsigned int m_rboId;
         unsigned int m_ldrRenderedTextureId;
         unsigned int m_hdrRenderedTextureId;
+        
+        // collect packets during render submitting
+        std::vector<RenderPacket> m_modelPackets;
+        std::vector<LightSourcePacket> m_lightSourcePackets;
     };
 }
 

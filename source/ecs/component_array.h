@@ -14,7 +14,7 @@ namespace pleep
 {
     // packed array of component template type corresponding to entities (EntityRegistry)
     template<typename T>
-    class ComponentArray : public IComponentArray
+    class ComponentArray : public I_ComponentArray
     {
     public:
         // add component to entity

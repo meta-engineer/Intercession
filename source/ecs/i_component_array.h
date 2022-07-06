@@ -6,10 +6,13 @@
 
 namespace pleep
 {
-    class IComponentArray
+    // Interface for component registry to clear entity data on all templated component arrays
+    class I_ComponentArray
     {
+    protected:
+        I_ComponentArray() = default;
     public:
-        virtual ~IComponentArray() = default;
+        virtual ~I_ComponentArray() = default;
         
         // component manager needs to dispatch anonymously 
         // to all component arrays to update their mappings

@@ -7,7 +7,7 @@
 namespace pleep
 {
     // define attributes needed for rigidbody physics response
-    struct RigidBodyComponent : public IPhysicsResponseComponent
+    struct RigidBodyComponent : public I_PhysicsResponseComponent
     {
         // proportion of energy *retained* normal response
         float restitution       = 0.70f;
@@ -17,7 +17,7 @@ namespace pleep
 
         // ***** Collision Response methods *****
         // double dispatch other
-        virtual void collision_response(IPhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;
+        virtual void collision_response(I_PhysicsResponseComponent* otherBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;
         
         // rigid-rigid response
         virtual void collision_response(RigidBodyComponent* otherRigidBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) override;

@@ -15,8 +15,14 @@ namespace pleep
     struct RigidBodyComponent;
     struct SpringBodyComponent;
 
-    struct IPhysicsResponseComponent
+    // Abstract Base class for collision response dispatch
+    struct I_PhysicsResponseComponent
     {
+    protected:
+        I_PhysicsResponseComponent() = default;
+    public:
+        virtual ~I_PhysicsResponseComponent() = default;
+
         // ***** Universal response attributes *****
         // Entity may want unlocked orientation (for kinematic motion)
         // but not want physics responses to cause orientation changes
@@ -24,7 +30,7 @@ namespace pleep
 
         // double dispatch for each response subclass
         // expects collision metadata to be relative to other...
-        virtual void collision_response(IPhysicsResponseComponent* otherPhysicsResponse, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) = 0;
+        virtual void collision_response(I_PhysicsResponseComponent* otherPhysicsResponse, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint) = 0;
         
         // implement subclass's response with Rigid Body
         virtual void collision_response(RigidBodyComponent* otherPhysicsResponse, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)

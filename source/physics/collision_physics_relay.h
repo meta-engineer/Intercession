@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "logging/pleep_log.h"
-#include "physics/i_physics_relay.h"
+#include "physics/a_physics_relay.h"
 #include "physics/collider_packet.h"
 #include "core/cosmos.h"
 #include "scripting/script_component.h"
@@ -14,7 +14,7 @@
 
 namespace pleep
 {
-    class CollisionPhysicsRelay : public IPhysicsRelay
+    class CollisionPhysicsRelay : public A_PhysicsRelay
     {
     public:
         // motion integration should already have happened
@@ -72,7 +72,7 @@ namespace pleep
                     {
                         try
                         {
-                            std::shared_ptr<IScriptDrivetrain> handlers = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget).handlers;
+                            std::shared_ptr<I_ScriptDrivetrain> handlers = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget).handlers;
                             if (handlers->enable_collision_scripts)
                             {
                                 handlers->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
@@ -94,7 +94,7 @@ namespace pleep
                             glm::vec3 invCollisionNormal = -collisionNormal;
                             glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
                             
-                            std::shared_ptr<IScriptDrivetrain> handlers = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget).handlers;
+                            std::shared_ptr<I_ScriptDrivetrain> handlers = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget).handlers;
                             if (handlers->enable_collision_scripts)
                             {
                                 handlers->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
@@ -110,8 +110,8 @@ namespace pleep
                     }
 
                     // Forward collision data to be resolved according to the physics response
-                    IPhysicsResponseComponent* thisResponse = nullptr;
-                    IPhysicsResponseComponent* otherResponse = nullptr;
+                    I_PhysicsResponseComponent* thisResponse = nullptr;
+                    I_PhysicsResponseComponent* otherResponse = nullptr;
 
                     try
                     {

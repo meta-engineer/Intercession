@@ -2,7 +2,7 @@
 
 namespace pleep
 {
-    void ClientAppGateway::_build_gateway() 
+    ClientAppGateway::ClientAppGateway() 
     {
         PLEEPLOG_TRACE("Configuring Client App Gateway");
         // build apis for my specific context
@@ -14,7 +14,7 @@ namespace pleep
         m_ctx = new ClientCosmosContext(m_windowApi);
     }
     
-    void ClientAppGateway::_clean_gateway() 
+    ClientAppGateway::~ClientAppGateway() 
     {
         // inline _clean_context
         assert(m_ctx);
@@ -25,5 +25,4 @@ namespace pleep
         // cleanup my context specific apis
         this->_clean_window_api();
     }
-
 }

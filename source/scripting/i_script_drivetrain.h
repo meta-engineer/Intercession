@@ -14,9 +14,13 @@ namespace pleep
     // Contains all virtual methods that script users can call
     // I guess script users will just... implicitly know which methods they should call
     // EX: on_fixed_update, on_frame_update, on_collision, etc...
-    class IScriptDrivetrain
+    class I_ScriptDrivetrain
     {
+    protected:
+        I_ScriptDrivetrain() = default;
     public:
+        virtual ~I_ScriptDrivetrain() = default;
+        
         // caller behaviour configuration
         // subclasses should enable when they override related method
         bool enable_fixed_update        = false;

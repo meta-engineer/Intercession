@@ -58,7 +58,7 @@ namespace pleep
         std::unordered_map<const char*, ComponentType> m_componentTypes{};
 
         // "type string" pointer to a component Array objeect pointer
-        std::unordered_map<const char*, std::shared_ptr<IComponentArray>> m_componentArrays{};
+        std::unordered_map<const char*, std::shared_ptr<I_ComponentArray>> m_componentArrays{};
 
         // track total components registered
         ComponentType m_componentTypeCount;
@@ -124,7 +124,7 @@ namespace pleep
         // typeid & ComponentArray pointer
         for (auto const& pair : m_componentArrays)
         {
-            //std::shared_ptr<IComponentArray> const& components = pair.second;
+            //std::shared_ptr<I_ComponentArray> const& components = pair.second;
             pair.second->clear_data_for(entity);
         }
     }

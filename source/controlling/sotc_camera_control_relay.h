@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <vector>
-#include "controlling/i_control_relay.h"
+#include "controlling/a_control_relay.h"
 #include "controlling/spacial_input_buffer.h"
 #include "controlling/camera_control_packet.h"
 #include "physics/physics_component.h"
@@ -16,7 +16,7 @@ namespace pleep
     // where should the behaviour specific attributes be stored?
     // should every type of controller be its own component?
     // should all controller attributes be in a single control component?
-    class SotcCameraControlRelay : public IControlRelay
+    class SotcCameraControlRelay : public A_ControlRelay
     {
     public:
         SotcCameraControlRelay(const SpacialInputBuffer& actions)

@@ -15,15 +15,16 @@ namespace net
 {
     // Server interface for connections of a single message type
     template<typename MsgType>
-    class IServer
+    class I_Server
     {
-    public:
-        IServer(uint16_t port)
+    protected:
+        I_Server(uint16_t port)
             : m_asioAcceptor(m_asioContext, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
         {
 
         }
-        ~IServer()
+    public:
+        virtual ~I_Server()
         {
             this->stop();
         }
