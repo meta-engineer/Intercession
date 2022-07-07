@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     PLEEPLOG_INFO(argv[0]);
     PLEEPLOG_INFO("Intercession client app");
-    PLEEPLOG_INFO("Build version: " + std::to_string(BUILD_VERSION_MAJOR) + "." + std::to_string(BUILD_VERSION_MINOR));
+    PLEEPLOG_INFO("Build version: " + std::to_string(BUILD_VERSION_MAJOR) + "." + std::to_string(BUILD_VERSION_MINOR) + "." + std::to_string(BUILD_VERSION_PATCH));
 
 #if defined(_DEBUG)
     PLEEPLOG_INFO("Build config:  Debug");

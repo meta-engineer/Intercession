@@ -24,59 +24,60 @@ namespace pleep
 
         const ElementType& front()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             return m_deque.front();
         }
         const ElementType& back()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             return m_deque.back();
         }
         
         void push_back(const ElementType& item)
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             m_deque.emplace_back(std::move(item));
         }
         void push_front(const ElementType& item)
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             m_deque.emplace_front(std::move(item));
         }
 
         bool empty()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             return m_deque.empty();
         }
         size_t count()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             return m_deque.size();
         }
         void clear()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             m_deque.clear();
         }
 
         ElementType pop_front()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             const ElementType& item = std::move(m_deque.front());
             m_deque.pop_front();
             return item;
         }
         ElementType pop_back()
         {
-            std::scoped_lock lk(muxQueue);
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
             const ElementType& item = std::move(m_deque.back());
             m_deque.pop_back();
             return item;
         }
 
     protected:
-        std::mutex m_queueMux;
+        // cannot use scoped_lock without cxx17, so "deprecated" lock_guard<std::mutex> can substitute
+        std::mutex m_dequeMux;
         std::deque<ElementType> m_deque;
     };
 }

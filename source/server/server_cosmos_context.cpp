@@ -14,7 +14,7 @@ namespace pleep
         //m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         // TODO: server specific network dynamo
-        m_networkDynamo = new NetworkDynamo(m_eventBroker);
+        m_networkDynamo = new ServerNetworkDynamo(m_eventBroker);
         
         // build empty starting cosmos
         m_currentCosmos = new Cosmos();

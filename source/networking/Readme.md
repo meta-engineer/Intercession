@@ -22,17 +22,18 @@ Because servers & clients have different behaviour there is no network_dynamo.h,
 ## Architecture
 Intercession will require a client (simulation with rendering), a server (simulation without rendering), and a dispatch server (no simulation). So we need a way to setup this project to produce multiple executables which all borrow from a common codebase.
 
-Looks like the best way to do this is to have a source/common_source_files.cmake list
-which will get prepended to a source/client/client_source_files.cmake and source/server/server_source_files.cmake.
+Looks like the best way to do this is to have a common source files list (source/source_files.cmake)
+which will get prepended to a client source files list and a server source files list.
 
 Then, since there can only be 1 CMakeLists tree, all the CMakeLists will have to be updated to
-build a IntercessionClient and an IntercessionServer (and an IntercessionDispatcher),
+build a IntercessionEgnine library which is linked to 
+IntercessionClient and an IntercessionServer (and an IntercessionDispatcher),
 with appropriate options/linkages/includes/installs
 
-It is a little tedious, but allows full, specific control over each app and there will 
-only ever be 2 (or 3) executables so it shouldn't get too bloated.
+There may be a some unused (not common) parts in IntercessionEngine between the two apps,
+but hopefully not too much to cause any problems
 
 Multiple timeslice servers could each be individual processes, and a script could invoke each one as pass commandline params, or a config file to each of them. This means each timeslice will only know about the others through the network (maybe I can investigate ipc?)
+Maybe there is some safety to having each server on a seperate process. 
 
 Alternatively, multiple timeslice servers could each be spun from a central process who configures them. This might make interrogating the health of each more convenient. The central process could act as diagnostics after setup and watch the thread health of each.
-Maybe there is some safety to having each server on a seperate process. 

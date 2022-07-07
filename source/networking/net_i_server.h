@@ -2,7 +2,10 @@
 #define NET_I_SERVER_H
 
 //#include "intercession_pch.h"
+#include <string>
 #include <memory>
+#include <thread>
+#include <algorithm>
 
 #include "logging/pleep_log.h"
 #include "networking/ts_queue.h"
@@ -31,22 +34,24 @@ namespace net
 
         bool start()
         {
+            PLEEPLOG_TRACE("Started looking for connections!");
+            
             try
             {
                 // issue "work" to asio context
                 this->wait_for_connection();
                 // then start context on separate thread
-                m_contextThread = std::thread([this]() { m_asioContext.run() });
+                m_contextThread = std::thread([this]() { m_asioContext.run(); });
             }
             catch(const std::exception& err)
             {
                 UNREFERENCED_PARAMETER(err);
-                PLEEPLOG_ERROR("Asio failure: " + err.what());
+                PLEEPLOG_ERROR("Asio runtime failure:");
+                PLEEPLOG_ERROR(err.what());
                 //throw err;
                 return false;
             }
-
-            PLEEPLOG_TRACE("Started looking for connections!");
+            
             return true;
         }
 
@@ -59,30 +64,30 @@ namespace net
             PLEEPLOG_TRACE("Stopped looking for connections.");
         }
 
-        // ASYNC
+        // ASYNC - Task asio to wait for connection
         void wait_for_connection()
         {
-            m_asioAcceptor.acync_accept(
+            m_asioAcceptor.async_accept(
                 [this](std::error_code ec, asio::ip::tcp::socket socket)
                 {
                     if (!ec)
                     {
-                        PLEEPLOG_TRACE("New connection: " + std::to_string(socket.remote_endpoint()));
+                        PLEEPLOG_TRACE("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
 
-                        std::shared_ptr<Connection<MsgType>> newConn = std::make_shared<Connection<MsgType>>(Connection<MsgType::owner::server, m_asioContext, std::move(socket), m_incomingMessages);
+                        std::shared_ptr<Connection<MsgType>> newConn = std::make_shared<Connection<MsgType>>(Connection<MsgType>::owner::server, m_asioContext, std::move(socket), m_incomingMessages);
 
                         // go to on connect callback
                         if (this->on_remote_connect(newConn))
                         {
                             m_connectionDeque.push_back(std::move(newConn));
 
-                            m_connectionsDeque.back()->connect_to_client(m_idCounter++);
+                            m_connectionDeque.back()->connect_to_client(m_idCounter++);
 
                             PLEEPLOG_TRACE("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
                         }
                         else
                         {
-                            PLEEPLOG_TRACE("Connection denied");
+                            PLEEPLOG_TRACE("[----] Connection denied");
                         }
                     }
                     else
@@ -110,7 +115,7 @@ namespace net
                 m_connectionDeque.erase(
                     std::remove(m_connectionDeque.begin(), m_connectionDeque.end(), remote),
                     m_connectionDeque.end()
-                )
+                );
             }
         }
 
@@ -163,19 +168,21 @@ namespace net
         // Called to when a remote connects to us. Returning false denies the connection
         virtual bool on_remote_connect(std::shared_ptr<Connection<MsgType>> remote)
         {
+            UNREFERENCED_PARAMETER(remote);
             return false;
         }
 
         // Called when a remote "appears" to have disconnected
         virtual void on_remote_disconnect(std::shared_ptr<Connection<MsgType>> remote)
         {
-
+            UNREFERENCED_PARAMETER(remote);
         }
 
         // Called when a message arrives in the queue
-        virtual void on_message(std::shared_ptr<connection<MsgType>> remote, Message<MsgType>& msg)
+        virtual void on_message(std::shared_ptr<Connection<MsgType>> remote, Message<MsgType>& msg)
         {
-
+            UNREFERENCED_PARAMETER(remote);
+            UNREFERENCED_PARAMETER(msg);
         }
 
         // A queue for all messages of the designated server type

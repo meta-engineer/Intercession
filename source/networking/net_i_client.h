@@ -3,6 +3,9 @@
 
 //#include "intercession_pch.h"
 #include <string>
+#include <memory>
+#include <thread>
+#include <algorithm>
 
 #include "logging/pleep_log.h"
 #include "networking/ts_queue.h"
@@ -51,7 +54,8 @@ namespace net
             }
             catch (std::exception& err)
             {
-                PLEEPLOG_ERROR("Error while connecting: " + e.what());
+                PLEEPLOG_ERROR("Asio error while connecting: ");
+                PLEEPLOG_ERROR(e.what());
                 return false;
             }
         }

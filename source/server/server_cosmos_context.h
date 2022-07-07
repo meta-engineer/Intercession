@@ -6,7 +6,7 @@
 
 #include "controlling/control_dynamo.h"
 #include "physics/physics_dynamo.h"
-#include "networking/network_dynamo.h"
+#include "server/server_network_dynamo.h"
 
 namespace pleep
 {
@@ -32,7 +32,7 @@ namespace pleep
         // Our cosmos shares these dynamos with their synchros
         //ControlDynamo* m_controlDynamo;
         PhysicsDynamo* m_physicsDynamo;
-        NetworkDynamo* m_networkDynamo;
+        ServerNetworkDynamo* m_networkDynamo;
         //AudioDynamo* m_audioDynamo;
     };
 }
