@@ -25,15 +25,15 @@ namespace pleep
 
         // main game loop
         PLEEPLOG_TRACE("Starting \"main loop\"");
-        double lastTimeVal = glfwGetTime();
-        double thisTimeVal;
-        double deltaTime;
+        std::chrono::system_clock::time_point lastTimeVal = std::chrono::system_clock::now();
+        std::chrono::system_clock::time_point thisTimeVal;
+        std::chrono::duration<double> deltaTime;
 
         while (m_running)
         {
             // ***** Init Frame *****
-            // smarter way to get dt?
-            thisTimeVal = glfwGetTime();
+            // smarter way to get dt? duration.count() is in seconds?
+            thisTimeVal = std::chrono::system_clock::now();
             deltaTime = thisTimeVal - lastTimeVal;
             lastTimeVal = thisTimeVal;
             
@@ -50,11 +50,11 @@ namespace pleep
                 m_timeRemaining -= m_fixedTimeStep;
                 stepsTaken++;
 
-                this->_on_fixed(m_fixedTimeStep);
+                this->_on_fixed(m_fixedTimeStep.count());
             }
 
             // ***** Run "frame time" timsteps for dynamos *****
-            this->_on_frame(deltaTime);
+            this->_on_frame(deltaTime.count());
 
             // ***** Finish Frame *****
             // Context gets last word on any final superceding actions

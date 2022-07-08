@@ -16,12 +16,11 @@ namespace pleep
 {
 namespace net
 {
-    template <typename MsgType>
+    template <typename T_Msg>
     class I_Client
     {
     protected:
-        I_Client() 
-        : m_socket(m_asioContext)
+        I_Client()
         {
             // construct asio socket with context
         }
@@ -38,16 +37,17 @@ namespace net
             {
                 // Convert host to tangiable physical address
                 asio::ip::tcp::resolver asioResolver(m_asioContext);
-                m_endpoints = asioResolver.resolve(host, std::to_string(port));
+                // store endpoints for interrogation later?
+                asio::ip::tcp::resolver::results_type endpoints = asioResolver.resolve(host, std::to_string(port));
 
-                m_connection = std::make_unique<Connection<MsgType>>(
-                    Connection<MsgType>::owner::client, 
+                m_connection = std::make_unique<Connection<T_Msg>>(
+                    Connection<T_Msg>::owner::client, 
                     m_asioContext,
-                    asio::ip::tcp::socket(m_context), 
+                    asio::ip::tcp::socket(m_asioContext), 
                     m_incomingMessages
                 );
 
-                m_connection->connect_to_server(m_endpoints);
+                m_connection->connect_to_server(endpoints);
 
                 // start async asio thread
                 m_contextThread = std::thread([this]() { m_asioContext.run(); });
@@ -55,9 +55,11 @@ namespace net
             catch (std::exception& err)
             {
                 PLEEPLOG_ERROR("Asio error while connecting: ");
-                PLEEPLOG_ERROR(e.what());
+                PLEEPLOG_ERROR(err.what());
                 return false;
             }
+
+            return true;
         }
 
         void disconnect()
@@ -83,8 +85,17 @@ namespace net
                 return false;
         }
 
+        void send_message(const Message<T_Msg>& msg)
+        {
+            if (this->is_connected())
+            {
+                m_connection->send(msg);
+            }
+        }
+
         // public accessor for message queue
-        TsQueue<OwnedMessage<MsgType>>& get_incoming_messages()
+        // TODO: should client have an update/on_message pattern like server?
+        TsQueue<OwnedMessage<T_Msg>>& get_incoming_messages()
         {
             return m_incomingMessages;
         }
@@ -95,14 +106,11 @@ namespace net
         // thread for asio context
         std::thread m_contextThread;
         // client interface has single connection
-        std::unique_ptr<Connection<MsgType>> m_connection;
-
-        asio::ip::tcp::resolver::results_type m_endpoints;
-
+        std::unique_ptr<Connection<T_Msg>> m_connection;
 
     private:
         // messages recieved from connected "remote"
-        TsQueue<OwnedMessage<MsgType>> m_incomingMessages;
+        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
     };
 }
 }

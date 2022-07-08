@@ -5,6 +5,7 @@
 
 // external
 #include <memory>
+#include <chrono>
 
 // our "window api"
 #include "imgui.h"
@@ -69,9 +70,11 @@ namespace pleep
         bool m_running;
         // runtime calibrations
         // Fixed timestep for stability. 200hz?
-        const double m_fixedTimeStep = 0.005;
+        const std::chrono::duration<double> m_fixedTimeStep = 
+            std::chrono::duration<double>(0.005);
         // mechanism for tracking how many fixed timesteps to process
-        double m_timeRemaining = 0.0;
+        std::chrono::duration<double> m_timeRemaining =
+            std::chrono::duration<double>(0.0);
         // max number of fixed iterations to catchup before letting system progress/respond
         const size_t m_maxSteps = 30;
     };

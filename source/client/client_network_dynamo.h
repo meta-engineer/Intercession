@@ -27,6 +27,8 @@ namespace pleep
     private:
         // Networking relays
 
+        // TEMP: build raw PleepClient
+        std::unique_ptr<net::PleepClient> m_client;
     };
 }
 

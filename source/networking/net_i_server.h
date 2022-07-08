@@ -17,7 +17,7 @@ namespace pleep
 namespace net
 {
     // Server interface for connections of a single message type
-    template<typename MsgType>
+    template<typename T_Msg>
     class I_Server
     {
     protected:
@@ -34,8 +34,7 @@ namespace net
 
         bool start()
         {
-            PLEEPLOG_TRACE("Started looking for connections!");
-            
+            PLEEPLOG_DEBUG("Started waiting for connections!");
             try
             {
                 // issue "work" to asio context
@@ -74,7 +73,7 @@ namespace net
                     {
                         PLEEPLOG_TRACE("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
 
-                        std::shared_ptr<Connection<MsgType>> newConn = std::make_shared<Connection<MsgType>>(Connection<MsgType>::owner::server, m_asioContext, std::move(socket), m_incomingMessages);
+                        std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(Connection<T_Msg>::owner::server, m_asioContext, std::move(socket), m_incomingMessages);
 
                         // go to on connect callback
                         if (this->on_remote_connect(newConn))
@@ -101,7 +100,7 @@ namespace net
             );
         }
 
-        void send_message(std::shared_ptr<Connection<MsgType>> remote, const Message<MsgType>& msg)
+        void send_message(std::shared_ptr<Connection<T_Msg>> remote, const Message<T_Msg>& msg)
         {
             if (remote && remote->is_connected())
             {
@@ -120,7 +119,7 @@ namespace net
         }
 
         // option to ignore 1 particular connection?
-        void broadcast_message(const Message<MsgType>& msg, std::shared_ptr<Connection<MsgType>> ignoredConnection = nullptr)
+        void broadcast_message(const Message<T_Msg>& msg, std::shared_ptr<Connection<T_Msg>> ignoredConnection = nullptr)
         {
             // remember invalid remote after iterating
             bool invalidRemoteExists = false;
@@ -156,7 +155,7 @@ namespace net
             size_t messageCount = 0;
             while (messageCount < maxMessages && !m_incomingMessages.empty())
             {
-                auto msg = m_incomingMessages.pop_front();
+                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_front();
 
                 this->on_message(msg.remote, msg.msg);
 
@@ -166,20 +165,20 @@ namespace net
 
     protected:
         // Called to when a remote connects to us. Returning false denies the connection
-        virtual bool on_remote_connect(std::shared_ptr<Connection<MsgType>> remote)
+        virtual bool on_remote_connect(std::shared_ptr<Connection<T_Msg>> remote)
         {
             UNREFERENCED_PARAMETER(remote);
             return false;
         }
 
         // Called when a remote "appears" to have disconnected
-        virtual void on_remote_disconnect(std::shared_ptr<Connection<MsgType>> remote)
+        virtual void on_remote_disconnect(std::shared_ptr<Connection<T_Msg>> remote)
         {
             UNREFERENCED_PARAMETER(remote);
         }
 
         // Called when a message arrives in the queue
-        virtual void on_message(std::shared_ptr<Connection<MsgType>> remote, Message<MsgType>& msg)
+        virtual void on_message(std::shared_ptr<Connection<T_Msg>> remote, Message<T_Msg>& msg)
         {
             UNREFERENCED_PARAMETER(remote);
             UNREFERENCED_PARAMETER(msg);
@@ -187,10 +186,10 @@ namespace net
 
         // A queue for all messages of the designated server type
         // All my related connections will share this queue
-        TsQueue<OwnedMessage<MsgType>> m_incomingMessages;
+        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
 
         // Maintain container of established connections
-        std::deque<std::shared_ptr<Connection<MsgType>>> m_connectionDeque;
+        std::deque<std::shared_ptr<Connection<T_Msg>>> m_connectionDeque;
 
         // NOTE: Order of declaration = order of initialisation
         // context shared across all connections

@@ -32,7 +32,7 @@ namespace net
 
         msg >> d >> c >> b >> a;
 
-        PLEEPLOG_DEBUG(std::to_string(a) + ", " + std::to_string(b) + ", " + std::to_string(c));
+        PLEEPLOG_DEBUG("Message data: " + std::to_string(a) + ", " + std::to_string(b) + ", " + std::to_string(c));
     }
 }
 }

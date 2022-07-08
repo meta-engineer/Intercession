@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "networking/net_i_server.h"
+#include "networking/net_i_client.h"
 
 namespace pleep
 {
@@ -43,7 +44,35 @@ namespace net
             UNREFERENCED_PARAMETER(remote);
             UNREFERENCED_PARAMETER(msg);
 
+            switch (msg.header.id)
+            {
+            case net::PleepMessageType::update:
+            {
+                PLEEPLOG_TRACE("Bouncing update message");
+                // just bounce back
+                remote->send(msg);
+            }
+            break;
+            case net::PleepMessageType::intercession:
+            {
+                PLEEPLOG_TRACE("Bouncing intercession message");
+                // just bounce back
+                remote->send(msg);
+            }
+            break;
+            default:
+            {
+                PLEEPLOG_TRACE("Recieved unknown message");
+            }
+            break;
+            }
+
         }
+    };
+
+    class PleepClient : public I_Client<PleepMessageType>
+    {
+
     };
 
     void test_net();

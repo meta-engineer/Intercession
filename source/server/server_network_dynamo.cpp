@@ -8,8 +8,10 @@ namespace pleep
         PLEEPLOG_TRACE("Setup Server Networking pipeline");
         // setup relays
 
-        m_server = std::make_unique<net::PleepServer>(91339);
+        m_server = std::make_unique<net::PleepServer>(61336);
         m_server->start();
+
+        net::test_net();
         
         PLEEPLOG_TRACE("Done Server Networking pipeline setup");
     }
@@ -22,9 +24,8 @@ namespace pleep
     void ServerNetworkDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
-
         // handle all messages received between frames
-        //m_server->update();
+        m_server->update();
         
     }
     

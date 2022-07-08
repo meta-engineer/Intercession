@@ -87,6 +87,7 @@ function_names:     lower_with_under (to match std, and it works gramatically li
 ClassNames:         PascalCase
 I_InterfaceClass:   PascalCase, I_ prefix. Abstract base class who's pointer is used for subclasses
 A_AbstractClass:    PascalCase, A_ prefix. Abstract base class who's pointer is never used
+T_TemplateType:     PascalCase, T_ prefix. Template specific type relative to this class/function.
 class_method:       lower_with_under, private/protected methods prefixed with _
 
 localVariables:     camelCase (looks like the uncapitalized type, EX: Model* model = ...

@@ -17,8 +17,8 @@ namespace pleep
 {
 namespace net
 {
-    template<typename MsgType>
-    class Connection : public std::enable_shared_from_this<Connection<MsgType>>
+    template<typename T_Msg>
+    class Connection : public std::enable_shared_from_this<Connection<T_Msg>>
     {
     public:
         enum class owner
@@ -27,7 +27,7 @@ namespace net
             client
         };
 
-        Connection(owner parent, asio::io_context& asioContext, asio::ip::tcp::socket socket, TsQueue<OwnedMessage<MsgType>>& inQ)
+        Connection(owner parent, asio::io_context& asioContext, asio::ip::tcp::socket socket, TsQueue<OwnedMessage<T_Msg>>& inQ)
             : m_asioContext(asioContext)
             , m_socket(std::move(socket))
             , m_incomingMessages(inQ)
@@ -64,6 +64,7 @@ namespace net
                 asio::async_connect(m_socket, endpoints,
                     [this](std::error_code ec, asio::ip::tcp::endpoint endpoint)
                     {
+                        UNREFERENCED_PARAMETER(endpoint);
                         if (!ec)
                         {
                             // now we're connected, prime to read header
@@ -80,11 +81,11 @@ namespace net
             }
         }
 
-        bool disconnect()
+        void disconnect()
         {
             if (this->is_connected())
             {
-                asio::post(m_asioContext, [this]() { m_socket.close() });
+                asio::post(m_asioContext, [this]() { m_socket.close(); });
             }
         }
 
@@ -93,7 +94,7 @@ namespace net
             return m_socket.is_open();
         }
 
-        bool send(const Message<MsgType>& msg)
+        void send(const Message<T_Msg>& msg)
         {
             // send a "job" to the context
             asio::post(
@@ -120,7 +121,7 @@ namespace net
         {
             asio::async_read(
                 m_socket, 
-                asio::buffer(&m_scratchMessage.header, sizeof(MessageHeader<MsgType>)),
+                asio::buffer(&m_scratchMessage.header, sizeof(MessageHeader<T_Msg>)),
                 [this](std::error_code ec, std::size_t length)
                 {
                     UNREFERENCED_PARAMETER(length);
@@ -175,9 +176,9 @@ namespace net
         // ASYNC
         void _write_header()
         {
-            asio::aync_write(
+            asio::async_write(
                 m_socket, 
-                asio::buffer(&m_outgoingMessages.front().header, sizeof(MessageHeader<MsgType>)),
+                asio::buffer(&m_outgoingMessages.front().header, sizeof(MessageHeader<T_Msg>)),
                 [this](std::error_code ec, std::size_t length)
                 {
                     UNREFERENCED_PARAMETER(length);
@@ -212,7 +213,7 @@ namespace net
         // ASYNC
         void _write_body()
         {
-            asio::aync_write(
+            asio::async_write(
                 m_socket, 
                 asio::buffer(m_outgoingMessages.front().body.data(), m_outgoingMessages.front().body.size()),
                 [this](std::error_code ec, std::size_t length)
@@ -244,7 +245,7 @@ namespace net
             {
                 m_incomingMessages.push_back({ this->shared_from_this(), m_scratchMessage });
             }
-            else if (m_ownerType == owner::server)
+            else if (m_ownerType == owner::client)
             {
                 // clients only have 1 Connection, so they dont need to know shared_from_this?
                 m_incomingMessages.push_back({ nullptr, m_scratchMessage });
@@ -266,12 +267,12 @@ namespace net
         asio::io_context& m_asioContext;
 
         // Queue of Messages to be sent
-        TsQueue<Message<MsgType>>       m_outgoingMessages;
+        TsQueue<Message<T_Msg>>       m_outgoingMessages;
         // Reference to Connection OWNER's queue of Messages recieved
         // thus servers can have multiple Connections all push to 1 queue
-        TsQueue<OwnedMessage<MsgType>>& m_incomingMessages;
+        TsQueue<OwnedMessage<T_Msg>>& m_incomingMessages;
         // Storage for building incoming message
-        Message<MsgType>                m_scratchMessage;
+        Message<T_Msg>                m_scratchMessage;
 
         owner m_ownerType = owner::server;
         uint32_t m_id = 0;
