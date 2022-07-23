@@ -4,6 +4,7 @@
 //#include "intercession_pch.h"
 #include <mutex>
 #include <deque>
+#include <utility>
 
 namespace pleep
 {
@@ -33,15 +34,25 @@ namespace pleep
             return m_deque.back();
         }
         
-        void push_back(const T_Element& item)
+        // returns size including item after atomic push
+        size_t push_back(const T_Element& item)
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             m_deque.emplace_back(std::move(item));
+            
+            // signal any waiters
+            m_waitCv.notify_one();
+            return m_deque.size();
         }
-        void push_front(const T_Element& item)
+        // returns size including item after atomic push
+        size_t push_front(const T_Element& item)
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             m_deque.emplace_front(std::move(item));
+
+            // signal any waiters
+            m_waitCv.notify_one();
+            return m_deque.size();
         }
 
         bool empty()
@@ -60,25 +71,40 @@ namespace pleep
             m_deque.clear();
         }
 
-        T_Element pop_front()
+        // return popped element and remaining size of queue
+        std::pair<T_Element,size_t> pop_front()
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             const T_Element item = std::move(m_deque.front());
             m_deque.pop_front();
-            return item;
+            return {item, m_deque.size()};
         }
-        T_Element pop_back()
+        // return popped element and remaining size of queue
+        std::pair<T_Element,size_t> pop_back()
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             const T_Element item = std::move(m_deque.back());
             m_deque.pop_back();
-            return item;
+            return {item, m_deque.size()};
+        }
+
+        // use this to block until incoming message queue is populated by async connections
+        // instead of polling with I_Server::process_received_messages()
+        void wait_for_data()
+        {
+            const std::lock_guard<std::mutex> lk(m_dequeMux);
+            while (this->empty())
+            {
+                m_waitCv.wait(waitLk);
+            }
         }
 
     protected:
         // cannot use scoped_lock without cxx17, so "deprecated" lock_guard<std::mutex> can substitute
         std::mutex m_dequeMux;
         std::deque<T_Element> m_deque;
+
+        std::condition_variable m_waitCv;
     };
 }
 

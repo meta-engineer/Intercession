@@ -14,6 +14,7 @@ namespace net
     // define some messagetype enum
     enum class PleepMessageType : uint32_t
     {
+        null,
         update,
         intercession
     };
@@ -36,6 +37,7 @@ namespace net
         void on_remote_disconnect(std::shared_ptr<Connection<PleepMessageType>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
+            PLEEPLOG_TRACE("Found invalid connection to cleanup: " + std::to_string(remote->get_id()));
 
         }
         

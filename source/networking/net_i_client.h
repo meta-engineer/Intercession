@@ -40,14 +40,13 @@ namespace net
                 // store endpoints for interrogation later?
                 asio::ip::tcp::resolver::results_type endpoints = asioResolver.resolve(host, std::to_string(port));
 
-                m_connection = std::make_unique<Connection<T_Msg>>(
-                    Connection<T_Msg>::owner::client, 
+                m_connection = std::make_shared<Connection<T_Msg>>(
                     m_asioContext,
                     asio::ip::tcp::socket(m_asioContext), 
                     m_incomingMessages
                 );
 
-                m_connection->connect_to_server(endpoints);
+                m_connection->connect_to_remote(endpoints);
 
                 // start async asio thread
                 m_contextThread = std::thread([this]() { m_asioContext.run(); });
@@ -73,8 +72,12 @@ namespace net
             if (m_contextThread.joinable())
                 m_contextThread.join();
 
-            // invoke destructor of connection
-            m_connection.release();
+            // remove member reference to connection
+            m_connection = nullptr;
+
+            // remove all queue references to connection
+            // to invoke destructor
+            m_incomingMessages.clear();
         }
 
         bool is_connected()
@@ -106,7 +109,7 @@ namespace net
         // thread for asio context
         std::thread m_contextThread;
         // client interface has single connection
-        std::unique_ptr<Connection<T_Msg>> m_connection;
+        std::shared_ptr<Connection<T_Msg>> m_connection;
 
     private:
         // messages recieved from connected "remote"

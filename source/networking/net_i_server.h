@@ -64,6 +64,7 @@ namespace net
         }
 
         // ASYNC - Task asio to wait for connection
+        // asio will provide us with the connected socket to use to append m_connectionDeque
         void wait_for_connection()
         {
             m_asioAcceptor.async_accept(
@@ -73,14 +74,15 @@ namespace net
                     {
                         PLEEPLOG_TRACE("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
 
-                        std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(Connection<T_Msg>::owner::server, m_asioContext, std::move(socket), m_incomingMessages);
+                        std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(m_asioContext, std::move(socket), m_incomingMessages);
 
                         // go to on connect callback
                         if (this->on_remote_connect(newConn))
                         {
                             m_connectionDeque.push_back(std::move(newConn));
 
-                            m_connectionDeque.back()->connect_to_client(m_idCounter++);
+                            m_connectionDeque.back()->set_id(m_idCounter++);
+                            m_connectionDeque.back()->start_communication(Connection<T_Msg>::owner::server);
 
                             PLEEPLOG_TRACE("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
                         }
@@ -150,12 +152,12 @@ namespace net
 
         // process incoming messages explicitly (instead of async callbacks)
         // only process a max number before moving on to next frame ((unsigned)-1 == MAX value)
-        void update(size_t maxMessages = -1)
+        void process_received_messages(size_t maxMessages = -1)
         {
             size_t messageCount = 0;
             while (messageCount < maxMessages && !m_incomingMessages.empty())
             {
-                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_front();
+                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_front().first;
 
                 this->on_message(msg.remote, msg.msg);
 
@@ -196,6 +198,7 @@ namespace net
         asio::io_context m_asioContext;
         std::thread m_contextThread;
         
+        // set task to build Connection upon incoming connection
         asio::ip::tcp::acceptor m_asioAcceptor;
 
         // interally maintained numberical id for each connection

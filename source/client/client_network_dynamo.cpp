@@ -36,7 +36,7 @@ namespace pleep
         {
             if (!m_client->get_incoming_messages().empty())
             {
-                auto msg = m_client->get_incoming_messages().pop_front().msg;
+                auto msg = m_client->get_incoming_messages().pop_front().first.msg;
 
                 switch (msg.header.id)
                 {

@@ -11,8 +11,6 @@ namespace pleep
         m_server = std::make_unique<net::PleepServer>(61336);
         m_server->start();
 
-        net::test_net();
-        
         PLEEPLOG_TRACE("Done Server Networking pipeline setup");
     }
     
@@ -25,7 +23,7 @@ namespace pleep
     {
         UNREFERENCED_PARAMETER(deltaTime);
         // handle all messages received between frames
-        m_server->update();
+        m_server->process_received_messages();
         
     }
     
