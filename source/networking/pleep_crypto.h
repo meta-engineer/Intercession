@@ -6,10 +6,10 @@
 
 namespace pleep
 {
-    // Written by Squirrel Eiserloh not pleep
+    // Written by Squirrel Eiserloh, not pleep
     // https://www.youtube.com/watch?v=LWFzPP8ZbdU
-    // though protected here in the pleep namespace
-    uint32_t Squirrel3(int position, uint32_t seed = 0)
+    // though this variation is protected here in the pleep namespace
+    inline uint32_t Squirrel3(int position, uint32_t seed = 0)
     {
         constexpr unsigned int BIT_NOISE1 = 0xB5297A4D;
         constexpr unsigned int BIT_NOISE2 = 0x68E31DA4;

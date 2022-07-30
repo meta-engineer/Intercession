@@ -80,17 +80,25 @@ namespace net
             m_incomingMessages.clear();
         }
 
+        // passthrough connection status
         bool is_connected()
         {
-            if (m_connection)
-                return m_connection->is_connected();
-            else
-                return false;
+            return m_connection && m_connection->is_connected();
+        }
+
+        // passthrough connection status
+        bool is_ready()
+        {
+            return m_connection && m_connection->is_ready();
         }
 
         void send_message(const Message<T_Msg>& msg)
         {
-            if (this->is_connected())
+            if (!this->is_connected())
+            {
+                PLEEPLOG_ERROR("Cannot send message, Conection is closed");
+            }
+            else
             {
                 m_connection->send(msg);
             }

@@ -34,7 +34,7 @@ namespace net
 
         bool start()
         {
-            PLEEPLOG_DEBUG("Started waiting for connections!");
+            PLEEPLOG_TRACE("Started waiting for connections!");
             try
             {
                 // issue "work" to asio context
@@ -72,7 +72,7 @@ namespace net
                 {
                     if (!ec)
                     {
-                        PLEEPLOG_TRACE("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
+                        PLEEPLOG_DEBUG("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
 
                         std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(m_asioContext, std::move(socket), m_incomingMessages);
 
@@ -80,15 +80,14 @@ namespace net
                         if (this->on_remote_connect(newConn))
                         {
                             m_connectionDeque.push_back(std::move(newConn));
-
                             m_connectionDeque.back()->set_id(m_idCounter++);
-                            m_connectionDeque.back()->start_communication(Connection<T_Msg>::owner::server);
+                            PLEEPLOG_DEBUG("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
 
-                            PLEEPLOG_TRACE("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
+                            m_connectionDeque.back()->start_communication(this);
                         }
                         else
                         {
-                            PLEEPLOG_TRACE("[----] Connection denied");
+                            PLEEPLOG_DEBUG("[----] Connection denied");
                         }
                     }
                     else
@@ -104,12 +103,9 @@ namespace net
 
         void send_message(std::shared_ptr<Connection<T_Msg>> remote, const Message<T_Msg>& msg)
         {
-            if (remote && remote->is_connected())
-            {
-                remote->send(msg);
-            }
-            // remote is no longer valid since last communication... assume it is disconnected
-            else
+            if (!remote) return;
+            // remote is no longer valid since last communication... ASSUME it disconnected ungracefully
+            if (!remote->is_connected())
             {
                 this->on_remote_disconnect(remote);
                 remote.reset();
@@ -117,6 +113,11 @@ namespace net
                     std::remove(m_connectionDeque.begin(), m_connectionDeque.end(), remote),
                     m_connectionDeque.end()
                 );
+            }
+            // otherwise try to send message (send will fail safely if connection is not ready/initialized)
+            else
+            {
+                remote->send(msg);
             }
         }
 
@@ -128,16 +129,19 @@ namespace net
 
             for (auto& remote : m_connectionDeque)
             {
-                if (remote && remote->is_connected())
-                {
-                    if (remote != ignoredConnection)
-                        remote->send(msg);
-                }
-                else
+                if (!remote) continue;
+                // remote is no longer valid since last communication... ASSUME it disconnected ungracefully
+                if (!remote->is_connected())
                 {
                     this->on_remote_disconnect(remote);
                     remote.reset();
                     invalidRemoteExists = true;
+                }
+                // otherwise try to send message (send will fail safely if connection is not ready/initialized)
+                else
+                {
+                    if (remote != ignoredConnection) 
+                        remote->send(msg);
                 }
             }
 
@@ -184,6 +188,13 @@ namespace net
         {
             UNREFERENCED_PARAMETER(remote);
             UNREFERENCED_PARAMETER(msg);
+        }
+
+        // Called by Connection when a remote has passed validation.
+        friend class Connection<T_Msg>;
+        virtual void on_remote_validated(std::shared_ptr<Connection<T_Msg>> remote)
+        {
+            UNREFERENCED_PARAMETER(remote);
         }
 
         // A queue for all messages of the designated server type

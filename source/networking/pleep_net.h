@@ -15,6 +15,7 @@ namespace net
     enum class PleepMessageType : uint32_t
     {
         null,
+        appInfo,
         update,
         intercession
     };
@@ -31,13 +32,20 @@ namespace net
         bool on_remote_connect(std::shared_ptr<Connection<PleepMessageType>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
+            PLEEPLOG_DEBUG("Checking new connection: " + remote->get_endpoint().address().to_string() + ":" + std::to_string(remote->get_endpoint().port()));
             return true;
+        }
+        
+        void on_remote_validated(std::shared_ptr<Connection<PleepMessageType>> remote) override
+        {
+            UNREFERENCED_PARAMETER(remote);
+            PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Checking validated connection");
         }
         
         void on_remote_disconnect(std::shared_ptr<Connection<PleepMessageType>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
-            PLEEPLOG_TRACE("Found invalid connection to cleanup: " + std::to_string(remote->get_id()));
+            PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Found invalid connection to cleanup");
 
         }
         
@@ -50,21 +58,21 @@ namespace net
             {
             case net::PleepMessageType::update:
             {
-                PLEEPLOG_TRACE("Bouncing update message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Bouncing update message");
                 // just bounce back
                 remote->send(msg);
             }
             break;
             case net::PleepMessageType::intercession:
             {
-                PLEEPLOG_TRACE("Bouncing intercession message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Bouncing intercession message");
                 // just bounce back
                 remote->send(msg);
             }
             break;
             default:
             {
-                PLEEPLOG_TRACE("Recieved unknown message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Recieved unknown message");
             }
             break;
             }

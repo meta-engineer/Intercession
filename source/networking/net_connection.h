@@ -12,6 +12,7 @@
 
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
+#include "networking/pleep_crypto.h"
 
 #define MAX_MESSAGE_BODY_BYTES 256
 
@@ -19,18 +20,23 @@ namespace pleep
 {
 namespace net
 {
-    // For outgoing connections, fresh socket is given to Connection and connect_to_remote establishes communication with remote endpoint.
-    // For incoming connections, a pre-established socket is given and start_communication(server) validates communication with the accepted remote endpoint
+    // Forward declare pointer
+    // How do we access methods with only a foreward declaration? templates?
+    template<typename T_Msg>
+    class I_Server;
+
+    // For outgoing (client) connections: Fresh socket is given to Connection and connect_to_remote establishes communication with remote endpoint.
+    //     Internally: connect_to_remote() -> start_communication() -> _riposte_validation() -> _read_header() (and loop indefinately on _read_header() -> (optionally _read_body()) -> _add_scratch_to_incoming() -> repeat)
+    //
+    // For incoming (server) connections, a pre-established (asio acceptor) socket is given and start_communication(server) validates communication with the accepted remote endpoint.
+    //     Internally: start_communication() -> _initiate_validation() -> _reprise_validation -> _read_header() (and loop indefinately on _read_header() -> (optionally _read_body()) -> _add_scratch_to_incoming() -> repeat)
+    //
+    // Both connections can send() message data to write data across the connection
+    //     Internally: send() -> _write_header() -> (optionally _write_body())
     template<typename T_Msg>
     class Connection : public std::enable_shared_from_this<Connection<T_Msg>>
     {
     public:
-        enum class owner
-        {
-            server,
-            client
-        };
-
         Connection(asio::io_context& asioContext, asio::ip::tcp::socket socket, TsQueue<OwnedMessage<T_Msg>>& inQ)
             : m_asioContext(asioContext)
             , m_socket(std::move(socket))
@@ -49,28 +55,26 @@ namespace net
             return m_id;
         }
 
-        // config determines if this connection should "lead" or "follow" in protocol
-        void start_communication(owner config)
+        // callback_server truthiness determines if this connection should "lead" (non-null) or "follow"(null) in protocol
+        void start_communication(I_Server<T_Msg>* callback_server = nullptr)
         {
             if (m_socket.is_open())
             {
-                if (config == owner::server)
+                if (callback_server != nullptr)
                 {
-                    // TODO: server first _write_validation of some kind and waits to
-                    // _read_validation with safeties in place, before accepting unfiltered
-                    // data from a remote through _read_header
-
-                    // prime to read
-                    this->_read_header();
+                    // validation chain will use callback's on_remote_validated,
+                    // and start _read_header() on success
+                    this->_initiate_validation(callback_server);
                 }
-                else if (config == owner::client)
+                else // (no callback_server)
                 {
-                    // TODO: I should first expect to _read_validation from server
-
-                    // now we're connected, prime to read header
-                    this->_read_header();
-
+                    // validation chain will start _read_header() on success
+                    this->_riposte_validation();
                 }
+            }
+            else
+            {
+                PLEEPLOG_WARN("Called start_communication on Connection with closed socket.");
             }
         }
         // only "clients" should use this
@@ -90,7 +94,7 @@ namespace net
                     UNREFERENCED_PARAMETER(endpoint);
                     if (!ec)
                     {
-                        this->start_communication(owner::client);
+                        this->start_communication();
                     }
                     else
                     {
@@ -110,13 +114,32 @@ namespace net
             }
         }
 
+        // report socket state
         bool is_connected() const
         {
             return m_socket.is_open();
         }
 
+        // report if connection is connected, initialized, and safe to send across
+        bool is_ready() const
+        {
+            return this->is_connected() && m_handshakeSuccess;
+        }
+
+        asio::ip::tcp::endpoint get_endpoint()
+        {
+            return m_socket.remote_endpoint();
+        }
+
+        // Append msg into to-write message queue and proceed to _write_header
+        // does not return if message was not sent (or failed during async methods)
         void send(const Message<T_Msg>& msg)
         {
+            if (!this->is_ready())
+            {
+                PLEEPLOG_WARN("Cannot send message, Connection is not ready (yet?).");
+                return;
+            }
             // send a "job" to the context
             asio::post(
                 m_asioContext,
@@ -135,7 +158,12 @@ namespace net
         }
 
     private:
-        // ASYNC
+        ////////////////////////////// READ MESSAGES //////////////////////////////
+
+        // ASYNC - start task to read fixed header.
+        // fill m_scratchMessage with type and body size
+        // proceed to _read_body if header indicates non-zero body size
+        // or proceed to _add_scratch_to_incoming with body-less message
         void _read_header()
         {
             asio::async_read(
@@ -173,7 +201,9 @@ namespace net
             );
         }
 
-        // ASYNC
+        // ASYNC - start task to read message body
+        // dynamic size passed through m_scratchMessage
+        // proceed to _add_scratch_to_incoming
         void _read_body()
         {
             asio::async_read(
@@ -197,6 +227,8 @@ namespace net
             );
         }
 
+        // push finished "read" message to queue available for app
+        // "recurse" to _read_header
         void _add_scratch_to_incoming()
         {
             // clients only have 1 Connection, so they dont need to know shared_from_this,
@@ -210,7 +242,11 @@ namespace net
             this->_read_header();
         }
         
-        // ASYNC
+        ////////////////////////////// WRITE MESSAGES //////////////////////////////
+
+        // ASYNC - start task to write message header from front of to-write message queue
+        // proceed to _write_body if non-zero message body
+        // or pop message and "recurse" to _write_header if no message body AND to-write message queue is non-empty
         void _write_header()
         {
             asio::async_write(
@@ -247,7 +283,8 @@ namespace net
             );
         }
 
-        // ASYNC
+        // ASYNC - start task to write message body from  front of to-write message queue
+        // pop message and "recurse" to _write_header if to-write message queue is non-empty
         void _write_body()
         {
             asio::async_write(
@@ -276,6 +313,129 @@ namespace net
             );
         }
 
+        ////////////////////////////// VALIDATION //////////////////////////////
+        // Validation steps (attempt) to check cryptographic integrity (at connection level)
+        //   of the client as a first pass, and forcibly decline bad actors 
+        // App level should do additional validation to check for matching versions/protocols
+        //   and mutually disconect upon improper communication
+
+        // ASYNC - start task to send validation data
+        // proceed to _reprise_validation()
+        void _initiate_validation(I_Server<T_Msg>* callback_server)
+        {
+            assert(callback_server != nullptr);
+
+            // get "random" data to use
+            m_handshakePlaintext = uint32_t(std::chrono::system_clock::now().time_since_epoch().count());
+
+            asio::async_write(
+                m_socket, 
+                asio::buffer(&m_handshakePlaintext, sizeof(uint32_t)),
+                [this, callback_server](std::error_code ec, std::size_t length)
+                {
+                    UNREFERENCED_PARAMETER(length);
+                    if (!ec)
+                    {
+                        this->_reprise_validation(callback_server); 
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("Asio error: " + ec.message());
+                        // on error close socket to that server/client will cleanup
+                        m_socket.close();
+                    }
+                }
+            );
+        }
+        // ASYNC - start task to wait for remote's data from _initiate_validation()
+        // respond and proceed to _read_header() loop
+        void _riposte_validation()
+        {
+
+            asio::async_read(
+                m_socket, 
+                asio::buffer(&m_handshakePlaintext, sizeof(uint32_t)),
+                [this](std::error_code ec, std::size_t length)
+                {
+                    UNREFERENCED_PARAMETER(length);
+                    if (!ec)
+                    {
+                        // compute checksum
+                        m_handshakeChecksum = pleep::Squirrel3(m_handshakePlaintext);
+
+                        // write back to server
+                        asio::async_write(
+                            m_socket, 
+                            asio::buffer(&m_handshakeChecksum, sizeof(uint32_t)),
+                            [this](std::error_code ec, std::size_t length)
+                            {
+                                UNREFERENCED_PARAMETER(length);
+                                if (!ec)
+                                {
+                                    // after sending validation, wait for app level messages
+                                    // (read header loop)
+                                    this->_read_header();
+                                    m_handshakeSuccess = true;
+                                }
+                                else
+                                {
+                                    PLEEPLOG_ERROR("Asio error: " + ec.message());
+                                    // on error close socket to that server/client will cleanup
+                                    m_socket.close();
+                                }
+                            }
+                        );
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("Asio error: " + ec.message());
+                        // on error close socket to that server/client will cleanup
+                        m_socket.close();
+                    }
+                }
+            );
+        }
+        // ASYNC - start task to wait for remote's checksum from _riposte_validation()
+        // send acknowledge and proceed to _read_header loop
+        void _reprise_validation(I_Server<T_Msg>* callback_server)
+        {
+            assert(callback_server != nullptr);
+
+            asio::async_read(
+                m_socket, 
+                asio::buffer(&m_handshakeChecksum, sizeof(uint32_t)),
+                [this, callback_server](std::error_code ec, std::size_t length)
+                {
+                    UNREFERENCED_PARAMETER(length);
+                    if (!ec)
+                    {
+                        uint32_t correctChecksum = pleep::Squirrel3(m_handshakePlaintext);
+                        if (correctChecksum == m_handshakeChecksum)
+                        {
+                            callback_server->on_remote_validated(this->shared_from_this());
+                            // app level can now send version/config data and client can
+                            // voulentarily disconnect from mismatch
+
+                            // go to read header loop
+                            this->_read_header();
+                            m_handshakeSuccess = true;
+                        }
+                        else
+                        {
+                            // failed validation
+                            PLEEPLOG_TRACE("Connected client failed validation");
+                            m_socket.close();
+                        }
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("Asio error: " + ec.message());
+                        // on error close socket to that server/client will cleanup
+                        m_socket.close();
+                    }
+                }
+            );
+        }
 
     protected:
         // Unique asio socket per Connection to some "remote"
@@ -295,6 +455,11 @@ namespace net
 
         // unique id to distinguish multiple connections used by a server
         uint32_t m_id = 0;
+
+        // Basic (application level) handshake validation
+        uint32_t m_handshakePlaintext = 0;
+        uint32_t m_handshakeChecksum = 0;
+        bool m_handshakeSuccess = false;
     };
 }
 }
