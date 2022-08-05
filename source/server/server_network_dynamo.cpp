@@ -3,7 +3,7 @@
 namespace pleep
 {
     ServerNetworkDynamo::ServerNetworkDynamo(EventBroker* sharedBroker)
-        : A_Dynamo(sharedBroker)
+        : I_NetworkDynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Setup Server Networking pipeline");
         // setup relays

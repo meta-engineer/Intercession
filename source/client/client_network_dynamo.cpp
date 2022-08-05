@@ -5,7 +5,7 @@
 namespace pleep
 {
     ClientNetworkDynamo::ClientNetworkDynamo(EventBroker* sharedBroker) 
-        : A_Dynamo(sharedBroker)
+        : I_NetworkDynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Setup Client Networking pipeline");
         // setup relays

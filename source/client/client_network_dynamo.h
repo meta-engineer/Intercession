@@ -3,20 +3,23 @@
 
 //#include "intercession_pch.h"
 
-#include "core/a_dynamo.h"
+#include "networking/i_network_dynamo.h"
 
 // Access PleepNet ...
 #include "networking/pleep_net.h"
 
 namespace pleep
 {
-    class ClientNetworkDynamo : public A_Dynamo
+    class ClientNetworkDynamo : public I_NetworkDynamo
     {
     public:
         // TODO: accept networking api (iocontext) from AppGateway
         ClientNetworkDynamo(EventBroker* sharedBroker);
         ~ClientNetworkDynamo();
 
+        // TODO: what entities, if any, would be submitted each frame?
+        // should they be shared in I_NetworkDynamo?
+        //void submit() override;
         
         // process network packet queues
         void run_relays(double deltaTime) override;

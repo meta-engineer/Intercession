@@ -101,9 +101,11 @@ namespace pleep
         unsigned int m_viewTransformUboId;
 
         // Data for UBO
-        // Camera data is not live (dynamo can't access ECS)
-        // but synchro will update each frame, and relay reset should clear at the end of the frame
-        std::unique_ptr<CameraPacket> m_cameraData;
+        // Camera data is not live (dynamo can't access ECS) so references can become invalid between frames
+        // but synchro will update each frame, and relay reset should invalidate it at the end of the frame
+        // (we'll store raw pointers instead of references for nullability and so they aren't cleaned by smart pointer RAII. They are still susceptible to segfault if ecs references become invalid)
+        TransformComponent* m_viewTransform = nullptr;
+        CameraComponent*    m_viewCamera    = nullptr;
     };
 }
 

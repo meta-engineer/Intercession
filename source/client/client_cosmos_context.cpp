@@ -124,7 +124,7 @@ namespace pleep
     {
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_controlDynamo, m_physicsDynamo);
+        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_controlDynamo, m_physicsDynamo, m_networkDynamo);
         // use imgui input in main loop do add more at runtime
     }
 }

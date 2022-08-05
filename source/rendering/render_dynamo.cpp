@@ -73,8 +73,9 @@ namespace pleep
         m_bloomPass->submit(data);
 
         // store CameraPacket for Uniform Buffer (every submittion overrides)
-        // the ECS references are volatile so they must be cleared with relay packets
-        m_cameraData = std::make_unique<CameraPacket>(data);
+        // the ECS references are volatile so our pointers shouldn't persist past the frame time
+        m_viewTransform = &(data.transform);
+        m_viewCamera    = &(data.camera);
     }
 
     
@@ -89,14 +90,15 @@ namespace pleep
 
         // if there is no camera data then... exit early
         // make sure relays are still reset after!
-        if (m_cameraData == nullptr)
+        if (m_viewTransform == nullptr || m_viewCamera == nullptr)
         {
+            PLEEPLOG_WARN("Camera data was not updated this frame, skipping without rendering.");
             return;
         }
 
         // Calculate uniform buffer data
-        glm::mat4 world_to_view = get_lookAt(m_cameraData->transform, m_cameraData->camera);
-        glm::mat4 projection    = get_projection(m_cameraData->camera);
+        glm::mat4 world_to_view = get_lookAt(*m_viewTransform, *m_viewCamera);
+        glm::mat4 projection    = get_projection(*m_viewCamera);
         // Update uniform buffer for registered relays
         // could optimize further by only resetting if transform/fov changes
         glBindBuffer(GL_UNIFORM_BUFFER, m_viewTransformUboId);
@@ -129,8 +131,9 @@ namespace pleep
         m_bloomPass->clear();
         m_screenPass->clear();
 
-        // clear volatile camera data from ecs
-        m_cameraData.reset();
+        // invalidate volatile camera data from ecs
+        m_viewTransform = nullptr;
+        m_viewCamera = nullptr;
     }
     
     void RenderDynamo::flush_frame() 

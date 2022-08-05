@@ -26,14 +26,14 @@
 #include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
-#include "ecs/tag_component.h"
+#include "core/meta_component.h"
 
 #include "scripting/script_component.h"
 #include "scripting/biped_scripts.h"
 
 namespace pleep
 {
-    void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, ControlDynamo* controlDynamo, PhysicsDynamo* physicsDynamo)
+    void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, ControlDynamo* controlDynamo, PhysicsDynamo* physicsDynamo, I_NetworkDynamo* networkDynamo)
     {
         // Assume Cosmos is already "empty"
 
@@ -50,9 +50,13 @@ namespace pleep
         cosmos->register_component<RayColliderComponent>();
         cosmos->register_component<RigidBodyComponent>();
         cosmos->register_component<SpringBodyComponent>();
-        // register tag component as a normal component?
-        cosmos->register_component<TagComponent>();
         cosmos->register_component<ScriptComponent>();
+        // We may want to enforce use of meta component for all cosmos'?
+        cosmos->register_component<MetaComponent>();
+
+        // TODO: what kind of synchro should accept network access?
+        // What methods does I_NetworkDynamo need, and do underlying type (client/server) need to be known?
+        UNREFERENCED_PARAMETER(networkDynamo);
 
         // register/create synchros, set component signatures
         // we shouldn't need to keep synchro references after we config them here, 
@@ -120,7 +124,7 @@ namespace pleep
         // if component is explicit (no initalizer list), we can omit template
 
         Entity frog = cosmos->create_entity();
-        cosmos->add_component(frog, TagComponent{ "froog" });
+        //cosmos->add_component(frog, MetaComponent{ "froog", NULL_ENTITY });
         cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
         //cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.5f, 1.0f, 0.5f);
