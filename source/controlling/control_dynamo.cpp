@@ -42,7 +42,11 @@ namespace pleep
                 break;
             default:
                 PLEEPLOG_WARN("Dynamo has no handler for Camera Controller type: " + std::to_string(data.controller.type) + ". Default behaviour is to ignore.");
+                return;
         }
+
+        // camera doesn't need to notify its updates to network?
+        //this->_signal_modified_entity(data.controllee);
     }
 
     void ControlDynamo::submit(PhysicsControlPacket data)
@@ -55,13 +59,18 @@ namespace pleep
                 break;
             default:
                 PLEEPLOG_WARN("Dynamo has no handler for Physics Controller type: " + std::to_string(data.controller.type) + ". Default behaviour is to ignore.");
+                return;
         }
+        
+        this->_signal_modified_entity(data.controllee);
     }
     
     void ControlDynamo::submit(BipedControlPacket data)
     {
         // no subtype for biped components, so we'll just dispatch to our known capable relay
         m_bipedController->submit(data);
+        
+        this->_signal_modified_entity(data.controllee);
     }
 
     void ControlDynamo::run_relays(double deltaTime) 
@@ -104,6 +113,15 @@ namespace pleep
         m_cameraController->clear();
         m_bipedController->clear();
         m_bipedCameraController->clear();
+    }
+    
+    void ControlDynamo::_signal_modified_entity(Entity id) 
+    {
+        EventMessage entityModified(events::cosmos::ENTITY_MODIFIED);
+        events::cosmos::ENTITY_MODIFIED_params entityModifiedData;
+        entityModifiedData.entityId = id;
+        entityModified << entityModifiedData;
+        m_sharedBroker->send_event(entityModified);
     }
 
     void ControlDynamo::_set_my_window_callbacks()
@@ -339,9 +357,9 @@ namespace pleep
         PLEEPLOG_TRACE("Sending event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) {" + std::to_string(width) + ", " + std::to_string(height) + "}");
 
         // Send event to Render Dynamo
-        Event resizeEvent(events::window::RESIZE);
+        EventMessage resizeEvent(events::window::RESIZE);
         events::window::RESIZE_params resizeParams { width, height };
-        resizeEvent.set_param(resizeParams);
+        resizeEvent << resizeParams;
 
         m_sharedBroker->send_event(resizeEvent);
     }

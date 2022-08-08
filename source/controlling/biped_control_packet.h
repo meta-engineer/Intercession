@@ -20,6 +20,7 @@ namespace pleep
         RayColliderComponent& legCollider;
 
         // need general access to ecs?
+        Entity controllee;
     };
 }
 

@@ -22,12 +22,15 @@ namespace pleep
             deltaTime = std::chrono::system_clock::now() - startTime;
         }
         PLEEPLOG_DEBUG("Waited " + std::to_string(deltaTime.count()) + " seconds for client to connect");
-        net::Message<net::PleepMessageType> msg;
+        Message<net::PleepMessageType> msg;
         msg.header.id = net::PleepMessageType::intercession;
         char pleep[10] = "pleep";
         msg << pleep;
         PLEEPLOG_DEBUG("Sending intercession message");
         m_client->send_message(msg);
+
+
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ClientNetworkDynamo::_entity_modified_handler) );
         
         PLEEPLOG_TRACE("Done Client Networking pipeline setup");
     }
@@ -50,9 +53,9 @@ namespace pleep
 
                 switch (msg.header.id)
                 {
-                case net::PleepMessageType::update:
+                case net::PleepMessageType::entityUpdate:
                 {
-                    PLEEPLOG_DEBUG("Recieved update message");
+                    PLEEPLOG_DEBUG("Recieved entityUpdate message");
                     break;
                 }
                 case net::PleepMessageType::intercession:
@@ -71,11 +74,20 @@ namespace pleep
                 }
             }
         }
-        
+
     }
 
     void ClientNetworkDynamo::reset_relays() 
     {
         
+    }
+    
+    void ClientNetworkDynamo::_entity_modified_handler(EventMessage entityEvent)
+    {
+        events::cosmos::ENTITY_MODIFIED_params entityData;
+        entityEvent >> entityData;
+
+        // TODO: store this entityId for our run_relays call later in the frame
+        //entityData.entityId;
     }
 }

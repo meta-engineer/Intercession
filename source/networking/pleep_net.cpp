@@ -9,7 +9,7 @@ namespace net
 {
     void test_net()
     {
-        net::Message<PleepMessageType> msg;
+        Message<PleepMessageType> msg;
         msg.header.id = PleepMessageType::intercession;
 
         int a = 1;

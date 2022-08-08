@@ -13,6 +13,8 @@ namespace pleep
         PhysicsControlComponent& controller;
         TransformComponent& transform;
         PhysicsComponent& physics;
+        
+        Entity controllee;
     };
 }
 

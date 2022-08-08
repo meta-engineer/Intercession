@@ -28,7 +28,7 @@ namespace pleep
             BipedControlComponent& controller = m_ownerCosmos->get_component<BipedControlComponent>(entity);
             RayColliderComponent& legCollider = m_ownerCosmos->get_component<RayColliderComponent>(entity);
             
-            m_attachedControlDynamo->submit(BipedControlPacket{controller, transform, physics, legCollider});
+            m_attachedControlDynamo->submit(BipedControlPacket{ controller, transform, physics, legCollider, entity });
         }
 
         // Cosmos Context will flush dynamo relays once all synchros are done

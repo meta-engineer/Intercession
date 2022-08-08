@@ -28,6 +28,8 @@ namespace pleep
         void reset_relays() override;
 
     private:
+        void _entity_modified_handler(EventMessage entityEvent);
+
         // Networking relays
 
         // TEMP: build raw PleepClient

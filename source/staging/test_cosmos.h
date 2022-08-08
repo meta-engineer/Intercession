@@ -300,11 +300,11 @@ namespace pleep
         // dynamos don't have acess to cosmos, so they can't lookup entity
         // synchro can maintain camera and pass its data each frame
         
-        Event cameraEvent(events::rendering::SET_MAIN_CAMERA);
+        EventMessage cameraEvent(events::rendering::SET_MAIN_CAMERA);
         events::rendering::SET_MAIN_CAMERA_params cameraParams {
             mainCamera
         };
-        cameraEvent.set_param(cameraParams);
+        cameraEvent << cameraParams;
         
         // TODO: unit testing
         renderSynchro->attach_dynamo(nullptr);

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19.1)
 
-project(INTERCESSION VERSION 0.3.0 LANGUAGES C CXX)
+project(INTERCESSION VERSION 0.3.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -43,6 +43,7 @@ add_subdirectory(source)
 # define config after variables from source tree have been set
 configure_file(config/build_config.h.in source/build_config.h)
 # config gets generated to binary directory's source for ALL targets
+target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
 target_include_directories(${SERVER_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
 target_include_directories(${CLIENT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/source)
 

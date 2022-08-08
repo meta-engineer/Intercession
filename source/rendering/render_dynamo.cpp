@@ -146,9 +146,10 @@ namespace pleep
         glGetIntegerv(GL_VIEWPORT, viewportDims);
     }
     
-    void RenderDynamo::_resize_handler(Event resizeEvent) 
+    void RenderDynamo::_resize_handler(EventMessage resizeEvent) 
     {
-        events::window::RESIZE_params resizeParams = resizeEvent.get_param<events::window::RESIZE_params>();
+        events::window::RESIZE_params resizeParams;
+        resizeEvent >> resizeParams;
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 

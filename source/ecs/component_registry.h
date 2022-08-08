@@ -61,6 +61,7 @@ namespace pleep
         std::unordered_map<const char*, std::shared_ptr<I_ComponentArray>> m_componentArrays{};
 
         // track total components registered
+        // this isn't a queue (unlike entities) so component types can't be recycled
         ComponentType m_componentTypeCount;
     };
 
@@ -74,6 +75,12 @@ namespace pleep
         {
             PLEEPLOG_ERROR("Cannot register component type " + std::string(typeName) + " which already exists");
             throw std::runtime_error("ComponentRegistry cannot register component type " + std::string(typeName) + " which already exists");
+        }
+        
+        if (m_componentTypeCount > MAX_COMPONENT_TYPES)
+        {
+            PLEEPLOG_ERROR("Cannot register component type " + std::string(typeName) + ". Max component count " + std::to_string(MAX_COMPONENT_TYPES) + " exceeded.");
+            throw std::runtime_error("ComponentRegistry cannot register component type " + std::string(typeName) + ". Max component count " + std::to_string(MAX_COMPONENT_TYPES) + " exceeded.");
         }
 
         // add type id/name to next register index

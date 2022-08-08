@@ -109,13 +109,14 @@ namespace pleep
         return sign;
     }
     
-    void RenderSynchro::_set_main_camera_handler(Event setCameraEvent) 
+    void RenderSynchro::_set_main_camera_handler(EventMessage setCameraEvent) 
     {
-        events::rendering::SET_MAIN_CAMERA_params cameraParams = setCameraEvent.get_param<events::rendering::SET_MAIN_CAMERA_params>();
+        events::rendering::SET_MAIN_CAMERA_params setCameraParams;
+        setCameraEvent >> setCameraParams;
         
-        PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(cameraParams.cameraEntity) + " }");
+        PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(setCameraParams.cameraEntity) + " }");
 
-        m_mainCamera = cameraParams.cameraEntity;
+        m_mainCamera = setCameraParams.cameraEntity;
 
         // we'll have camera match to whatever the current viewport size is
         // dynamo must be non-null when calling here
@@ -124,9 +125,10 @@ namespace pleep
         _resize_main_camera(viewportSize[2], viewportSize[3]);
     }
     
-    void RenderSynchro::_resize_handler(Event resizeEvent) 
+    void RenderSynchro::_resize_handler(EventMessage resizeEvent) 
     {
-        events::window::RESIZE_params resizeParams = resizeEvent.get_param<events::window::RESIZE_params>();
+        events::window::RESIZE_params resizeParams;
+        resizeEvent >> resizeParams;
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 

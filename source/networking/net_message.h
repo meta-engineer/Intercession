@@ -6,9 +6,9 @@
 #include <string>
 #include <memory>
 
+#include "logging/pleep_log.h"
+
 namespace pleep
-{
-namespace net
 {
     // Defines a generic, resizable byte container to serialize/deserialize POD
     // Header is user defined type to recognise on the recieving end and deserialize
@@ -32,6 +32,13 @@ namespace net
     {
         MessageHeader<T_Msg> header{};
         std::vector<uint8_t> body;
+        
+        Message() = default;
+        // initialize with header id;
+        Message(T_Msg id)
+        {
+            this->header.id = id;
+        }
 
         // (in bytes)
         size_t size() const
@@ -99,7 +106,8 @@ namespace net
         }
     };
 
-
+namespace net
+{
     // Forward declare connection owner
     template <typename T_Msg>
     class Connection;

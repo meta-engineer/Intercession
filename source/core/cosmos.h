@@ -44,6 +44,9 @@ namespace pleep
 
         // foreward count fetch to EntityRegistry
         Entity get_entity_count();
+        
+        // passthrough to EntityRegistry->get_signature()
+        Signature get_entity_signature(Entity entity);
 
         // find which entity has this component
         // Linear complexity (with number of components of this type)
@@ -52,7 +55,6 @@ namespace pleep
         // if component doesn't exist, returns NULL_ENTITY
         template<typename T>
         Entity find_entity(T component);
-
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -128,6 +130,11 @@ namespace pleep
     inline Entity Cosmos::get_entity_count() 
     {
         return m_entityRegistry->get_entity_count();
+    }
+
+    inline Signature Cosmos::get_entity_signature(Entity entity)
+    {
+        return m_entityRegistry->get_signature(entity);
     }
     
     template<typename T>

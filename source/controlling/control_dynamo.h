@@ -51,6 +51,9 @@ namespace pleep
         void reset_relays() override;
 
     private:
+        // signal to m_sharedBroker that an entity has been modified
+        void _signal_modified_entity(Entity id);
+
         // take over window user pointer and bind all callbacks below
         void _set_my_window_callbacks();
         void _mouse_move_callback(GLFWwindow* w, double x, double y);

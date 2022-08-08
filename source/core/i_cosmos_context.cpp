@@ -59,6 +59,9 @@ namespace pleep
             // ***** Finish Frame *****
             // Context gets last word on any final superceding actions
             this->_clean_frame();
+
+            
+            // TODO: cleanup all entities signalled to be deleted during frame
         }
         
         PLEEPLOG_TRACE("Exiting \"main loop\"");
@@ -70,7 +73,7 @@ namespace pleep
         m_running = false;
     }
     
-    void I_CosmosContext::_quit_handler(Event quitEvent)
+    void I_CosmosContext::_quit_handler(EventMessage quitEvent)
     {
         // should only be subscribed to events given with type:
         // events::window::QUIT

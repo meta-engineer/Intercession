@@ -27,7 +27,7 @@ namespace pleep
             PhysicsControlComponent& controller = m_ownerCosmos->get_component<PhysicsControlComponent>(entity);
             PhysicsComponent& physics = m_ownerCosmos->get_component<PhysicsComponent>(entity);
             
-            m_attachedControlDynamo->submit(PhysicsControlPacket{ controller, transform, physics });
+            m_attachedControlDynamo->submit(PhysicsControlPacket{ controller, transform, physics, entity });
         }
 
         // Cosmos Context will flush dynamo relays once all synchros are done
