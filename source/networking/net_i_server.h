@@ -107,6 +107,7 @@ namespace net
             // remote is no longer valid since last communication... ASSUME it disconnected ungracefully
             if (!remote->is_connected())
             {
+                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Found invalid connection to cleanup");
                 this->on_remote_disconnect(remote);
                 remote.reset();
                 m_connectionDeque.erase(
@@ -133,6 +134,7 @@ namespace net
                 // remote is no longer valid since last communication... ASSUME it disconnected ungracefully
                 if (!remote->is_connected())
                 {
+                    PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Found invalid connection to cleanup");
                     this->on_remote_disconnect(remote);
                     remote.reset();
                     invalidRemoteExists = true;

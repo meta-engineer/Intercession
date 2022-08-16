@@ -13,6 +13,7 @@
 #include "physics/physics_synchro.h"
 #include "physics/box_collider_synchro.h"
 #include "physics/ray_collider_synchro.h"
+#include "networking/network_synchro.h"
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
@@ -114,6 +115,12 @@ namespace pleep
         {
             rayColliderSynchro->attach_dynamo(physicsDynamo);
             cosmos->set_synchro_signature<RayColliderSynchro>(RayColliderSynchro::get_signature(cosmos));
+        }
+
+        std::shared_ptr<NetworkSynchro> networkSynchro = cosmos->register_synchro<NetworkSynchro>();
+        {
+            networkSynchro->attach_dynamo(networkDynamo);
+            cosmos->set_synchro_signature<NetworkSynchro>(NetworkSynchro::get_signature(cosmos));
         }
 
         // TODO: script synchro for fixed time and frame time updates?

@@ -31,7 +31,7 @@ set(COMMON_SOURCE_FILES
     source/physics/rigid_body_component.cpp
     source/physics/spring_body_component.cpp
 
-    source/networking/pleep_net.cpp
+    source/networking/network_synchro.cpp
 )
 
 set(CLIENT_SOURCE_FILES

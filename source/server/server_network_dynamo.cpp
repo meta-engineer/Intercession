@@ -8,7 +8,7 @@ namespace pleep
         PLEEPLOG_TRACE("Setup Server Networking pipeline");
         // setup relays
 
-        m_server = std::make_unique<net::PleepServer>(61336);
+        m_server = std::make_unique<net::IntercessionServer>(61336, m_sharedBroker);
         m_server->start();
 
         PLEEPLOG_TRACE("Done Server Networking pipeline setup");
@@ -22,7 +22,8 @@ namespace pleep
     void ServerNetworkDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
-        // handle all messages received between frames
+        // handle incoming messages since last frame
+        // events which pertain data outside of networking will be broadcast 
         m_server->process_received_messages();
         
     }

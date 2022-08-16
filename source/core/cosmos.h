@@ -75,6 +75,8 @@ namespace pleep
         // get registered component T's typeid
         template<typename T>
         ComponentType get_component_type();
+
+        const char* get_component_name(ComponentType componentId);
         
 
         // setup synchro T to be usable in this cosmos
@@ -185,6 +187,11 @@ namespace pleep
     ComponentType Cosmos::get_component_type() 
     {
         return m_componentRegistry->get_component_type<T>();
+    }
+    
+    inline const char* Cosmos::get_component_name(ComponentType componentId) 
+    {
+        return m_componentRegistry->get_component_name(componentId);
     }
     
     template<typename T>

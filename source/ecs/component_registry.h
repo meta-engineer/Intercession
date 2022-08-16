@@ -26,6 +26,10 @@ namespace pleep
         template<typename T>
         ComponentType get_component_type();
 
+        // get registered component name from its index id
+        // THROWS runtime_error if component type is not yet registered
+        const char* get_component_name(ComponentType componentId);
+
         // add component to registry array for given type and entity
         // THROWS runtime_error if templated type has not yet been registered
         template<typename T>
@@ -56,6 +60,8 @@ namespace pleep
 
         // "type string" pointer to a component type's id
         std::unordered_map<const char*, ComponentType> m_componentTypes{};
+        // reverse map
+        std::unordered_map<ComponentType, const char*> m_componentNames{};
 
         // "type string" pointer to a component Array objeect pointer
         std::unordered_map<const char*, std::shared_ptr<I_ComponentArray>> m_componentArrays{};
@@ -84,7 +90,8 @@ namespace pleep
         }
 
         // add type id/name to next register index
-        m_componentTypes.insert({typeName, m_componentTypeCount});
+        m_componentTypes.insert({ typeName, m_componentTypeCount });
+        m_componentNames.insert({ m_componentTypeCount, typeName });
 
         // create an array object for this type id/name
         m_componentArrays.insert({typeName, std::make_shared<ComponentArray<T>>()});
@@ -106,6 +113,17 @@ namespace pleep
 
         // this type is used for creating signatures
         return m_componentTypes[typeName];
+    }
+
+    inline const char* ComponentRegistry::get_component_name(ComponentType componentId)
+    {
+        if (m_componentNames.find(componentId) == m_componentNames.end())
+        {
+            PLEEPLOG_ERROR("Cannot retrieve component id " + std::to_string(componentId) + " which has not been registered");
+            throw std::range_error("ComponentRegistry cannot retrieve component id " + std::to_string(componentId) + " which has not been registered");
+        }
+
+        return m_componentNames[componentId];
     }
 
     template<typename T>

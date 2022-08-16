@@ -4,10 +4,9 @@
 //#include "intercession_pch.h"
 #include <memory>
 
-// Access PleepNet ...
-#include "networking/pleep_net.h"
-
 #include "networking/i_network_dynamo.h"
+// Access PleepNet ...
+#include "server/intercession_server.h"
 
 namespace pleep
 {
@@ -30,8 +29,8 @@ namespace pleep
     private:
         // Networking relays
 
-        // TEMP: build raw PleepServer
-        std::unique_ptr<net::PleepServer> m_server;
+        // TEMP: build raw server instance
+        std::unique_ptr<net::IntercessionServer> m_server;
     };
 }
 

@@ -12,6 +12,7 @@
 
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
+#include "networking/net_i_server.h"
 #include "networking/pleep_crypto.h"
 
 #define MAX_MESSAGE_BODY_BYTES 256
@@ -237,6 +238,7 @@ namespace net
             m_incomingMessages.push_back({ this->shared_from_this(), m_scratchMessage });
 
             // clear scratch?
+            // body will be resized (potentially to 0) on next header read
 
             // prime to read next message
             this->_read_header();
@@ -412,13 +414,14 @@ namespace net
                         uint32_t correctChecksum = pleep::Squirrel3(m_handshakePlaintext);
                         if (correctChecksum == m_handshakeChecksum)
                         {
+                            m_handshakeSuccess = true;
+
                             callback_server->on_remote_validated(this->shared_from_this());
                             // app level can now send version/config data and client can
                             // voulentarily disconnect from mismatch
 
                             // go to read header loop
                             this->_read_header();
-                            m_handshakeSuccess = true;
                         }
                         else
                         {

@@ -104,14 +104,27 @@ namespace net
             }
         }
 
-        // public accessor for message queue
-        // TODO: should client have an update/on_message pattern like server?
-        TsQueue<OwnedMessage<T_Msg>>& get_incoming_messages()
+        // process incoming messages explicitly at a known time (instead of async callbacks)
+        // only process a max number before moving on to next frame ((unsigned)-1 == MAX value)
+        void process_received_messages(size_t maxMessages = -1)
         {
-            return m_incomingMessages;
+            size_t messageCount = 0;
+            while (messageCount < maxMessages && !m_incomingMessages.empty())
+            {
+                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_back().first;
+
+                this->on_message(msg.msg);
+
+                messageCount++;
+            }
         }
 
     protected:
+        virtual void on_message(Message<T_Msg>& msg)
+        {
+            UNREFERENCED_PARAMETER(msg);
+        }
+
         // root context shared with connections
         asio::io_context m_asioContext;
         // thread for asio context
