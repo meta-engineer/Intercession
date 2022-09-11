@@ -45,6 +45,8 @@ namespace pleep
         // poll event queue and process relays
         // THROWS runtime_error if m_windowApi is null
         // Dynamo translates raw input from callbacks to application specific "actions" for relays
+        // TODO: control relays should translate raw input to specialized "action sets" passed to
+        //   entity components, then script components can read actions and implement behaviours
         void run_relays(double deltaTime) override;
 
         // prepare relays for next frame

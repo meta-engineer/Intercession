@@ -4,6 +4,8 @@
 //#include "intercession_pch.h"
 
 #include "physics/i_collider_component.h"
+#include "events/message.h"
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
@@ -73,6 +75,28 @@ namespace pleep
         // uses static manifold calibrations (shared with static_intersect)
         static void build_contact_manifold(const glm::mat4& thisTrans, const glm::vec3 axis, const float depth, std::vector<glm::vec3>& dest);
     };
+        
+    // Virtual dispatch makes BoxColliderComponent non-POD, so we must override Message serialization
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const BoxColliderComponent& data)
+    {
+        // serialize I_ColliderComponent's data
+        msg << static_cast<const I_ColliderComponent&>(data);
+
+        // nothing to serialize
+
+        return msg;
+    }
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, BoxColliderComponent& data)
+    {
+        // deserialize I_ColliderComponent's data
+        msg >> static_cast<I_ColliderComponent&>(data);
+
+        // nothing to deserialize
+
+        return msg;
+    }
 }
 
 #endif // BOX_COLLIDER_COMPONENT_H

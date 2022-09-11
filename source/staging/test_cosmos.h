@@ -131,7 +131,7 @@ namespace pleep
         // if component is explicit (no initalizer list), we can omit template
 
         Entity frog = cosmos->create_entity();
-        //cosmos->add_component(frog, MetaComponent{ "froog", NULL_ENTITY });
+        //cosmos->add_component(frog, MetaComponent{ "froog" });
         cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
         //cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.5f, 1.0f, 0.5f);

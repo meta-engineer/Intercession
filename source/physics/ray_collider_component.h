@@ -4,6 +4,8 @@
 //#include "intercession_pch.h"
 
 #include "physics/i_collider_component.h"
+#include "events/message.h"
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
@@ -14,10 +16,13 @@ namespace pleep
         // This would mean that x & y scale have no effect...
         // what if we want an "infinite" length ray?
 
+    private:
         // Track parametric value for CLOSEST collision to avoid multiple collisions
         // Synchro resets this value upon submitting
+        // TODO: is this order dependant? can multiple collisions still occur?
         float minParametricValue = 1.0f;
 
+    public:
         // Does not invlude mass or density
         virtual glm::mat3 get_inertia_tensor(glm::vec3 scale = glm::vec3(1.0f)) const override;
         
@@ -72,6 +77,28 @@ namespace pleep
             this->minParametricValue = 1.0f;
         }
     };
+
+    // Virtual dispatch makes RayColliderComponent non-POD, so we must override Message serialization
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RayColliderComponent& data)
+    {
+        // serialize I_ColliderComponent's data
+        msg << static_cast<const I_ColliderComponent&>(data);
+
+        // nothing to serialize
+
+        return msg;
+    }
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, RayColliderComponent& data)
+    {
+        // serialize I_ColliderComponent's data
+        msg >> static_cast<I_ColliderComponent&>(data);
+        
+        // nothing to serialize
+
+        return msg;
+    }
 }
 
 #endif // RAY_COLLIDER_COMPONENT_H

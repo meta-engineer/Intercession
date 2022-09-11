@@ -1,6 +1,7 @@
 #include "client_network_dynamo.h"
 
 #include "logging/pleep_log.h"
+#include "networking/timeline_types.h"
 
 namespace pleep
 {
@@ -60,27 +61,17 @@ namespace pleep
                     Signature entSign = m_workingCosmos->get_entity_signature(ent);
                     PLEEPLOG_DEBUG("Found modified entity to report: " + std::to_string(ent) + " (" + entSign.to_string() + ")");
 
-                    // pack in reverse order, so receiver will read FILO
-                    // Signature size is defined as a ComponentType so no loss is possible
-                    assert(entSign.size() == MAX_COMPONENT_TYPES);
-                    // ComponentType cannot assign to -1, it will underflow to 255
-                    for (ComponentType i = static_cast<ComponentType>(entSign.size()) - 1; i < MAX_COMPONENT_TYPES; i--)
-                    {
-                        if (entSign.test(i))
-                        {
-                            // this index is valid
-                            // get component typename from index (component Id)
-                            std::string componentTypename(m_workingCosmos->get_component_name(i));
-                            //PLEEPLOG_DEBUG("Found component to serialize: " + componentTypename);
+                    // Interrogate any components now before serializing!
 
-                            // switch on all "communicable" components? feed them into entMsg
-                            // components not explicitly listed can be either ignored, or dispatched to ECS to be added to message anyway?
-                            // maybe all components should dispatch to be filled by ECS...
-                            // then ECS needs to have message serialization methods
-                        }
-                    }
-                    events::network::ENTITY_UPDATE_params entUpdate = { ent, entSign };
+                    m_workingCosmos->serialize_entity_components(ent, entMsg);
+                    PLEEPLOG_DEBUG("Finished component serialization");
+                    // fetch timeline id and pack header manually
+                    std::pair<TemporalEntity, CausalChainLink> timelineId; // TODO
+                    events::network::ENTITY_UPDATE_params entUpdate = { timelineId.first, timelineId.second, entSign };
                     entMsg << entUpdate;
+                    PLEEPLOG_DEBUG("Finished header serialization");
+
+                    PLEEPLOG_DEBUG("Sending entity update message for TemporalEntity: " + std::to_string(entUpdate.id) + ", link: " + std::to_string(entUpdate.link));
 
                     // send update message
                     m_client->send_message(entMsg);
@@ -91,7 +82,7 @@ namespace pleep
 
     void ClientNetworkDynamo::reset_relays() 
     {
-        //clear cosmos reference each frame
+        // clear cosmos reference each frame
         m_workingCosmos = nullptr;
     }
     
@@ -106,6 +97,10 @@ namespace pleep
         events::cosmos::ENTITY_MODIFIED_params entityData;
         entityEvent >> entityData;
 
-        m_entitiesToReport.insert(entityData.entityId);
+        // maintain uniqueness
+        if (m_entitiesToReport.find(entityData.entityId) == m_entitiesToReport.end())
+        {
+            m_entitiesToReport.insert(entityData.entityId);
+        }
     }
 }

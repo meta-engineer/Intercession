@@ -42,6 +42,29 @@ int main(int argc, char** argv)
         PLEEPLOG_WARN("Ignored cmd args: " + concat);
     }
 
+    // TODO: Read/use some config (accept json file path on cmd?) 
+    //   and setup multiple threads running seperate CosmosContexts
+    // config should describe the what starting cosmos' to build, network topology, addresses to use, network update Hz (tick rate)
+    // (and potentially other non-network configs like physics update Hz)
+    // AppGateway will setup inter-cosmos-communication over a local-temporal-network
+    // and expose it to the Context for each timeslice
+
+    // TODO: Using pleeplog for multiple threads might be unwieldly
+    // We can make a simple Terminal UI to display state for each servers in
+    // the cluster even in release mode (and avoid async threads debug logs
+    // crowding eachother. Assuming because they are all the same process we
+    // can't spawn multiple windows)
+    // Like the carriage return trick we can use escape sequences to rewrite the
+    // screen in realtime, and read keystrokes with std::getchar() to
+    // make it interactive? (as simple as <cstdio>?)
+    // ANSI Escape Sequences:
+    // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
+    // Whatever terminal "display" I build it will have to safely mesh
+    // with or disable PLEEPLOG, either making them exclusive build options
+    // or overriding the PLEEPLOG macros to display them in the UI instead.
+    // (get spdlog to feed its generated messages into a circular buffer)
+
     // Construct server specific AppGateway
     pleep::I_AppGateway* intercessionServer = nullptr;
 

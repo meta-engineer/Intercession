@@ -31,7 +31,8 @@ namespace pleep
         }
 
     protected:
-        EventBroker* m_sharedBroker;
+        // all dynamos receive broker from context on construction
+        EventBroker* m_sharedBroker = nullptr;
     };
 }
 

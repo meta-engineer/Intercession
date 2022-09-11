@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include "ecs_types.h"
+#include "events/event_types.h"
 
 namespace pleep
 {
@@ -20,6 +21,14 @@ namespace pleep
         // remove component from entity
         // non-strict usage, does nothing if component does not exist
         virtual void clear_data_for(Entity entity) = 0;
+
+        // Push component data into msg
+        // non-strict usage, does nothing if component does not exist
+        virtual void serialize_data_for(Entity entity, EventMessage msg) = 0;
+
+        // Pop component data from msg and overwrite;
+        // non-strict usage, does nothing if component does not exist
+        virtual void deserialize_data_for(Entity entity, EventMessage msg) = 0;
     };
 }
 

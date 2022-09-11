@@ -10,6 +10,7 @@
 #include "ecs_types.h"
 #include "component_array.h"
 #include "logging/pleep_log.h"
+#include "events/event_types.h"
 
 namespace pleep
 {
@@ -52,6 +53,17 @@ namespace pleep
         // operator == must be defined for T
         template<typename T>
         Entity find_entity(T component);
+
+        
+        ///// Helper methods for sending entity information in Messages (for events or network) /////
+
+        // loop through each ComponentType in entitySign, map to name, index that component array,
+        // get the component data for entity, then push it into message
+        void serialize_entity_components(Entity entity, Signature entitySign, EventMessage msg);
+
+        // index component array using name,
+        // get that array to unpack next data in msg, and copy it into entity's data
+        void deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg);
 
     private:
         // cast ComponentArray into mapped type
@@ -158,6 +170,30 @@ namespace pleep
     Entity ComponentRegistry::find_entity(T component)
     {
         return this->_get_component_array<T>()->find_entity_for(component);
+    }
+    
+    inline void ComponentRegistry::serialize_entity_components(Entity entity, Signature entitySign, EventMessage msg)
+    {
+        // Signature size is defined as a ComponentType so no loss is possible
+        assert(entitySign.size() == MAX_COMPONENT_TYPES);
+        // pack in reverse order, so receiver will read in ascending order
+        // ComponentType cannot assign to -1, it will underflow to 255
+        for (ComponentType i = static_cast<ComponentType>(entitySign.size()) - 1; i < MAX_COMPONENT_TYPES; i--)
+        {
+            if (entitySign.test(i))
+            {
+                // this index is valid
+                // get component typename from index (component Id)
+                const char* componentTypename = m_componentNames[i];
+                //PLEEPLOG_DEBUG("Found component to serialize: " + std::string(componentTypename));
+                m_componentArrays[componentTypename]->serialize_data_for(entity, msg);
+            }
+        }
+    }
+
+    inline void ComponentRegistry::deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg)
+    {
+        m_componentArrays[componentName.c_str()]->deserialize_data_for(entity, msg);
     }
     
     template<typename T>

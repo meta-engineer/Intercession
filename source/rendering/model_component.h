@@ -7,7 +7,9 @@
 #include <map>
 #include <cassert>
 
-#include "model.h"
+#include "rendering/model.h"
+#include "events/message.h"
+#include "logging/pleep_log.h"
 
 
 namespace pleep
@@ -48,6 +50,23 @@ namespace pleep
     // Alternatively we could have them use a flyweight model
     // Where each user would reference them same (const) model data (VAO, EBO, EBO)
     // then they would differ in uniforms set by other components (TransformComponent)
+
+    
+    // Member pointers makes ModelComponent not sharable, so we must override Message serialization
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const ModelComponent& data)
+    {
+        PLEEPLOG_DEBUG("Reached unimplemented Message stream in <ModelComponent> overload!");
+        UNREFERENCED_PARAMETER(data);
+        return msg;
+    }
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, ModelComponent& data)
+    {
+        PLEEPLOG_DEBUG("Reached unimplemented Message stream out <ModelComponent> overload!");
+        UNREFERENCED_PARAMETER(data);
+        return msg;
+    }
 }
 
 #endif // MODEL_COMPONENT_H

@@ -10,6 +10,7 @@
 #include "logging/pleep_log.h"
 #include "physics/transform_component.h"
 #include "ecs/ecs_types.h"
+#include "events/message.h"
 
 namespace pleep
 {
@@ -49,6 +50,13 @@ namespace pleep
         virtual ~I_ColliderComponent() = default;
 
         // ***** Universal collider attributes *****
+        // !!! Make sure to update serializers at page end if members are updated !!!
+        static const uint32_t dataSize = sizeof(CollisionResponseType) 
+            + sizeof(bool) 
+            + sizeof(Entity)
+            + sizeof(TransformComponent)
+            + sizeof(bool);
+
         // Suggestion to Dynamo for how to respond to a detected collision
         // This may be best implemented with a table/map between response type pairs and functions
         CollisionResponseType responseType = CollisionResponseType::rigid;
@@ -152,6 +160,7 @@ namespace pleep
             return parentTransform.get_model_transform() * localTransform.get_model_transform();
         }
 
+        // TODO: move this out of this class, it is not really related and bloating this file
         // clip clippee polygon against clipper polygon as if they are flattened along axis
         static void pseudo_clip_polyhedra(const std::vector<glm::vec3>& clipper, std::vector<glm::vec3>& clippee, const glm::vec3& axis)
         {
@@ -305,6 +314,80 @@ namespace pleep
             }
         }
     };
+        
+    // Virtual dispatch makes I_ColliderComponent non-POD, so we must override Message serialization
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const I_ColliderComponent& data)
+    {
+        // make sure stream operators are updated if members are updated
+        static_assert(I_ColliderComponent::dataSize == 48, "I_ColliderComponent Message serializer found unexpected data size");
+        
+        uint32_t i = msg.size();
+        // resize all at once
+        msg.body.resize(msg.body.size() + I_ColliderComponent::dataSize);
+
+        std::memcpy(msg.body.data() + i, &(data.responseType), sizeof(CollisionResponseType));
+        i += sizeof(CollisionResponseType);
+        
+        std::memcpy(msg.body.data() + i, &(data.isActive), sizeof(bool));
+        i += sizeof(bool);
+        
+        std::memcpy(msg.body.data() + i, &(data.scriptTarget), sizeof(Entity));
+        i += sizeof(Entity);
+        
+        std::memcpy(msg.body.data() + i, &(data.localTransform), sizeof(TransformComponent));
+        i += sizeof(TransformComponent);
+        
+        std::memcpy(msg.body.data() + i, &(data.inheritOrientation), sizeof(bool));
+        i += sizeof(bool);
+        
+        // recalc message size
+        msg.header.size = msg.size();
+
+        return msg;
+    }
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, I_ColliderComponent& data)
+    {
+        // stream out when no data is available;
+        assert(msg.size() >= I_ColliderComponent::dataSize);
+        
+        // track index at the start of the data on "top" of the stack
+        uint32_t i = msg.size() - I_ColliderComponent::dataSize;
+        
+        std::memcpy(&(data.responseType), msg.body.data() + i, sizeof(CollisionResponseType));
+        i += sizeof(CollisionResponseType);
+        
+        std::memcpy(&(data.isActive), msg.body.data() + i, sizeof(bool));
+        i += sizeof(bool);
+        
+        std::memcpy(&(data.scriptTarget), msg.body.data() + i, sizeof(Entity));
+        i += sizeof(Entity);
+        
+        std::memcpy(&(data.localTransform), msg.body.data() + i, sizeof(TransformComponent));
+        i += sizeof(TransformComponent);
+        
+        std::memcpy(&(data.inheritOrientation), msg.body.data() + i, sizeof(bool));
+        i += sizeof(bool);
+
+        // shrink, removing end of stack (constant time)
+        msg.body.resize(msg.size() - I_ColliderComponent::dataSize);
+
+        // recalc message size
+        msg.header.size = msg.size();
+        
+        return msg;
+    }
+    
+    // Testing
+    inline bool operator==(const I_ColliderComponent& lhs, const I_ColliderComponent& rhs)
+    {
+        return lhs.responseType == rhs.responseType
+            && lhs.isActive == rhs.isActive
+            && lhs.scriptTarget == rhs.scriptTarget
+            && lhs.localTransform == rhs.localTransform
+            && lhs.inheritOrientation == rhs.inheritOrientation;
+    }
 }
 
 #endif // I_COLLIDER_COMPONENT_H

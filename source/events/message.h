@@ -48,61 +48,64 @@ namespace pleep
         {
             return std::string("ID: " + std::to_string(int(header.id)) + " Size: " + std::to_string(header.size));
         }
-
-        // use stream-in operator to push data into message
-        template<typename T_Data>
-        friend Message<T_Msg>& operator<<(Message<T_Msg>& msg, const T_Data& data)
-        {
-            // only accept POD. magic modern c++ to check type of data
-            if (!std::is_standard_layout<T_Data>::value)
-            {
-                PLEEPLOG_ERROR("Data type pushed is not POD");
-                throw std::runtime_error("Message operator<< could not serialize non-POD type");
-            }
-
-            // track current size of body
-            uint32_t i = msg.body.size();
-
-            // resize for data to be pushed
-            // does this break the amortized exponential auto-allocating?
-            // No, i think resize is ACTUALLY making elements, not just capacity
-            msg.body.resize(msg.body.size() + sizeof(T_Data));
-
-            // actually physically copy the data into allocated space
-            std::memcpy(msg.body.data() + i, &data, sizeof(T_Data));
-
-            // recalc message size
-            msg.header.size = msg.size();
-
-            return msg;
-        }
-
-        // use stream-out operator to pop data out of message
-        template<typename T_Data>
-        friend Message<T_Msg>& operator>>(Message<T_Msg>& msg, T_Data& data)
-        {
-            // only accept POD. magic modern c++ to check type of data
-            if (!std::is_standard_layout<T_Data>::value)
-            {
-                PLEEPLOG_ERROR("Data type popped is not POD");
-                throw std::runtime_error("Message operator>> could not deserialize non-POD type");
-            }
-
-            // track index at the start of the data on "top" of the stack
-            uint32_t i = msg.body.size() - sizeof(T_Data);
-
-            // actually physically copy the data into allocated space
-            std::memcpy(&data, msg.body.data() + i, sizeof(T_Data));
-
-            // shrink, removing end of stack (constant time)
-            msg.body.resize(i);
-
-            // recalc message size
-            msg.header.size = msg.size();
-            
-            return msg;
-        }
     };
+
+    // use stream-in operator to push data into message
+    template<typename T_Msg, typename T_Data>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const T_Data& data)
+    {
+        // only accept POD. magic modern c++ to check type of data
+        if (!std::is_standard_layout<T_Data>::value)
+        {
+            PLEEPLOG_ERROR("Data type pushed is not POD");
+            throw std::runtime_error("Message operator<< could not serialize non-POD type");
+        }
+
+        // track current size of body
+        uint32_t i = msg.size();
+
+        // resize for data to be pushed
+        // does this break the amortized exponential auto-allocating?
+        // No, i think resize is ACTUALLY making elements, not just capacity
+        msg.body.resize(msg.body.size() + sizeof(T_Data));
+
+        // actually physically copy the data into allocated space
+        std::memcpy(msg.body.data() + i, &data, sizeof(T_Data));
+
+        // recalc message size
+        msg.header.size = msg.size();
+
+        return msg;
+    }
+
+    // use stream-out operator to pop data out of message
+    template<typename T_Msg, typename T_Data>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, T_Data& data)
+    {
+        // only accept POD. magic modern c++ to check type of data
+        if (!std::is_standard_layout<T_Data>::value)
+        {
+            PLEEPLOG_ERROR("Data type popped is not POD");
+            throw std::runtime_error("Message operator>> could not deserialize non-POD type");
+        }
+
+        // cannot stream out when no data is available;
+        assert(msg.size() >= sizeof(T_Data));
+
+        // track index at the start of the data on "top" of the stack
+        uint32_t i = msg.size() - sizeof(T_Data);
+
+        // actually physically copy the data into allocated space
+        std::memcpy(&data, msg.body.data() + i, sizeof(T_Data));
+
+        // shrink, removing end of stack (constant time)
+        msg.body.resize(i);
+
+        // recalc message size
+        msg.header.size = msg.size();
+        
+        return msg;
+    }
 }
 
 #endif // MESSAGE_H

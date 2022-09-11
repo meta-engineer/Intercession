@@ -34,4 +34,14 @@ namespace pleep
         }
     }
 
+    void Cosmos::serialize_entity_components(Entity entity, EventMessage msg)
+    {
+        Signature entitySign = this->get_entity_signature(entity);
+        m_componentRegistry->serialize_entity_components(entity, entitySign, msg);
+    }
+
+    void Cosmos::deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg)
+    {
+        m_componentRegistry->deserialize_and_write_component(entity, componentName, msg);
+    }
 }

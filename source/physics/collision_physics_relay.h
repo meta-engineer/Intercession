@@ -31,6 +31,7 @@ namespace pleep
                     continue;
 
                 // no spacial partitioning :(
+                // TODO: If collider can only collide once (like ray) we have to track the pair which maximizes the collider's criteria (closeness) and only invoke response between those
                 for (std::vector<ColliderPacket>::iterator otherPacket_it = thisPacket_it + 1; otherPacket_it != m_colliderPackets.end(); otherPacket_it++)
                 {
                     assert(otherPacket_it != thisPacket_it);
@@ -159,6 +160,9 @@ namespace pleep
                         otherData.collider->responseType = CollisionResponseType::none;
                         continue;
                     }
+
+                    // Check for un-handled CollisionResponseType
+                    if (!thisResponse || !otherResponse) continue;
 
                     // Again, virtual dispatch may not be very optimal, but it is easy to understand
                     thisResponse->collision_response(otherResponse, thisData, otherData, collisionNormal, collisionDepth, collisionPoint);

@@ -58,21 +58,11 @@ namespace net
             break;
             case events::network::ENTITY_UPDATE:
             {
-                events::network::ENTITY_UPDATE_params newEntUpdate;
-                msg >> newEntUpdate;
-                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Received entity update message for entity: " + std::to_string(newEntUpdate.entity) + " (" + newEntUpdate.entitySign.to_string() + ")");
-
-                // messages are stacks, so we can peak and then repackage the data in the same order
-                msg << newEntUpdate;
+                PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Received entity update message");
                 // forward message over eventBroker (to network relays)
                 m_sharedBroker->send_event(msg);
-                
-                // parse/validate/update my ecs?
-                // I need to be able to parse the variable number/order of components
-                // ideally I'm able to interrogate/validate them in the networking section
-                // then I need to be able to update the corresponding values in the ecs
-                // also need to consider latency. If we know the player actions ocurred ~50ms ago
-                // which is ~5 physics updates, how do we reason about the current state?
+
+                // eventBroker will* be sending copies so we can unpack the message safely here
             }
             break;
             default:

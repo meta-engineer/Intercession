@@ -6,9 +6,10 @@
 #include <array>
 #include <unordered_map>
 
-#include "ecs_types.h"
-#include "i_component_array.h"
+#include "ecs/ecs_types.h"
+#include "ecs/i_component_array.h"
 #include "logging/pleep_log.h"
+#include "events/event_types.h"
 
 namespace pleep
 {
@@ -28,6 +29,14 @@ namespace pleep
         
         // safely remove all data for given entity
         void clear_data_for(Entity entity) override;
+        
+        // Push component data into msg
+        // does nothing if component does not exist
+        void serialize_data_for(Entity entity, EventMessage msg) override;
+        
+        // Pop component data from msg and overwrite;
+        // non-strict usage, does nothing if component does not exist
+        void deserialize_data_for(Entity entity, EventMessage msg) override;
 
         // return reference to component for this entity
         // does NOT return "not found", THROWS if no component exists
@@ -108,12 +117,34 @@ namespace pleep
     template<typename T>
     void ComponentArray<T>::clear_data_for(Entity entity)
     {
-        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
-        {
-            this->remove_data_for(entity);
-        }
+        // exit safely if not found
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+        
+        this->remove_data_for(entity);
+    }
+    
+    template<typename T>
+    void ComponentArray<T>::serialize_data_for(Entity entity, EventMessage msg)
+    {
+        // exit safely if not found
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+
+        msg << this->get_data_for(entity);
     }
 
+    template<typename T>
+    void ComponentArray<T>::deserialize_data_for(Entity entity, EventMessage msg)
+    {
+        // exit safely if not found
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+
+        // Assume new msg data is for type T
+        T newData;
+        msg >> newData;
+
+        // overwrite entity's data with message data
+        m_array[m_mapEntityToIndex[entity]] = newData;
+    }
     
     template<typename T>
     Entity ComponentArray<T>::find_entity_for(T component)

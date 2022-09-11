@@ -42,6 +42,13 @@ namespace pleep
             return glm::normalize(glm::vec3(glm::rotate(orientation,  glm::vec4(0.0f, 0.0f, 1.0f, 0.0f))));
         }
     };
+
+    inline bool operator==(const TransformComponent& lhs, const TransformComponent& rhs)
+    {
+        return lhs.origin == rhs.origin
+            && lhs.orientation == rhs.orientation
+            && lhs.scale == rhs.scale;
+    }
 }
 
 #endif // TRANSFORM_COMPONENT_H

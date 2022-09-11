@@ -8,6 +8,7 @@
 #include "ecs/entity_registry.h"
 #include "ecs/component_registry.h"
 #include "ecs/synchro_registry.h"
+#include "events/event_types.h"
 
 namespace pleep
 {
@@ -89,6 +90,17 @@ namespace pleep
         // CAREFUL! this does NOT recalculate its entities accordingly! Build synchros BEFORE components
         template<typename T>
         void set_synchro_signature(Signature sign);
+
+
+        ///// Helper methods for sending entity information in Messages (for events or network) /////
+
+        // Pack each component of entity into message in reverse (stacked) order
+        // ***Does NOT include timeline id and signature (header)
+        // We have to specify Message<EventId> becuase IComponentArray must use virtual methods
+        void serialize_entity_components(Entity entity, EventMessage msg);
+
+        // Unpack a component (specified by name) from message and update entity with its new values
+        void deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg);
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls

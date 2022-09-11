@@ -1,7 +1,6 @@
 #include "network_synchro.h"
 
 #include "logging/pleep_log.h"
-#include "core/cosmos.h"
 #include "core/cosmos_access_packet.h"
 
 namespace pleep

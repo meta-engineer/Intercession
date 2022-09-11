@@ -7,6 +7,7 @@
 #include "networking/i_network_dynamo.h"
 // Access PleepNet ...
 #include "server/intercession_server.h"
+#include "server/server_entity_update_relay.h"
 
 namespace pleep
 {
@@ -28,6 +29,7 @@ namespace pleep
 
     private:
         // Networking relays
+        std::unique_ptr<ServerEntityUpdateRelay> m_entityUpdateWatcher;
 
         // TEMP: build raw server instance
         std::unique_ptr<net::IntercessionServer> m_server;

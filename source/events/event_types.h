@@ -7,6 +7,7 @@
 
 // pass entity values to register
 #include "ecs/ecs_types.h"
+#include "networking/timeline_types.h"
 #include "events/message.h"
 #include "build_config.h"
 
@@ -95,7 +96,8 @@ namespace pleep
             //  What is the ID of my cluster/server group?
             //  How many servers are in my cluster?
             //  what is my client id/server id
-            //  What is the address of the "lead" server
+            //  What is the address of the other servers (is this required?)
+            //  What is the synchronized timepoint (minus my local delay)
             const EventId INTERCESSION_APP_INFO = __LINE__;
                 struct INTERCESSION_APP_INFO_params
                 {
@@ -113,12 +115,34 @@ namespace pleep
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
             // assuming the intercessionAppInfo checks out the component layout should match
-            // then the entity signature (32 bits), last the EntityId (32 bits)
+            // then the id (TemporalEntity: 16 bits),
+            // the link (CausalChainLink: 8 bits)
+            // the sign (Signature: 32 bits)
             // (remember it is a FIFO stack)
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
-                    Entity entity = NULL_ENTITY;
-                    Signature entitySign;
+                    TemporalEntity id = NULL_ENTITY;
+                    CausalChainLink link;
+                    Signature sign;
+                };
+            // Notify the creation of an entity
+            // this should trigger TemporalEntity id count update (as well as creating the ecs objects)
+            // a subsequent ENTITY_UPDATE can pass the data for the created components
+            // (This may have to be independantly propagated in the timestream because the ServerEntityUpdateRelay only detects existing entities)
+            // Careful of race-conditions where entity is without data.
+            // ENTITY_CREATE must be passed into the timestream FIRST before any updates
+            const EventId ENTITY_CREATE = __LINE__;
+                struct ENTITY_CREATE_params {
+                    TemporalEntity id = NULL_ENTITY;
+                    CausalChainLink link;
+                    Signature sign;
+                };
+            // Inverse of ENTITY_CREATE
+            const EventId ENTITY_DELETE = __LINE__;
+                struct ENTITY_DELETE_params {
+                    TemporalEntity id = NULL_ENTITY;
+                    CausalChainLink link;
+                    Signature sign;
                 };
             // Info about a timestream modification
             //  ???

@@ -11,10 +11,10 @@ namespace pleep
     // top-level constant definitions for anyone using the ecs
 
     // These aren't considered ids, the ids ARE entities themselves
-    using Entity = std::uint32_t;
-    // careful that max does not overlap NULL_ENTITY (4.3b)
-    const Entity MAX_ENTITIES = 5000;
-    const Entity NULL_ENTITY = UINT32_MAX;
+    using Entity = std::uint16_t;
+    const Entity NULL_ENTITY = UINT16_MAX;
+    // careful that max does not overlap NULL_ENTITY (65535)
+    const Entity MAX_ENTITIES = 0x1000; // (4096)
 
     using ComponentType = std::uint8_t; // round up from uint5
     const ComponentType MAX_COMPONENT_TYPES = 32;

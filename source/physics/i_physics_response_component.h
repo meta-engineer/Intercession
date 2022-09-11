@@ -23,10 +23,7 @@ namespace pleep
     public:
         virtual ~I_PhysicsResponseComponent() = default;
 
-        // ***** Universal response attributes *****
-        // Entity may want unlocked orientation (for kinematic motion)
-        // but not want physics responses to cause orientation changes
-        bool influenceOrientation = true;
+        // If you add any shared response members be sure to add serializer extension for them
 
         // double dispatch for each response subclass
         // expects collision metadata to be relative to other...
