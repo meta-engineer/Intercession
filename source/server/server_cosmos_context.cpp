@@ -2,25 +2,25 @@
 
 namespace pleep
 {
-    ServerCosmosContext::ServerCosmosContext() 
+    ServerCosmosContext::ServerCosmosContext(TimelineApi localTimelineApi) 
         : I_CosmosContext()
-        //, m_controlDynamo(nullptr)
+        //, m_scriptDynamo(nullptr)
         , m_physicsDynamo(nullptr)
         , m_networkDynamo(nullptr)
     {
-        // I_CosmosContext() has setup broker
+        // I_CosmosContext() has setup broker (not shared between contexts)
         
         // construct dynamos
-        //m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
-        // TODO: server specific network dynamo
-        m_networkDynamo = new ServerNetworkDynamo(m_eventBroker);
+        m_networkDynamo = new ServerNetworkDynamo(m_eventBroker, localTimelineApi);
         
         // build empty starting cosmos
-        m_currentCosmos = new Cosmos();
+        // if cosmos is rebuilt, it will need timeslice id again
+        // how can a context be called to delete and remake a context? or would the whole context be rebuilt?
+        m_currentCosmos = new Cosmos(m_eventBroker, m_networkDynamo->get_timeslice_id());
         
-        // populate starting cosmos (without rendering?)
-        // eventually we'll pass some config param here
+        // populate starting cosmos
+        // eventually we'll pass some cosmos config param here
         //_build_cosmos();
     }
     
@@ -31,7 +31,6 @@ namespace pleep
         
         delete m_networkDynamo;
         delete m_physicsDynamo;
-        //delete m_controlDynamo;
     }
     
     void ServerCosmosContext::_prime_frame() 

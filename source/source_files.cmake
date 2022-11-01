@@ -1,7 +1,6 @@
 
 set(COMMON_SOURCE_FILES
     source/core/i_app_gateway.cpp
-
     source/core/i_cosmos_context.cpp
     source/core/cosmos.cpp
 

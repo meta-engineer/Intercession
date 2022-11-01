@@ -45,11 +45,12 @@ namespace pleep
     protected:
         // Runtime pipeline:
         // 1. m_currentCosmos updates
-        // 2. _on_fixed is called as many times as modulo into the time since last frame
+        // 2. _on_fixed is called as many times as will modulo into the time since last frame
         // 3. _on_frame is called once with time since last frame
         // 4. _clean_frame is called once (context is responsible for notifying dynamos when they should clear their packets for next frame)
-        // Pipeline methods not pure virtual because you MAY not want to implement a certain step
-        // called to setup dynamo relays with packets
+        // Pipeline methods not pure virtual because you MAY not want to implement a particular step
+
+        // called to setup dynamo relays with packets from synchros
         virtual void _prime_frame() {};
         // called by run with static timestep value
         virtual void _on_fixed(double fixedTime) { UNREFERENCED_PARAMETER(fixedTime); }

@@ -4,43 +4,6 @@
 
 namespace pleep
 {
-    I_AppGateway::I_AppGateway()
-        : m_windowApi(nullptr)
-        , m_ctx(nullptr)
-        , m_running(false)
-    {
-    }
-
-    I_AppGateway::~I_AppGateway()
-    {
-    }
-
-    void I_AppGateway::run() 
-    {
-        if (!m_ctx) PLEEPLOG_ERROR("AppGateway was not successfully built");
-        assert(m_ctx);
-
-        m_running = true;
-        PLEEPLOG_TRACE("App run begin");
-
-        while (m_running)
-        {
-            m_ctx->run();
-
-            // handle context closing, check context for signal for next context?
-            // TEMP: always handle context stopping, by stopping ourselves
-            this->stop();
-        }
-
-        PLEEPLOG_TRACE("App run finish");
-    }
-    
-    void I_AppGateway::stop() 
-    {
-        if (m_ctx) m_ctx->stop();
-        m_running = false;
-    }
-    
     void I_AppGateway::_build_window_api()
     {
         assert(!m_windowApi);

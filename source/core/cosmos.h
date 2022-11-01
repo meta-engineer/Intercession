@@ -9,6 +9,7 @@
 #include "ecs/component_registry.h"
 #include "ecs/synchro_registry.h"
 #include "events/event_types.h"
+#include "events/event_broker.h"
 
 namespace pleep
 {
@@ -22,7 +23,7 @@ namespace pleep
     {
     public:
         // build empty ecs
-        Cosmos();
+        Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICE);
         ~Cosmos();
 
         // call all synchros to invoke entity updates
@@ -37,14 +38,27 @@ namespace pleep
 
         // ***** ECS methods *****
 
-        // register empty entity
-        Entity create_entity();
+        // register empty entity & do not register it as a Temporal Entity
+        Entity create_local_entity();
+
+        // register empty entity & register it as NEW Temporal Entity hosted by us
+        // If we are not a timeslice host (client) we have to create a temporary non-temporal entity
+        // and signal to our current connected host to create a temporal version to overwrite it asynchronously
+        Entity create_temporal_entity();
+
+        // create empty entity & register it as Temporal Entity from another host
+        Entity register_temporal_entity(TemporalEntity tEntity, CausalChainLink link);
 
         // remove entity & related components, and clear it from any synchros
         void destroy_entity(Entity entity);
 
-        // foreward count fetch to EntityRegistry
-        Entity get_entity_count();
+        // forwards to EntityRegistry
+        // return number of existing entities in this cosmos of any type
+        size_t get_local_entity_count();
+        // forwards to EntityRegistry
+        // return number of existing temporal entities in this cosmos of any type
+        // (not the number we host across the whole timeline)
+        size_t get_temporal_entity_count();
         
         // passthrough to EntityRegistry->get_signature()
         Signature get_entity_signature(Entity entity);
@@ -56,6 +70,17 @@ namespace pleep
         // if component doesn't exist, returns NULL_ENTITY
         template<typename T>
         Entity find_entity(T component);
+
+        // returns {NULL_TEMPORAL_ENTITY, 0} if not found
+        std::pair<TemporalEntity, CausalChainLink> get_temporal_identifier(Entity entity);
+
+        // returns NULL_ENTITY if it does not exist in timeline
+        Entity get_local_entity(TemporalEntity tEntity, CausalChainLink link);
+
+        // throws error if count is currently zero (must be set by create/register)
+        void increment_hosted_temporal_entity_count(TemporalEntity tEntity);
+        // throws error is count is currently zero (counting as failed)
+        void decrement_hosted_temporal_entity_count(TemporalEntity tEntity);
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -108,7 +133,7 @@ namespace pleep
         std::unique_ptr<EntityRegistry>    m_entityRegistry;
         std::unique_ptr<SynchroRegistry>   m_synchroRegistry;
 
-        // ECS synchros know their respective dynamos and feed components into them on update
+        // ECS synchros know attach dynamos and feed components into them on update
         // synchros are given a dynamo to attach to by register_synchro caller (context)
         // deleting or significantly mutating a dynamo must apply to any synchros attached to it
         //   to avoid a synchro dereferencing an invalid dynamo
@@ -116,12 +141,8 @@ namespace pleep
         // synchros are dynamically created by CosmosContext
         //   (it will need some input "scene" file to know what to do)
 
-        // examples of synchros are:
-        // RenderSynchro: submits renderable components to a dynamo that accesses a window api
-        // ControlSynchro: submits components which receive input to a dynamo that accesses a window api
-        // PhysicsSynchro: submits components with physical properties to a dynmo that does motion integration/collision
-        // AudioSynchro: submits audable/playable components to a dynamo that accesses an audio api
-        // NetSynchro: submits components which are remotely synchronized to a dynamo that accesses a network api
+        // for emitting events::cosmos
+        EventBroker* m_sharedBroker = nullptr;
     };
 
 
@@ -129,21 +150,82 @@ namespace pleep
     // templates need to be accessable to all translation units that use Cosmos
     // (non-template entity methods also provided as inline for organization)
     
-    inline Entity Cosmos::create_entity() 
+    inline Entity Cosmos::create_local_entity() 
     {
-        return m_entityRegistry->create_entity();
+        Entity entity = m_entityRegistry->create_local_entity();
+        
+        // broadcast that new entity exists
+        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
+        events::cosmos::NEW_ENTITY_params newEntityParams {
+            entity
+        };
+        newEntityEvent << newEntityParams;
+        m_sharedBroker->send_event(newEntityEvent);
+
+        return entity;
+    }
+    
+    inline Entity Cosmos::create_temporal_entity()
+    {
+        Entity entity = m_entityRegistry->create_temporal_entity();
+
+        // broadcast that new entity exists
+        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
+        events::cosmos::NEW_ENTITY_params newEntityParams {
+            entity,
+            get_temporal_identifier(entity).first,
+            get_temporal_identifier(entity).second
+        };
+        newEntityEvent << newEntityParams;
+        m_sharedBroker->send_event(newEntityEvent);
+
+        return entity;
+    }
+    
+    inline Entity Cosmos::register_temporal_entity(TemporalEntity tEntity, CausalChainLink link)
+    {
+        Entity entity = m_entityRegistry->register_temporal_entity(tEntity, link);
+
+        // broadcast that new entity exists
+        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
+        events::cosmos::NEW_ENTITY_params newEntityParams {
+            entity,
+            tEntity,
+            link
+        };
+        newEntityEvent << newEntityParams;
+        m_sharedBroker->send_event(newEntityEvent);
+
+        return entity;
     }
     
     inline void Cosmos::destroy_entity(Entity entity) 
     {
+        auto temporalId = get_temporal_identifier(entity);
+
         m_entityRegistry->destroy_entity(entity);
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);
+
+        // broadcast entity no longer exists
+        EventMessage removedEntityEvent(events::cosmos::REMOVED_ENTITY);
+        events::cosmos::REMOVED_ENTITY_params removedEntityParams {
+            entity,
+            temporalId.first,
+            temporalId.second
+        };
+        removedEntityEvent << removedEntityParams;
+        m_sharedBroker->send_event(removedEntityEvent);
     }
     
-    inline Entity Cosmos::get_entity_count() 
+    inline size_t Cosmos::get_local_entity_count() 
     {
-        return m_entityRegistry->get_entity_count();
+        return m_entityRegistry->get_local_entity_count();
+    }
+
+    inline size_t Cosmos::get_temporal_entity_count()
+    {
+        return m_entityRegistry->get_temporal_entity_count();
     }
 
     inline Signature Cosmos::get_entity_signature(Entity entity)
@@ -155,6 +237,25 @@ namespace pleep
     Entity Cosmos::find_entity(T component)
     {
         return m_componentRegistry->find_entity(component);
+    }
+    
+    inline std::pair<TemporalEntity, CausalChainLink> Cosmos::get_temporal_identifier(Entity entity)
+    {
+        return m_entityRegistry->get_temporal_identifier(entity);
+    }
+
+    inline Entity Cosmos::get_local_entity(TemporalEntity tEntity, CausalChainLink link)
+    {
+        return m_entityRegistry->get_local_entity(tEntity, link);
+    }
+    
+    inline void Cosmos::increment_hosted_temporal_entity_count(TemporalEntity tEntity)
+    {
+        m_entityRegistry->increment_hosted_temporal_entity_count(tEntity);
+    }
+    inline void Cosmos::decrement_hosted_temporal_entity_count(TemporalEntity tEntity)
+    {
+        m_entityRegistry->decrement_hosted_temporal_entity_count(tEntity);
     }
 
     template<typename T>

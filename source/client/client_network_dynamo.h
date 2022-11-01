@@ -8,7 +8,7 @@
 #include "core/cosmos.h"
 
 // Access network interface
-#include "client/intercession_client.h"
+#include "client/client_network_api.h"
 
 namespace pleep
 {
@@ -26,18 +26,19 @@ namespace pleep
         void reset_relays() override;
         
         // TODO: what entities, if any, would be submitted each frame?
-        // should they be shared in I_NetworkDynamo?
+        // should they be shared in I_NetworkDynamo? or specified for my relays
         void submit(CosmosAccessPacket data) override;
 
     private:
+        // event handlers
         void _entity_modified_handler(EventMessage entityEvent);
 
         // Networking relays
 
-        // TEMP: build raw client instance
-        std::unique_ptr<net::IntercessionClient> m_client;
+        // Client instance to communicate with server
+        ClientNetworkApi m_networkApi;
 
-        // TODO: Should this be held in a specific relay?
+        // TODO: Move this to be held in a specific relay
         Cosmos* m_workingCosmos = nullptr;
         std::unordered_set<Entity> m_entitiesToReport;
     };

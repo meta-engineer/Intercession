@@ -33,10 +33,7 @@ namespace pleep
 
     public:
         // provide access to entire ecs to apply updates to entities only as needed
-        virtual void submit(CosmosAccessPacket data)
-        {
-            UNREFERENCED_PARAMETER(data);
-        }
+        virtual void submit(CosmosAccessPacket data) = 0;
     };
 }
 

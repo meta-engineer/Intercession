@@ -21,7 +21,7 @@ namespace pleep
         m_networkDynamo = new ClientNetworkDynamo(m_eventBroker);
         
         // build empty starting cosmos
-        m_currentCosmos = new Cosmos();
+        m_currentCosmos = new Cosmos(m_eventBroker);
         
         // populate starting cosmos
         // TODO: use network dynamo to get cosmos from server
@@ -80,8 +80,10 @@ namespace pleep
             ImGui::Text("This window runs above the cosmos");
 
             // Report Cosmos info
-            std::string countString = "Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
-            ImGui::Text(countString.c_str());
+            std::string locaCountString = "Local Entity Count: " + std::to_string(m_currentCosmos->get_local_entity_count());
+            ImGui::Text(locaCountString.c_str());
+            std::string temporalCountString = "Temporal Entity Count: " + std::to_string(m_currentCosmos->get_temporal_entity_count());
+            ImGui::Text(temporalCountString.c_str());
 
             // Edit bools storing our window open/close state
             ImGui::Checkbox("checkbox", &checkbox);

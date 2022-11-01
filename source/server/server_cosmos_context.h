@@ -7,6 +7,7 @@
 #include "controlling/control_dynamo.h"
 #include "physics/physics_dynamo.h"
 #include "server/server_network_dynamo.h"
+#include "networking/timeline_api.h"
 
 namespace pleep
 {
@@ -16,9 +17,9 @@ namespace pleep
         // Accept all apis to use for lifetime,
         // (apis provide shared system resource for dynamos)
         // on construction we will build all the dynamos from these apis
-        // TODO: separate asioContext into NetworkApi?
-        // do multiple dynamos need access to network api? or should it be owned by NetDynamo?
-        ServerCosmosContext();
+        // localTimelineApi provides config to build network api
+        //   api can be accessed through NetworkDynamo (or events it responds to)
+        ServerCosmosContext(TimelineApi localTimelineApi);
         ~ServerCosmosContext();
 
     protected:

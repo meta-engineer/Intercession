@@ -6,11 +6,14 @@ namespace pleep
 {
     // ECS methods are provided inline in cosmos.h
 
-    Cosmos::Cosmos() 
+    Cosmos::Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex)
     {
-        m_entityRegistry    = std::make_unique<EntityRegistry>();
+        m_entityRegistry    = std::make_unique<EntityRegistry>(localTimesliceIndex);
         m_componentRegistry = std::make_unique<ComponentRegistry>();
         m_synchroRegistry   = std::make_unique<SynchroRegistry>();
+
+        m_sharedBroker = sharedBroker;
+        // setup handlers?
     }
 
     Cosmos::~Cosmos() 

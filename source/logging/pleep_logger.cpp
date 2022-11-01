@@ -29,7 +29,7 @@ namespace pleep
         // %P for process id
 
         s_coreLogger = spdlog::stdout_color_mt("INTERCESSION");
-        s_coreLogger->set_pattern("[%T.%e][%s:%#][%^%l%$] %v");
+        s_coreLogger->set_pattern("[%T.%e] #%-5t %28!s:%-4#|%^%6!l%$: %v");
         s_coreLogger->set_level(PLEEPLOG_LEVEL);
 
         PLEEPLOG_TRACE("Initialized pleep logger!");

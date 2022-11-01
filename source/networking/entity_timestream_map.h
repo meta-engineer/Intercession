@@ -8,6 +8,7 @@
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
 #include "networking/timeline_types.h"
+#include "events/event_types.h"
 
 namespace pleep
 {
@@ -33,7 +34,12 @@ namespace pleep
     // A map allows messages to be automatically sorted by timestamp, 
     // but pushing and popping is logarithmic... cringe
 
-    template <typename T_Msg>
+    // TODO: we may want to limit usage depending on if you are the sender or reciever?
+    // we could have seperate instances which share timestreams and accept a bool
+    // to restrict methods
+
+    // TODO: timestream may have to index with TemporalId if local entities are not compadible
+
     class EntityTimestreamMap
     {
     public:
@@ -43,7 +49,8 @@ namespace pleep
         // Timestream could be it's own class to manage Message ordering
         // do we need use of deque iterators? or do we need threadsafe?
         // we could provide specific extra threadsafe operations like searches to maintain threadsafety
-        using Timestream = TsQueue<TimestampedMessage<T_Msg>>;
+        // Hard-code message type to use EventId (to avoid template cascading)
+        using Timestream = TsQueue<TimestampedMessage<EventId>>;
 
         // Wrap message Queue methods to maintain timestamp ordering.
 
@@ -54,14 +61,10 @@ namespace pleep
         // is there any better method than iterating throught the whole map and checkign timestamps?
 
         // If no stream exists emplace it.
-        void push_to_timestream(Entity entity, TimestampedMessage<T_Msg> msg)
+        void push_to_timestream(Entity entity, TimestampedMessage<EventId> msg)
         {
-            if (m_timestreams.find(entity) != m_timestreams.end())
-            {
-                m_timestreams.emplace(entity);
-            }
-
-            m_timestreams.at(entity).push_back(msg);
+            // operator[] emplaces with default constructor for TsQueue
+            m_timestreams[entity].push_back(msg);
         }
 
         // check if timestream exists for an entity and if it is non-empty
@@ -69,6 +72,15 @@ namespace pleep
         {
             return m_timestreams.find(entity) != m_timestreams.end()
                 && !m_timestreams.at(entity).empty();
+                //&& m_timestreams.at(entity).front().timeVal >= currentTime - timesliceDelay;
+        }
+
+        // we should only be able to pop once the correct time has been reached
+        TimestampedMessage<EventId> pop_from_timestream(Entity entity)
+        {
+            return m_timestreams.at(entity).pop_back().first;
+            // TODO: either check for empty timestream or check for when we pop a REMOVED_ENTITY
+            //   message and remove index (entity) from timestream map
         }
 
     private:

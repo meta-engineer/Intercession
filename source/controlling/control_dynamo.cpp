@@ -119,7 +119,7 @@ namespace pleep
     {
         EventMessage entityModified(events::cosmos::ENTITY_MODIFIED);
         events::cosmos::ENTITY_MODIFIED_params entityModifiedData;
-        entityModifiedData.entityId = id;
+        entityModifiedData.id = id;
         entityModified << entityModifiedData;
         m_sharedBroker->send_event(entityModified);
     }

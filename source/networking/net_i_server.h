@@ -24,7 +24,6 @@ namespace net
         I_Server(uint16_t port)
             : m_asioAcceptor(m_asioContext, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
         {
-
         }
     public:
         virtual ~I_Server()
@@ -38,9 +37,11 @@ namespace net
             try
             {
                 // issue "work" to asio context
-                this->wait_for_connection();
+                this->_wait_for_connection();
                 // then start context on separate thread
                 m_contextThread = std::thread([this]() { m_asioContext.run(); });
+                std::ostringstream contextThreadId; contextThreadId << m_contextThread.get_id();
+                PLEEPLOG_INFO("Constructed network thread #" + contextThreadId.str());
             }
             catch(const std::exception& err)
             {
@@ -61,44 +62,6 @@ namespace net
             if (m_contextThread.joinable()) m_contextThread.join();
             
             PLEEPLOG_TRACE("Stopped looking for connections.");
-        }
-
-        // ASYNC - Task asio to wait for connection
-        // asio will provide us with the connected socket to use to append m_connectionDeque
-        void wait_for_connection()
-        {
-            m_asioAcceptor.async_accept(
-                [this](std::error_code ec, asio::ip::tcp::socket socket)
-                {
-                    if (!ec)
-                    {
-                        PLEEPLOG_DEBUG("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
-
-                        std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(m_asioContext, std::move(socket), m_incomingMessages);
-
-                        // go to on connect callback
-                        if (this->on_remote_connect(newConn))
-                        {
-                            m_connectionDeque.push_back(std::move(newConn));
-                            m_connectionDeque.back()->set_id(m_idCounter++);
-                            PLEEPLOG_DEBUG("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
-
-                            m_connectionDeque.back()->start_communication(this);
-                        }
-                        else
-                        {
-                            PLEEPLOG_DEBUG("[----] Connection denied");
-                        }
-                    }
-                    else
-                    {
-                        PLEEPLOG_ERROR("Asio error during connection accept: " + ec.message());
-                    }
-
-                    // start waiting again in loop
-                    this->wait_for_connection();
-                }
-            );
         }
 
         void send_message(std::shared_ptr<Connection<T_Msg>> remote, const Message<T_Msg>& msg)
@@ -156,19 +119,53 @@ namespace net
             }
         }
 
-        // process incoming messages explicitly (instead of async callbacks)
-        // only process a max number before moving on to next frame ((unsigned)-1 == MAX value)
-        void process_received_messages(size_t maxMessages = -1)
+        // provide user access to m_incomingMessages synchronously
+        bool is_message_available()
         {
-            size_t messageCount = 0;
-            while (messageCount < maxMessages && !m_incomingMessages.empty())
-            {
-                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_front().first;
+            return !(m_incomingMessages.empty());
+        }
+        OwnedMessage<T_Msg> pop_message()
+        {
+            return m_incomingMessages.pop_front().first;
+        }
 
-                this->on_message(msg.remote, msg.msg);
+    private:
+        // ASYNC - Task asio to wait for connection
+        // asio will provide us with the connected socket to use to append m_connectionDeque
+        void _wait_for_connection()
+        {
+            m_asioAcceptor.async_accept(
+                [this](std::error_code ec, asio::ip::tcp::socket socket)
+                {
+                    if (!ec)
+                    {
+                        PLEEPLOG_DEBUG("New connection: " + socket.remote_endpoint().address().to_string() + ":" + std::to_string(socket.remote_endpoint().port()));
 
-                messageCount++;
-            }
+                        std::shared_ptr<Connection<T_Msg>> newConn = std::make_shared<Connection<T_Msg>>(m_asioContext, std::move(socket), m_incomingMessages);
+
+                        // go to on connect callback
+                        if (this->on_remote_connect(newConn))
+                        {
+                            m_connectionDeque.push_back(std::move(newConn));
+                            m_connectionDeque.back()->set_id(m_idCounter++);
+                            PLEEPLOG_DEBUG("[" + std::to_string(m_connectionDeque.back()->get_id()) + "] Connection approved");
+
+                            m_connectionDeque.back()->start_communication(this);
+                        }
+                        else
+                        {
+                            PLEEPLOG_DEBUG("[----] Connection denied");
+                        }
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("Asio error during connection accept: " + ec.message());
+                    }
+
+                    // start waiting again in loop
+                    this->_wait_for_connection();
+                }
+            );
         }
 
     protected:
@@ -185,13 +182,6 @@ namespace net
             UNREFERENCED_PARAMETER(remote);
         }
 
-        // Called when a message arrives in the queue
-        virtual void on_message(std::shared_ptr<Connection<T_Msg>> remote, Message<T_Msg>& msg)
-        {
-            UNREFERENCED_PARAMETER(remote);
-            UNREFERENCED_PARAMETER(msg);
-        }
-
         // Called by Connection when a remote has passed validation.
         friend class Connection<T_Msg>;
         virtual void on_remote_validated(std::shared_ptr<Connection<T_Msg>> remote)
@@ -203,6 +193,7 @@ namespace net
         // All my related connections will share this queue
         TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
 
+    private:
         // Maintain container of established connections
         std::deque<std::shared_ptr<Connection<T_Msg>>> m_connectionDeque;
 

@@ -10,6 +10,7 @@
 #include "build_config.h"
 #include "logging/pleep_log.h"
 #include "server/server_app_gateway.h"
+#include "networking/timeline_config.h"
 
 int main(int argc, char** argv)
 {
@@ -42,12 +43,13 @@ int main(int argc, char** argv)
         PLEEPLOG_WARN("Ignored cmd args: " + concat);
     }
 
-    // TODO: Read/use some config (accept json file path on cmd?) 
-    //   and setup multiple threads running seperate CosmosContexts
-    // config should describe the what starting cosmos' to build, network topology, addresses to use, network update Hz (tick rate)
-    // (and potentially other non-network configs like physics update Hz)
-    // AppGateway will setup inter-cosmos-communication over a local-temporal-network
-    // and expose it to the Context for each timeslice
+    // TODO: Parse config options directly OR some config ini filename for server topology
+    pleep::TimelineConfig cfg;
+
+    // TODO: Parse serialized cosmos (world) data and meta-data
+    //pleep::CosmosConfig serializedCosmos;
+    // TODO: Are there any cosmos metadata, or Context specific configurations
+    //   (like a transition graph between cosmos'? Or perhapds each cosmos can define that)
 
     // TODO: Using pleeplog for multiple threads might be unwieldly
     // We can make a simple Terminal UI to display state for each servers in
@@ -66,13 +68,13 @@ int main(int argc, char** argv)
     // (get spdlog to feed its generated messages into a circular buffer)
 
     // Construct server specific AppGateway
-    pleep::I_AppGateway* intercessionServer = nullptr;
+    pleep::I_AppGateway* intercessionServerApp = nullptr;
 
     // top level, last-resort catch to safely handle errors
     try
     {
         // pass config resources to build context and initial state
-        intercessionServer = new pleep::ServerAppGateway();
+        intercessionServerApp = new pleep::ServerAppGateway(cfg);
     }
     catch (const std::exception& e)
     {
@@ -85,7 +87,7 @@ int main(int argc, char** argv)
     try
     {
         // "run" is synchronous, returning implies app has stopped (unlike "start")
-        intercessionServer->run();
+        intercessionServerApp->run();
     }
     catch (const std::exception& e)
     {
@@ -96,7 +98,7 @@ int main(int argc, char** argv)
     }
 
     // cleanup
-    delete intercessionServer;
+    delete intercessionServerApp;
 
     return 0;
 }

@@ -49,18 +49,6 @@ namespace pleep
                 };
         }
 
-        // cross-concerning events that exist within the virtual verse
-        // maybe the cosmos should have it's own seperate broker which can be erased when context changes cosmos
-        namespace cosmos {
-            // notify that an entity has been modified locally (not specific to any component)
-            // and those changes should be propagated to other servers/clients
-            const EventId ENTITY_MODIFIED = __LINE__;
-                struct ENTITY_MODIFIED_params
-                {
-                    Entity entityId = NULL_ENTITY;
-                };
-        }
-
         // events pertaining to the rendering system
         namespace rendering {
             const EventId SET_MAIN_CAMERA = __LINE__;
@@ -70,11 +58,45 @@ namespace pleep
                 };
         }
 
+        // cross-concerning events that exist within the virtual verse
+        // maybe the cosmos should have it's own seperate broker which can be erased when context changes cosmos
+        namespace cosmos {
+            // notify that an entity has been modified locally (not specific to any component)
+            // and those changes should be propagated to other servers/clients
+            const EventId ENTITY_MODIFIED = __LINE__;
+                struct ENTITY_MODIFIED_params
+                {
+                    Entity id = NULL_ENTITY;
+                };
+            // Indicates that the cosmos has added a new entity
+            // (ambiguous whether WE created it, or we registered it from another host)
+            // Entity will exist when this is signalled
+            // (sent over a network implies that the remote has added a new entity)
+            const EventId NEW_ENTITY = __LINE__;
+                struct NEW_ENTITY_params
+                {
+                    Entity localEntity = NULL_ENTITY;
+                    TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
+                    CausalChainLink link = 0;
+                    // initialize components after creation
+                    Signature sign;
+                };
+            // upon deleting an entity we may need to notify its host
+            // CAREFUL! entity will NOT exist when this is signalled
+            const EventId REMOVED_ENTITY = __LINE__;
+                struct REMOVED_ENTITY_params
+                {
+                    Entity localEntity = NULL_ENTITY;
+                    TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
+                    CausalChainLink link = 0;
+                };
+        }
+
         // events used as network messages sent over net::Connection
         // may be forwarded to be sent over local EventBroker
         namespace network {
             // Generic/basic app properties
-            // Should probably be only info generic to all potential apps for consisstent size
+            // Should probably be only info generic to all potential apps for consistent size
             const EventId APP_INFO = __LINE__;
                 struct APP_INFO_params
                 {
@@ -103,15 +125,6 @@ namespace pleep
                 {
 
                 };
-            // Info about the current cosmos:
-            //  Running state
-            //  total registered synchros, components, and entities
-            //  checksum of registered synchros & components
-            const EventId COSMOS_INFO = __LINE__;
-                struct COSMOS_INFO_params
-                {
-
-                };
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
             // assuming the intercessionAppInfo checks out the component layout should match
@@ -121,25 +134,6 @@ namespace pleep
             // (remember it is a FIFO stack)
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
-                    TemporalEntity id = NULL_ENTITY;
-                    CausalChainLink link;
-                    Signature sign;
-                };
-            // Notify the creation of an entity
-            // this should trigger TemporalEntity id count update (as well as creating the ecs objects)
-            // a subsequent ENTITY_UPDATE can pass the data for the created components
-            // (This may have to be independantly propagated in the timestream because the ServerEntityUpdateRelay only detects existing entities)
-            // Careful of race-conditions where entity is without data.
-            // ENTITY_CREATE must be passed into the timestream FIRST before any updates
-            const EventId ENTITY_CREATE = __LINE__;
-                struct ENTITY_CREATE_params {
-                    TemporalEntity id = NULL_ENTITY;
-                    CausalChainLink link;
-                    Signature sign;
-                };
-            // Inverse of ENTITY_CREATE
-            const EventId ENTITY_DELETE = __LINE__;
-                struct ENTITY_DELETE_params {
                     TemporalEntity id = NULL_ENTITY;
                     CausalChainLink link;
                     Signature sign;

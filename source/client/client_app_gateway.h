@@ -11,7 +11,14 @@ namespace pleep
     {
     public:
         ClientAppGateway();
-        ~ClientAppGateway() override;
+        ~ClientAppGateway();
+
+        void run() override;
+
+    private:
+        // only 1 context (1 can be displayed at a time anyway)
+        std::unique_ptr<I_CosmosContext> m_context = nullptr;
+        // any need for the client context to run on a seperate thread?
     };
 }
 

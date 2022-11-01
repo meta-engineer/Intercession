@@ -130,7 +130,7 @@ namespace pleep
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
 
-        Entity frog = cosmos->create_entity();
+        Entity frog = cosmos->create_local_entity();
         //cosmos->add_component(frog, MetaComponent{ "froog" });
         cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
         //cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
@@ -180,14 +180,14 @@ namespace pleep
         cosmos->add_component(frog, frog_springBody);
 
 /*
-        Entity vamp = cosmos->create_entity();
+        Entity vamp = cosmos->create_local_entity();
         cosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(vamp).scale = glm::vec3(0.01f, 0.01f, 0.01f);
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
         cosmos->add_component(vamp, ModelComponent(vampModel));
 */
 
-        Entity crate = cosmos->create_entity();
+        Entity crate = cosmos->create_local_entity();
         TransformComponent crateTransform(glm::vec3(2.9f, 0.0f, 0.3f));
         cosmos->add_component(crate, crateTransform);
         cosmos->add_component(crate, ModelComponent(model_builder::create_cube("resources/container2.png", "resources/container2_specular.png")));
@@ -199,7 +199,7 @@ namespace pleep
         cosmos->add_component(crate, BoxColliderComponent{});
         cosmos->add_component(crate, RigidBodyComponent{});
 
-        Entity block = cosmos->create_entity();
+        Entity block = cosmos->create_local_entity();
         cosmos->add_component(block, TransformComponent(glm::vec3(2.0f, -1.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(block).orientation = glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
@@ -216,7 +216,7 @@ namespace pleep
         cosmos->add_component(block, BoxColliderComponent{});
         cosmos->add_component(block, RigidBodyComponent{});
 
-        Entity torus = cosmos->create_entity();
+        Entity torus = cosmos->create_local_entity();
         TransformComponent torus_transform;
         torus_transform.origin = glm::vec3(0.3f, 1.0f, 0.0f);
         torus_transform.orientation = glm::angleAxis(glm::radians(30.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
@@ -240,18 +240,18 @@ namespace pleep
         torus_springBody.influenceOrientation = true;
         cosmos->add_component(torus, torus_springBody);
 
-        Entity wall1 = cosmos->create_entity();
+        Entity wall1 = cosmos->create_local_entity();
         cosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         cosmos->get_component<TransformComponent>(wall1).orientation = glm::angleAxis(1.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
         cosmos->add_component(wall1, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
         
-        Entity wall2 = cosmos->create_entity();
+        Entity wall2 = cosmos->create_local_entity();
         cosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
         cosmos->get_component<TransformComponent>(wall2).orientation = 
             glm::normalize(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
         cosmos->add_component(wall2, ModelComponent(model_builder::create_quad("resources/wood.png", "resources/wood.png", "resources/toy_box_normal.png", "resources/toy_box_disp.png")));
 
-        Entity floor = cosmos->create_entity();
+        Entity floor = cosmos->create_local_entity();
         cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -270,7 +270,7 @@ namespace pleep
         cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
         cosmos->add_component(floor, RigidBodyComponent{});
 
-        Entity snow = cosmos->create_entity();
+        Entity snow = cosmos->create_local_entity();
         cosmos->add_component(snow, TransformComponent(glm::vec3(10.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -290,7 +290,7 @@ namespace pleep
         cosmos->add_component(snow, RigidBodyComponent{});
 
         // Scene needs to create an entity with camera component
-        Entity mainCamera = cosmos->create_entity();
+        Entity mainCamera = cosmos->create_local_entity();
         cosmos->add_component(mainCamera, TransformComponent(glm::vec3(5.0f, 2.5f, 6.0f)));
         PhysicsComponent mainCamera_physics;
         mainCamera_physics.isAsleep = true;
@@ -321,7 +321,7 @@ namespace pleep
         eventBroker->send_event(cameraEvent);
 
 
-        Entity light = cosmos->create_entity();
+        Entity light = cosmos->create_local_entity();
         cosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.1f);
         // remember this is relative to exposure

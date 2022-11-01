@@ -5,34 +5,54 @@
 #include <memory>
 
 #include "networking/i_network_dynamo.h"
-// Access PleepNet ...
-#include "server/intercession_server.h"
 #include "server/server_entity_update_relay.h"
+#include "server/server_network_api.h"
+#include "networking/timeline_api.h"
 
 namespace pleep
 {
+    // Driver for all networking functions
+    // receives a TimelineApi passed from Appgateway which provides communication to
+    // Network dynamos in other concurrent timeslices
+    // It also constructs a server using the TimelineApi configuration
+    // Network dynamo should handle networking sub-classed events and dispatch them to
+    // either the api (to other servers) or the server interface (to clients)
+    // incoming messages on the server or api should be submitted to specific relays 
+    // (or emitted as events to the rest of the context)
+    // Ideally the Dynamo itself should be as agnostic as possible and relays specify behaviour
     class ServerNetworkDynamo : public I_NetworkDynamo
     {
     public:
-        // TODO: accept networking api (iocontext) from AppGateway
-        ServerNetworkDynamo(EventBroker* sharedBroker);
+        ServerNetworkDynamo(EventBroker* sharedBroker, TimelineApi localTimelineApi);
         ~ServerNetworkDynamo();
 
-        // TODO: what entities, if any, would be submitted each frame?
-        //void submit() override;
-        
         // process network packet queues
         void run_relays(double deltaTime) override;
 
         // prepare relays for next frame
         void reset_relays() override;
 
-    private:
-        // Networking relays
-        std::unique_ptr<ServerEntityUpdateRelay> m_entityUpdateWatcher;
+        // Cosmos should be used to fetch all temporal entities?
+        void submit(CosmosAccessPacket data) override;
 
-        // TEMP: build raw server instance
-        std::unique_ptr<net::IntercessionServer> m_server;
+        // passthrough to timelineApi (should I_NetworkDynamo have this isntead?)
+        TimesliceId get_timeslice_id();
+
+    private:
+        // event handlers
+        void _new_entity_handler(EventMessage entityEvent);
+        void _removed_entity_handler(EventMessage entityEvent);
+        
+        // Networking relays
+        std::unique_ptr<ServerEntityUpdateRelay> m_entityUpdateRelay;
+
+        // TimelineApi (generated for us by AppGateway) to communicate with other servers
+        TimelineApi m_timelineApi;
+
+        // Server instance to communicate with clients (we create from m_timelineApi config)
+        ServerNetworkApi m_networkApi;
+
+        Cosmos* m_workingCosmos = nullptr;
     };
 }
 

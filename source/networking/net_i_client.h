@@ -50,6 +50,8 @@ namespace net
 
                 // start async asio thread
                 m_contextThread = std::thread([this]() { m_asioContext.run(); });
+                std::ostringstream contextThreadId; contextThreadId << m_contextThread.get_id();
+                PLEEPLOG_INFO("Constructed network thread #" + contextThreadId.str());
             }
             catch (std::exception& err)
             {
@@ -104,26 +106,20 @@ namespace net
             }
         }
 
-        // process incoming messages explicitly at a known time (instead of async callbacks)
-        // only process a max number before moving on to next frame ((unsigned)-1 == MAX value)
-        void process_received_messages(size_t maxMessages = -1)
+        // provide user access to m_incomingMessages synchronously
+        bool is_message_available()
         {
-            size_t messageCount = 0;
-            while (messageCount < maxMessages && !m_incomingMessages.empty())
-            {
-                OwnedMessage<T_Msg> msg = m_incomingMessages.pop_back().first;
-
-                this->on_message(msg.msg);
-
-                messageCount++;
-            }
+            return !(m_incomingMessages.empty());
+        }
+        Message<T_Msg> pop_message()
+        {
+            // Do we want to return the owned message for convenience? (even though there is only 1 connection)
+            return m_incomingMessages.pop_front().first.msg;
         }
 
     protected:
-        virtual void on_message(Message<T_Msg>& msg)
-        {
-            UNREFERENCED_PARAMETER(msg);
-        }
+        // messages recieved from connected "remote"
+        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
 
         // root context shared with connections
         asio::io_context m_asioContext;
@@ -131,10 +127,6 @@ namespace net
         std::thread m_contextThread;
         // client interface has single connection
         std::shared_ptr<Connection<T_Msg>> m_connection;
-
-    private:
-        // messages recieved from connected "remote"
-        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
     };
 }
 }

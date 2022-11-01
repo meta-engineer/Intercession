@@ -41,15 +41,22 @@ int main(int argc, char** argv)
 
         PLEEPLOG_WARN("Ignored cmd args: " + concat);
     }
+
+    // TODO: Parse serialized cosmos (world) data and meta-data
+    //pleep::CosmosConfig serializedCosmos;
+    // which could directly start a simulation
+    // OR go to a title screen which the user could give an address
+    // OR directly give an address and have empty network dynamo
+    //  who receives a cosmos configuration
     
     // Construct server specific AppGateway
-    pleep::I_AppGateway* intercessionClient = nullptr;
+    pleep::I_AppGateway* intercessionClientApp = nullptr;
 
     // top level, last-resort catch to safely handle errors
     try
     {
         // pass config resources to build context and initial state
-        intercessionClient = new pleep::ClientAppGateway();
+        intercessionClientApp = new pleep::ClientAppGateway();
     }
     catch (const std::exception& e)
     {
@@ -62,7 +69,7 @@ int main(int argc, char** argv)
     try
     {
         // "run" is synchronous, returning implies app has stopped (unlike "start")
-        intercessionClient->run();
+        intercessionClientApp->run();
     }
     catch (const std::exception& e)
     {
@@ -73,7 +80,7 @@ int main(int argc, char** argv)
     }
 
     // cleanup
-    delete intercessionClient;
+    delete intercessionClientApp;
 
     return 0;
 }

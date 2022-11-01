@@ -24,47 +24,57 @@ namespace pleep
         m_running = true;
 
         // main game loop
-        PLEEPLOG_TRACE("Starting \"main loop\"");
+        PLEEPLOG_TRACE("Starting \"frame loop\"");
         std::chrono::system_clock::time_point lastTimeVal = std::chrono::system_clock::now();
         std::chrono::system_clock::time_point thisTimeVal;
         std::chrono::duration<double> deltaTime;
 
-        while (m_running)
+        try
         {
-            // ***** Init Frame *****
-            // smarter way to get dt? duration.count() is in seconds?
-            thisTimeVal = std::chrono::system_clock::now();
-            deltaTime = thisTimeVal - lastTimeVal;
-            lastTimeVal = thisTimeVal;
-            
-            // ***** Setup Frame *****
-            this->_prime_frame();
-
-            // ***** Run fixed timesteps for dynamos *****
-            // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
-            //   know which dynamos to call fixed and which to call on frametime
-            size_t stepsTaken = 0;
-            m_timeRemaining += deltaTime;
-            while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
+            while (m_running)
             {
-                m_timeRemaining -= m_fixedTimeStep;
-                stepsTaken++;
+                // ***** Init Frame *****
+                // smarter way to get dt? duration.count() is in seconds?
+                thisTimeVal = std::chrono::system_clock::now();
+                deltaTime = thisTimeVal - lastTimeVal;
+                lastTimeVal = thisTimeVal;
 
-                this->_on_fixed(m_fixedTimeStep.count());
+                // ***** Setup Frame *****
+                this->_prime_frame();
+
+                // ***** Run fixed timesteps for dynamos *****
+                // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
+                //   know which dynamos to call fixed and which to call on frametime
+                size_t stepsTaken = 0;
+                m_timeRemaining += deltaTime;
+                while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
+                {
+                    m_timeRemaining -= m_fixedTimeStep;
+                    stepsTaken++;
+
+                    this->_on_fixed(m_fixedTimeStep.count());
+                }
+
+                // ***** Run "frame time" timsteps for dynamos *****
+                this->_on_frame(deltaTime.count());
+
+                // ***** Finish Frame *****
+                // Context gets last word on any final superceding actions
+                this->_clean_frame();
+
+                // TODO: cleanup all entities signalled to be deleted during frame
             }
+        }
+        catch (const std::exception& expt)
+        {
+            UNREFERENCED_PARAMETER(expt);
+            PLEEPLOG_ERROR("The following uncaught exception occurred during CosmosContext::run(): ");
+            PLEEPLOG_ERROR(expt.what());
 
-            // ***** Run "frame time" timsteps for dynamos *****
-            this->_on_frame(deltaTime.count());
-
-            // ***** Finish Frame *****
-            // Context gets last word on any final superceding actions
-            this->_clean_frame();
-
-            
-            // TODO: cleanup all entities signalled to be deleted during frame
+            // TODO: store exception or some other error state for AppGateway to read after thread finishes
         }
         
-        PLEEPLOG_TRACE("Exiting \"main loop\"");
+        PLEEPLOG_TRACE("Exiting \"frame loop\"");
         // any non-destructor cleanup?
     }
     
