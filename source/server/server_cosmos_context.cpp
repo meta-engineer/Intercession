@@ -1,5 +1,7 @@
 #include "server_cosmos_context.h"
 
+#include "staging/test_temporal_cosmos.h"
+
 namespace pleep
 {
     ServerCosmosContext::ServerCosmosContext(TimelineApi localTimelineApi) 
@@ -21,7 +23,7 @@ namespace pleep
         
         // populate starting cosmos
         // eventually we'll pass some cosmos config param here
-        //_build_cosmos();
+        _build_cosmos();
     }
     
     ServerCosmosContext::~ServerCosmosContext() 
@@ -32,7 +34,7 @@ namespace pleep
         delete m_networkDynamo;
         delete m_physicsDynamo;
     }
-    
+
     void ServerCosmosContext::_prime_frame() 
     {
         // ***** Cosmos Update *****
@@ -59,5 +61,12 @@ namespace pleep
         // flush dynamos of all synchro submissions
         m_networkDynamo->reset_relays();
         m_physicsDynamo->reset_relays();        
+    }
+
+    void ServerCosmosContext::_build_cosmos()
+    {
+        // we need to build synchros and link them with dynamos
+        // until we can load from file we can manually call methods to build entities in its ecs
+        build_temporal_cosmos(m_currentCosmos, m_eventBroker, m_physicsDynamo, m_networkDynamo);
     }
 }

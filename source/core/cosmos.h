@@ -81,6 +81,9 @@ namespace pleep
         void increment_hosted_temporal_entity_count(TemporalEntity tEntity);
         // throws error is count is currently zero (counting as failed)
         void decrement_hosted_temporal_entity_count(TemporalEntity tEntity);
+        // check number of instances of this temporal entity across the timeline
+        // returns 0 if tEntity is not hosted by this tieslice
+        size_t get_hosted_temporal_entity_count(TemporalEntity tEntity);
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -256,6 +259,10 @@ namespace pleep
     inline void Cosmos::decrement_hosted_temporal_entity_count(TemporalEntity tEntity)
     {
         m_entityRegistry->decrement_hosted_temporal_entity_count(tEntity);
+    }
+    inline size_t Cosmos::get_hosted_temporal_entity_count(TemporalEntity tEntity)
+    {
+        return m_entityRegistry->get_hosted_temporal_entity_count(tEntity);
     }
 
     template<typename T>

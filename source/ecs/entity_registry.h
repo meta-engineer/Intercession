@@ -34,6 +34,9 @@ namespace pleep
         void increment_hosted_temporal_entity_count(TemporalEntity tEntity);
         // throws error is count is currently zero (counting as failed)
         void decrement_hosted_temporal_entity_count(TemporalEntity tEntity);
+        // check number of instances of this temporal entity across the timeline
+        // returns 0 if tEntity is not hosted by this tieslice
+        size_t get_hosted_temporal_entity_count(TemporalEntity tEntity);
         
         void set_signature(Entity entity, Signature sign);
 
@@ -109,10 +112,6 @@ namespace pleep
 
     inline Entity EntityRegistry::create_local_entity()
     {
-        if (m_timesliceId != NULL_TIMESLICE)
-        {
-            PLEEPLOG_WARN("Timeslice host trying to create local entity, if this is a server are you sure you want to do this?");
-        }
         // assert() entity count doesn't go beyond max
         if (m_entityCount >= MAX_ENTITIES)
         {
@@ -173,6 +172,8 @@ namespace pleep
         // for consistency we'll use the same increment mechanism (even though we know who the host is)
         // so we can dispatch to our NetworkDyanmo to do our child's count increment
         // (event signalled by cosmos after this returns)
+
+        return ent;
     }
 
     inline Entity EntityRegistry::register_temporal_entity(TemporalEntity tEntity, CausalChainLink link)
@@ -206,6 +207,8 @@ namespace pleep
         // our parent timeslice already incremented host count when it entered the timestream
         // so we can dispatch to our NetworkDyanmo to do our child's count increment
         // (event signalled by cosmos after this returns)
+
+        return ent;
     }
 
     inline void EntityRegistry::destroy_entity(Entity entity)
@@ -303,6 +306,27 @@ namespace pleep
             m_hostEntityCounts.erase(entityCountIt);
             m_availableTemporalEntities.push(tEntity);
         }
+    }
+    inline size_t EntityRegistry::get_hosted_temporal_entity_count(TemporalEntity tEntity)
+    {
+        if (tEntity == NULL_TEMPORAL_ENTITY)
+        {
+            return 0;
+        }
+
+        if (extract_host_timeslice_id(tEntity) != m_timesliceId)
+        {
+            PLEEPLOG_WARN("Tried to check host count of temporal entity which is not hosted by this timeslice");
+            return 0;
+        }
+        
+        auto entityCountIt = m_hostEntityCounts.find(tEntity);
+        if (entityCountIt == m_hostEntityCounts.end())
+        {
+            return 0;
+        }
+
+        return entityCountIt->second;
     }
     
     inline void EntityRegistry::set_signature(Entity entity, Signature sign)
