@@ -8,7 +8,7 @@ namespace pleep
     ClientCosmosContext::ClientCosmosContext(GLFWwindow* windowApi)
         : I_CosmosContext()
         , m_renderDynamo(nullptr)
-        , m_controlDynamo(nullptr)
+        , m_inputDynamo(nullptr)
         , m_physicsDynamo(nullptr)
         , m_networkDynamo(nullptr)
     {
@@ -16,7 +16,7 @@ namespace pleep
         
         // construct dynamos
         m_renderDynamo  = new RenderDynamo(m_eventBroker, windowApi);
-        m_controlDynamo = new ControlDynamo(m_eventBroker, windowApi);
+        m_inputDynamo   = new InputDynamo(m_eventBroker, windowApi);
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         m_networkDynamo = new ClientNetworkDynamo(m_eventBroker);
         
@@ -35,7 +35,7 @@ namespace pleep
 
         delete m_networkDynamo;
         delete m_physicsDynamo;
-        delete m_controlDynamo;
+        delete m_inputDynamo;
         delete m_renderDynamo;
     }
     
@@ -53,7 +53,7 @@ namespace pleep
         //   know which dynamos to call fixed and which to call on frametime
         m_networkDynamo->run_relays(fixedTime);
         m_physicsDynamo->run_relays(fixedTime);
-        m_controlDynamo->run_relays(fixedTime);
+        m_inputDynamo->run_relays(fixedTime);
     }
     
     void ClientCosmosContext::_on_frame(double deltaTime) 
@@ -114,7 +114,7 @@ namespace pleep
         // flush dynamos of all synchro submissions
         m_networkDynamo->reset_relays();
         m_physicsDynamo->reset_relays();
-        m_controlDynamo->reset_relays();
+        m_inputDynamo->reset_relays();
         m_renderDynamo->reset_relays();
         
         // RenderDynamo calls swap buffers
@@ -126,7 +126,7 @@ namespace pleep
     {
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_controlDynamo, m_physicsDynamo, m_networkDynamo);
+        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo);
         // use imgui input in main loop do add more at runtime
     }
 }

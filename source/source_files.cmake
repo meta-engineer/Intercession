@@ -16,10 +16,8 @@ set(COMMON_SOURCE_FILES
     source/rendering/mesh.cpp
     source/rendering/shader_manager.cpp
 
-    source/controlling/control_dynamo.cpp
-    source/controlling/camera_control_synchro.cpp
-    source/controlling/physics_control_synchro.cpp
-    source/controlling/biped_control_synchro.cpp
+    source/inputting/input_dynamo.cpp
+    source/inputting/spacial_input_synchro.cpp
 
     source/physics/physics_dynamo.cpp
     source/physics/physics_synchro.cpp

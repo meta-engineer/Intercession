@@ -4,7 +4,6 @@
 //#include "intercession_pch.h"
 #include "logging/pleep_log.h"
 #include "scripting/i_script_drivetrain.h"
-#include "controlling/biped_control_component.h"
 #include "core/cosmos.h"
 
 namespace pleep
@@ -25,11 +24,11 @@ namespace pleep
             // look for biped controller on collider
             try
             {
-                BipedControlComponent& biped = callerData.owner->get_component<BipedControlComponent>(callerData.collidee);
-                biped.isGrounded = true;
-                biped.groundNormal = collisionNormal;
+                //BipedControlComponent& biped = callerData.owner->get_component<BipedControlComponent>(callerData.collidee);
+                //biped.isGrounded = true;
+                //biped.groundNormal = collisionNormal;
             }
-            catch (const std::range_error& err)
+            catch (const std::runtime_error& err)
             {
                 UNREFERENCED_PARAMETER(err);
                 PLEEPLOG_WARN(err.what());
@@ -38,6 +37,7 @@ namespace pleep
             }
 
             UNREFERENCED_PARAMETER(collisionPoint);
+            UNREFERENCED_PARAMETER(collisionNormal);
             UNREFERENCED_PARAMETER(collisionDepth);
             UNREFERENCED_PARAMETER(collidedData);
         }

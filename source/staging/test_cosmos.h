@@ -5,9 +5,7 @@
 #include "logging/pleep_log.h"
 
 // TODO: This is temporary for building hard-coded entities
-#include "controlling/camera_control_synchro.h"
-#include "controlling/physics_control_synchro.h"
-#include "controlling/biped_control_synchro.h"
+#include "inputting/spacial_input_synchro.h"
 #include "rendering/render_synchro.h"
 #include "rendering/lighting_synchro.h"
 #include "physics/physics_synchro.h"
@@ -20,9 +18,7 @@
 #include "physics/box_collider_component.h"
 #include "physics/ray_collider_component.h"
 #include "physics/rigid_body_component.h"
-#include "controlling/physics_control_component.h"
-#include "controlling/camera_control_component.h"
-#include "controlling/biped_control_component.h"
+#include "inputting/spacial_input_component.h"
 #include "rendering/model_component.h"
 #include "rendering/model_builder.h"
 #include "rendering/camera_component.h"
@@ -34,15 +30,13 @@
 
 namespace pleep
 {
-    void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, ControlDynamo* controlDynamo, PhysicsDynamo* physicsDynamo, I_NetworkDynamo* networkDynamo)
+    void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, InputDynamo* inputDynamo, PhysicsDynamo* physicsDynamo, I_NetworkDynamo* networkDynamo)
     {
         // Assume Cosmos is already "empty"
 
         // register components
         cosmos->register_component<TransformComponent>();
-        cosmos->register_component<CameraControlComponent>();
-        cosmos->register_component<PhysicsControlComponent>();
-        cosmos->register_component<BipedControlComponent>();
+        cosmos->register_component<SpacialInputComponent>();
         cosmos->register_component<ModelComponent>();
         cosmos->register_component<CameraComponent>();
         cosmos->register_component<LightSourceComponent>();
@@ -53,7 +47,7 @@ namespace pleep
         cosmos->register_component<SpringBodyComponent>();
         cosmos->register_component<ScriptComponent>();
         // We may want to enforce use of meta component for all cosmos'?
-        cosmos->register_component<MetaComponent>();
+        //cosmos->register_component<MetaComponent>();
 
         // TODO: what kind of synchro should accept network access?
         // What methods does I_NetworkDynamo need, and do underlying type (client/server) need to be known?
@@ -66,22 +60,10 @@ namespace pleep
         PLEEPLOG_TRACE("Create Synchros");
         // TODO: get synchros to maintain their own signatures to fetch for registration
 
-        std::shared_ptr<CameraControlSynchro> cameraControlSynchro = cosmos->register_synchro<CameraControlSynchro>();
+        std::shared_ptr<SpacialInputSynchro> spacialInputSynchro = cosmos->register_synchro<SpacialInputSynchro>();
         {
-            cameraControlSynchro->attach_dynamo(controlDynamo);
-            cosmos->set_synchro_signature<CameraControlSynchro>(CameraControlSynchro::get_signature(cosmos));
-        }
-        
-        std::shared_ptr<PhysicsControlSynchro> physicsControlSynchro = cosmos->register_synchro<PhysicsControlSynchro>();
-        {
-            physicsControlSynchro->attach_dynamo(controlDynamo);
-            cosmos->set_synchro_signature<PhysicsControlSynchro>(PhysicsControlSynchro::get_signature(cosmos));
-        }
-        
-        std::shared_ptr<BipedControlSynchro> bipedControlSynchro = cosmos->register_synchro<BipedControlSynchro>();
-        {
-            bipedControlSynchro->attach_dynamo(controlDynamo);
-            cosmos->set_synchro_signature<BipedControlSynchro>(BipedControlSynchro::get_signature(cosmos));
+            spacialInputSynchro->attach_dynamo(inputDynamo);
+            cosmos->set_synchro_signature<SpacialInputSynchro>(SpacialInputSynchro::get_signature(cosmos));
         }
 
         // synchros are in a map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
@@ -138,13 +120,10 @@ namespace pleep
         //std::shared_ptr<Model> frog_model = std::make_shared<Model>("resources/normal_frog.obj");
         std::shared_ptr<Model> frog_model = model_builder::create_cube("resources/container.jpg");
         cosmos->add_component(frog, ModelComponent(frog_model));
-        //cosmos->add_component(frog, PhysicsControlComponent{});
         PhysicsComponent frog_physics;
         frog_physics.mass = 30.0f;
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         cosmos->add_component(frog, frog_physics);
-        BipedControlComponent frog_controller;
-        cosmos->add_component(frog, frog_controller);
 
         // frog "body"
         BoxColliderComponent frog_box;
@@ -155,7 +134,7 @@ namespace pleep
         frog_rigidBody.influenceOrientation = false;
         cosmos->add_component(frog, frog_rigidBody);
 
-        // script to link collider events to controller
+        // script handle collider events
         ScriptComponent frog_scripts;
         frog_scripts.handlers = std::make_shared<BipedScripts>();
         // store script in self
@@ -297,10 +276,8 @@ namespace pleep
         cosmos->add_component(mainCamera, mainCamera_physics);
         cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
         cosmos->add_component(mainCamera, CameraComponent());
-        CameraControlComponent mainCamera_control;
-        mainCamera_control.target = frog;
-        mainCamera_control.type = CameraControlType::biped3p;
-        cosmos->add_component(mainCamera, mainCamera_control);
+
+        cosmos->add_component(mainCamera, SpacialInputComponent());
         
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker

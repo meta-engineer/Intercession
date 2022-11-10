@@ -115,12 +115,12 @@ GLSL naming:
 
 ## Application Architecture
 
-core/           : app/architecture components
-logging/        : pleep logger based on spdlog
-cosmos/         : ECS and world logic
-rendering/      : render dynamo/relays
-controlling/    : input and entity control dynamo/relays
-networking/     : networking tools
+| core/       | app/architecture components |
+| logging/    | pleep logger based on spdlog |
+| cosmos/     | ECS and world logic |
+| rendering/  | render dynamo/relays |
+| inputting/  | input parsing |
+| networking/ | networking tools |
 
 AppConfigBuilder:
  provide functions for AppGateway to create specific subclass of abstract ones

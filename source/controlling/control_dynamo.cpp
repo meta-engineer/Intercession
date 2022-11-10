@@ -267,7 +267,7 @@ namespace pleep
         UNREFERENCED_PARAMETER(mods);
         //PLEEPLOG_TRACE("Key event: " + std::to_string(key) + ", code: " + std::to_string(scancode) + ", " + std::to_string(action));
 
-        // we''l probably NEVER want to use keyboard auto-repeat (maybe for typing?)
+        // we'll probably NEVER want to use keyboard auto-repeat (maybe for typing?)
         if (action == GLFW_REPEAT) return;
 
         // Hardcoded actions

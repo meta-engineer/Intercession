@@ -2,10 +2,11 @@
 #define CLIENT_COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
+#include <memory>
 #include "core/i_cosmos_context.h"
 
 #include "rendering/render_dynamo.h"
-#include "controlling/control_dynamo.h"
+#include "inputting/input_dynamo.h"
 #include "physics/physics_dynamo.h"
 #include "client/client_network_dynamo.h"
 
@@ -35,8 +36,8 @@ namespace pleep
         // keep concrete, non-interface references incase we need to retrieve specific data
         // Dynamos possess relevant api references passed in on construction from AppGateway
         // Our cosmos shares these dynamos with their synchros
-        RenderDynamo*  m_renderDynamo;
-        ControlDynamo* m_controlDynamo;
+        RenderDynamo* m_renderDynamo;
+        InputDynamo* m_inputDynamo;
         PhysicsDynamo* m_physicsDynamo;
         ClientNetworkDynamo* m_networkDynamo;
         //AudioDynamo* m_audioDynamo;
