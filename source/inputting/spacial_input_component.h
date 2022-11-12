@@ -50,14 +50,14 @@ namespace pleep
         std::array<double, SpacialActions::count> actionVals{};
 
         // convenience method for returning to default values
-        void clear()
+        inline void clear()
         {
             actions.reset();
             // if actionVals are ALWAYS set with actions then we dont need to set 0's
         }
 
         // move "hot" states to "ground" value
-        void flush()
+        inline void flush()
         {
             // rotations controlled by mouse need to be reset (there is no mousemove "release")
             actions.set(SpacialActions::rotatePitch, false);
@@ -65,7 +65,7 @@ namespace pleep
             actions.set(SpacialActions::rotateRoll,  false);
         }
 
-        void set(SpacialActions action, bool state, double value = 0.0f)
+        inline void set(SpacialActions action, bool state, double value = 0.0f)
         {
             actions.set(action, state);
             actionVals.at(action) = value;

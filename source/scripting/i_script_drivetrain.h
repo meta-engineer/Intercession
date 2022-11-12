@@ -14,6 +14,8 @@ namespace pleep
     // Contains all virtual methods that script users can call
     // I guess script users will just... implicitly know which methods they should call
     // EX: on_fixed_update, on_frame_update, on_collision, etc...
+    // Scripts should only store members for globally applicable data
+    // any entity specific data should be contained in a standalone component
     class I_ScriptDrivetrain
     {
     protected:
@@ -25,18 +27,22 @@ namespace pleep
         // subclasses should enable when they override related method
         bool enable_fixed_update        = false;
         bool enable_frame_update        = false;
-        bool enable_collision_scripts  = false;
+        bool enable_collision_scripts   = false;
 
-        virtual void on_fixed_update(double deltaTime)
+        virtual void on_fixed_update(double deltaTime, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr)
         {
             UNREFERENCED_PARAMETER(deltaTime);
+            UNREFERENCED_PARAMETER(entity);
+            UNREFERENCED_PARAMETER(owner);
             PLEEPLOG_WARN("Drivetrain has no implementation for called script. Disabling...");
             this->enable_fixed_update = false;
         }
         
-        virtual void on_frame_update(double deltaTime)
+        virtual void on_frame_update(double deltaTime, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr)
         {
             UNREFERENCED_PARAMETER(deltaTime);
+            UNREFERENCED_PARAMETER(entity);
+            UNREFERENCED_PARAMETER(owner);
             PLEEPLOG_WARN("Drivetrain has no implementation for called script. Disabling...");
             this->enable_frame_update = false;
         }

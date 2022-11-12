@@ -73,6 +73,21 @@ Entry point is source/client_main.cpp::main() and source/server_main.cpp::main()
 
 ---
 
+## Backup
+Necessary data to backup is:
+- cmake_scripts/*
+- config/*
+- packaging/*
+- source/*
+- .gitignore
+- .gitmodules
+- CmakeLists.txt
+- Notes.md
+- README.md
+- external/CmakeLists.txt
+- external/README.md
+- external/source_files.cmake
+
 ## Bibliography
 Special thanks to the following resources, programmers, and teachers for their invaluable and selfless work which I was able to learn from and adapt to produce this project. (This does not include the libraries, which I directly used).
 

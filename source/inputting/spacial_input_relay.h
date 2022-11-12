@@ -41,6 +41,9 @@ namespace pleep
             double h = (m_sharedBuffer.digitalState[GLFW_KEY_D] ?  1.0 : 0.0) 
                      + (m_sharedBuffer.digitalState[GLFW_KEY_A] ? -1.0 : 0.0);
             newSpacialInput.set(SpacialActions::moveHorizontal, h!=0.0 ? true : false, h);
+            double v = (m_sharedBuffer.digitalState[GLFW_KEY_SPACE] ?  1.0 : 0.0) 
+                     + (m_sharedBuffer.digitalState[GLFW_KEY_C] ? -1.0 : 0.0);
+            newSpacialInput.set(SpacialActions::moveVertical, v!=0.0 ? true : false, v);
             
             newSpacialInput.set(SpacialActions::rotatePitch, m_sharedBuffer.twoDimAnalog[0][1] != 0.0, m_sharedBuffer.twoDimAnalog[0][1]);
             newSpacialInput.set(SpacialActions::rotateYaw, m_sharedBuffer.twoDimAnalog[0][0] != 0.0, m_sharedBuffer.twoDimAnalog[0][0]);

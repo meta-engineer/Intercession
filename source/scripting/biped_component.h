@@ -1,22 +1,17 @@
-#ifndef BIPED_CONTROL_COMPONENT_H
-#define BIPED_CONTROL_COMPONENT_H
+#ifndef BIPED_COMPONENT_H
+#define BIPED_COMPONENT_H
 
 //#include "intercession_pch.h"
 #include <glm/gtx/quaternion.hpp>
 
 namespace pleep
 {
-    // Controller component for "characters"
-    // Biped implies they have (approximately) one contact point with the ground
-    // and can rotate about their upright axis without complex limb movement
-    // also may include properties which imply arms (like mantling/climbing)
-
-    // Biped needs to have components: transform, physics
-    struct BipedControlComponent
+    // "floating" component used by biped scripts
+    struct BipedComponent
     {
         // this property may have to align with net world forces (gravity/bouyancy/mangnetism?)
-        //   but not acceleration due to contact
-        // it may also have to inform collider/entity orientation
+        //   but not acceleration due to collision
+        // it may also have to influence collider/entity orientation
         glm::vec3 supportAxis = glm::vec3(0.0f, -1.0f, 0.0f);
         glm::quat aimOrientation = glm::quat(glm::vec3(0.0f));
         float horizontalRotationFactor = 1.2f;
@@ -42,4 +37,4 @@ namespace pleep
     };
 }
 
-#endif // BIPED_CONTROL_COMPONENT_H
+#endif // BIPED_COMPONENT_H

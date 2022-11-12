@@ -29,6 +29,9 @@ set(COMMON_SOURCE_FILES
     source/physics/spring_body_component.cpp
 
     source/networking/network_synchro.cpp
+
+    source/scripting/script_dynamo.cpp
+    source/scripting/script_synchro.cpp
 )
 
 set(CLIENT_SOURCE_FILES

@@ -11,6 +11,7 @@ namespace pleep
         , m_inputDynamo(nullptr)
         , m_physicsDynamo(nullptr)
         , m_networkDynamo(nullptr)
+        , m_scriptDynamo(nullptr)
     {
         // I_CosmosContext() has setup broker
         
@@ -19,6 +20,7 @@ namespace pleep
         m_inputDynamo   = new InputDynamo(m_eventBroker, windowApi);
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         m_networkDynamo = new ClientNetworkDynamo(m_eventBroker);
+        m_scriptDynamo  = new ScriptDynamo(m_eventBroker);
         
         // build empty starting cosmos
         m_currentCosmos = new Cosmos(m_eventBroker);
@@ -33,6 +35,7 @@ namespace pleep
         // delete cosmos first to avoid null dynamo dereferences
         delete m_currentCosmos;
 
+        delete m_scriptDynamo;
         delete m_networkDynamo;
         delete m_physicsDynamo;
         delete m_inputDynamo;
@@ -54,6 +57,7 @@ namespace pleep
         m_networkDynamo->run_relays(fixedTime);
         m_physicsDynamo->run_relays(fixedTime);
         m_inputDynamo->run_relays(fixedTime);
+        m_scriptDynamo->run_relays(fixedTime);
     }
     
     void ClientCosmosContext::_on_frame(double deltaTime) 
@@ -112,6 +116,7 @@ namespace pleep
         //   and we invoke all dynamos (to avoid having to specify)
         
         // flush dynamos of all synchro submissions
+        m_scriptDynamo->reset_relays();
         m_networkDynamo->reset_relays();
         m_physicsDynamo->reset_relays();
         m_inputDynamo->reset_relays();
@@ -126,7 +131,7 @@ namespace pleep
     {
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo);
+        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
         // use imgui input in main loop do add more at runtime
     }
 }

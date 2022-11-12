@@ -9,6 +9,7 @@
 #include "inputting/input_dynamo.h"
 #include "physics/physics_dynamo.h"
 #include "client/client_network_dynamo.h"
+#include "scripting/script_dynamo.h"
 
 namespace pleep
 {
@@ -40,6 +41,7 @@ namespace pleep
         InputDynamo* m_inputDynamo;
         PhysicsDynamo* m_physicsDynamo;
         ClientNetworkDynamo* m_networkDynamo;
+        ScriptDynamo* m_scriptDynamo;
         //AudioDynamo* m_audioDynamo;
     };
 }

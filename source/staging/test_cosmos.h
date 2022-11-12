@@ -12,6 +12,7 @@
 #include "physics/box_collider_synchro.h"
 #include "physics/ray_collider_synchro.h"
 #include "networking/network_synchro.h"
+#include "scripting/script_synchro.h"
 
 #include "physics/transform_component.h"
 #include "physics/physics_component.h"
@@ -27,10 +28,19 @@
 
 #include "scripting/script_component.h"
 #include "scripting/biped_scripts.h"
+#include "scripting/fly_control_script.h"
 
 namespace pleep
 {
-    void build_test_cosmos(Cosmos* cosmos, EventBroker* eventBroker, RenderDynamo* renderDynamo, InputDynamo* inputDynamo, PhysicsDynamo* physicsDynamo, I_NetworkDynamo* networkDynamo)
+    void build_test_cosmos(
+        Cosmos* cosmos, 
+        EventBroker* eventBroker, 
+        RenderDynamo* renderDynamo, 
+        InputDynamo* inputDynamo, 
+        PhysicsDynamo* physicsDynamo, 
+        I_NetworkDynamo* networkDynamo, 
+        ScriptDynamo* scriptDynamo
+    )
     {
         // Assume Cosmos is already "empty"
 
@@ -105,7 +115,11 @@ namespace pleep
             cosmos->set_synchro_signature<NetworkSynchro>(NetworkSynchro::get_signature(cosmos));
         }
 
-        // TODO: script synchro for fixed time and frame time updates?
+        std::shared_ptr<ScriptSynchro> scriptSynchro = cosmos->register_synchro<ScriptSynchro>();
+        {
+            scriptSynchro->attach_dynamo(scriptDynamo);
+            cosmos->set_synchro_signature<ScriptSynchro>(ScriptSynchro::get_signature(cosmos));
+        }
 
         PLEEPLOG_TRACE("Create Entities");
         // create entities
@@ -134,7 +148,7 @@ namespace pleep
         frog_rigidBody.influenceOrientation = false;
         cosmos->add_component(frog, frog_rigidBody);
 
-        // script handle collider events
+        // script handle legs collider events (below)
         ScriptComponent frog_scripts;
         frog_scripts.handlers = std::make_shared<BipedScripts>();
         // store script in self
@@ -146,7 +160,7 @@ namespace pleep
         //frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
         frog_ray.responseType = CollisionResponseType::spring;
         frog_ray.inheritOrientation = false;
-        // link to biped script
+        // link to self biped script
         frog_ray.scriptTarget = frog;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
@@ -278,7 +292,10 @@ namespace pleep
         cosmos->add_component(mainCamera, CameraComponent());
 
         cosmos->add_component(mainCamera, SpacialInputComponent());
-        
+        ScriptComponent camera_scripts;
+        camera_scripts.handlers = std::make_shared<FlyControlScript>();
+        cosmos->add_component(mainCamera, camera_scripts);
+
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
         // dynamos don't have acess to cosmos, so they can't lookup entity

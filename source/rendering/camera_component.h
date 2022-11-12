@@ -19,8 +19,9 @@ namespace pleep
 
     struct CameraComponent
     {
-        // set generic defaults
         // use TransformComponent.position and .orientation
+
+        // ***** rendering members *****
         ProjectionType projectionType = ProjectionType::perspective;
         glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0f);
         float        viewNear   = 0.1f;
@@ -28,6 +29,13 @@ namespace pleep
         unsigned int viewWidth  = 1024;
         unsigned int viewHeight = 1024;
         float        viewFov    = 45.0f;
+
+        // ***** control members (used by scripts) *****
+        // target entity
+        // ranges/distances
+        // spring joint variables
+        // gimbal meta-data (see sotc_camera_control_relay.h)
+        // margins/limits
     };
 
     // Helper function for camera use

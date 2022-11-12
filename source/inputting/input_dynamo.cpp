@@ -38,10 +38,6 @@ namespace pleep
         glfwPollEvents();
         // Raw input buffer will be set now
 
-        // ****** TODO: store mouse mode in input buffer?
-        // relays may want to know if mouse movement (analog 0) was a cursor or input?
-        // maybe store them in two seperate values?
-
         // engage relays with polled input
         m_spacialInputRelay.engage(deltaTime);
 
@@ -115,6 +111,7 @@ namespace pleep
     {
         // silence warning while not using
         UNREFERENCED_PARAMETER(w);
+        //PLEEPLOG_DEBUG("mouse: " + std::to_string(x) + ", " + std::to_string(y));
         
         static double lastX = -1;
         static double lastY = -1;
@@ -126,7 +123,7 @@ namespace pleep
             m_inputBuffer.setTwoDimAnalog(
                 0,
                 lastX == -1.0 ? 0.0 : (x - lastX),
-                lastY == -1.0 ? 0.0 : (lastY - y)
+                lastY == -1.0 ? 0.0 : (y - lastY)
             );
         }
         else
@@ -147,7 +144,7 @@ namespace pleep
         // we'll assign the scroll wheel to be analog 1
         m_inputBuffer.setTwoDimAnalog(1, dx, dy);
 
-        PLEEPLOG_TRACE("Mouse scroll callback. Scrolled (" + std::to_string(dx) + ", " + std::to_string(dy) + ")");
+        //PLEEPLOG_TRACE("Mouse scroll callback. Scrolled (" + std::to_string(dx) + ", " + std::to_string(dy) + ")");
     }
     
     void InputDynamo::_mouse_button_callback(GLFWwindow* w, int button, int action, int mods) 
@@ -178,7 +175,7 @@ namespace pleep
         // we'll probably NEVER want to use keyboard auto-repeat (maybe for typing?)
         if (action == GLFW_REPEAT) return;
         
-        PLEEPLOG_TRACE("Key event: " + std::to_string(key) + ", code: " + std::to_string(scancode) + ", " + std::to_string(action));
+        //PLEEPLOG_TRACE("Key event: " + std::to_string(key) + ", code: " + std::to_string(scancode) + ", " + std::to_string(action));
 
         m_inputBuffer.setDigital(key, action);
 
