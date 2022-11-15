@@ -18,9 +18,9 @@ namespace pleep
         // accepts pointers to vertex data, pointers only need to be valid for duration of constructor
         // then they are loaded into VertexBuffers
         VertexGroup(
-            const float* vertices, const unsigned int numVertices,
-            const unsigned int* indices, const unsigned int numIndices, 
-            const unsigned int* attribs, const unsigned int numAttribs)
+            const float* vertices, const unsigned long long numVertices,
+            const unsigned int* indices, const unsigned long long numIndices, 
+            const unsigned int* attribs, const unsigned long long numAttribs)
             : m_numIndices(numIndices)
         {
             glGenVertexArrays(1, &VAO_ID);
@@ -72,13 +72,13 @@ namespace pleep
         void invoke_draw()
         {
             glBindVertexArray(VAO_ID);
-            glDrawElements(GL_TRIANGLES, m_numIndices, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_numIndices), GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
         }
 
     private:
         // draw call size
-        unsigned int m_numIndices;
+        unsigned long long m_numIndices;
 
         unsigned int VAO_ID;
         unsigned int VBO_ID;

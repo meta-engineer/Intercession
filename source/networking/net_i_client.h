@@ -55,6 +55,7 @@ namespace net
             }
             catch (std::exception& err)
             {
+                UNREFERENCED_PARAMETER(err);
                 PLEEPLOG_ERROR("Asio error while connecting: ");
                 PLEEPLOG_ERROR(err.what());
                 return false;

@@ -65,7 +65,7 @@ namespace pleep
         _set_textures(sm);
 
         glBindVertexArray(VAO_ID);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -75,7 +75,7 @@ namespace pleep
         _set_textures(sm);
 
         glBindVertexArray(VAO_ID);
-        glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, amount);
+        glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0, static_cast<GLsizei>(amount));
         glBindVertexArray(0);
     }
 

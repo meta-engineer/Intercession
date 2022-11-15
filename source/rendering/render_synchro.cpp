@@ -138,7 +138,7 @@ namespace pleep
     
     void RenderSynchro::_resize_main_camera(int width, int height) 
     {
-        PLEEPLOG_TRACE("Overwriting registered camera with dimensions: " + std::to_string(width) + ", " + std::to_string(height));
+        PLEEPLOG_TRACE("Overwriting registered camera with dimensions (" + std::to_string(width) + ", " + std::to_string(height) + ")");
 
         // camera components must be registered and this entity must have a camera component
         CameraComponent& mainCamInfo = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);

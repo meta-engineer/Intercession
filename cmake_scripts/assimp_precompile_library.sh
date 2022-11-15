@@ -1,5 +1,10 @@
 #!/bin/bash
 # fresh configure & build of assimp static lib
+# NOTE: a newly fetched assimp may be an updated version and the
+# library name may have changed accordingly (currently assimp-vc143-mt.lib)
+# after running this script check your version (external/assimp/build/lib/Debug)
+# and match the name in external/CmakeLists.txt
+# Can we specify the gitmoduile use a single version?
 
 # push working directory
 START_PWD=$(pwd)

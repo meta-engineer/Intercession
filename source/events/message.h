@@ -62,7 +62,7 @@ namespace pleep
         }
 
         // track current size of body
-        uint32_t i = msg.size();
+        uint32_t i = static_cast<uint32_t>(msg.size());
 
         // resize for data to be pushed
         // does this break the amortized exponential auto-allocating?
@@ -73,7 +73,7 @@ namespace pleep
         std::memcpy(msg.body.data() + i, &data, sizeof(T_Data));
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
 
         return msg;
     }
@@ -93,7 +93,7 @@ namespace pleep
         assert(msg.size() >= sizeof(T_Data));
 
         // track index at the start of the data on "top" of the stack
-        uint32_t i = msg.size() - sizeof(T_Data);
+        uint32_t i = static_cast<uint32_t>(msg.size()) - sizeof(T_Data);
 
         // actually physically copy the data into allocated space
         std::memcpy(&data, msg.body.data() + i, sizeof(T_Data));
@@ -102,7 +102,7 @@ namespace pleep
         msg.body.resize(i);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
         
         return msg;
     }

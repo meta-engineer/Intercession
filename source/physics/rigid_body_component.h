@@ -42,7 +42,7 @@ namespace pleep
         // make sure stream operators are updated if members are updated
         static_assert(RigidBodyComponent::dataSize == 13, "RigidBodyComponent Message serializer found unexpected data size");
         
-        uint32_t i = msg.size();
+        uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once
         msg.body.resize(msg.body.size() + RigidBodyComponent::dataSize);
 
@@ -59,7 +59,7 @@ namespace pleep
         i += sizeof(bool);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
 
         return msg;
     }
@@ -70,7 +70,7 @@ namespace pleep
         assert(msg.size() >= RigidBodyComponent::dataSize);
         
         // track index at the start of the data on "top" of the stack
-        uint32_t i = msg.size() - RigidBodyComponent::dataSize;
+        uint32_t i = static_cast<uint32_t>(msg.size()) - RigidBodyComponent::dataSize;
 
         std::memcpy(&(data.restitution), msg.body.data() + i, sizeof(float));
         i += sizeof(float);
@@ -88,7 +88,7 @@ namespace pleep
         msg.body.resize(msg.size() - RigidBodyComponent::dataSize);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
         
         return msg;
     }

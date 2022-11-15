@@ -84,8 +84,8 @@ endif()
 target_link_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/lib/${CONFIGURATION})
 # Assimp uses a debug postfix "d"
 target_link_libraries(${ENGINE_NAME}
-    debug assimp-vc141-mtd
-    optimized assimp-vc141-mt
+    debug assimp-vc143-mtd
+    optimized assimp-vc143-mt
 )
 # include cmake generated header
 target_include_directories(${ENGINE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external/assimp/build/include)

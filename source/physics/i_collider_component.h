@@ -242,9 +242,9 @@ namespace pleep
                     }
 
                     // get j that accounts for wrapping (must be signed)
-                    int J = j % clippee.size();
+                    int J = static_cast<int>(j % clippee.size());
                     // get previous index (account for wrapping again)
-                    int J_1 = J==0 ? clippee.size() - 1 : J-1;
+                    int J_1 = J==0 ? static_cast<int>(clippee.size()) - 1 : J-1;
                     // determine which side the point is on
                     float clippeeCoeff = 
                         thisPlane.x * clippee[J].x + 
@@ -322,7 +322,7 @@ namespace pleep
         // make sure stream operators are updated if members are updated
         static_assert(I_ColliderComponent::dataSize == 48, "I_ColliderComponent Message serializer found unexpected data size");
         
-        uint32_t i = msg.size();
+        uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once
         msg.body.resize(msg.body.size() + I_ColliderComponent::dataSize);
 
@@ -342,7 +342,7 @@ namespace pleep
         i += sizeof(bool);
         
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
 
         return msg;
     }
@@ -353,7 +353,7 @@ namespace pleep
         assert(msg.size() >= I_ColliderComponent::dataSize);
         
         // track index at the start of the data on "top" of the stack
-        uint32_t i = msg.size() - I_ColliderComponent::dataSize;
+        uint32_t i = static_cast<uint32_t>(msg.size()) - I_ColliderComponent::dataSize;
         
         std::memcpy(&(data.responseType), msg.body.data() + i, sizeof(CollisionResponseType));
         i += sizeof(CollisionResponseType);
@@ -374,7 +374,7 @@ namespace pleep
         msg.body.resize(msg.size() - I_ColliderComponent::dataSize);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
         
         return msg;
     }

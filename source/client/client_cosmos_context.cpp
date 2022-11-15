@@ -71,11 +71,11 @@ namespace pleep
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        bool checkbox;
         // show ui window
         {
             static float f = 0.0f;
             static int counter = 0;
+            static bool checkbox;
 
             // Create a window and append into it.
             ImGui::Begin("Client Context Debug");

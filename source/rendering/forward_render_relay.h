@@ -203,9 +203,9 @@ namespace pleep
                 m_sm.set_vec3(lightUni + ".specular",
                     data.light.color * data.light.composition.z);
             }
-            m_sm.set_int("numRayLights", m_numRayLights);
-            m_sm.set_int("numPointLights", m_numPointLights);
-            m_sm.set_int("numSpotLights", m_numSpotLights);
+            m_sm.set_int("numRayLights", static_cast<int>(m_numRayLights));
+            m_sm.set_int("numPointLights", static_cast<int>(m_numPointLights));
+            m_sm.set_int("numSpotLights", static_cast<int>(m_numSpotLights));
             m_sm.deactivate();
 
             // Render through all models

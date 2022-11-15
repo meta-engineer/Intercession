@@ -49,7 +49,7 @@ namespace pleep
         // no I_ColliderComponent data
         //msg << ((I_PhysicsResponseComponent&)*data);
 
-        uint32_t i = msg.size();
+        uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once
         msg.body.resize(msg.body.size() + SpringBodyComponent::dataSize);
 
@@ -72,7 +72,7 @@ namespace pleep
         i += sizeof(bool);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
 
         return msg;
     }
@@ -83,7 +83,7 @@ namespace pleep
         assert(msg.size() >= SpringBodyComponent::dataSize);
         
         // track index at the start of the data on "top" of the stack
-        uint32_t i = msg.size() - SpringBodyComponent::dataSize;
+        uint32_t i = static_cast<uint32_t>(msg.size()) - SpringBodyComponent::dataSize;
 
         std::memcpy(&(data.restLength), msg.body.data() + i, sizeof(float));
         i += sizeof(float);
@@ -107,7 +107,7 @@ namespace pleep
         msg.body.resize(msg.size() - SpringBodyComponent::dataSize);
 
         // recalc message size
-        msg.header.size = msg.size();
+        msg.header.size = static_cast<uint32_t>(msg.size());
         
         return msg;
     }

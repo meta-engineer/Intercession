@@ -22,7 +22,7 @@ then
     rm ./build -r
 fi
 
-cmake . -B build -G "Visual Studio 15 2017"
+cmake . -B build -G "Visual Studio 17 2022"
 
 
 # pop working directory

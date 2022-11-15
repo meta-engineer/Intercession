@@ -38,7 +38,7 @@ namespace pleep
                 const float disp   = 4.0f * (float)deltaTime;
                 const float rot    = 0.15f * (float)deltaTime;
                 const float aspect = 1.2f;
-                const float gimbalLimit = 0.1f;  // rads
+                //const float gimbalLimit = 0.1f;  // rads
                 glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
                 glm::vec3 tangent = glm::normalize(glm::cross(direction, gimbalUp));
 
