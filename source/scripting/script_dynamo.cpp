@@ -29,11 +29,11 @@ namespace pleep
             ScriptPacket& data = *packet_it;
 
             // TODO: Dynamos will need to seperate fixed/frame
-            if (data.script.handlers->enable_fixed_update)
+            if (data.script.use_fixed_update)
             {
-                data.script.handlers->on_fixed_update(deltaTime, data.entity, data.owner);
+                data.script.drivetrain->on_fixed_update(deltaTime, data.script, data.entity, data.owner);
             }
-            //(*packet_it).script.handlers->on_frame_update(deltaTime, data.entity, data.owner);
+            //(*packet_it).script.drivetrain->on_frame_update(deltaTime, data.entity, data.owner);
         }
     }
     

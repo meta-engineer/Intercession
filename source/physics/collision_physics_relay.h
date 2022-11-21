@@ -65,52 +65,9 @@ namespace pleep
                     //PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
 
                     // TODO: Check if entities have any script/physics responses BEFORE intersect check and exit early!
-                    
-                    // Call script collision response (before or after physics response?)
-                    // TODO: can collision relay track when a collision starts/ends? which entities collided last frame?
-                    // Careful! collider scriptTarget could be NULL, scriptTarget could not have ScriptComponent, and ScriptComponent could have null ScriptDrivetrain
-                    if (thisData.collider->scriptTarget != NULL_ENTITY)
-                    {
-                        try
-                        {
-                            std::shared_ptr<I_ScriptDrivetrain> handlers = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget).handlers;
-                            if (handlers->enable_collision_scripts)
-                            {
-                                handlers->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
-                            }
-                        }
-                        catch(const std::exception& err)
-                        {
-                            UNREFERENCED_PARAMETER(err);
-                            PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
-                            thisData.collider->scriptTarget = NULL_ENTITY;
-                        }
-                    }
-                    if (otherData.collider->scriptTarget != NULL_ENTITY)
-                    {
-                        try
-                        {
-                            // invert relative collision metadata
-                            glm::vec3 invCollisionNormal = -collisionNormal;
-                            glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
-                            
-                            std::shared_ptr<I_ScriptDrivetrain> handlers = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget).handlers;
-                            if (handlers->enable_collision_scripts)
-                            {
-                                handlers->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
-                            }
-                        }
-                        catch(const std::exception& err)
-                        {
-                            UNREFERENCED_PARAMETER(err);
-                            PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
-                            otherData.collider->scriptTarget = NULL_ENTITY;
-                        }
-                    }
 
-                    // Forward collision data to be resolved according to the physics response
+                    // ***** PHYSICS RESPONSE *****
+                    // Forward collision data to be resolved according to the response component
                     I_PhysicsResponseComponent* thisResponse = nullptr;
                     I_PhysicsResponseComponent* otherResponse = nullptr;
 
@@ -135,7 +92,6 @@ namespace pleep
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(thisData.collider->responseType) + ", clearing and skipping");
                         thisData.collider->responseType = CollisionResponseType::none;
-                        continue;
                     }
                     try
                     {
@@ -158,14 +114,54 @@ namespace pleep
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(otherData.collider->responseType) + ", clearing and skipping");
                         otherData.collider->responseType = CollisionResponseType::none;
-                        continue;
                     }
 
                     // Check for un-handled CollisionResponseType
-                    if (!thisResponse || !otherResponse) continue;
+                    if (thisResponse != nullptr && otherResponse != nullptr)
+                    {
+                        // Again, virtual dispatch may not be very optimal, but it is easy to understand
+                        thisResponse->collision_response(otherResponse, thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                    }
 
-                    // Again, virtual dispatch may not be very optimal, but it is easy to understand
-                    thisResponse->collision_response(otherResponse, thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                    // ***** SCRIPT RESPONSE *****                    
+                    // TODO: before or after physics response?
+                    // TODO: can collision relay track when a collision enter/exit across frames? Which entities collided last frame?
+                    // Careful! collider scriptTarget could be NULL, scriptTarget could not have ScriptComponent, and/or ScriptComponent could have null drivetrain
+                    if (thisData.collider->scriptTarget != NULL_ENTITY)
+                    {
+                        try
+                        {
+                            std::shared_ptr<I_ScriptDrivetrain> drivetrain = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget).drivetrain;
+                            ScriptComponent& script = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget);
+                            if (script.use_collision) script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                        }
+                        catch(const std::exception& err)
+                        {
+                            UNREFERENCED_PARAMETER(err);
+                            PLEEPLOG_WARN(err.what());
+                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
+                            thisData.collider->scriptTarget = NULL_ENTITY;
+                        }
+                    }
+                    if (otherData.collider->scriptTarget != NULL_ENTITY)
+                    {
+                        try
+                        {
+                            // invert relative collision metadata
+                            glm::vec3 invCollisionNormal = -collisionNormal;
+                            glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
+                            
+                            ScriptComponent& script = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget);
+                            if (script.use_collision) script.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
+                        }
+                        catch(const std::exception& err)
+                        {
+                            UNREFERENCED_PARAMETER(err);
+                            PLEEPLOG_WARN(err.what());
+                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
+                            otherData.collider->scriptTarget = NULL_ENTITY;
+                        }
+                    }
                 }
             }
         }
@@ -183,7 +179,7 @@ namespace pleep
         }
 
     private:
-        // TODO: hey dumb dumb figure out RTrees
+        // TODO: hey dumb-dumb figure out RTrees
         std::vector<ColliderPacket> m_colliderPackets;
     };
 }

@@ -1,5 +1,5 @@
-#ifndef FLY_CONTROL_SCRIPT_H
-#define FLY_CONTROL_SCRIPT_H
+#ifndef FLY_CONTROL_SCRIPTS_H
+#define FLY_CONTROL_SCRIPTS_H
 
 //#include "intercession_pch.h"
 #include <glm/gtx/quaternion.hpp>
@@ -13,17 +13,13 @@
 
 namespace pleep
 {
-    class FlyControlScript : public I_ScriptDrivetrain
+    class FlyControlScripts : public I_ScriptDrivetrain
     {
     public:
-        FlyControlScript()
-        {
-            this->enable_fixed_update = true;
-        }
-
-        void on_fixed_update(double deltaTime, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr) override
         {
             UNREFERENCED_PARAMETER(deltaTime);
+            UNREFERENCED_PARAMETER(script);
 
             // fetch my Transform and SpacialInput components
             try
@@ -61,12 +57,13 @@ namespace pleep
             catch(const std::exception& err)
             {
                 UNREFERENCED_PARAMETER(err);
-                PLEEPLOG_ERROR(err.what());
-                PLEEPLOG_ERROR("Could not fetch components (Transform and/or SpacialInput) for entity " + std::to_string(entity) + ". This script cannot run without them. Disabling this drivetrain's on_fixed_update script");
-                this->enable_fixed_update = false;
+                // ComponentRegistry will log error itself
+                //PLEEPLOG_WARN(err.what());
+                PLEEPLOG_WARN("Could not fetch components (Transform and/or SpacialInput) for entity " + std::to_string(entity) + ". This script cannot run without them. Disabling this drivetrain's on_fixed_update script");
+                script.use_fixed_update = false;
             }
         }
     };
 }
 
-#endif // FLY_CONTROL_SCRIPT_H
+#endif // FLY_CONTROL_SCRIPTS_H

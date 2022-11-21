@@ -46,7 +46,7 @@ namespace pleep
         // make sure stream operators are updated if members are updated
         static_assert(SpringBodyComponent::dataSize == 21, "SpringBodyComponent Message serializer found unexpected data size");
 
-        // no I_ColliderComponent data
+        // no I_PhysicsResponseComponent data
         //msg << ((I_PhysicsResponseComponent&)*data);
 
         uint32_t i = static_cast<uint32_t>(msg.size());

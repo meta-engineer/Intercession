@@ -14,3 +14,7 @@ external/imgui/*
 external/asio/*
 
 .vscode
+
+desktop.ini
+
+*.lnk

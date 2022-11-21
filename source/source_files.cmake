@@ -30,8 +30,10 @@ set(COMMON_SOURCE_FILES
 
     source/networking/network_synchro.cpp
 
+    source/scripting/i_script_drivetrain.cpp
     source/scripting/script_dynamo.cpp
     source/scripting/script_synchro.cpp
+    source/scripting/script_library.cpp
 )
 
 set(CLIENT_SOURCE_FILES

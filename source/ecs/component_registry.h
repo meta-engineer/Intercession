@@ -206,7 +206,7 @@ namespace pleep
         if (m_componentTypes.find(typeName) == m_componentTypes.end())
         {
             PLEEPLOG_ERROR("Cannot get array for component " + std::string(typeName) + " which has not been registered");
-            throw std::runtime_error("ComponentArray cannot get array for component " + std::string(typeName) + " which has not been registered");
+            throw std::runtime_error("ComponentRegistry cannot get array for component " + std::string(typeName) + " which has not been registered");
         }
 
         return std::static_pointer_cast<ComponentArray<T>>(m_componentArrays[typeName]);

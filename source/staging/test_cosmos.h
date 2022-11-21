@@ -28,7 +28,7 @@
 
 #include "scripting/script_component.h"
 #include "scripting/biped_scripts.h"
-#include "scripting/fly_control_script.h"
+#include "scripting/fly_control_scripts.h"
 
 namespace pleep
 {
@@ -58,6 +58,10 @@ namespace pleep
         cosmos->register_component<ScriptComponent>();
         // We may want to enforce use of meta component for all cosmos'?
         //cosmos->register_component<MetaComponent>();
+
+        ScriptLibrary::clear_registery();
+        ScriptLibrary::register_script<BipedScripts>();
+        ScriptLibrary::register_script<FlyControlScripts>();
 
         // TODO: what kind of synchro should accept network access?
         // What methods does I_NetworkDynamo need, and do underlying type (client/server) need to be known?
@@ -150,7 +154,8 @@ namespace pleep
 
         // script handle legs collider events (below)
         ScriptComponent frog_scripts;
-        frog_scripts.handlers = std::make_shared<BipedScripts>();
+        frog_scripts.drivetrain = ScriptLibrary::fetch_scripts<BipedScripts>();
+        frog_scripts.use_fixed_update = true;
         // store script in self
         cosmos->add_component(frog, frog_scripts);
 
@@ -293,7 +298,8 @@ namespace pleep
 
         cosmos->add_component(mainCamera, SpacialInputComponent());
         ScriptComponent camera_scripts;
-        camera_scripts.handlers = std::make_shared<FlyControlScript>();
+        camera_scripts.drivetrain = ScriptLibrary::fetch_scripts<FlyControlScripts>();
+        camera_scripts.use_fixed_update = true;
         cosmos->add_component(mainCamera, camera_scripts);
 
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)

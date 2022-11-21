@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include "logging/pleep_log.h"
+#include "scripting/script_component.h"
 #include "scripting/i_script_drivetrain.h"
 #include "core/cosmos.h"
 #include "physics/physics_component.h"
@@ -14,13 +15,7 @@ namespace pleep
     class BipedScripts : public I_ScriptDrivetrain
     {
     public:
-        BipedScripts()
-        {
-            this->enable_collision_scripts = true;
-            this->enable_fixed_update = true;
-        }
-        
-        void on_fixed_update(double deltaTime, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr) override
         {
             // should Biped "control" be done here?
             // (we fetch input component, physics/transform, and a standalon biped component and operate on them)
@@ -50,9 +45,10 @@ namespace pleep
             catch(const std::exception& err)
             {
                 UNREFERENCED_PARAMETER(err);
-                PLEEPLOG_ERROR(err.what());
-                PLEEPLOG_ERROR("Could not fetch components (Transform, Biped, and/or SpacialInput) for entity " + std::to_string(entity) + ". This script cannot run without them. Disabling this drivetrain's on_fixed_update script");
-                this->enable_fixed_update = false;
+                // ComponentRegistry will log error itself
+                //PLEEPLOG_WARN(err.what());
+                PLEEPLOG_WARN("Could not fetch components (Transform, Biped, and/or SpacialInput) for entity " + std::to_string(entity) + ". This script cannot operate on this entity without them. Disabling caller's on_fixed_update script.");
+                script.use_fixed_update = false;
             }
         }
 
@@ -81,9 +77,10 @@ namespace pleep
             catch (const std::runtime_error& err)
             {
                 UNREFERENCED_PARAMETER(err);
-                PLEEPLOG_WARN(err.what());
-                PLEEPLOG_WARN("Could not fetch a Biped Component for entity " + std::to_string(callerData.collidee) + " calling script. Disabling this drivetrain's collision scripts");
-                this->enable_collision_scripts = false;
+                // ComponentRegistry will log error itself
+                //PLEEPLOG_WARN(err.what());
+                PLEEPLOG_WARN("Could not fetch a Biped Component for entity " + std::to_string(callerData.collidee) + " calling script. This script cannot operate on this entity without it. Disabling caller's collider script target.");
+                callerData.collider->scriptTarget = NULL_ENTITY;
             }
         }
     };

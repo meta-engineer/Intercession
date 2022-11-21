@@ -42,6 +42,9 @@ namespace pleep
         // make sure stream operators are updated if members are updated
         static_assert(RigidBodyComponent::dataSize == 13, "RigidBodyComponent Message serializer found unexpected data size");
         
+        // no I_PhysicsResponseComponent data
+        //msg << ((I_PhysicsResponseComponent&)*data);
+        
         uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once
         msg.body.resize(msg.body.size() + RigidBodyComponent::dataSize);

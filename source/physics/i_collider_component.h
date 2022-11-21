@@ -58,6 +58,7 @@ namespace pleep
             + sizeof(bool);
 
         // Suggestion to Dynamo for how to respond to a detected collision
+        // (which body component to fetch for on the same entity)
         // This may be best implemented with a table/map between response type pairs and functions
         CollisionResponseType responseType = CollisionResponseType::rigid;
         
