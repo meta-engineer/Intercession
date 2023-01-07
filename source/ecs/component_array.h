@@ -105,13 +105,14 @@ namespace pleep
     template<typename T>
     T& ComponentArray<T>::get_data_for(Entity entity)
     {
-        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
+        auto indexIt = m_mapEntityToIndex.find(entity);
+        if (indexIt == m_mapEntityToIndex.end())
         {
             PLEEPLOG_ERROR("Cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
             throw std::range_error("ComponentArray cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
         }
 
-        return m_array[m_mapEntityToIndex[entity]];
+        return m_array[indexIt->second];
     }
 
     template<typename T>

@@ -17,7 +17,7 @@ namespace pleep
         ForwardRenderRelay()
             : m_sm(
                 "source/shaders/tangents_ubo.vs",
-                "source/shaders/multi_target_hdr.fs"
+                "source/shaders/new_material_hdr.fs"
             )
             , m_normalVisualizerSm(
                 "source/shaders/viewspace_normal.vs",
@@ -208,21 +208,39 @@ namespace pleep
             m_sm.set_int("numSpotLights", static_cast<int>(m_numSpotLights));
             m_sm.deactivate();
 
-            // Render through all models
+            // Render through all meshes
             for (std::vector<RenderPacket>::iterator packet_it = m_modelPackets.begin(); packet_it != m_modelPackets.end(); packet_it++)
             {
                 RenderPacket& data = *packet_it;
 
                 m_sm.activate();
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
-                data.mesh.invoke_draw(m_sm);
+                for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
+                {
+                    // if there are no materials... do nothing? get debug material from ModelLibrary?
+                    if (data.renderable.materials.empty())
+                    {
+                        _set_material_textures(m_sm, nullptr);
+                    }
+                    else
+                    {
+                        // if there aren't enough materials for all submeshes,
+                        // the un-paired submeshes will use the last-most material
+                        _set_material_textures(m_sm, data.renderable.materials[i < data.renderable.materials.size() ? i : (data.renderable.materials.size() - 1)]);
+                    }
+                    
+                    data.renderable.meshData->m_submeshes[i]->invoke_draw(m_sm);
+                }
                 m_sm.deactivate();
-/*
+/* 
                 m_normalVisualizerSm.activate();
                 m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());
-                data.mesh.invoke_draw(m_normalVisualizerSm);
+                for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
+                {
+                    data.renderable.meshData->m_submeshes[i]->invoke_draw(m_normalVisualizerSm);
+                }
                 m_normalVisualizerSm.deactivate();
-*/
+ */
             }
 
             // clear options
@@ -277,6 +295,82 @@ namespace pleep
         // collect packets during render submitting
         std::vector<RenderPacket> m_modelPackets;
         std::vector<LightSourcePacket> m_lightSourcePackets;
+
+        void _set_material_textures(ShaderManager& sm, std::shared_ptr<const Material> material)
+        {
+            // new materials only have 1 of each texture type!
+            // TODO: store and check last material name that was set to avoid overwriting the same data?
+            unsigned int texIndex = 0; // TODO: this could overflow GL_TEXTURE31
+            // track textures set by material to know which defaults to set after
+            std::unordered_map<TextureType, bool> setTextures;
+            // would it be slower to set all defaults BEFORE material?
+            //   or is tracking on cpu to avoid more opengl calls optimal?
+            if (material) // incase of nullptr
+            {
+                for (auto materialIt = material->m_textures.begin(); materialIt != material->m_textures.end(); materialIt++)
+                {
+                    glActiveTexture(GL_TEXTURE0 + texIndex); // gl addresses can do pointer arithmatic
+                    glBindTexture(GL_TEXTURE_2D, materialIt->second.get_id());
+
+                    // shader material format is: material.TYPESTR
+                    // Careful! Not all material types might be accepted by the shader
+                    sm.set_int("material." + TEXTURETYPE_TO_STR(materialIt->first), texIndex);
+                    setTextures[materialIt->first] = true;
+                    
+                    // set flags for optional maps
+                    switch(materialIt->first)
+                    {
+                        case(TextureType::normal):
+                            sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(materialIt->first), true);
+                            break;
+                        case(TextureType::height):
+                            sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(materialIt->first), true);
+                            break;
+                        default:
+                            // no flag needed
+                            break;
+                    }
+
+                    texIndex++;
+                }
+                // texIndex should be incremented to unused id after loop
+            }
+            
+            // If a material has less than expected textures (i.e. no specular) it will use the last bound one.
+            // Instead we should use 0 (all black). We could implement a global null texture for debug visibility
+            glActiveTexture(GL_TEXTURE0 + texIndex);
+            glBindTexture(GL_TEXTURE_2D, 0); // texture_id 0 should be black
+            // check for textures this shader requires
+            if (setTextures[TextureType::diffuse] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::diffuse), texIndex);
+            if (setTextures[TextureType::specular] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::specular), texIndex);
+            if (setTextures[TextureType::normal] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::normal), false);
+            if (setTextures[TextureType::height] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::height), false);
+
+
+            // environment map (data.renderable.environmentCubemap.id)
+            // DISABLED for now
+            // use explicit environment map if id is not default
+            //if (environmentCubemap.id != 0 && environmentCubemap.type == TextureType::cube_map)
+            //{
+            //    i++;
+            //    glActiveTexture(GL_TEXTURE0 + i);
+            //    glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
+            //    // cube_maps (plural)
+            //    sm.set_int("environmentCubemap", i);
+            //    sm.set_bool("environmentCubemap_enable", true);
+            //}
+            //else
+            //{
+
+            texIndex++;
+            glActiveTexture(GL_TEXTURE0 + texIndex);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0); // texture_id 0 should be black
+            // must bind black texture (0) so NVIDIA is happy
+            sm.set_int("environmentCubemap", texIndex);
+            sm.set_int("environmentCubemap_enable", false);
+
+            //}
+        }
     };
 }
 

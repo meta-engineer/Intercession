@@ -35,7 +35,7 @@ namespace pleep
     // define collision behaviours, each type must dispatch to a different behaviour component
     enum CollisionResponseType
     {
-        none,       // (or script trigger only)
+        noop,       // (or script trigger only)
         rigid,      // find & call entity's Rigid Body component
         spring,     // find & call entity's Spring Body component
         force,      // find & call entity's Force Generator component
@@ -66,6 +66,9 @@ namespace pleep
         bool isActive = true;
 
         // Other entity (or self) that contains a script component to call
+        // TODO: does this serialize safely across timeslices?
+        // it would be safer, but less flexible to use only scripts attached to self
+        // otherwise we must cache a target based on... entity tag?
         Entity scriptTarget = NULL_ENTITY;
 
         // nested transform component "offset" (in local space) from entity's origin
@@ -385,7 +388,7 @@ namespace pleep
     {
         return lhs.responseType == rhs.responseType
             && lhs.isActive == rhs.isActive
-            && lhs.scriptTarget == rhs.scriptTarget
+            //&& lhs.scriptTarget == rhs.scriptTarget
             && lhs.localTransform == rhs.localTransform
             && lhs.inheritOrientation == rhs.inheritOrientation;
     }

@@ -17,7 +17,6 @@
 #include "rendering/render_packet.h"
 #include "rendering/light_source_packet.h"
 #include "rendering/camera_packet.h"
-#include "rendering/mesh.h"
 #include "rendering/forward_render_relay.h"
 #include "rendering/screen_render_relay.h"
 #include "rendering/bloom_render_relay.h"

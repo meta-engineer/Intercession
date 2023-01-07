@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include "physics/transform_component.h"
-#include "rendering/mesh.h"
+#include "rendering/renderable_component.h"
 
 namespace pleep
 {
@@ -15,7 +15,7 @@ namespace pleep
     struct RenderPacket
     {
         TransformComponent& transform;
-        Mesh& mesh;
+        RenderableComponent& renderable;
         // instancing info?
         // model-wide temporary options? pallete swap? outlines?
     };

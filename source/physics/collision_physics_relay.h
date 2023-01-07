@@ -91,7 +91,7 @@ namespace pleep
                         UNREFERENCED_PARAMETER(err);
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(thisData.collider->responseType) + ", clearing and skipping");
-                        thisData.collider->responseType = CollisionResponseType::none;
+                        thisData.collider->responseType = CollisionResponseType::noop;
                     }
                     try
                     {
@@ -113,7 +113,7 @@ namespace pleep
                         UNREFERENCED_PARAMETER(err);
                         PLEEPLOG_WARN(err.what());
                         PLEEPLOG_WARN("Could not find physics response component for collider's set CollisionResponseType " + std::to_string(otherData.collider->responseType) + ", clearing and skipping");
-                        otherData.collider->responseType = CollisionResponseType::none;
+                        otherData.collider->responseType = CollisionResponseType::noop;
                     }
 
                     // Check for un-handled CollisionResponseType

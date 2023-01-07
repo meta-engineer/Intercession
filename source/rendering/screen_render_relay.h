@@ -5,8 +5,7 @@
 #include <memory>
 
 #include "rendering/a_render_relay.h"
-#include "rendering/model_builder.h"
-#include "rendering/vertex_group.h"
+#include "rendering/model_library.h"
 
 namespace pleep
 {
@@ -18,7 +17,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/bloom_texture.fs"
             )
-            , m_screenPlane(model_builder::create_screen_plane())
+            , m_screenSupermesh(ModelLibrary::fetch_screen_supermesh())
         {
             // I don't need uniform buffers
         }
@@ -79,7 +78,7 @@ namespace pleep
             glBindTexture(GL_TEXTURE_2D, m_hdrScreenTextureId);
             m_sm.set_int("bloomTexture", 1);
             
-            m_screenPlane->invoke_draw();
+            m_screenSupermesh->m_submeshes[0]->invoke_draw(m_sm);
 
             m_sm.deactivate();
         }
@@ -95,8 +94,9 @@ namespace pleep
         // screen pass needs "screenTexture" texture id from previous a relay
         ShaderManager m_sm;
 
-        // again, can't let objects with gl memory be copied...
-        std::shared_ptr<VertexGroup> m_screenPlane;
+        // For consistency we'll use a supermesh
+        // Should have only 1 submesh: a triangulated square spanning -1 to 1 in x and y
+        std::shared_ptr<const Supermesh> m_screenSupermesh;
 
         // input textures to display
         unsigned int m_ldrScreenTextureId = 0;

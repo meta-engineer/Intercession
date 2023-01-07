@@ -36,7 +36,7 @@ namespace pleep
 
         // etc...
 
-        count
+        spacial_actions_count
     };
 
     // Interprets input as control of an object in 3d space
@@ -45,9 +45,9 @@ namespace pleep
         // TODO: Permissions, should all entities with this component be receiving data?
 
         // set of SpacialActions
-        std::bitset<SpacialActions::count> actions;
+        std::bitset<SpacialActions::spacial_actions_count> actions;
         // matching size array of associated values for actions
-        std::array<double, SpacialActions::count> actionVals{};
+        std::array<double, SpacialActions::spacial_actions_count> actionVals{};
 
         // convenience method for returning to default values
         inline void clear()

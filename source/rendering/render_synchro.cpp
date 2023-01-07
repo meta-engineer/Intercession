@@ -7,7 +7,7 @@
 
 #include "physics/transform_component.h"
 #include "rendering/camera_component.h"
-#include "rendering/model_component.h"
+#include "rendering/renderable_component.h"
 #include "rendering/render_packet.h"
 
 namespace pleep
@@ -47,17 +47,12 @@ namespace pleep
         for (Entity const& entity : m_entities)
         {
             TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            ModelComponent& model = m_ownerCosmos->get_component<ModelComponent>(entity);
+            RenderableComponent& renderable = m_ownerCosmos->get_component<RenderableComponent>(entity);
             
-            // NOTE: eventually ModelComponent will directly own mesh vector, not just wrap old/model
-            // we'll pass each mesh to renderer, NOT a model
-            // Are meshes independant?
-            //   any other data dynamo could need from entity?
-            //   are there model-wide options for rendering? outlines? palettes?
-            for (Mesh& mesh : model.model->meshes)
-            {
-                m_attachedRenderDynamo->submit(RenderPacket{ transform, mesh });
-            }
+            // catch null supermesh and don't even bother dynamo with it
+            if (renderable.meshData == nullptr) continue;
+
+            m_attachedRenderDynamo->submit(RenderPacket{ transform, renderable });
         }
 
         // CosmosContext will flush dynamo relays once all synchros are done
@@ -96,14 +91,14 @@ namespace pleep
         try
         {
             sign.set(cosmos->get_component_type<TransformComponent>());
-            sign.set(cosmos->get_component_type<ModelComponent>());
+            sign.set(cosmos->get_component_type<RenderableComponent>());
         }
         catch(const std::exception& e)
         {
             // Component Registry already logs error
             UNREFERENCED_PARAMETER(e);
             sign.reset();
-            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and ModelComponent been registered?");
+            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and RenderableComponent been registered?");
         }
         
         return sign;

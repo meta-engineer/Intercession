@@ -6,8 +6,7 @@
 #include "rendering/a_render_relay.h"
 #include "logging/pleep_log.h"
 #include "rendering/shader_manager.h"
-#include "rendering/model_builder.h"
-#include "rendering/vertex_group.h"
+#include "rendering/model_library.h"
 
 namespace pleep
 {
@@ -19,7 +18,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/gaussian_1d.fs"
             )
-            , m_screenPlane(model_builder::create_screen_plane())
+            , m_screenSupermesh(ModelLibrary::fetch_screen_supermesh())
         {
             // I don't need uniform buffers
 
@@ -138,7 +137,7 @@ namespace pleep
                 m_isHorizontalPass = !m_isHorizontalPass;
 
                 glBindTexture(GL_TEXTURE_2D, nextTex);
-                m_screenPlane->invoke_draw();
+                m_screenSupermesh->m_submeshes[0]->invoke_draw(m_sm);
 
                 // setup for next pass
                 nextFbo = m_bloomFboIds[(i+1) % 2];
@@ -152,7 +151,9 @@ namespace pleep
         // blur shader to process hdr texture into bloom texture
         ShaderManager m_sm;
         
-        std::shared_ptr<VertexGroup> m_screenPlane;
+        // For consistency we'll use a supermesh
+        // Should have only 1 submesh: a triangulated square spanning -1 to 1 in x and y
+        std::shared_ptr<const Supermesh> m_screenSupermesh;
         
         // input texture to process (passed in by configuration)
         unsigned int m_toBloomTextureId;

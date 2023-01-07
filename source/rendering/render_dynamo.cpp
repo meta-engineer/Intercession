@@ -49,12 +49,12 @@ namespace pleep
     void RenderDynamo::submit(RenderPacket data)
     {
         // pass transform/mesh/material information to relays
-        // we need to dispatch to appropriat relays
-        // mesh material could have "id" of relay type it wants (what shader it wants)
+        // we need to dispatch to appropriate relays
+        // renderable could have "id" of relay type it wants (what shader it wants)
         //   then if we have that relay in our pipeline we can submit to it
-        // Otherwise use some default
+        //   or otherwise use some default
         
-        // we don't have materials, so for now just hardwire to relays
+        // For now just hardwire to forward relay
         m_forwardPass->submit(data);
     }
     

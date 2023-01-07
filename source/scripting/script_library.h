@@ -63,8 +63,18 @@ namespace pleep
                 std::make_shared<T_Scripts>()
             });
         }
+        
+        // Should be called by CosmosContext periodically(?)
+        // Remove all scripts not used anywhere in the Cosmos
+        static void clear_unused_scripts()
+        {
+            // Classic removing from dynamic container problem
+            PLEEPLOG_WARN("Uh oh! Not implemented. Use clear_library()");
+        }
 
-        static void clear_registery()
+        // Clear ALL scripts
+        // Shared pointers should remain with users
+        static void clear_library()
         {
             ScriptLibrary::m_singleton->m_scriptMap.clear();
         }

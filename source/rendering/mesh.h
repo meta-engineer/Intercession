@@ -36,35 +36,39 @@ namespace pleep
     class Mesh
     {
     public:
-        std::vector<Vertex>       vertices;
-        std::vector<unsigned int> indices;
-        std::vector<Texture>      textures;
-        // TODO: better texture managing to for different types (once all types are better understood)
-        Texture                   environmentCubemap;
-
-        Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
-        // Mesh is not responsible for texture GPU memory! Caller is!
+        Mesh(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices);
+        // copying a Mesh would mean GPU memory could be freed by the copy
+        Mesh(const Mesh&) = delete;
+        // Clear my GPU memory from _setup!
         ~Mesh();
 
-        // Send texture info to shader and draw (with my VAO)
-        // Transform matricies/lighting must be sent before this
-        void invoke_draw(ShaderManager& sm);
-        void invoke_instanced_draw(ShaderManager& sm, size_t amount);
+        // OpenGL draw (with my VAO)
+        // Textures, transform matricies, and lighting must be sent before this
+        // TODO: Do I need sm if I can assume using OpenGL functions?
+        void invoke_draw(ShaderManager& sm) const;
+        void invoke_instanced_draw(ShaderManager& sm, size_t amount) const;
 
-        // set to 0 to ignore environmentCubemap
-        void reset_environment_cubemap(const unsigned int newCubemap_id = 0);
         // set attrib pointers for transform matrix starting at attrib location "offset"
-        // Instance data Array Buffer MUST be bound already!
-        void setup_instance_transform_attrib_array(unsigned int offset);
+        // Instance data Array Buffer MUST be bound before calling!!!
+        void setup_instance_transform_attrib_array(unsigned int offset = 6);
 
+        // Name given for this mesh
+        std::string m_name;
+        // Filename this mesh was imported from
+        std::string m_sourceFilename;
+        
     private:
+        // after _setup, buffer object data is set based on these values, so they should be protected
+        std::vector<Vertex>       m_vertices;
+        std::vector<unsigned int> m_indices;
+
         // Array Buffer Object, Vertex Buffer Object, Element Buffer Object
         unsigned int VAO_ID, VBO_ID, EBO_ID;
+        //unsigned int m_vaoId, m_vboId, m_eboId;
+
 
         // Store struct member data into GL objects and retain IDs
         void _setup();
-
-        void _set_textures(ShaderManager& sm);
     };
 }
 
