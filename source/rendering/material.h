@@ -35,9 +35,9 @@ namespace pleep
         std::unordered_map<TextureType, Texture> m_textures;
 
         // Name given for this material
-        std::string m_name;
+        std::string m_name = "";
         // Filename this material was imported from
-        std::string m_sourceFilename;
+        std::string m_sourceFilename = "";
     };
 }
 

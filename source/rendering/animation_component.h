@@ -12,7 +12,7 @@ namespace pleep
     class AnimationComponent
     {
         // TODO: should all animations be stored in one component?
-        std::unordered_map<std::string, AnimationSkeletal> animations;
+        //std::unordered_map<std::string, AnimationSkeletal> animations;
     };
 }
 

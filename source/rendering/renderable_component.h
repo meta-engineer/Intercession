@@ -7,6 +7,7 @@
 
 #include "rendering/supermesh.h"
 #include "rendering/material.h"
+#include "events/message.h"
 
 namespace pleep
 {
@@ -44,20 +45,39 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RenderableComponent& data)
     {
         PLEEPLOG_DEBUG("Reached unimplemented Message stream in <RenderableComponent> overload!");
-        UNREFERENCED_PARAMETER(data);
         // Pass ModelLibrary keys AND source filepaths incase it needs to be imported
+        // Need to pass strings as fixed sizes!
+        // should ModelLibrary also limit keys to this size...?
+        UNREFERENCED_PARAMETER(data);
+        //char fixedSupermeshName[MESSAGE_C_STRING_SIZE] = data.meshData.m_name;
         //msg << data.model ? data.model.get_name() : "";
+        
+        /* 
+        // track current size of body
+        uint32_t i = static_cast<uint32_t>(msg.size());
+
+        // resize for data to be pushed
+        // does this break the amortized exponential auto-allocating?
+        // No, i think resize is ACTUALLY making elements, not just capacity
+        msg.body.resize(msg.body.size() + sizeof(T_Data));
+
+        // actually physically copy the data into allocated space
+        std::memcpy(msg.body.data() + i, &data, sizeof(T_Data));
+
+        // recalc message size
+        msg.header.size = static_cast<uint32_t>(msg.size());
+         */
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, RenderableComponent& data)
     {
         PLEEPLOG_DEBUG("Reached unimplemented Message stream out <RenderableComponent> overload!");
-        UNREFERENCED_PARAMETER(data);
-        std::string newFilename;
+        std::string newSupermeshName = "";
+        // needs to be fixed length
         //msg >> newFilename;
         // if filenames already match we'll assume model is in lockstep
-        if (newFilename != data.meshData->m_name)
+        if (newSupermeshName != data.meshData->m_name)
         {
             //data.model = ModelLibrary::fetch_model(newFilename);
         }

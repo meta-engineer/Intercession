@@ -140,13 +140,20 @@ namespace pleep
                 viewportDims[3]
             );
             // careful, deferred rendering needs x,y,z to be 0
-            glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+            glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // options
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            // culling (with correct index orientation)
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            // wireframe
+            //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+            // enable stencil operations
+            //glEnable(GL_STENCIL_TEST);
 
             // uniforms
             // TODO: ingest camera info

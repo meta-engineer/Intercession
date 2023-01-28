@@ -17,21 +17,23 @@ namespace pleep
         // check for hardcoded assets
         if (filepath == ModelLibrary::m_singleton->cubeKey)
         {
-            const std::string cubekey = ModelLibrary::m_singleton->cubeKey;
-            ModelLibrary::m_singleton->m_supermeshMap[cubekey] = ModelLibrary::m_singleton->_build_cube_supermesh();
-            return ImportReceipt{cubekey, cubekey, {cubekey}};
+            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_cube_supermesh();
+            return ImportReceipt{filepath, filepath, {filepath}};
         }
         else if (filepath == ModelLibrary::m_singleton->quadKey)
         {
-            const std::string quadKey = ModelLibrary::m_singleton->quadKey;
-            ModelLibrary::m_singleton->m_supermeshMap[quadKey] = ModelLibrary::m_singleton->_build_quad_supermesh();
-            return ImportReceipt{quadKey, quadKey, {quadKey}};
+            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_quad_supermesh();
+            return ImportReceipt{filepath, filepath, {filepath}};
         }
         else if (filepath == ModelLibrary::m_singleton->screenKey)
         {
-            const std::string screenkey = ModelLibrary::m_singleton->screenKey;
-            ModelLibrary::m_singleton->m_supermeshMap[screenkey] = ModelLibrary::m_singleton->_build_screen_supermesh();
-            return ImportReceipt{screenkey, screenkey, {screenkey}};
+            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_screen_supermesh();
+            return ImportReceipt{filepath, filepath, {filepath}};
+        }
+        else if (filepath == ModelLibrary::m_singleton->icosahedronKey)
+        {
+            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_icosahedron_supermesh();
+            return ImportReceipt{filepath, filepath, {filepath}};
         }
 
 
@@ -76,8 +78,8 @@ namespace pleep
         // now all assets are cached, user can call fetch methods using receipt names
         return receipt;
     }
-/* 
-    bool ModelLibrary::create_material(const std::string& name, std::unordered_map<TextureType, std::string>& textureDict) 
+
+    bool ModelLibrary::create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict) 
     {
         auto materialIt = ModelLibrary::m_singleton->m_materialMap.find(name);
         if (materialIt != ModelLibrary::m_singleton->m_materialMap.end())
@@ -86,10 +88,23 @@ namespace pleep
             return false;
         }
 
-        // TODO
-        return false;
+        std::unordered_map<TextureType, Texture> newTextures;
+        for (auto texEntry : textureDict)
+        {
+            // weirdness to pass Texture constructor parameters
+            newTextures.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(static_cast<TextureType>(texEntry.first)),
+                std::forward_as_tuple(static_cast<TextureType>(texEntry.first), texEntry.second)
+            );
+        }
+
+        std::shared_ptr<Material> newMat = std::make_shared<Material>(std::move(newTextures));
+        newMat->m_name = name;
+        ModelLibrary::m_singleton->m_materialMap[name] = newMat;
+        return true;
     }
- */
+
     std::shared_ptr<const Supermesh> ModelLibrary::fetch_supermesh(const std::string& name)
     {
         auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(name);
@@ -184,6 +199,19 @@ namespace pleep
 
         ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->screenKey);
         return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->screenKey];
+    }
+    
+    std::shared_ptr<const Supermesh> ModelLibrary::fetch_icosahedron_supermesh() 
+    {
+        // inline "fetch_supermesh(screenKey)"
+        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(ModelLibrary::m_singleton->icosahedronKey);
+        if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
+        {
+            return meshIt->second;
+        }
+
+        ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->icosahedronKey);
+        return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->icosahedronKey];
     }
 
     void ModelLibrary::clear_unused()
@@ -654,36 +682,36 @@ namespace pleep
         
         // NOTE: tangent should be calculated based on normal and uv (texture coords)
         const float CUBE2_VERTICES[] = {
-            // coordinates         // normal              // texture coordinates    // tangent
-            -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
-            -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
-             0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   -0.5f,  1.5f,              1.0f,  0.0f,  0.0f,
-             0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   -0.5f, -0.5f,              1.0f,  0.0f,  0.0f,   // top
+            // coordinates          // normal              // texture coords    // tangent
+            -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,    1.5f, -0.5f,         1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,    1.5f,  1.5f,         1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,   -0.5f,  1.5f,         1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,   -0.5f, -0.5f,         1.0f,  0.0f,  0.0f,   // top
 
-            -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,    1.5f,  1.5f,              1.0f,  0.0f,  0.0f,
-            -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,    1.5f, -0.5f,              1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   -0.5f, -0.5f,              1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   -0.5f,  1.5f,              1.0f,  0.0f,  0.0f,   // bottom
+            -0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,    1.5f,  1.5f,         1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,    1.5f, -0.5f,         1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,   -0.5f, -0.5f,         1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,   -0.5f,  1.5f,         1.0f,  0.0f,  0.0f,   // bottom
 
-            -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f, -0.5f,              0.0f,  0.0f,  1.0f,
-            -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,              0.0f,  0.0f,  1.0f,
-            -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,    1.5f,  1.5f,              0.0f,  0.0f,  1.0f,
-            -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,              0.0f,  0.0f,  1.0f,   //left
+            -0.5f,  0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    1.5f, -0.5f,         0.0f,  0.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,         0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    1.5f,  1.5f,         0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,         0.0f,  0.0f,  1.0f,   //left
 
-            -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f, -0.5f,              1.0f,  0.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f, -0.5f,              1.0f,  0.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,    1.5f,  1.5f,              1.0f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   -0.5f,  1.5f,              1.0f,  0.0f, 0.0f,   // front
+            -0.5f,  0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    1.5f, -0.5f,         1.0f,  0.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,    0.0f,  0.0f,  1.0f,   -0.5f, -0.5f,         1.0f,  0.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    1.5f,  1.5f,         1.0f,  0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,    0.0f,  0.0f,  1.0f,   -0.5f,  1.5f,         1.0f,  0.0f, 0.0f,   // front
 
-             0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f, -0.5f,              0.0f,  0.0f, -1.0f,
-             0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,              0.0f,  0.0f, -1.0f,
-             0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,    1.5f,  1.5f,              0.0f,  0.0f, -1.0f,
-             0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,              0.0f,  0.0f, -1.0f,   // right
+             0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.5f, -0.5f,         0.0f,  0.0f, -1.0f,
+             0.5f,  0.5f, -0.5f,    1.0f,  0.0f,  0.0f,   -0.5f, -0.5f,         0.0f,  0.0f, -1.0f,
+             0.5f, -0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.5f,  1.5f,         0.0f,  0.0f, -1.0f,
+             0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,   -0.5f,  1.5f,         0.0f,  0.0f, -1.0f,   // right
 
-            -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f, -0.5f,             -1.0f,  0.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f, -0.5f,             -1.0f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   -0.5f,  1.5f,             -1.0f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,    1.5f,  1.5f,             -1.0f,  0.0f, 0.0f,   // back
+            -0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,   -0.5f, -0.5f,        -1.0f,  0.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    1.5f, -0.5f,        -1.0f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,   -0.5f,  1.5f,        -1.0f,  0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    1.5f,  1.5f,        -1.0f,  0.0f, 0.0f,   // back
         };
         // hardcode 3+3+2+3
         for (unsigned int i = 0; i < sizeof(CUBE2_VERTICES) / sizeof(float) / 11; i++)
@@ -737,11 +765,11 @@ namespace pleep
         std::vector<unsigned int> indices;
         
         const float QUAD_VERTICES[] = {
-            // coordinates         // normal              // texture coordinates    // tangent
-            -0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  0.0f,              1.0f,  0.0f,  0.0f,
-             0.5f,  0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  0.0f,              1.0f,  0.0f,  0.0f,
-            -0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    0.0f,  1.0f,              1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f,  0.0f,   0.0f,  0.0f,  1.0f,    1.0f,  1.0f,              1.0f,  0.0f,  0.0f
+            // coordinates          // normal              // texture coords    // tangent
+            -0.5f,  0.5f,  0.0f,    0.0f,  0.0f,  1.0f,    0.0f,  0.0f,         1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f,  0.0f,    0.0f,  0.0f,  1.0f,    1.0f,  0.0f,         1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f,  0.0f,    0.0f,  0.0f,  1.0f,    0.0f,  1.0f,         1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f,  0.0f,    0.0f,  0.0f,  1.0f,    1.0f,  1.0f,         1.0f,  0.0f,  0.0f
         };
         // hardcode 3+3+2
         for (unsigned int i = 0; i < sizeof(QUAD_VERTICES) / sizeof(float) / 11; i++)
@@ -780,7 +808,7 @@ namespace pleep
         std::vector<unsigned int> indices;
 
         const float SCREEN_VERTICES[] = {
-            // coordinates          // texture coordinates
+            // coordinates          // texture coords
             -1.0f,  1.0f,  0.0f,    0.0f, 1.0f,
              1.0f,  1.0f,  0.0f,    1.0f, 1.0f,
             -1.0f, -1.0f,  0.0f,    0.0f, 0.0f,
@@ -812,6 +840,96 @@ namespace pleep
         return std::make_shared<Supermesh>(
             screenKey,
             screenKey,
+            std::make_shared<Mesh>(vertices, indices)
+        );
+    }
+    
+    std::shared_ptr<Supermesh> ModelLibrary::_build_icosahedron_supermesh() 
+    {
+        /*
+        The vertices of an icosahedron centered at the origin with 
+        an edge length of 2 and a circumradius of sqrt(phi^2 + 1) (~1.902) are:
+        {
+            ( 0,   ±1,   ±phi),
+            (±1,   ±phi,  0)
+            (±phi,  0,   ±1)
+        }
+        */
+        // convert from desired radius (0.5) to default radius from construction algorithm
+        const float c = 0.5f / 1.902f;
+
+        // generate quad mesh data
+        std::vector<Vertex>       vertices;
+        std::vector<unsigned int> indices;
+
+        // (1.0f + glm::sqrt(5.0f)) / 2.0f
+        const float phi = (1.0f + glm::sqrt(5.0f)) / 2.0f; //glm::golden_ratio<float>();
+
+        // TODO: replace interpolated normals with face normals (requires 3 verts for all 20 faces)
+        
+        const float ICOSA_VERTICES[] = {
+            // coordinates          // normal              // texture coords    // tangent
+             0.0f,  1.0f,   phi,    0.0f,  1.0f,   phi,    0.5f,  0.0f,         1.0f,  0.0f,  0.0f,
+             0.0f, -1.0f,   phi,    0.0f, -1.0f,   phi,    0.5f,  0.0f,        -1.0f,  0.0f,  0.0f,
+             0.0f, -1.0f,  -phi,    0.0f, -1.0f,  -phi,    0.5f,  0.0f,         1.0f,  0.0f,  0.0f,
+             0.0f,  1.0f,  -phi,    0.0f,  1.0f,  -phi,    0.5f,  0.0f,        -1.0f,  0.0f,  0.0f,
+
+             1.0f,  phi,   0.0f,    1.0f,  phi,   0.0f,    1.0f,  0.5f,         0.0f,  0.0f,  1.0f,
+            -1.0f,  phi,   0.0f,   -1.0f,  phi,   0.0f,    1.0f,  0.5f,         0.0f,  0.0f, -1.0f,
+            -1.0f, -phi,   0.0f,   -1.0f, -phi,   0.0f,    1.0f,  0.5f,         0.0f,  0.0f,  1.0f,
+             1.0f, -phi,   0.0f,    1.0f, -phi,   0.0f,    1.0f,  0.5f,         0.0f,  0.0f, -1.0f,
+
+             phi,   0.0f,  1.0f,    phi,   0.0f,  1.0f,    0.0f,  1.0f,         0.0f,  1.0f,  0.0f,
+            -phi,   0.0f,  1.0f,   -phi,   0.0f,  1.0f,    0.0f,  1.0f,         0.0f, -1.0f,  0.0f,
+            -phi,   0.0f, -1.0f,   -phi,   0.0f, -1.0f,    0.0f,  1.0f,         0.0f,  1.0f,  0.0f,
+             phi,   0.0f, -1.0f,    phi,   0.0f, -1.0f,    0.0f,  1.0f,         0.0f, -1.0f,  0.0f
+        };
+        // hardcode 3+3+2
+        for (unsigned int i = 0; i < sizeof(ICOSA_VERTICES) / sizeof(float) / 11; i++)
+        {
+            vertices.push_back( Vertex{
+                glm::vec3(ICOSA_VERTICES[i * 11 + 0]*c, ICOSA_VERTICES[i * 11 + 1]*c, ICOSA_VERTICES[i * 11 + 2]*c), 
+                glm::vec3(ICOSA_VERTICES[i * 11 + 3], ICOSA_VERTICES[i * 11 + 4], ICOSA_VERTICES[i * 11 + 5]), 
+                glm::vec2(ICOSA_VERTICES[i * 11 + 6], ICOSA_VERTICES[i * 11 + 7]),
+                glm::vec3(ICOSA_VERTICES[i * 11 + 8], ICOSA_VERTICES[i * 11 + 9], ICOSA_VERTICES[i * 11 +10])
+            } );
+            
+            // Don't forget Bones!
+            ModelLibrary::set_vertex_bone_data_to_default(vertices.back());
+        }
+
+        const unsigned int ICOSA_INDICES[] = {
+            0,4,5,      // top pyramid
+            0,8,4,
+            0,1,8,
+            0,9,1,
+            0,5,9,
+
+            1,6,7,      // middle strip
+            1,9,6,
+            9,10,6,
+            9,5,10,
+            5,3,10,
+            5,4,3,
+            4,11,3,
+            4,8,11,
+            8,7,11,
+            8,1,7,
+
+            2,3,11,   // bottom pyramid
+            2,11,7,
+            2,7,6,
+            2,6,10,
+            2,10,3
+        };
+        for (unsigned int i = 0; i < sizeof(ICOSA_INDICES) / sizeof(unsigned int); i++)
+        {
+            indices.push_back(ICOSA_INDICES[i]);
+        }
+
+        return std::make_shared<Supermesh>(
+            icosahedronKey,
+            icosahedronKey,
             std::make_shared<Mesh>(vertices, indices)
         );
     }

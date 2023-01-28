@@ -96,7 +96,7 @@ namespace pleep
 
         // returns false if name was taken
         // (Should instead generate an available name and return it as a receipt?)
-        //static bool create_material(const std::string& name, std::unordered_map<TextureType, std::string>& textureDict);
+        static bool create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict);
 
         // ***** Fetch Methods *****
         // if asset exists in library return shallow, const, shared instance from cache
@@ -111,8 +111,12 @@ namespace pleep
         static std::shared_ptr<const Supermesh>         fetch_cube_supermesh();
         // quad in x-y plane with 1m side lengths
         static std::shared_ptr<const Supermesh>         fetch_quad_supermesh();
-        // quad in x-y plane with
+        // quad in x-y plane with vertices at +/- 1
         static std::shared_ptr<const Supermesh>         fetch_screen_supermesh();
+        // regular icosahedron with 1m circumdiameter
+        static std::shared_ptr<const Supermesh>         fetch_icosahedron_supermesh();
+        // geodesic sphere with 1m diameter
+        //static std::shared_ptr<const Supermesh>         fetch_sphere_supermesh();
 
         // Should be called by CosmosContext periodically(?)
         // Remove all models not used anywhere in the Cosmos
@@ -151,11 +155,12 @@ namespace pleep
         // Animation data is shared between entities, animation state is in individual animation component
         std::unordered_map<std::string, std::shared_ptr<AnimationSkeletal>> m_animationMap;
 
-        // special map keys for hardcoded supermeshes
-        // use '<>' characters because they are illegal filename characters, so there will be no collisions
-        const std::string cubeKey =     "<pleep_cube>";
-        const std::string quadKey =     "<pleep_quad>";
-        const std::string screenKey =   "<pleep_screen>";
+        // use special map keys for hardcoded supermeshes
+        // '<>' characters because they are illegal filename characters, so there will be no collisions
+        const std::string cubeKey =         "<pleep_cube>";
+        const std::string quadKey =         "<pleep_quad>";
+        const std::string screenKey =       "<pleep_screen>";
+        const std::string icosahedronKey =  "<pleep_icosahedron>";
 
         // Check for possible assets (according to format assumptions above) and load into receipt
         // if an asset has no name use nameDeafult_assettype_X
@@ -190,6 +195,7 @@ namespace pleep
         std::shared_ptr<Supermesh> _build_cube_supermesh();
         std::shared_ptr<Supermesh> _build_quad_supermesh();
         std::shared_ptr<Supermesh> _build_screen_supermesh();
+        std::shared_ptr<Supermesh> _build_icosahedron_supermesh();
 
         static void _debug_scene(const aiScene* scene);
         static void _debug_nodes(const aiScene* scene, aiNode* node, const unsigned int depth = 0);

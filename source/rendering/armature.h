@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "rendering/bone.h"
+#include "events/message.h"
 
 namespace pleep
 {
@@ -29,6 +30,24 @@ namespace pleep
         // Filepath this armature was imported from
         std::string m_sourceFilepath;
     };
+
+    
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const Armature& data)
+    {
+        PLEEPLOG_DEBUG("Reached unimplemented Message stream in <Armature> overload!");
+        
+
+        return msg;
+    }
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, Armature& data)
+    {
+        PLEEPLOG_DEBUG("Reached unimplemented Message stream out <Armature> overload!");
+        
+
+        return msg;
+    }
 }
 
 #endif // ARMATURE_H
