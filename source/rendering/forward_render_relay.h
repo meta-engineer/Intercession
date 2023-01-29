@@ -352,6 +352,7 @@ namespace pleep
             if (setTextures[TextureType::specular] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::specular), texIndex);
             if (setTextures[TextureType::normal] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::normal), false);
             if (setTextures[TextureType::height] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::height), false);
+            if (setTextures[TextureType::emissive] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::emissive), texIndex);
 
 
             // environment map (data.renderable.environmentCubemap.id)

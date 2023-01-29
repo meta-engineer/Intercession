@@ -29,6 +29,8 @@
 #include "scripting/script_component.h"
 #include "scripting/biped_scripts.h"
 #include "scripting/fly_control_scripts.h"
+#include "scripting/oscillator_scripts.h"
+#include "scripting/oscillator_component.h"
 
 namespace pleep
 {
@@ -56,6 +58,7 @@ namespace pleep
         cosmos->register_component<RigidBodyComponent>();
         cosmos->register_component<SpringBodyComponent>();
         cosmos->register_component<ScriptComponent>();
+        cosmos->register_component<OscillatorComponent>();
         // We may want to enforce use of meta component for all cosmos'?
         //cosmos->register_component<MetaComponent>();
 
@@ -232,7 +235,7 @@ namespace pleep
         ModelLibrary::create_material("block_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/bricks2.jpg"},
             {TextureType::specular, "resources/bricks2_disp.jpg"},
-            {TextureType::normal, "resources/bricks2_normal.jpg"},
+            {TextureType::normal, "resources/bricks2_normal.jpg"}
         });
         //cosmos->add_component(block, ModelComponent(model_builder::create_cube("resources/bricks2.jpg", "resources/bricks2_disp.jpg", "resources/bricks2_normal.jpg")));
         block_renderable.materials.push_back(ModelLibrary::fetch_material("block_mat"));
@@ -435,10 +438,17 @@ namespace pleep
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
             {TextureType::normal,   "resources/snow-packed12-normal-ogl.png"},
             //{TextureType::height,   "resources/snow-packed12-Height.png"},
-            //{TextureType::emissive, "resources/snow-packed12-Height.png"}
+            {TextureType::emissive, "resources/snow-packed12-Specular.png"}
         });
         light_renderable.materials.push_back(ModelLibrary::fetch_material("lightbulb_mat"));
         cosmos->add_component(light, light_renderable);
+        
+        ScriptComponent light_scripts;
+        light_scripts.drivetrain = std::make_shared<OscillatorScripts>();
+        light_scripts.use_fixed_update = true;
+        cosmos->add_component(light, light_scripts);
+        OscillatorComponent light_oscillator;
+        cosmos->add_component(light, light_oscillator);
         // ***************************************************************************
 
         // RenderRelays should deal with each render phase

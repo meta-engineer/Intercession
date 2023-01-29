@@ -12,6 +12,7 @@ in mat3 TBN;
 struct Material {
     sampler2D   diffuse_map;
     sampler2D   specular_map;
+    sampler2D   emissive_map;
     //float       shininess;
 
     bool use_normal_map;
@@ -136,6 +137,9 @@ void main()
         outColor += calc_point_light(pLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
     for (int i = 0; i < min(numSpotLights, MAX_SPOT_LIGHTS); i++)
         outColor += calc_spot_light(sLights[i], norm, viewDir, textureDiffuse, textureSpecular, textureGloss);
+
+    // emissive color simply added
+    outColor += vec3(texture(material.emissive_map, remappedTexCoord)) * 4;
     
     if (environmentCubemap_enable == true)
     {

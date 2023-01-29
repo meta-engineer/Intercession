@@ -59,6 +59,8 @@ namespace pleep
                 return "normal_map";
             case (TextureType::height):
                 return "height_map";
+            case (TextureType::emissive):
+                return "emissive_map";
             default:
                 return "error_unmapped_texture_type";
         }
@@ -72,6 +74,8 @@ namespace pleep
             case(TextureType::diffuse):
                 return true;
             case(TextureType::specular):
+                return true;
+            case(TextureType::emissive):
                 return true;
             default:
                 return false;

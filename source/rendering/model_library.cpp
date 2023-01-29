@@ -863,7 +863,7 @@ namespace pleep
         std::vector<unsigned int> indices;
 
         // (1.0f + glm::sqrt(5.0f)) / 2.0f
-        const float phi = (1.0f + glm::sqrt(5.0f)) / 2.0f; //glm::golden_ratio<float>();
+        const float phi = glm::golden_ratio<float>();
 
         // TODO: replace interpolated normals with face normals (requires 3 verts for all 20 faces)
         

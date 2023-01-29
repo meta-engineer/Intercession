@@ -32,15 +32,13 @@ namespace pleep
             // fetch Physics, Biped, and SpacialInput
             try
             {
-                PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
-                BipedComponent& biped = owner->get_component<BipedComponent>(entity);
-                SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
+                UNREFERENCED_PARAMETER(owner);
+                //PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
+                //BipedComponent& biped = owner->get_component<BipedComponent>(entity);
+                //SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
 
                 // TODO: copy basic_biped_control_relay
                 UNREFERENCED_PARAMETER(deltaTime);
-                UNREFERENCED_PARAMETER(physics);
-                UNREFERENCED_PARAMETER(biped);
-                UNREFERENCED_PARAMETER(input);
             }
             catch(const std::exception& err)
             {
@@ -65,9 +63,9 @@ namespace pleep
             try
             {
                 // TODO: store collision meta-data in biped component
-                BipedComponent& biped = callerData.owner->get_component<BipedComponent>(callerData.collidee);
-                biped.isGrounded = true;
-                biped.groundNormal = collisionNormal;
+                //BipedComponent& biped = callerData.owner->get_component<BipedComponent>(callerData.collidee);
+                //biped.isGrounded = true;
+                //biped.groundNormal = collisionNormal;
 
                 UNREFERENCED_PARAMETER(collisionPoint);
                 UNREFERENCED_PARAMETER(collisionNormal);
