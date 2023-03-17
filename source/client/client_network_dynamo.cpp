@@ -23,6 +23,7 @@ namespace pleep
         }
         PLEEPLOG_DEBUG("Waited " + std::to_string(deltaTime.count()) + " seconds for client to connect");
         Message<EventId> msg;
+        // for serialization testing server will reply with a new serialized entity
         msg.header.id = events::network::INTERCESSION_UPDATE;
         char pleep[10] = "pleep";
         msg << pleep;
@@ -64,6 +65,12 @@ namespace pleep
                 if (localInfo == remoteInfo)
                 {
                     PLEEPLOG_DEBUG("Remote appInfo matches local appInfo! Good to keep communicating.");
+                    PLEEPLOG_DEBUG("I will respond with my INTERCESSION_APP_INFO");
+                    Message<EventId> response(events::network::INTERCESSION_APP_INFO);
+                    events::network::INTERCESSION_APP_INFO_params localIntercessionInfo;
+                    response << localIntercessionInfo;
+
+                    //m_networkApi.send_message(response);
                 }
                 else
                 {

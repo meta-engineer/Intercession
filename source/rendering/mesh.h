@@ -55,7 +55,7 @@ namespace pleep
         // Name given for this mesh
         std::string m_name;
         // Filename this mesh was imported from
-        std::string m_sourceFilename;
+        std::string m_sourceFilepath;
         
     private:
         // after _setup, buffer object data is set based on these values, so they should be protected

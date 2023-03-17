@@ -79,7 +79,7 @@ namespace pleep
         TimestampedMessage<EventId> pop_from_timestream(Entity entity)
         {
             return m_timestreams.at(entity).pop_back().first;
-            // TODO: either check for empty timestream or check for when we pop a REMOVED_ENTITY
+            // TODO: either check for empty timestream or check for when we pop a ENTITY_REMOVED
             //   message and remove index (entity) from timestream map
         }
 

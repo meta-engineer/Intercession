@@ -40,8 +40,8 @@ namespace pleep
 
     private:
         // event handlers
-        void _new_entity_handler(EventMessage entityEvent);
-        void _removed_entity_handler(EventMessage entityEvent);
+        void _entity_created_handler(EventMessage entityEvent);
+        void _entity_removed_handler(EventMessage entityEvent);
         
         // Networking relays
         std::unique_ptr<ServerEntityUpdateRelay> m_entityUpdateRelay;

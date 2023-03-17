@@ -220,6 +220,9 @@ namespace pleep
             {
                 RenderPacket& data = *packet_it;
 
+                // check nullptr
+                if (data.renderable.meshData == nullptr) continue;
+
                 m_sm.activate();
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
                 for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)

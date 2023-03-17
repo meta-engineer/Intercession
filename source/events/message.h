@@ -106,6 +106,73 @@ namespace pleep
         
         return msg;
     }
+
+
+    // Stream operator specializations for strings
+
+    // inString.length() will indicate how many characters to write;
+    template<typename T_Msg>
+    Message<T_Msg>& operator<<(Message<T_Msg>& msg, const std::string& inString)
+    {
+        // we know string is non-POD type
+
+        // track current size of body
+        uint32_t i = static_cast<uint32_t>(msg.size());
+
+        // resize for data to be pushed
+        // does this break the amortized exponential auto-allocating?
+        // No, i think resize is ACTUALLY making elements, not just capacity
+        msg.body.resize(msg.body.size() + sizeof(size_t) + (sizeof(char) * inString.length()));
+
+        // actually physically copy the data into allocated space
+        // copy data
+        std::memcpy(msg.body.data() + i, inString.data(), inString.length());
+        i += static_cast<uint32_t>(sizeof(char) * inString.length());
+
+        // copy size (to be extracted first)
+        size_t inStringLength = inString.length();
+        std::memcpy(msg.body.data() + i, &inStringLength, sizeof(size_t));
+
+        // recalc message size
+        msg.header.size = static_cast<uint32_t>(msg.size());
+
+        return msg;
+    }
+
+    // inString.length() will indicate how many characters to read;
+    template<typename T_Msg>
+    Message<T_Msg>& operator>>(Message<T_Msg>& msg, std::string& outString)
+    {
+        // we know string is non-POD type
+
+        // cannot stream out when no data is available;
+        assert(msg.size() >= sizeof(size_t));
+
+        // track index at the start of the data on "top" of the stack
+        uint32_t i = static_cast<uint32_t>(msg.size()) - sizeof(size_t);
+        // extract the string length
+        size_t outStringLength;
+        std::memcpy(&outStringLength, msg.body.data() + i, sizeof(size_t));
+
+        // now that we know the string size, move index in front of string data
+        i -= static_cast<uint32_t>(sizeof(char) * outStringLength);
+        // need a place to extract to (cannot use std::string data pointer)
+        char* cOutString = new char[outStringLength + 1];
+        // extract string data;
+        std::memcpy(cOutString, msg.body.data() + i, sizeof(char) * outStringLength);
+        cOutString[outStringLength] = 0;    // guarentee to be 0 terminated?
+        // write to outString
+        outString = cOutString;
+        delete[] cOutString;
+
+        // shrink, removing end of stack (constant time)
+        msg.body.resize(i);
+
+        // recalc message size
+        msg.header.size = static_cast<uint32_t>(msg.size());
+
+        return msg;
+    }
 }
 
 #endif // MESSAGE_H

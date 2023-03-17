@@ -24,6 +24,10 @@ namespace pleep
         // populate starting cosmos
         // eventually we'll pass some cosmos config param here
         _build_cosmos();
+
+        // Send test entity to clients
+        // flag entity as updated once here:
+        //m_eventBroker->send_event(...);
     }
     
     ServerCosmosContext::~ServerCosmosContext() 

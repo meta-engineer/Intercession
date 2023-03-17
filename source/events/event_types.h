@@ -72,8 +72,8 @@ namespace pleep
             // (ambiguous whether WE created it, or we registered it from another host)
             // Entity will exist when this is signalled
             // (sent over a network implies that the remote has added a new entity)
-            const EventId NEW_ENTITY = __LINE__;
-                struct NEW_ENTITY_params
+            const EventId ENTITY_CREATED = __LINE__;
+                struct ENTITY_CREATED_params
                 {
                     Entity localEntity = NULL_ENTITY;
                     TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
@@ -83,8 +83,8 @@ namespace pleep
                 };
             // upon deleting an entity we may need to notify its host
             // CAREFUL! entity will NOT exist when this is signalled
-            const EventId REMOVED_ENTITY = __LINE__;
-                struct REMOVED_ENTITY_params
+            const EventId ENTITY_REMOVED = __LINE__;
+                struct ENTITY_REMOVED_params
                 {
                     Entity localEntity = NULL_ENTITY;
                     TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
@@ -114,7 +114,7 @@ namespace pleep
                     }
                 };
             // Info about the Intercession app configuration specifically:
-            //  Am I a server of a client (or a dispatch)
+            //  Am I a server or a client (or a dispatch)
             //  What is the ID of my cluster/server group?
             //  How many servers are in my cluster?
             //  what is my client id/server id
@@ -123,7 +123,7 @@ namespace pleep
             const EventId INTERCESSION_APP_INFO = __LINE__;
                 struct INTERCESSION_APP_INFO_params
                 {
-
+                    // pass cosmos builder config
                 };
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.

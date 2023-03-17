@@ -62,7 +62,7 @@ namespace pleep
         // Name given for this animation
         std::string m_name;
         // Filename this animation was imported from
-        std::string m_sourceFilename;
+        std::string m_sourceFilepath;
     };
 }
 

@@ -44,46 +44,134 @@ namespace pleep
     template<typename T_Msg>
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RenderableComponent& data)
     {
-        PLEEPLOG_DEBUG("Reached unimplemented Message stream in <RenderableComponent> overload!");
         // Pass ModelLibrary keys AND source filepaths incase it needs to be imported
         // Need to pass strings as fixed sizes!
-        // should ModelLibrary also limit keys to this size...?
-        UNREFERENCED_PARAMETER(data);
-        //char fixedSupermeshName[MESSAGE_C_STRING_SIZE] = data.meshData.m_name;
-        //msg << data.model ? data.model.get_name() : "";
+        // push "number" of  supermeshes
+        size_t numMeshes = data.meshData ? 1 : 0;
+        msg << numMeshes;
+        if (numMeshes > 0)
+        {
+            // send name string
+            msg << data.meshData->m_name;
+
+            // send path string
+            msg << data.meshData->m_sourceFilepath;
+        }
+
+        // push number of materials
+        size_t numMats = data.materials.size();
+        msg << numMats;
+        for (size_t m = 0; m < numMats; m++)
+        {
+            // send name string
+            msg << data.materials[m]->m_name;
+
+            // send path string
+            msg << data.materials[m]->m_sourceFilepath;
+        }
         
-        /* 
-        // track current size of body
-        uint32_t i = static_cast<uint32_t>(msg.size());
-
-        // resize for data to be pushed
-        // does this break the amortized exponential auto-allocating?
-        // No, i think resize is ACTUALLY making elements, not just capacity
-        msg.body.resize(msg.body.size() + sizeof(T_Data));
-
-        // actually physically copy the data into allocated space
-        std::memcpy(msg.body.data() + i, &data, sizeof(T_Data));
-
-        // recalc message size
-        msg.header.size = static_cast<uint32_t>(msg.size());
-         */
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, RenderableComponent& data)
     {
-        PLEEPLOG_DEBUG("Reached unimplemented Message stream out <RenderableComponent> overload!");
-        std::string newSupermeshName = "";
-        // needs to be fixed length
-        //msg >> newFilename;
-        // if filenames already match we'll assume model is in lockstep
-        if (newSupermeshName != data.meshData->m_name)
+        // Stream out SuperMesh
+        size_t numMeshes = 0;
+        msg >> numMeshes;
+        // if no meshes in msg, than clear component
+        if (numMeshes == 0)
         {
-            //data.model = ModelLibrary::fetch_model(newFilename);
+            data.meshData = nullptr;
         }
-        // otherwise try to fetch from ModelLibrary
+        else
+        {
+            // extract supermesh name
+            std::string newSupermeshName;
+            msg >> newSupermeshName;
 
-        // otherwise try to import from source filepath
+            // extract supermesh path
+            std::string newSupermeshPath;
+            msg >> newSupermeshPath;
+
+            // if msg has no mesh (empty string) also clear component mesh
+            if (newSupermeshName == "")
+            {
+                data.meshData = nullptr;
+            }
+            // if (msg has a mesh and) component either has no mesh OR a different one
+            // then fetch from library
+            else if (data.meshData == nullptr || data.meshData->m_name != newSupermeshName)
+            {
+                std::shared_ptr<const Supermesh> libMesh = ModelLibrary::fetch_supermesh(newSupermeshName);
+
+                // check if fetch was not successful
+                if (libMesh == nullptr)
+                {
+                    // try to import file
+                    ModelLibrary::ImportReceipt supermeshReceipt = ModelLibrary::import(newSupermeshPath);
+
+                    // confirm the msg supermesh name was imported
+                    if (std::find(supermeshReceipt.supermeshNames.begin(), supermeshReceipt.supermeshNames.end(), newSupermeshName) != supermeshReceipt.supermeshNames.end())
+                    {
+                        // try to fetch again
+                        libMesh = ModelLibrary::fetch_supermesh(newSupermeshName);
+                    }
+                }
+
+                // if supermesh was empty or failed it will be nullptr, assign either way
+                data.meshData = libMesh;
+            }
+            // else names match, continue as-is
+        }
+
+        // Stream out Materials
+        size_t numMats = 0;
+        msg >> numMats;
+        // if msg mats is 0 then clear our mats
+        if (numMats == 0)
+        {
+            data.materials.clear();
+        }
+
+        for (size_t m = 0; m < numMats; m++)
+        {
+            // extract material name
+            std::string newMaterialName;
+            msg >> newMaterialName;
+
+            // extract material path
+            std::string newMaterialPath;
+            msg >> newMaterialPath;
+
+            // check if component's material at this index has different mat (or none)
+            // (m starts at 0, so we should only ever be 1 index above current materials size)
+            if (m >= data.materials.size()
+                || data.materials[m] == nullptr
+                || data.materials[m]->m_name != newMaterialName)
+            {
+                std::shared_ptr<const Material> libMat = ModelLibrary::fetch_material(newMaterialName);
+
+                // check if fetch was not successful
+                if (libMat == nullptr)
+                {
+                    // try to import file
+                    ModelLibrary::ImportReceipt materialReceipt = ModelLibrary::import(newMaterialPath);
+
+                    // confirm the msg material name was imported
+                    if (std::find(materialReceipt.materialNames.begin(), materialReceipt.materialNames.end(), newMaterialName) != materialReceipt.materialNames.end())
+                    {
+                        //try to fetch again
+                        libMat = ModelLibrary::fetch_material(newMaterialName);
+                    }
+                }
+
+                // if material was empty or failed it will be nullptr insert anyway to maintain ordering
+                if (m >= data.materials.size()) data.materials.push_back(libMat);
+                else data.materials[m] = libMat;
+            }
+            // else material names match, continue as-is
+        }
+
         return msg;
     }
 }

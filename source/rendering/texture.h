@@ -97,12 +97,12 @@ namespace pleep
 
         unsigned int get_id() const { return m_id; }
         TextureType get_type() const { return m_type; }
-        std::string get_source_filename() const { return m_sourceFilename; }
+        std::string get_source_filepath() const { return m_sourceFilepath; }
 
     private:
         unsigned int m_id = 0;                  // gl handle
         TextureType m_type = TextureType::none;
-        std::string m_sourceFilename = "";      // location where file was loaded from
+        std::string m_sourceFilepath = "";      // location where file was loaded from
     };
 }
 

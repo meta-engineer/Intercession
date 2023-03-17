@@ -71,7 +71,6 @@ namespace pleep
         // we'll only access through Cosmos
         // any other functionallity should be in dynamos
         PLEEPLOG_TRACE("Create Synchros");
-        // TODO: get synchros to maintain their own signatures to fetch for registration
 
         std::shared_ptr<SpacialInputSynchro> spacialInputSynchro = cosmos->register_synchro<SpacialInputSynchro>();
         {
@@ -79,7 +78,7 @@ namespace pleep
             cosmos->set_synchro_signature<SpacialInputSynchro>(SpacialInputSynchro::get_signature(cosmos));
         }
 
-        // synchros are in a map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
+        // synchros are in an unordered map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
         // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
         std::shared_ptr<LightingSynchro> lightingSynchro = cosmos->register_synchro<LightingSynchro>();
         {
@@ -123,6 +122,8 @@ namespace pleep
             scriptSynchro->attach_dynamo(scriptDynamo);
             cosmos->set_synchro_signature<ScriptSynchro>(ScriptSynchro::get_signature(cosmos));
         }
+
+        //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
 
         PLEEPLOG_TRACE("Create Entities");
         // create entities
@@ -426,7 +427,7 @@ namespace pleep
 
         // ***************************************************************************
         Entity light = cosmos->create_local_entity();
-        cosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 0.0f)));
+        cosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 1.0f)));
         cosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.2f);
         // remember this is relative to exposure
         cosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));

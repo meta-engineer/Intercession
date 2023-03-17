@@ -36,6 +36,26 @@ namespace pleep
             synchroIter->second->update();
         }
     }
+    
+    std::string Cosmos::stringify_synchro_registry() 
+    {
+        std::vector<std::string> synchroNames;
+        synchroNames.reserve(m_synchroRegistry->get_synchros_ref().size());
+        for (auto synchroIt : m_synchroRegistry->get_synchros_ref())
+        {
+            synchroNames.push_back(synchroIt.first);
+        }
+
+        std::sort(synchroNames.begin(), synchroNames.end());
+
+        std::string synchroConcat;
+        for (auto synchroName : synchroNames)
+        {
+            synchroConcat.append(synchroName + ", ");
+        }
+
+        return synchroConcat;
+    }
 
     void Cosmos::serialize_entity_components(Entity entity, EventMessage msg)
     {

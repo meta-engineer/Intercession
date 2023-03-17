@@ -74,7 +74,7 @@ namespace pleep
         ModelLibrary::m_singleton->_process_supermeshes(scene, receipt);
         ModelLibrary::m_singleton->_process_animations(scene, receipt);
 
-        _debug_receipt(receipt);
+        //_debug_receipt(receipt);
         // now all assets are cached, user can call fetch methods using receipt names
         return receipt;
     }
@@ -406,7 +406,7 @@ namespace pleep
             if (std::find(receipt.materialNames.begin(), receipt.materialNames.end(), materialName) == receipt.materialNames.end()) continue;
 
             m_materialMap[materialName] = _build_material(material, materialName, directory);
-            m_materialMap[materialName]->m_sourceFilename = receipt.importSourceFilepath;
+            m_materialMap[materialName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
@@ -536,7 +536,7 @@ namespace pleep
                 aiMesh* submesh = scene->mMeshes[scene->mRootNode->mChildren[i]->mMeshes[m]];
                 newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
                 // I don't know if both levels need to have the source, but might aswell
-                newSupermesh->m_submeshes.back()->m_sourceFilename = receipt.importSourceFilepath;
+                newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
 
                 // Associate a material with this submesh in the receipt for this supermesh
                 aiMaterial* material = scene->mMaterials[submesh->mMaterialIndex];

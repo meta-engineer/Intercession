@@ -37,7 +37,7 @@ namespace pleep
         // Name given for this material
         std::string m_name = "";
         // Filename this material was imported from
-        std::string m_sourceFilename = "";
+        std::string m_sourceFilepath = "";
     };
 }
 

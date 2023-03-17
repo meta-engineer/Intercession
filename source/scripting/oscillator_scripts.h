@@ -25,14 +25,15 @@ namespace pleep
                 // This is not a physical integration, so if this entity has collision it might get funky
 
                 // subtract from transform using current phase
-                transform.origin.y -= oscillator.amplitude * glm::sin(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
+                transform.origin.x -= oscillator.amplitude * glm::sin(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
+                transform.origin.z -= oscillator.amplitude * glm::cos(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
 
                 // increment phase
                 oscillator.phase = oscillator.phase >= oscillator.period ? oscillator.phase - oscillator.period : oscillator.phase + static_cast<float>(deltaTime);
 
                 // add to transform using new phase
-                transform.origin.y += oscillator.amplitude * glm::sin(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
-                
+                transform.origin.x += oscillator.amplitude * glm::sin(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
+                transform.origin.z += oscillator.amplitude * glm::cos(oscillator.phase / oscillator.period * 2.0f * glm::pi<float>());
             }
             catch(const std::exception& err)
             {

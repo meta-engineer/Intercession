@@ -29,8 +29,8 @@ namespace pleep
 
         
         // setup handlers
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::NEW_ENTITY, ServerNetworkDynamo::_new_entity_handler));
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::REMOVED_ENTITY, ServerNetworkDynamo::_removed_entity_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
 
         PLEEPLOG_TRACE("Done Server Networking pipeline setup");
     }
@@ -64,15 +64,15 @@ namespace pleep
             EventMessage msg = m_timelineApi.pop_message();
             switch (msg.header.id)
             {
-            case events::cosmos::NEW_ENTITY:
+            case events::cosmos::ENTITY_CREATED:
             {
-                events::cosmos::NEW_ENTITY_params data;
+                events::cosmos::ENTITY_CREATED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received NEW_ENTITY message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
+                PLEEPLOG_DEBUG("Received ENTITY_CREATED message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
                 // double check if we are it's host
                 if (extract_host_timeslice_id(data.temporalEntity) != m_timelineApi.get_timeslice_id())
                 {
-                    PLEEPLOG_WARN("Received a NEW_ENTITY signal for an entity we don't host. Is this intentional?");
+                    PLEEPLOG_WARN("Received a ENTITY_CREATED signal for an entity we don't host. Is this intentional?");
                 }
                 else
                 {
@@ -80,15 +80,15 @@ namespace pleep
                 }
             }
             break;
-            case events::cosmos::REMOVED_ENTITY:
+            case events::cosmos::ENTITY_REMOVED:
             {
-                events::cosmos::REMOVED_ENTITY_params data;
+                events::cosmos::ENTITY_REMOVED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received REMOVED_ENTITY message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
+                PLEEPLOG_DEBUG("Received ENTITY_REMOVED message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
                 // double check if we are it's host
                 if (extract_host_timeslice_id(data.temporalEntity) != m_timelineApi.get_timeslice_id())
                 {
-                    PLEEPLOG_WARN("Received a REMOVED_ENTITY signal for an entity we don't host. Is this intentional?");
+                    PLEEPLOG_WARN("Received a ENTITY_REMOVED signal for an entity we don't host. Is this intentional?");
                 }
                 else
                 {
@@ -170,14 +170,14 @@ namespace pleep
         return m_timelineApi.get_timeslice_id();
     }
     
-    void ServerNetworkDynamo::_new_entity_handler(EventMessage entityEvent)
+    void ServerNetworkDynamo::_entity_created_handler(EventMessage entityEvent)
     {
         // if we have a child timeslice, that means next frame this entity will enter the timestream
         // so we need to increment its host's count
 
-        // TODO: we should also emplace the timestream now and add the NEW_ENTITY message
+        // TODO: we should also emplace the timestream now and add the ENTITY_CREATED message
         
-        events::cosmos::NEW_ENTITY_params newEntityParams;
+        events::cosmos::ENTITY_CREATED_params newEntityParams;
         entityEvent >> newEntityParams;
 
         if (m_timelineApi.has_past())
@@ -187,11 +187,11 @@ namespace pleep
         }
     }
     
-    void ServerNetworkDynamo::_removed_entity_handler(EventMessage entityEvent)
+    void ServerNetworkDynamo::_entity_removed_handler(EventMessage entityEvent)
     {
         // entity has left our timeslice so we need to decrement its host's count
         
-        events::cosmos::REMOVED_ENTITY_params removedEntityParams;
+        events::cosmos::ENTITY_REMOVED_params removedEntityParams;
         entityEvent >> removedEntityParams;
         TimesliceId host = extract_host_timeslice_id(removedEntityParams.temporalEntity);
 

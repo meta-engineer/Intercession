@@ -17,7 +17,7 @@ namespace pleep
     {
         // Auxilary members
         m_type = type;
-        m_sourceFilename = filepath;
+        m_sourceFilepath = filepath;
 
         // Load GL texture handle
         glGenTextures(1, &m_id);
@@ -75,7 +75,7 @@ namespace pleep
             glDeleteTextures(1, &m_id);
             m_id = 0;
             m_type = TextureType::none;
-            m_sourceFilename = "";
+            m_sourceFilepath = "";
         }
         stbi_image_free(texData);
         
@@ -94,7 +94,7 @@ namespace pleep
         // Auxilary members
         m_type = TextureType::cube;
         // use first file as source?
-        m_sourceFilename = filepaths.at(0);
+        m_sourceFilepath = filepaths.at(0);
 
         // Load GL texture handle
         glGenTextures(1, &m_id);

@@ -33,6 +33,7 @@ namespace pleep
     ClientCosmosContext::~ClientCosmosContext() 
     {
         // delete cosmos first to avoid null dynamo dereferences
+        // TODO: deleting entities could cause dynamos to have null references... exit needs to be more secure
         delete m_currentCosmos;
 
         delete m_scriptDynamo;

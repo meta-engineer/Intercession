@@ -119,6 +119,10 @@ namespace pleep
         template<typename T>
         void set_synchro_signature(Signature sign);
 
+        // concat all synchro typeids into one identifying string
+        // typeids are sorted alphabetically, delimited by ,
+        std::string stringify_synchro_registry();
+
 
         ///// Helper methods for sending entity information in Messages (for events or network) /////
 
@@ -158,8 +162,8 @@ namespace pleep
         Entity entity = m_entityRegistry->create_local_entity();
         
         // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
-        events::cosmos::NEW_ENTITY_params newEntityParams {
+        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
+        events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity
         };
         newEntityEvent << newEntityParams;
@@ -173,8 +177,8 @@ namespace pleep
         Entity entity = m_entityRegistry->create_temporal_entity();
 
         // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
-        events::cosmos::NEW_ENTITY_params newEntityParams {
+        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
+        events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity,
             get_temporal_identifier(entity).first,
             get_temporal_identifier(entity).second
@@ -190,8 +194,8 @@ namespace pleep
         Entity entity = m_entityRegistry->register_temporal_entity(tEntity, link);
 
         // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::NEW_ENTITY);
-        events::cosmos::NEW_ENTITY_params newEntityParams {
+        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
+        events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity,
             tEntity,
             link
@@ -211,8 +215,8 @@ namespace pleep
         m_synchroRegistry->clear_entity(entity);
 
         // broadcast entity no longer exists
-        EventMessage removedEntityEvent(events::cosmos::REMOVED_ENTITY);
-        events::cosmos::REMOVED_ENTITY_params removedEntityParams {
+        EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED);
+        events::cosmos::ENTITY_REMOVED_params removedEntityParams {
             entity,
             temporalId.first,
             temporalId.second
