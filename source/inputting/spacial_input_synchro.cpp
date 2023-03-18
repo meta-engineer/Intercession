@@ -32,12 +32,7 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    void SpacialInputSynchro::attach_dynamo(InputDynamo* contextDynamo) 
-    {
-        m_attachedInputDynamo = contextDynamo;
-    }
-    
-    Signature SpacialInputSynchro::get_signature(Cosmos* cosmos) 
+    Signature SpacialInputSynchro::derive_signature(Cosmos* cosmos) 
     {
         Signature sign;
 
@@ -54,5 +49,10 @@ namespace pleep
         }
         
         return sign;
+    }
+    
+    void SpacialInputSynchro::attach_dynamo(InputDynamo* contextDynamo) 
+    {
+        m_attachedInputDynamo = contextDynamo;
     }
 }

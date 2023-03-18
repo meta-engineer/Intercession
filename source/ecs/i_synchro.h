@@ -38,6 +38,10 @@ namespace pleep
         // Cosmos will call this universally for all synchros
         virtual void update() = 0;
 
+        // Each subclass can suggest to registry what component signature it requires derived from known cosmos component set
+        // returns empty bitset if desired components could not be found
+        virtual Signature derive_signature(Cosmos* cosmos) = 0;
+
         std::set<Entity> m_entities;
         
         // Access to ecs where m_entities are contained

@@ -109,15 +109,13 @@ namespace pleep
         
 
         // setup synchro T to be usable in this cosmos
+        // its signature will be set using ISynchro::get_signature
         // and return it once created
+        // CAREFUL! Entity associations are only updated on individual component changes. Synchro will NOT be associated with any existing entities. Build synchros BEFORE adding entities/components
         template<typename T>
         std::shared_ptr<T> register_synchro();
 
-        // set synchro T to have entity signature sign.
-        // empty sign will not recieve any entities
-        // CAREFUL! this does NOT recalculate its entities accordingly! Build synchros BEFORE components
-        template<typename T>
-        void set_synchro_signature(Signature sign);
+        // TODO: Do we need a method to change a synchro signature after registry and then recalculate its entities accordingly?
 
         // concat all synchro typeids into one identifying string
         // typeids are sorted alphabetically, delimited by ,
@@ -321,13 +319,12 @@ namespace pleep
     template<typename T>
     std::shared_ptr<T> Cosmos::register_synchro() 
     {
-        return m_synchroRegistry->register_synchro<T>(this);
-    }
-    
-    template<typename T>
-    void Cosmos::set_synchro_signature(Signature sign) 
-    {
-        m_synchroRegistry->set_signature<T>(sign);
+        std::shared_ptr<T> newSynchro = m_synchroRegistry->register_synchro<T>(this);
+
+        // we'll expect T to be ISynchro
+        m_synchroRegistry->set_signature<T>(newSynchro->derive_signature(this));
+
+        return newSynchro;
     }
 }
 

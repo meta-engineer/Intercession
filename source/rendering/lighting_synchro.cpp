@@ -41,12 +41,7 @@ namespace pleep
         //   update anyway, this isn't THAT much overhead
     }
     
-    void LightingSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
-    {
-        m_attachedRenderDynamo = contextDynamo;
-    }
-    
-    Signature LightingSynchro::get_signature(Cosmos* cosmos) 
+    Signature LightingSynchro::derive_signature(Cosmos* cosmos) 
     {
         Signature sign;
 
@@ -64,5 +59,10 @@ namespace pleep
         }
         
         return sign;
+    }
+    
+    void LightingSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
+    {
+        m_attachedRenderDynamo = contextDynamo;
     }
 }

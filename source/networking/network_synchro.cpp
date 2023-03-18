@@ -28,6 +28,13 @@ namespace pleep
         m_attachedNetworkDynamo->submit(CosmosAccessPacket{ m_ownerCosmos });
     }
     
+    Signature NetworkSynchro::derive_signature(Cosmos* cosmos) 
+    {
+        UNREFERENCED_PARAMETER(cosmos);
+        // blank sign should mean NO matched entities
+        return Signature();
+    }
+    
     void NetworkSynchro::attach_dynamo(I_NetworkDynamo* contextDynamo) 
     {
         // clear events registered through old dynamo
@@ -35,12 +42,5 @@ namespace pleep
         m_attachedNetworkDynamo = contextDynamo;
 
         // restore event handlers
-    }
-    
-    Signature NetworkSynchro::get_signature(Cosmos* cosmos) 
-    {
-        UNREFERENCED_PARAMETER(cosmos);
-        // blank sign should mean NO matched entities
-        return Signature();
     }
 }

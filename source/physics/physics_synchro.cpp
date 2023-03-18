@@ -36,16 +36,7 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    void PhysicsSynchro::attach_dynamo(PhysicsDynamo* contextDynamo) 
-    {
-        // clear events registered through old dynamo
-
-        m_attachedPhysicsDynamo = contextDynamo;
-
-        // restore event handlers
-    }
-    
-    Signature PhysicsSynchro::get_signature(Cosmos* cosmos) 
+    Signature PhysicsSynchro::derive_signature(Cosmos* cosmos) 
     {
         Signature sign;
 
@@ -63,5 +54,14 @@ namespace pleep
         }
         
         return sign;
+    }
+    
+    void PhysicsSynchro::attach_dynamo(PhysicsDynamo* contextDynamo) 
+    {
+        // clear events registered through old dynamo
+
+        m_attachedPhysicsDynamo = contextDynamo;
+
+        // restore event handlers
     }
 }

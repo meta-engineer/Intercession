@@ -70,58 +70,35 @@ namespace pleep
         // we shouldn't need to keep synchro references after we config them here, 
         // we'll only access through Cosmos
         // any other functionallity should be in dynamos
+        // TODO: Is there a better way to attach dynamos?
         PLEEPLOG_TRACE("Create Synchros");
 
         std::shared_ptr<SpacialInputSynchro> spacialInputSynchro = cosmos->register_synchro<SpacialInputSynchro>();
-        {
-            spacialInputSynchro->attach_dynamo(inputDynamo);
-            cosmos->set_synchro_signature<SpacialInputSynchro>(SpacialInputSynchro::get_signature(cosmos));
-        }
+        spacialInputSynchro->attach_dynamo(inputDynamo);
 
         // synchros are in an unordered map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
         // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
         std::shared_ptr<LightingSynchro> lightingSynchro = cosmos->register_synchro<LightingSynchro>();
-        {
-            lightingSynchro->attach_dynamo(renderDynamo);
-            cosmos->set_synchro_signature<LightingSynchro>(LightingSynchro::get_signature(cosmos));
-        }
+        lightingSynchro->attach_dynamo(renderDynamo);
 
         std::shared_ptr<RenderSynchro> renderSynchro = cosmos->register_synchro<RenderSynchro>();
-        {
-            renderSynchro->attach_dynamo(renderDynamo);
-            cosmos->set_synchro_signature<RenderSynchro>(RenderSynchro::get_signature(cosmos));
-        }
+        renderSynchro->attach_dynamo(renderDynamo);
 
         // TODO: maybe specify this is "motion integration" not just all physics
         std::shared_ptr<PhysicsSynchro> physicsSynchro = cosmos->register_synchro<PhysicsSynchro>();
-        {
-            physicsSynchro->attach_dynamo(physicsDynamo);
-            cosmos->set_synchro_signature<PhysicsSynchro>(PhysicsSynchro::get_signature(cosmos));
-        }
+        physicsSynchro->attach_dynamo(physicsDynamo);
 
         std::shared_ptr<BoxColliderSynchro> boxColliderSynchro = cosmos->register_synchro<BoxColliderSynchro>();
-        {
-            boxColliderSynchro->attach_dynamo(physicsDynamo);
-            cosmos->set_synchro_signature<BoxColliderSynchro>(BoxColliderSynchro::get_signature(cosmos));
-        }
+        boxColliderSynchro->attach_dynamo(physicsDynamo);
         
         std::shared_ptr<RayColliderSynchro> rayColliderSynchro = cosmos->register_synchro<RayColliderSynchro>();
-        {
-            rayColliderSynchro->attach_dynamo(physicsDynamo);
-            cosmos->set_synchro_signature<RayColliderSynchro>(RayColliderSynchro::get_signature(cosmos));
-        }
+        rayColliderSynchro->attach_dynamo(physicsDynamo);
 
         std::shared_ptr<NetworkSynchro> networkSynchro = cosmos->register_synchro<NetworkSynchro>();
-        {
-            networkSynchro->attach_dynamo(networkDynamo);
-            cosmos->set_synchro_signature<NetworkSynchro>(NetworkSynchro::get_signature(cosmos));
-        }
+        networkSynchro->attach_dynamo(networkDynamo);
 
         std::shared_ptr<ScriptSynchro> scriptSynchro = cosmos->register_synchro<ScriptSynchro>();
-        {
-            scriptSynchro->attach_dynamo(scriptDynamo);
-            cosmos->set_synchro_signature<ScriptSynchro>(ScriptSynchro::get_signature(cosmos));
-        }
+        scriptSynchro->attach_dynamo(scriptDynamo);
 
         //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
 

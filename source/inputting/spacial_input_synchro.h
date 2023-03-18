@@ -17,12 +17,10 @@ namespace pleep
         // THROWS runtime error if m_ownerCosmos is null
         void update() override;
 
+        Signature derive_signature(Cosmos* cosmos) override;
+
         // synchro needs a ControlDynamo to operate on
         void attach_dynamo(InputDynamo* contextDynamo);
-        
-        // synchro can suggest to registry what signature to use from known cosmos
-        // returns empty bitset if desired components could not be found
-        static Signature get_signature(Cosmos* cosmos);
 
     private:
         // dynamo provided by CosmosContext to invoke on update

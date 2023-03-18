@@ -32,12 +32,7 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    void ScriptSynchro::attach_dynamo(ScriptDynamo* contextDynamo) 
-    {
-        m_attachedScriptDynamo = contextDynamo;
-    }
-    
-    Signature ScriptSynchro::get_signature(Cosmos* cosmos) 
+    Signature ScriptSynchro::derive_signature(Cosmos* cosmos) 
     {
         Signature sign;
 
@@ -54,5 +49,10 @@ namespace pleep
         }
         
         return sign;
+    }
+    
+    void ScriptSynchro::attach_dynamo(ScriptDynamo* contextDynamo) 
+    {
+        m_attachedScriptDynamo = contextDynamo;
     }
 }

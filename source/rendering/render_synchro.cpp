@@ -59,6 +59,26 @@ namespace pleep
         // Other components (Context) may draw further and then Context will flush at frame end
     }
     
+    Signature RenderSynchro::derive_signature(Cosmos* cosmos) 
+    {
+        Signature sign;
+
+        try
+        {
+            sign.set(cosmos->get_component_type<TransformComponent>());
+            sign.set(cosmos->get_component_type<RenderableComponent>());
+        }
+        catch(const std::exception& e)
+        {
+            // Component Registry already logs error
+            UNREFERENCED_PARAMETER(e);
+            sign.reset();
+            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and RenderableComponent been registered?");
+        }
+        
+        return sign;
+    }
+    
     void RenderSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
     {
         // We cannot subscribe to events until the dynamo is attached (to have broker access)
@@ -82,26 +102,6 @@ namespace pleep
             // update main camera entity
             m_attachedRenderDynamo->get_shared_broker()->add_listener(METHOD_LISTENER(events::window::RESIZE, RenderSynchro::_resize_handler));
         }
-    }
-    
-    Signature RenderSynchro::get_signature(Cosmos* cosmos) 
-    {
-        Signature sign;
-
-        try
-        {
-            sign.set(cosmos->get_component_type<TransformComponent>());
-            sign.set(cosmos->get_component_type<RenderableComponent>());
-        }
-        catch(const std::exception& e)
-        {
-            // Component Registry already logs error
-            UNREFERENCED_PARAMETER(e);
-            sign.reset();
-            PLEEPLOG_ERROR("Synchro could not get desired component types from cosmos. Have TransformComponent and RenderableComponent been registered?");
-        }
-        
-        return sign;
     }
     
     void RenderSynchro::_set_main_camera_handler(EventMessage setCameraEvent) 
