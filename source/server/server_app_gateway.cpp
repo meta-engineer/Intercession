@@ -7,7 +7,7 @@ namespace pleep
 {
     ServerAppGateway::ServerAppGateway(TimelineConfig cfg)
     {
-        PLEEPLOG_TRACE("Configuring Server App Gateway");
+        PLEEPLOG_TRACE("Start constructing server app gateway");
         // Persist any info from cfg?
 
         // Build apis
@@ -16,16 +16,20 @@ namespace pleep
         // shared message queues for all instances of the ltn api
         std::shared_ptr<TimelineApi::Multiplex> sharedMultiplex = generate_timeline_multiplex(cfg.numTimeslices);
         // Build contexts and pass apis
+        PLEEPLOG_INFO("Constructing " + std::to_string(cfg.numTimeslices) + " timeslices");
         assert(m_contexts.empty());
         for (TimesliceId i = 0; i < cfg.numTimeslices; i++)
         {
-            PLEEPLOG_INFO("Constructing context with TimesliceId #" + std::to_string(i));
-            // Inside each context the TimelineConfig information will only be accessable through 
-            //   the TimelineApi (to branch based on specific timesliceId)
+            PLEEPLOG_TRACE("Start constructing context TimesliceId #" + std::to_string(i));
+
+            // Inside each context the TimelineConfig information will only be accessible 
+            //   through the TimelineApi (to branch based on specific timesliceId)
             std::unique_ptr<I_CosmosContext> ctx = std::make_unique<ServerCosmosContext>(
                 // TODO: construct timestreams
                 TimelineApi(cfg, i, sharedMultiplex)
             );
+            
+            PLEEPLOG_TRACE("Done constructing context TimesliceId #" + std::to_string(i));
 
             m_contexts.push_back(std::move(ctx));
         }
@@ -35,7 +39,7 @@ namespace pleep
         // we could let the system run for total timeline duration as part of initializing?
         // otherwise state of timelineIds > 0 are... undefined...
 
-        PLEEPLOG_TRACE("Finished Server App Gateway construction");
+        PLEEPLOG_TRACE("Done constructing server app gateway");
     }
 
     ServerAppGateway::~ServerAppGateway()
@@ -64,6 +68,7 @@ namespace pleep
         // TODO: Validate contexts are ready to start
 
         PLEEPLOG_TRACE("App run begin");
+
         std::ostringstream thisThreadId; thisThreadId << std::this_thread::get_id();
         PLEEPLOG_INFO("AppGateway thread #" + thisThreadId.str());
 
@@ -76,7 +81,7 @@ namespace pleep
             m_contextThreads.push_back(std::move(thrd));
 
             std::ostringstream thrdId; thrdId << m_contextThreads.back().get_id();
-            PLEEPLOG_INFO("Constructed context thread #" + thrdId.str());
+            PLEEPLOG_INFO("Constructed context " + std::to_string(i) + " thread #" + thrdId.str());
         }
         PLEEPLOG_TRACE("Finished constructing " + std::to_string(m_contextThreads.size()) + " threads");
         assert(m_contexts.size() == m_contextThreads.size());

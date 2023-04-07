@@ -2,40 +2,16 @@
 #define TEST_COSMOS_H
 
 //#include "intercession_pch.h"
+#include <memory>
+
 #include "logging/pleep_log.h"
 #include "rendering/model_library.h"
-
-// TODO: This is temporary for building hard-coded entities
-#include "inputting/spacial_input_synchro.h"
-#include "rendering/render_synchro.h"
-#include "rendering/lighting_synchro.h"
-#include "physics/physics_synchro.h"
-#include "physics/box_collider_synchro.h"
-#include "physics/ray_collider_synchro.h"
-#include "networking/network_synchro.h"
-#include "scripting/script_synchro.h"
-
-#include "physics/transform_component.h"
-#include "physics/physics_component.h"
-#include "physics/box_collider_component.h"
-#include "physics/ray_collider_component.h"
-#include "physics/rigid_body_component.h"
-#include "inputting/spacial_input_component.h"
-#include "rendering/renderable_component.h"
-#include "rendering/camera_component.h"
-#include "rendering/light_source_component.h"
-#include "core/meta_component.h"
-
-#include "scripting/script_component.h"
-#include "scripting/biped_scripts.h"
-#include "scripting/fly_control_scripts.h"
-#include "scripting/oscillator_scripts.h"
-#include "scripting/oscillator_component.h"
+#include "scripting/script_library.h"
+#include "core/cosmos_builder.h"
 
 namespace pleep
 {
-    void build_test_cosmos(
-        Cosmos* cosmos, 
+    std::shared_ptr<Cosmos> build_test_cosmos(
         EventBroker* eventBroker, 
         RenderDynamo* renderDynamo, 
         InputDynamo* inputDynamo, 
@@ -44,61 +20,34 @@ namespace pleep
         ScriptDynamo* scriptDynamo
     )
     {
-        // Assume Cosmos is already "empty"
+        // TODO: receive config from server
+        // TODO: Should config synchros just imply necessary components? Some are 1-to-1 like physics component, some are many-to-one like transform, some are unique like oscillator
+        CosmosBuilder::Config cosmosConfig;
+        cosmosConfig.components[0] = CosmosBuilder::ComponentType::transform;
+        cosmosConfig.components[1] = CosmosBuilder::ComponentType::spacial_input;
+        cosmosConfig.components[2] = CosmosBuilder::ComponentType::renderable;
+        cosmosConfig.components[3] = CosmosBuilder::ComponentType::camera;
+        cosmosConfig.components[4] = CosmosBuilder::ComponentType::light_source;
+        cosmosConfig.components[5] = CosmosBuilder::ComponentType::physics;
+        cosmosConfig.components[6] = CosmosBuilder::ComponentType::box_collider;
+        cosmosConfig.components[7] = CosmosBuilder::ComponentType::ray_collider;
+        cosmosConfig.components[8] = CosmosBuilder::ComponentType::rigid_body;
+        cosmosConfig.components[9] = CosmosBuilder::ComponentType::spring_body;
+        cosmosConfig.components[10] = CosmosBuilder::ComponentType::script;
+        cosmosConfig.components[11] = CosmosBuilder::ComponentType::oscillator;
 
-        // register components
-        cosmos->register_component<TransformComponent>();
-        cosmos->register_component<SpacialInputComponent>();
-        cosmos->register_component<RenderableComponent>();
-        cosmos->register_component<CameraComponent>();
-        cosmos->register_component<LightSourceComponent>();
-        cosmos->register_component<PhysicsComponent>();
-        cosmos->register_component<BoxColliderComponent>();
-        cosmos->register_component<RayColliderComponent>();
-        cosmos->register_component<RigidBodyComponent>();
-        cosmos->register_component<SpringBodyComponent>();
-        cosmos->register_component<ScriptComponent>();
-        cosmos->register_component<OscillatorComponent>();
-        // We may want to enforce use of meta component for all cosmos'?
-        //cosmos->register_component<MetaComponent>();
+        cosmosConfig.synchros[0] = CosmosBuilder::SynchroType::spacial_input;
+        cosmosConfig.synchros[1] = CosmosBuilder::SynchroType::lighting;
+        cosmosConfig.synchros[2] = CosmosBuilder::SynchroType::render;
+        cosmosConfig.synchros[3] = CosmosBuilder::SynchroType::physics;
+        cosmosConfig.synchros[4] = CosmosBuilder::SynchroType::box_collider;
+        cosmosConfig.synchros[5] = CosmosBuilder::SynchroType::ray_collider;
+        cosmosConfig.synchros[6] = CosmosBuilder::SynchroType::network;
+        cosmosConfig.synchros[7] = CosmosBuilder::SynchroType::script;
 
-        ScriptLibrary::clear_library();
-        ScriptLibrary::register_script<BipedScripts>();
-        ScriptLibrary::register_script<FlyControlScripts>();
-
-        // register/create synchros, set component signatures
-        // we shouldn't need to keep synchro references after we config them here, 
-        // we'll only access through Cosmos
-        // any other functionallity should be in dynamos
-        // TODO: Is there a better way to attach dynamos?
-        PLEEPLOG_TRACE("Create Synchros");
-
-        std::shared_ptr<SpacialInputSynchro> spacialInputSynchro = cosmos->register_synchro<SpacialInputSynchro>();
-        spacialInputSynchro->attach_dynamo(inputDynamo);
-
-        // synchros are in an unordered map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
-        // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
-        std::shared_ptr<LightingSynchro> lightingSynchro = cosmos->register_synchro<LightingSynchro>();
-        lightingSynchro->attach_dynamo(renderDynamo);
-
-        std::shared_ptr<RenderSynchro> renderSynchro = cosmos->register_synchro<RenderSynchro>();
-        renderSynchro->attach_dynamo(renderDynamo);
-
-        // TODO: maybe specify this is "motion integration" not just all physics
-        std::shared_ptr<PhysicsSynchro> physicsSynchro = cosmos->register_synchro<PhysicsSynchro>();
-        physicsSynchro->attach_dynamo(physicsDynamo);
-
-        std::shared_ptr<BoxColliderSynchro> boxColliderSynchro = cosmos->register_synchro<BoxColliderSynchro>();
-        boxColliderSynchro->attach_dynamo(physicsDynamo);
-        
-        std::shared_ptr<RayColliderSynchro> rayColliderSynchro = cosmos->register_synchro<RayColliderSynchro>();
-        rayColliderSynchro->attach_dynamo(physicsDynamo);
-
-        std::shared_ptr<NetworkSynchro> networkSynchro = cosmos->register_synchro<NetworkSynchro>();
-        networkSynchro->attach_dynamo(networkDynamo);
-
-        std::shared_ptr<ScriptSynchro> scriptSynchro = cosmos->register_synchro<ScriptSynchro>();
-        scriptSynchro->attach_dynamo(scriptDynamo);
+        // build cosmos according to config
+        CosmosBuilder generator;
+        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, NULL_TIMESLICE, eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
 
         //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
 
@@ -145,11 +94,11 @@ namespace pleep
         cosmos->add_component(frog, frog_rigidBody);
 
         // script handle legs collider events (below)
-        ScriptComponent frog_scripts;
-        frog_scripts.drivetrain = ScriptLibrary::fetch_scripts<BipedScripts>();
-        frog_scripts.use_fixed_update = true;
+        //ScriptComponent frog_scripts;
+        //frog_scripts.drivetrain = ScriptLibrary::fetch_scripts();
+        //frog_scripts.use_fixed_update = true;
         // store script in self
-        cosmos->add_component(frog, frog_scripts);
+        //cosmos->add_component(frog, frog_scripts);
 
         // frog "legs"
         RayColliderComponent frog_ray;
@@ -378,13 +327,13 @@ namespace pleep
 
         cosmos->add_component(mainCamera, SpacialInputComponent());
         ScriptComponent camera_scripts;
-        camera_scripts.drivetrain = ScriptLibrary::fetch_scripts<FlyControlScripts>();
+        camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::fly_control);
         camera_scripts.use_fixed_update = true;
         cosmos->add_component(mainCamera, camera_scripts);
 
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
-        // dynamos don't have acess to cosmos, so they can't lookup entity
+        // dynamos don't have access to cosmos, so they can't lookup entity
         // synchro can maintain camera and pass its data each frame
         
         EventMessage cameraEvent(events::rendering::SET_MAIN_CAMERA);
@@ -392,11 +341,6 @@ namespace pleep
             mainCamera
         };
         cameraEvent << cameraParams;
-        
-        // TODO: unit testing
-        renderSynchro->attach_dynamo(nullptr);
-        eventBroker->send_event(cameraEvent);
-        renderSynchro->attach_dynamo(renderDynamo);
 
         eventBroker->send_event(cameraEvent);
         // ***************************************************************************
@@ -422,7 +366,7 @@ namespace pleep
         cosmos->add_component(light, light_renderable);
         
         ScriptComponent light_scripts;
-        light_scripts.drivetrain = std::make_shared<OscillatorScripts>();
+        light_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::oscillator);
         light_scripts.use_fixed_update = true;
         cosmos->add_component(light, light_scripts);
         OscillatorComponent light_oscillator;
@@ -437,6 +381,7 @@ namespace pleep
         // Camera entities, like "rendered" entities need to have/know a relay type
         //   then the camera synchro can pass to dynamo and it would know what to do?
 
+        return cosmos;
     }
 }
 

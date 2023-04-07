@@ -8,7 +8,7 @@ namespace pleep
     ClientNetworkDynamo::ClientNetworkDynamo(EventBroker* sharedBroker) 
         : I_NetworkDynamo(sharedBroker)
     {
-        PLEEPLOG_TRACE("Setup Client Networking pipeline");
+        PLEEPLOG_TRACE("Start client networking pipeline setup");
         // setup relays
 
         m_networkApi.connect("127.0.0.1", 61336);
@@ -34,7 +34,7 @@ namespace pleep
         // setup handlers
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ClientNetworkDynamo::_entity_modified_handler) );
         
-        PLEEPLOG_TRACE("Done Client Networking pipeline setup");
+        PLEEPLOG_TRACE("Done client networking pipeline setup");
     }
 
     ClientNetworkDynamo::~ClientNetworkDynamo() 

@@ -38,7 +38,7 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature RayColliderSynchro::derive_signature(Cosmos* cosmos) 
+    Signature RayColliderSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         Signature sign;
 

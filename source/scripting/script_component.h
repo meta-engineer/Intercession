@@ -5,8 +5,8 @@
 #include <memory>
 #include <typeinfo>
 
-#include "scripting/i_script_drivetrain.h"
 #include "scripting/script_library.h"
+#include "scripting/i_script_drivetrain.h"
 #include "events/message.h"
 #include "logging/pleep_log.h"
 
@@ -18,7 +18,7 @@ namespace pleep
     struct ScriptComponent
     {
         std::shared_ptr<I_ScriptDrivetrain> drivetrain = nullptr;
-        
+
         // enable methods of this script drivetrain for the entity with this ScriptComponent
         // each flag should mirror the structure of I_ScriptDrivetrain
         bool use_fixed_update       = false;
@@ -32,7 +32,7 @@ namespace pleep
     template<typename T_Msg>
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const ScriptComponent& data)
     {
-        msg << std::string(typeid(data.drivetrain).name());
+        msg << (data.drivetrain ? data.drivetrain->m_libraryType : ScriptLibrary::ScriptType::none);
         msg << data.use_fixed_update;
         msg << data.use_frame_update;
         msg << data.use_collision;
@@ -45,11 +45,15 @@ namespace pleep
         msg >> data.use_frame_update;
         msg >> data.use_fixed_update;
 
-        std::string scriptTypename;
-        msg >> scriptTypename;
-        // if scripts are pointing to the same library entry then ignore
-        // (but comparing is probably just as expensive as writing anyway, so...)
-        data.drivetrain = ScriptLibrary::fetch_scripts(scriptTypename);
+        ScriptLibrary::ScriptType scriptType;
+        msg >> scriptType;
+        // if drivetrain does not exist OR drivetrain exists and type does not match
+        // (do not realloc memory for the same script drivetrain)
+        // library will return nullptr if type is none
+        if (!data.drivetrain || data.drivetrain->m_libraryType != scriptType)
+        {
+            data.drivetrain = ScriptLibrary::fetch_script(scriptType);
+        }
         return msg;
     }
 }

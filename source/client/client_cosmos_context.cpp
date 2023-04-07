@@ -13,6 +13,7 @@ namespace pleep
         , m_networkDynamo(nullptr)
         , m_scriptDynamo(nullptr)
     {
+        PLEEPLOG_TRACE("Start constructing context");
         // I_CosmosContext() has setup broker
         
         // construct dynamos
@@ -21,20 +22,21 @@ namespace pleep
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         m_networkDynamo = new ClientNetworkDynamo(m_eventBroker);
         m_scriptDynamo  = new ScriptDynamo(m_eventBroker);
+
+        // build and populate starting cosmos
+        // TODO: use network dynamo to get cosmos config from server (some loading cosmos while waiting?)
+        _build_cosmos();
         
-        // build empty starting cosmos
-        m_currentCosmos = new Cosmos(m_eventBroker);
-        
-        // populate starting cosmos
-        // TODO: use network dynamo to get cosmos from server
-        this->_build_cosmos();
+        PLEEPLOG_TRACE("Done constructing context");
     }
     
     ClientCosmosContext::~ClientCosmosContext() 
     {
-        // delete cosmos first to avoid null dynamo dereferences
+        // delete cosmos first to avoid null dynamo dereferences?
+        // TODO: passed pointers will not be null... they will just point to delete memory!
         // TODO: deleting entities could cause dynamos to have null references... exit needs to be more secure
-        delete m_currentCosmos;
+        // investigate weak pointers? dynamos can check if pointer is still valid before use
+        m_currentCosmos = nullptr;
 
         delete m_scriptDynamo;
         delete m_networkDynamo;
@@ -130,9 +132,13 @@ namespace pleep
     
     void ClientCosmosContext::_build_cosmos()
     {
+        PLEEPLOG_TRACE("Start cosmos construction");
+
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_test_cosmos(m_currentCosmos, m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
+        m_currentCosmos = build_test_cosmos(m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
         // use imgui input in main loop do add more at runtime
+        
+        PLEEPLOG_TRACE("Done cosmos construction");
     }
 }

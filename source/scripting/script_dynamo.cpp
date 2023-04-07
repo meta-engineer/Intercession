@@ -5,11 +5,11 @@ namespace pleep
     ScriptDynamo::ScriptDynamo(EventBroker* sharedBroker) 
         : A_Dynamo(sharedBroker)
     {
-        PLEEPLOG_TRACE("Setup Script pipeline");
+        PLEEPLOG_TRACE("Start script pipeline setup");
 
         // any non-construction initialization
         
-        PLEEPLOG_TRACE("Done Script pipeline setup");
+        PLEEPLOG_TRACE("Done script pipeline setup");
     }
     
     ScriptDynamo::~ScriptDynamo() 
@@ -33,7 +33,7 @@ namespace pleep
             {
                 data.script.drivetrain->on_fixed_update(deltaTime, data.script, data.entity, data.owner);
             }
-            //(*packet_it).script.drivetrain->on_frame_update(deltaTime, data.entity, data.owner);
+            //data.script.drivetrain->on_frame_update(deltaTime, data.entity, data.owner);
         }
     }
     

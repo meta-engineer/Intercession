@@ -48,7 +48,7 @@ namespace pleep
 
     protected:
         // only store one loose (unowned) cosmos reference
-        Cosmos* m_workingCosmos = nullptr;
+        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
         
         // collect packets during message submitting
         std::vector<EventMessage> m_networkMessages;

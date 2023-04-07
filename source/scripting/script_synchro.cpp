@@ -25,14 +25,14 @@ namespace pleep
         for (Entity const& entity : m_entities)
         {
             ScriptComponent& script = m_ownerCosmos->get_component<ScriptComponent>(entity);
-            
+
             m_attachedScriptDynamo->submit(ScriptPacket{ script, entity, m_ownerCosmos });
         }
 
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature ScriptSynchro::derive_signature(Cosmos* cosmos) 
+    Signature ScriptSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         Signature sign;
 

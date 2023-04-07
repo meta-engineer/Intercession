@@ -39,7 +39,7 @@ namespace pleep
         ClientNetworkApi m_networkApi;
 
         // TODO: Move this to be held in a specific relay
-        Cosmos* m_workingCosmos = nullptr;
+        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
         std::unordered_set<Entity> m_entitiesToReport;
     };
 }

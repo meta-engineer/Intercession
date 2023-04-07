@@ -63,12 +63,12 @@ namespace pleep
         void _quit_handler(EventMessage quitEvent);
 
         // subclasses should create this as they see fit
-        Cosmos* m_currentCosmos;
+        std::shared_ptr<Cosmos> m_currentCosmos = nullptr;
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos
         EventBroker* m_eventBroker;
 
 
-        bool m_running;
+        bool m_running = false;
         // runtime calibrations
         // Fixed timestep for stability. 200hz?
         const std::chrono::duration<double> m_fixedTimeStep = 

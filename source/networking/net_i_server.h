@@ -33,7 +33,7 @@ namespace net
 
         bool start()
         {
-            PLEEPLOG_TRACE("Started waiting for connections!");
+            PLEEPLOG_TRACE("Starting to wait for connections!");
             try
             {
                 // issue "work" to asio context

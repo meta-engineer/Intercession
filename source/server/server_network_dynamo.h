@@ -35,8 +35,7 @@ namespace pleep
         // Cosmos should be used to fetch all temporal entities?
         void submit(CosmosAccessPacket data) override;
 
-        // passthrough to timelineApi (should I_NetworkDynamo have this isntead?)
-        TimesliceId get_timeslice_id();
+        TimesliceId get_timeslice_id() override;
 
     private:
         // event handlers
@@ -52,7 +51,7 @@ namespace pleep
         // Server instance to communicate with clients (we create from m_timelineApi config)
         ServerNetworkApi m_networkApi;
 
-        Cosmos* m_workingCosmos = nullptr;
+        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
     };
 }
 

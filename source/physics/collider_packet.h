@@ -21,7 +21,7 @@ namespace pleep
 
         // provide access to ecs for different collision responses
         Entity collidee;
-        Cosmos* owner;
+        std::shared_ptr<Cosmos> owner;
     };
 }
 

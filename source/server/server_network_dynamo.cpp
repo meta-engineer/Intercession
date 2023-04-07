@@ -10,12 +10,12 @@ namespace pleep
         , m_timelineApi(localTimelineApi)
         , m_networkApi(m_timelineApi.get_port())
     {
-        PLEEPLOG_TRACE("Setup Server Networking pipeline");
+        PLEEPLOG_TRACE("Start server networking pipeline setup");
 
         // ***** TESTING *****
         if (m_timelineApi.get_timeslice_id() == 0)
         {
-            PLEEPLOG_DEBUG("I am origin timeslice (0), sending a test message to timeslice 1");
+            PLEEPLOG_DEBUG("I am origin timeslice (0), sending a test message to timeslice 1 via timeline api");
             EventMessage testMsg(events::network::INTERCESSION_UPDATE);
             m_timelineApi.send_message(1, testMsg);
         }
@@ -32,7 +32,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
 
-        PLEEPLOG_TRACE("Done Server Networking pipeline setup");
+        PLEEPLOG_TRACE("Done server networking pipeline setup");
     }
     
     ServerNetworkDynamo::~ServerNetworkDynamo() 
@@ -98,7 +98,7 @@ namespace pleep
             break;
             default:
             {
-                PLEEPLOG_DEBUG("Received unknown message direct from another (?) timeslice");
+                PLEEPLOG_DEBUG("Received unknown message id " + std::to_string(msg.header.id) + " direct from another(?) timeslice");
             }
             break;
             }

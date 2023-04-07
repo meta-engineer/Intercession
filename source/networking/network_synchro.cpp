@@ -28,7 +28,7 @@ namespace pleep
         m_attachedNetworkDynamo->submit(CosmosAccessPacket{ m_ownerCosmos });
     }
     
-    Signature NetworkSynchro::derive_signature(Cosmos* cosmos) 
+    Signature NetworkSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         UNREFERENCED_PARAMETER(cosmos);
         // blank sign should mean NO matched entities

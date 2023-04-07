@@ -5,8 +5,6 @@
 namespace pleep
 {
     I_CosmosContext::I_CosmosContext()
-        : m_currentCosmos(nullptr)
-        , m_running(false)
     {
         // build event listener
         m_eventBroker = new EventBroker();

@@ -16,12 +16,7 @@ namespace pleep
         m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
         m_networkDynamo = new ServerNetworkDynamo(m_eventBroker, localTimelineApi);
         
-        // build empty starting cosmos
-        // if cosmos is rebuilt, it will need timeslice id again
-        // how can a context be called to delete and remake a context? or would the whole context be rebuilt?
-        m_currentCosmos = new Cosmos(m_eventBroker, m_networkDynamo->get_timeslice_id());
-        
-        // populate starting cosmos
+        // build and populate starting cosmos
         // eventually we'll pass some cosmos config param here
         _build_cosmos();
 
@@ -33,7 +28,7 @@ namespace pleep
     ServerCosmosContext::~ServerCosmosContext() 
     {
         // delete cosmos first to avoid null dynamo dereferences
-        delete m_currentCosmos;
+        m_currentCosmos = nullptr;
         
         delete m_networkDynamo;
         delete m_physicsDynamo;
@@ -69,8 +64,12 @@ namespace pleep
 
     void ServerCosmosContext::_build_cosmos()
     {
+        PLEEPLOG_TRACE("Start cosmos construction");
+
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        build_temporal_cosmos(m_currentCosmos, m_eventBroker, m_physicsDynamo, m_networkDynamo);
+        m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_physicsDynamo, m_networkDynamo);
+
+        PLEEPLOG_TRACE("Done cosmos construction");
     }
 }

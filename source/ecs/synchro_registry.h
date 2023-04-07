@@ -22,7 +22,7 @@ namespace pleep
         // create AND register synchro for given templated synchro type
         // return created type
         template<typename T>
-        std::shared_ptr<T> register_synchro(Cosmos* ownerCosmos);
+        std::shared_ptr<T> register_synchro(std::shared_ptr<Cosmos> ownerCosmos);
 
         // find synchro based on template and overwrite its desired signature
         // this does NOT recalculate its entities accordingly
@@ -50,7 +50,7 @@ namespace pleep
     
 
     template<typename T>
-    std::shared_ptr<T> SynchroRegistry::register_synchro(Cosmos* ownerCosmos)
+    std::shared_ptr<T> SynchroRegistry::register_synchro(std::shared_ptr<Cosmos> ownerCosmos)
     {
         const char* typeName = typeid(T).name();
 

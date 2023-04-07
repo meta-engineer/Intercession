@@ -9,10 +9,11 @@ namespace pleep
         : A_Dynamo(sharedBroker)
         , m_windowApi(windowApi)
     {
+        PLEEPLOG_TRACE("Start render pipeline setup");
+
         // subscribe to events
         m_sharedBroker->add_listener(METHOD_LISTENER(events::window::RESIZE, RenderDynamo::_resize_handler));
 
-        PLEEPLOG_TRACE("Setup render pipeline");
 
         // setup UBO
         glGenBuffers(1, &m_viewTransformUboId);
@@ -32,7 +33,7 @@ namespace pleep
         read_viewport_size(m_viewportDims);
         // init view dimensions with default screen size until camera sends update
 
-        PLEEPLOG_TRACE("Done Render pipeline setup");
+        PLEEPLOG_TRACE("Done render pipeline setup");
     }
     
     RenderDynamo::~RenderDynamo() 

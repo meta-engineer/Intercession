@@ -19,7 +19,7 @@ namespace pleep
     // should be able to fit in a generic ecs framework
     // the differentiation will come from how the Cosmos owner (CosmosContext) builds its registries
     // the specific types of compnents/synchros (and their dynamos) will determine how the cosmos manifests
-    class Cosmos
+    class Cosmos : public std::enable_shared_from_this<Cosmos>
     {
     public:
         // build empty ecs
@@ -319,10 +319,10 @@ namespace pleep
     template<typename T>
     std::shared_ptr<T> Cosmos::register_synchro() 
     {
-        std::shared_ptr<T> newSynchro = m_synchroRegistry->register_synchro<T>(this);
+        std::shared_ptr<T> newSynchro = m_synchroRegistry->register_synchro<T>(shared_from_this());
 
         // we'll expect T to be ISynchro
-        m_synchroRegistry->set_signature<T>(newSynchro->derive_signature(this));
+        m_synchroRegistry->set_signature<T>(newSynchro->derive_signature(shared_from_this()));
 
         return newSynchro;
     }

@@ -15,7 +15,7 @@ namespace pleep
 
         // Provide Cosmos-wide access
         Entity entity;
-        Cosmos* owner;
+        std::shared_ptr<Cosmos> owner;
     };
 }
 

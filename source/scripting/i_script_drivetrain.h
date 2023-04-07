@@ -5,9 +5,10 @@
 #define GLM_FORCE_SILENT_WARNINGS
 #include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
+#include <memory>
 
-#include "logging/pleep_log.h"
 #include "physics/collider_packet.h"
+#include "scripting/script_library.h"
 
 namespace pleep
 {
@@ -27,10 +28,10 @@ namespace pleep
         virtual ~I_ScriptDrivetrain() = default;
 
         // invoked once per fixed interval per entity which holds it in their ScriptComponent
-        virtual void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr);
+        virtual void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr);
         
         // invoked once per frame interval per entity which holds it in their ScriptComponent
-        virtual void on_frame_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr);
+        virtual void on_frame_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr);
 
         // invoked at most once per fixed interval per entity which holds it as their
         //   I_ColliderComponent::scriptTarget when it collides with another collider
@@ -42,6 +43,12 @@ namespace pleep
         // TODO: how do we detect/track the "start" and "end" of a collision? should collision relay dispatch?
         virtual void on_collision_enter();
         virtual void on_collision_exit();
+        
+        // Stores the type of script loaded here from library for serialization
+        // this matches the pattern of supermesh's m_sourceFilename.
+        // TODO this is public (for serializer access) and perhaps unsafe
+        //     maybe make this protected and add operators/library as friends?
+        ScriptLibrary::ScriptType m_libraryType = ScriptLibrary::ScriptType::none;
     };
 }
 

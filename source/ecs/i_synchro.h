@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <set>
+#include <memory>
 
 #include "ecs_types.h"
 
@@ -30,7 +31,7 @@ namespace pleep
     {
     public:
         // subclasses should "using I_Synchro::I_Synchro" or overload with constructor which calls here
-        I_Synchro(Cosmos* owner)
+        I_Synchro(std::shared_ptr<Cosmos> owner)
             : m_ownerCosmos(owner)
         {}
         virtual ~I_Synchro() = default;
@@ -40,12 +41,12 @@ namespace pleep
 
         // Each subclass can suggest to registry what component signature it requires derived from known cosmos component set
         // returns empty bitset if desired components could not be found
-        virtual Signature derive_signature(Cosmos* cosmos) = 0;
+        virtual Signature derive_signature(std::shared_ptr<Cosmos> cosmos) = 0;
 
         std::set<Entity> m_entities;
         
         // Access to ecs where m_entities are contained
-        Cosmos* m_ownerCosmos;
+        std::shared_ptr<Cosmos> m_ownerCosmos;
     };
 }
 

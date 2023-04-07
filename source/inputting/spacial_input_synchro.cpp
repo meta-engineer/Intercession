@@ -32,7 +32,7 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature SpacialInputSynchro::derive_signature(Cosmos* cosmos) 
+    Signature SpacialInputSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         Signature sign;
 

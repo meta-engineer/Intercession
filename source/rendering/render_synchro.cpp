@@ -59,7 +59,7 @@ namespace pleep
         // Other components (Context) may draw further and then Context will flush at frame end
     }
     
-    Signature RenderSynchro::derive_signature(Cosmos* cosmos) 
+    Signature RenderSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         Signature sign;
 

@@ -6,7 +6,7 @@ namespace pleep
 {
     ClientAppGateway::ClientAppGateway() 
     {
-        PLEEPLOG_TRACE("Configuring Client App Gateway");
+        PLEEPLOG_TRACE("Constructing Client App Gateway");
         // build apis for my specific context
         this->_build_window_api();
         

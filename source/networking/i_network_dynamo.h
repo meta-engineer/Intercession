@@ -34,6 +34,12 @@ namespace pleep
     public:
         // provide access to entire ecs to apply updates to entities only as needed
         virtual void submit(CosmosAccessPacket data) = 0;
+        
+        // passthrough to timelineApi
+        virtual TimesliceId get_timeslice_id()
+        {
+            return NULL_TIMESLICE;
+        }
     };
 }
 

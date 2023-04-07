@@ -2,6 +2,8 @@
 #define COSMOS_ACCESS_PACKET_H
 
 //#include "intercession_pch.h"
+#include <memory>
+
 #include "ecs/ecs_types.h"
 #include "core/cosmos.h"
 
@@ -12,7 +14,7 @@ namespace pleep
     // synchro signature would allow (I.E. from the other side of a network)
     struct CosmosAccessPacket
     {
-        Cosmos* owner = nullptr;
+        std::shared_ptr<Cosmos> owner = nullptr;
     };
 }
 

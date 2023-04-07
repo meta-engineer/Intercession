@@ -6,11 +6,13 @@
 #include <string>
 #include <typeinfo>
 
-#include "scripting/i_script_drivetrain.h"
 #include "logging/pleep_log.h"
 
 namespace pleep
 {
+    // forward declare I_ScriptDrivetrain so it can import ScriptLibrary::ScriptType
+    class I_ScriptDrivetrain;
+
     // A static (global) access point to coordinate memory for script objects
     //  (as multiple entities could want to use the same script)
     // Scripts are for functionality not specific enough to justify a dedicated dynamo
@@ -29,63 +31,21 @@ namespace pleep
         // copy constructor
         ScriptLibrary(const ScriptLibrary&) = delete;
 
-        // throws out_of_range if script type has not been registered
-        // scripts == script drivetrain
-        static std::shared_ptr<I_ScriptDrivetrain> fetch_scripts(std::string scriptsTypename)
+        // list all available scripts as enum for serialization
+        // Each I_ScriptDrivetrain subclass could list their associated ScriptType?
+        //     or Script library could be kept closed
+        //     but then it would need to be able to scan a script type for its enum
+        //     Alternatively Script library could assign a ScriptType value to a member of the script (like model library sets the source filename)
+        enum class ScriptType
         {
-            // at() throws out_of_range if key is not found
-            try
-            {
-                return ScriptLibrary::m_singleton->m_scriptMap.at(scriptsTypename);
-            }
-            catch(const std::exception& err)
-            {
-                UNREFERENCED_PARAMETER(err);
-                PLEEPLOG_ERROR(err.what());
-                PLEEPLOG_ERROR("Could not fetch script type: " + scriptsTypename + " from ScriptLibrary, it may not have been registered. Returning nullptr");
-            }
-            return nullptr;
-        }
+            none,
+            fly_control,            // FlyControlScripts
+            biped_control,          // BipedScripts
+            oscillator,             // OscillatorScripts
+            count
+        };
 
-        // alternative form for aesthetics (extract typeid name from template)
-        template <typename T_Scripts>
-        static std::shared_ptr<I_ScriptDrivetrain> fetch_scripts()
-        {
-            return ScriptLibrary::fetch_scripts(typeid(T_Scripts).name());
-        }
-
-        // should be called by a CosmosContext before building a cosmos
-        template <typename T_Scripts>
-        static void register_script()
-        {
-            ScriptLibrary::m_singleton->m_scriptMap.insert({
-                std::string(typeid(T_Scripts).name()),
-                std::make_shared<T_Scripts>()
-            });
-        }
-        
-        // Should be called by CosmosContext periodically(?)
-        // Remove all scripts not used anywhere in the Cosmos
-        static void clear_unused_scripts()
-        {
-            // Classic removing from dynamic container problem
-            PLEEPLOG_WARN("Uh oh! Not implemented. Use clear_library()");
-        }
-
-        // Clear ALL scripts
-        // Shared pointers should remain with users
-        static void clear_library()
-        {
-            ScriptLibrary::m_singleton->m_scriptMap.clear();
-        }
-
-    protected:
-        // string -> typeid of I_ScriptDrivetrain subclass
-        std::unordered_map<std::string, std::shared_ptr<I_ScriptDrivetrain>> m_scriptMap;
-
-        // users don't need to be able to literally 'get' this instance, so it can be unique
-        // initialized in script_library.cpp
-        static std::unique_ptr<ScriptLibrary> m_singleton;
+        static std::shared_ptr<I_ScriptDrivetrain> fetch_script(ScriptType sType);
     };
 }
 

@@ -10,7 +10,7 @@ namespace pleep
         , m_windowApi(windowApi)
         , m_spacialInputRelay(m_inputBuffer)
     {
-        PLEEPLOG_TRACE("Setup Input pipeline");
+        PLEEPLOG_TRACE("Start input pipeline setup");
         // we have "lease" of api to override callbacks
         // No other system can set the UserPointer (glfwSetWindowUserPointer) or this won't work
         _set_my_window_callbacks();
@@ -19,7 +19,7 @@ namespace pleep
         // set mouse capture mode
         glfwSetInputMode(m_windowApi, GLFW_CURSOR, m_glfwMouseMode);
         
-        PLEEPLOG_TRACE("Done Input pipeline setup");
+        PLEEPLOG_TRACE("Done input pipeline setup");
     }
     
     InputDynamo::~InputDynamo() 

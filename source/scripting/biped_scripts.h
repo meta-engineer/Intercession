@@ -3,8 +3,8 @@
 
 //#include "intercession_pch.h"
 #include "logging/pleep_log.h"
-#include "scripting/script_component.h"
 #include "scripting/i_script_drivetrain.h"
+#include "scripting/script_component.h"
 #include "core/cosmos.h"
 #include "physics/physics_component.h"
 #include "scripting/biped_component.h"
@@ -15,7 +15,7 @@ namespace pleep
     class BipedScripts : public I_ScriptDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, Cosmos* owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr) override
         {
             // should Biped "control" be done here?
             // (we fetch input component, physics/transform, and a standalon biped component and operate on them)

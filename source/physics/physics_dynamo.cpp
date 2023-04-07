@@ -7,7 +7,7 @@ namespace pleep
     PhysicsDynamo::PhysicsDynamo(EventBroker* sharedBroker)
         : A_Dynamo(sharedBroker)
     {
-        PLEEPLOG_TRACE("Setup Physics pipeline");
+        PLEEPLOG_TRACE("Start Physics pipeline setup");
         
         // setup relays
         m_motionStep = std::make_unique<EulerPhysicsRelay>();

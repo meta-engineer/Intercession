@@ -41,7 +41,7 @@ namespace pleep
         //   update anyway, this isn't THAT much overhead
     }
     
-    Signature LightingSynchro::derive_signature(Cosmos* cosmos) 
+    Signature LightingSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
     {
         Signature sign;
 
