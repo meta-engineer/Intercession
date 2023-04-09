@@ -49,7 +49,7 @@ namespace pleep
     private:
         // Goal is to have a PACKED array of components
         // each possible entity has a unique spot available
-        std::array<T, MAX_ENTITIES> m_array;
+        std::array<T, ENTITY_SIZE> m_array;
 
         // Maintained map of entity -> component index
         std::unordered_map<Entity, size_t> m_mapEntityToIndex;
@@ -111,6 +111,8 @@ namespace pleep
             PLEEPLOG_ERROR("Cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
             throw std::range_error("ComponentArray cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
         }
+        // If we found data for NULL_ENTITY, something has gone wrong
+        assert(entity != NULL_ENTITY);
 
         return m_array[indexIt->second];
     }

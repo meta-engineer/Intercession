@@ -54,7 +54,7 @@ namespace pleep
 
     private:
         // signal to m_sharedBroker that an entity has been modified
-        void _signal_modified_entity(Entity id);
+        void _signal_modified_entity(Entity entity);
 
         // take over window user pointer and bind all callbacks below
         void _set_my_window_callbacks();

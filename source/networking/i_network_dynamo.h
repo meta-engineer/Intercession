@@ -38,7 +38,7 @@ namespace pleep
         // passthrough to timelineApi
         virtual TimesliceId get_timeslice_id()
         {
-            return NULL_TIMESLICE;
+            return NULL_TIMESLICEID;
         }
     };
 }

@@ -1,7 +1,7 @@
 #include "server_network_dynamo.h"
 
 #include "logging/pleep_log.h"
-#include "networking/timeline_types.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {
@@ -68,15 +68,15 @@ namespace pleep
             {
                 events::cosmos::ENTITY_CREATED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received ENTITY_CREATED message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
+                PLEEPLOG_DEBUG("Received ENTITY_CREATED message for Entity " + std::to_string(data.entity) + " directly from timeslice " + std::to_string(derive_timeslice_id(data.entity)));
                 // double check if we are it's host
-                if (extract_host_timeslice_id(data.temporalEntity) != m_timelineApi.get_timeslice_id())
+                if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
                     PLEEPLOG_WARN("Received a ENTITY_CREATED signal for an entity we don't host. Is this intentional?");
                 }
                 else
                 {
-                    m_workingCosmos->increment_hosted_temporal_entity_count(data.temporalEntity);
+                    m_workingCosmos->increment_hosted_temporal_entity_count(data.entity);
                 }
             }
             break;
@@ -84,15 +84,15 @@ namespace pleep
             {
                 events::cosmos::ENTITY_REMOVED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received ENTITY_REMOVED message for temporalEntity " + std::to_string(data.temporalEntity) + " directly from timeslice " + std::to_string(extract_host_timeslice_id(data.temporalEntity)));
+                PLEEPLOG_DEBUG("Received ENTITY_REMOVED message for Entity " + std::to_string(data.entity) + " directly from timeslice " + std::to_string(derive_timeslice_id(data.entity)));
                 // double check if we are it's host
-                if (extract_host_timeslice_id(data.temporalEntity) != m_timelineApi.get_timeslice_id())
+                if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
                     PLEEPLOG_WARN("Received a ENTITY_REMOVED signal for an entity we don't host. Is this intentional?");
                 }
                 else
                 {
-                    m_workingCosmos->decrement_hosted_temporal_entity_count(data.temporalEntity);
+                    m_workingCosmos->decrement_hosted_temporal_entity_count(data.entity);
                 }
             }
             break;
@@ -182,7 +182,7 @@ namespace pleep
 
         if (m_timelineApi.has_past())
         {
-            TimesliceId host = extract_host_timeslice_id(newEntityParams.temporalEntity);
+            TimesliceId host = derive_timeslice_id(newEntityParams.entity);
             m_timelineApi.send_message(host, entityEvent);
         }
     }
@@ -193,7 +193,7 @@ namespace pleep
         
         events::cosmos::ENTITY_REMOVED_params removedEntityParams;
         entityEvent >> removedEntityParams;
-        TimesliceId host = extract_host_timeslice_id(removedEntityParams.temporalEntity);
+        TimesliceId host = derive_timeslice_id(removedEntityParams.entity);
 
 
         m_timelineApi.send_message(host, entityEvent);

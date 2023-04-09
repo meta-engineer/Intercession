@@ -33,6 +33,7 @@ namespace pleep
             try
             {
                 UNREFERENCED_PARAMETER(owner);
+                UNREFERENCED_PARAMETER(entity);
                 //PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
                 //BipedComponent& biped = owner->get_component<BipedComponent>(entity);
                 //SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);

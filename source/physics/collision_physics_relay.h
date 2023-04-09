@@ -138,7 +138,7 @@ namespace pleep
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
-                            PLEEPLOG_WARN(err.what());
+                            //PLEEPLOG_WARN(err.what());
                             PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
                             thisData.collider->scriptTarget = NULL_ENTITY;
                         }
@@ -157,7 +157,7 @@ namespace pleep
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
-                            PLEEPLOG_WARN(err.what());
+                            //PLEEPLOG_WARN(err.what());
                             PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
                             otherData.collider->scriptTarget = NULL_ENTITY;
                         }

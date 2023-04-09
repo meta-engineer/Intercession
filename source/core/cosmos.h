@@ -23,7 +23,7 @@ namespace pleep
     {
     public:
         // build empty ecs
-        Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICE);
+        Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
         ~Cosmos();
 
         // call all synchros to invoke entity updates
@@ -38,27 +38,23 @@ namespace pleep
 
         // ***** ECS methods *****
 
-        // register empty entity & do not register it as a Temporal Entity
-        Entity create_local_entity();
+        // create & register empty entity hosted by us
+        // If we are not a timeslice host (client) we have to create a temporary entity
+        // with a null TimesliceId and signal to our current connected host to create a valid version to overwrite it
+        Entity create_entity();
 
-        // register empty entity & register it as NEW Temporal Entity hosted by us
-        // If we are not a timeslice host (client) we have to create a temporary non-temporal entity
-        // and signal to our current connected host to create a temporal version to overwrite it asynchronously
-        Entity create_temporal_entity();
-
-        // create empty entity & register it as Temporal Entity from another host
-        Entity register_temporal_entity(TemporalEntity tEntity, CausalChainLink link);
+        // create empty entity & register it as the given value
+        // Check Entity should be from another host?
+        // Can there be an edge case where another host passes us our own entity?
+        // Returns true when entity is valid to use and register components to
+        bool register_entity(Entity entity);
 
         // remove entity & related components, and clear it from any synchros
         void destroy_entity(Entity entity);
 
         // forwards to EntityRegistry
         // return number of existing entities in this cosmos of any type
-        size_t get_local_entity_count();
-        // forwards to EntityRegistry
-        // return number of existing temporal entities in this cosmos of any type
-        // (not the number we host across the whole timeline)
-        size_t get_temporal_entity_count();
+        size_t get_entity_count();
         
         // passthrough to EntityRegistry->get_signature()
         Signature get_entity_signature(Entity entity);
@@ -71,19 +67,17 @@ namespace pleep
         template<typename T>
         Entity find_entity(T component);
 
-        // returns {NULL_TEMPORAL_ENTITY, 0} if not found
-        std::pair<TemporalEntity, CausalChainLink> get_temporal_identifier(Entity entity);
-
-        // returns NULL_ENTITY if it does not exist in timeline
-        Entity get_local_entity(TemporalEntity tEntity, CausalChainLink link);
-
+        // increase existence count of TemporalEntity that this Entity belongs to
         // throws error if count is currently zero (must be set by create/register)
-        void increment_hosted_temporal_entity_count(TemporalEntity tEntity);
-        // throws error is count is currently zero (counting as failed)
-        void decrement_hosted_temporal_entity_count(TemporalEntity tEntity);
-        // check number of instances of this temporal entity across the timeline
-        // returns 0 if tEntity is not hosted by this tieslice
-        size_t get_hosted_temporal_entity_count(TemporalEntity tEntity);
+        void increment_hosted_temporal_entity_count(Entity entity);
+        // decrease existence count of TemporalEntity that this Entity belongs to
+        // throws error if count is currently zero (must be set by create/register)
+        void decrement_hosted_temporal_entity_count(Entity entity);
+        // Returns total number of entities that share this entity's TemporalEntityId across the timeline
+        // returns 0 if entity is not hosted by this timeslice
+        size_t get_hosted_temporal_entity_count(Entity entity);
+        // Returns total number of TampoeralEntities this cosmos is currently hosting
+        size_t get_num_hosted_temporal_entities();
 
         // setup component T to be usable in this cosmos
         template<typename T>
@@ -155,10 +149,10 @@ namespace pleep
     // templates need to be accessable to all translation units that use Cosmos
     // (non-template entity methods also provided as inline for organization)
     
-    inline Entity Cosmos::create_local_entity() 
+    inline Entity Cosmos::create_entity() 
     {
-        Entity entity = m_entityRegistry->create_local_entity();
-        
+        Entity entity = m_entityRegistry->create_entity();
+
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
@@ -170,44 +164,25 @@ namespace pleep
         return entity;
     }
     
-    inline Entity Cosmos::create_temporal_entity()
+    inline bool Cosmos::register_entity(Entity entity)
     {
-        Entity entity = m_entityRegistry->create_temporal_entity();
+        bool isEntityValid = m_entityRegistry->register_entity(entity);
+
+        if (!isEntityValid) return false;
 
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
-            entity,
-            get_temporal_identifier(entity).first,
-            get_temporal_identifier(entity).second
+            entity
         };
         newEntityEvent << newEntityParams;
         m_sharedBroker->send_event(newEntityEvent);
 
-        return entity;
-    }
-    
-    inline Entity Cosmos::register_temporal_entity(TemporalEntity tEntity, CausalChainLink link)
-    {
-        Entity entity = m_entityRegistry->register_temporal_entity(tEntity, link);
-
-        // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
-        events::cosmos::ENTITY_CREATED_params newEntityParams {
-            entity,
-            tEntity,
-            link
-        };
-        newEntityEvent << newEntityParams;
-        m_sharedBroker->send_event(newEntityEvent);
-
-        return entity;
+        return true;
     }
     
     inline void Cosmos::destroy_entity(Entity entity) 
     {
-        auto temporalId = get_temporal_identifier(entity);
-
         m_entityRegistry->destroy_entity(entity);
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);
@@ -215,22 +190,15 @@ namespace pleep
         // broadcast entity no longer exists
         EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED);
         events::cosmos::ENTITY_REMOVED_params removedEntityParams {
-            entity,
-            temporalId.first,
-            temporalId.second
+            entity
         };
         removedEntityEvent << removedEntityParams;
         m_sharedBroker->send_event(removedEntityEvent);
     }
     
-    inline size_t Cosmos::get_local_entity_count() 
+    inline size_t Cosmos::get_entity_count() 
     {
-        return m_entityRegistry->get_local_entity_count();
-    }
-
-    inline size_t Cosmos::get_temporal_entity_count()
-    {
-        return m_entityRegistry->get_temporal_entity_count();
+        return m_entityRegistry->get_entity_count();
     }
 
     inline Signature Cosmos::get_entity_signature(Entity entity)
@@ -244,27 +212,21 @@ namespace pleep
         return m_componentRegistry->find_entity(component);
     }
     
-    inline std::pair<TemporalEntity, CausalChainLink> Cosmos::get_temporal_identifier(Entity entity)
+    inline void Cosmos::increment_hosted_temporal_entity_count(Entity entity)
     {
-        return m_entityRegistry->get_temporal_identifier(entity);
+        m_entityRegistry->increment_hosted_temporal_entity_count(entity);
     }
-
-    inline Entity Cosmos::get_local_entity(TemporalEntity tEntity, CausalChainLink link)
+    inline void Cosmos::decrement_hosted_temporal_entity_count(Entity entity)
     {
-        return m_entityRegistry->get_local_entity(tEntity, link);
+        m_entityRegistry->decrement_hosted_temporal_entity_count(entity);
     }
-    
-    inline void Cosmos::increment_hosted_temporal_entity_count(TemporalEntity tEntity)
+    inline size_t Cosmos::get_hosted_temporal_entity_count(Entity entity)
     {
-        m_entityRegistry->increment_hosted_temporal_entity_count(tEntity);
+        return m_entityRegistry->get_hosted_temporal_entity_count(entity);
     }
-    inline void Cosmos::decrement_hosted_temporal_entity_count(TemporalEntity tEntity)
+    inline size_t Cosmos::get_num_hosted_temporal_entities()
     {
-        m_entityRegistry->decrement_hosted_temporal_entity_count(tEntity);
-    }
-    inline size_t Cosmos::get_hosted_temporal_entity_count(TemporalEntity tEntity)
-    {
-        return m_entityRegistry->get_hosted_temporal_entity_count(tEntity);
+        return m_entityRegistry->get_num_hosted_temporal_entities();
     }
 
     template<typename T>

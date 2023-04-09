@@ -104,7 +104,7 @@ namespace pleep
         // return shared pointer? Context may need to regenerate config
         std::shared_ptr<Cosmos> generate(
             CosmosBuilder::Config config, 
-            const TimesliceId localTimesliceIndex = NULL_TIMESLICE,
+            const TimesliceId localTimesliceIndex = NULL_TIMESLICEID,
             EventBroker* callerBroker = nullptr, 
             RenderDynamo* callerRenderDynamo = nullptr, 
             InputDynamo* callerInputDynamo = nullptr, 

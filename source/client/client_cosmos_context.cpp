@@ -2,6 +2,7 @@
 
 // TODO: This is temporary until proper cosmos staging is implemented
 #include "staging/test_cosmos.h"
+#include "staging/test_temporal_cosmos.h"
 
 namespace pleep
 {
@@ -13,7 +14,6 @@ namespace pleep
         , m_networkDynamo(nullptr)
         , m_scriptDynamo(nullptr)
     {
-        PLEEPLOG_TRACE("Start constructing context");
         // I_CosmosContext() has setup broker
         
         // construct dynamos
@@ -26,8 +26,6 @@ namespace pleep
         // build and populate starting cosmos
         // TODO: use network dynamo to get cosmos config from server (some loading cosmos while waiting?)
         _build_cosmos();
-        
-        PLEEPLOG_TRACE("Done constructing context");
     }
     
     ClientCosmosContext::~ClientCosmosContext() 
@@ -87,10 +85,10 @@ namespace pleep
             ImGui::Text("This window runs above the cosmos");
 
             // Report Cosmos info
-            std::string locaCountString = "Local Entity Count: " + std::to_string(m_currentCosmos->get_local_entity_count());
-            ImGui::Text(locaCountString.c_str());
-            std::string temporalCountString = "Temporal Entity Count: " + std::to_string(m_currentCosmos->get_temporal_entity_count());
-            ImGui::Text(temporalCountString.c_str());
+            std::string entityCountString = "Local Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
+            ImGui::Text(entityCountString.c_str());
+            std::string hostedCountString = "Hosted TemporalEntity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
+            ImGui::Text(hostedCountString.c_str());
 
             // Edit bools storing our window open/close state
             ImGui::Checkbox("checkbox", &checkbox);
@@ -136,7 +134,8 @@ namespace pleep
 
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        m_currentCosmos = build_test_cosmos(m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
+        //m_currentCosmos = build_test_cosmos(m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
+        m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_networkDynamo);
         // use imgui input in main loop do add more at runtime
         
         PLEEPLOG_TRACE("Done cosmos construction");

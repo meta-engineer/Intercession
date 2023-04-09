@@ -13,7 +13,9 @@ namespace pleep
         // inline _build_context
         // be strict and LOUD with misuse?
         assert(!m_context);
+        PLEEPLOG_TRACE("Start constructing client context");
         m_context = std::make_unique<ClientCosmosContext>(m_windowApi);
+        PLEEPLOG_TRACE("Done constructing client context");
     }
     
     ClientAppGateway::~ClientAppGateway() 
@@ -50,6 +52,7 @@ namespace pleep
             // does it make sense for cosmos to change, or just to be cleared and re-populated?
             // It is more difficult for server to handle regular context closing (because they're async)
             // so it may be preferable to have context closing ONLY be in fatal cases
+            // In fatal case, we may need to take over window polling and display the error
 
             // TEMP: always handle context stopping by also stopping ourselves
             break;

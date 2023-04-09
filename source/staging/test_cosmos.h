@@ -47,7 +47,7 @@ namespace pleep
 
         // build cosmos according to config
         CosmosBuilder generator;
-        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, NULL_TIMESLICE, eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
+        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, NULL_TIMESLICEID , eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
 
         //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
 
@@ -64,7 +64,7 @@ namespace pleep
         // ***************************************************************************
 
         // ***************************************************************************
-        Entity frog = cosmos->create_local_entity();
+        Entity frog = cosmos->create_entity();
 
         //cosmos->add_component(frog, MetaComponent{ "froog" });
         cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
@@ -94,11 +94,11 @@ namespace pleep
         cosmos->add_component(frog, frog_rigidBody);
 
         // script handle legs collider events (below)
-        //ScriptComponent frog_scripts;
-        //frog_scripts.drivetrain = ScriptLibrary::fetch_scripts();
-        //frog_scripts.use_fixed_update = true;
+        ScriptComponent frog_scripts;
+        frog_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
+        frog_scripts.use_fixed_update = true;
         // store script in self
-        //cosmos->add_component(frog, frog_scripts);
+        cosmos->add_component(frog, frog_scripts);
 
         // frog "legs"
         RayColliderComponent frog_ray;
@@ -120,7 +120,7 @@ namespace pleep
         // ***************************************************************************
 
 /*
-        Entity vamp = cosmos->create_local_entity();
+        Entity vamp = cosmos->create_entity();
         cosmos->add_component(vamp, TransformComponent(glm::vec3(2.0f, 0.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(vamp).scale = glm::vec3(0.01f, 0.01f, 0.01f);
         std::shared_ptr<Model> vampModel = std::make_shared<Model>("resources/vampire/dancing_vampire3.dae");
@@ -128,7 +128,7 @@ namespace pleep
 */
 
         // ***************************************************************************
-        Entity crate = cosmos->create_local_entity();
+        Entity crate = cosmos->create_entity();
         TransformComponent crateTransform(glm::vec3(2.9f, 0.0f, 0.3f));
         cosmos->add_component(crate, crateTransform);
 
@@ -151,7 +151,7 @@ namespace pleep
         // ***************************************************************************
 
         // ***************************************************************************
-        Entity block = cosmos->create_local_entity();
+        Entity block = cosmos->create_entity();
 
         cosmos->add_component(block, TransformComponent(glm::vec3(2.0f, -1.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(block).orientation = glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -182,7 +182,7 @@ namespace pleep
         // ******************************************************************************
 
         // ***************************************************************************
-        Entity torus = cosmos->create_local_entity();
+        Entity torus = cosmos->create_entity();
 
         TransformComponent torus_transform;
         torus_transform.origin = glm::vec3(0.3f, 1.0f, 0.0f);
@@ -218,7 +218,7 @@ namespace pleep
         cosmos->add_component(torus, torus_springBody);
         // ***************************************************************************
 
-        Entity wall1 = cosmos->create_local_entity();
+        Entity wall1 = cosmos->create_entity();
         cosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
         cosmos->get_component<TransformComponent>(wall1).orientation = glm::angleAxis(1.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
         
@@ -233,7 +233,7 @@ namespace pleep
         wall1_renderable.materials.push_back(ModelLibrary::fetch_material("wall1_mat"));
         cosmos->add_component(wall1, wall1_renderable);
         
-        Entity wall2 = cosmos->create_local_entity();
+        Entity wall2 = cosmos->create_entity();
         cosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
         cosmos->get_component<TransformComponent>(wall2).orientation = 
             glm::normalize(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
@@ -250,7 +250,7 @@ namespace pleep
         cosmos->add_component(wall2, wall2_renderable);
 
         // ***************************************************************************
-        Entity floor = cosmos->create_local_entity();
+        Entity floor = cosmos->create_entity();
         cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -283,7 +283,7 @@ namespace pleep
         // ***************************************************************************
 
         // ***************************************************************************
-        Entity snow = cosmos->create_local_entity();
+        Entity snow = cosmos->create_entity();
         cosmos->add_component(snow, TransformComponent(glm::vec3(10.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -317,7 +317,7 @@ namespace pleep
 
         // ***************************************************************************
         // Scene needs to create an entity with camera component
-        Entity mainCamera = cosmos->create_local_entity();
+        Entity mainCamera = cosmos->create_entity();
         cosmos->add_component(mainCamera, TransformComponent(glm::vec3(5.0f, 2.5f, 6.0f)));
         PhysicsComponent mainCamera_physics;
         mainCamera_physics.isAsleep = true;
@@ -347,7 +347,7 @@ namespace pleep
 
 
         // ***************************************************************************
-        Entity light = cosmos->create_local_entity();
+        Entity light = cosmos->create_entity();
         cosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 1.0f)));
         cosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.2f);
         // remember this is relative to exposure

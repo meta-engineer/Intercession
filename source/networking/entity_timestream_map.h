@@ -7,7 +7,7 @@
 
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
-#include "networking/timeline_types.h"
+#include "ecs/ecs_types.h"
 #include "events/event_types.h"
 
 namespace pleep
@@ -38,13 +38,11 @@ namespace pleep
     // we could have seperate instances which share timestreams and accept a bool
     // to restrict methods
 
-    // TODO: timestream may have to index with TemporalId if local entities are not compadible
-
     class EntityTimestreamMap
     {
     public:
-        EntityTimestreamMap();
-        ~EntityTimestreamMap();
+        EntityTimestreamMap() = default;
+        ~EntityTimestreamMap() = default;
 
         // Timestream could be it's own class to manage Message ordering
         // do we need use of deque iterators? or do we need threadsafe?

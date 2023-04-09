@@ -4,7 +4,7 @@
 //#include "intercession_pch.h"
 #include "networking/a_network_relay.h"
 #include "events/event_types.h"
-#include "networking/timeline_types.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {
@@ -26,21 +26,12 @@ namespace pleep
 
                 events::network::ENTITY_UPDATE_params updateData;
                 updateMsg >> updateData;
-                PLEEPLOG_DEBUG("Handling entity update event for TemporalEntity: " + std::to_string(updateData.id) + ", link: " + std::to_string(updateData.link));
+                PLEEPLOG_DEBUG("Handling entity update event for Entity: " + std::to_string(updateData.entity) + " (" + updateData.sign.to_string() + ")");
                 
-                // convert timeline to local entity id
-                Entity localId = m_workingCosmos->get_local_entity(updateData.id, updateData.link);
-                if (localId == NULL_ENTITY)
-                {
-                    PLEEPLOG_WARN("Tried to update TemporalId which does not exist locally, it must be created first, skipping...");
-                    return;
-                }
-
-                PLEEPLOG_DEBUG("Processing entity update for Entity: " + std::to_string(localId) + " (" + updateData.sign.to_string() + ")");
                 // confirm if (data sign == localID sign)
-                if (updateData.sign != m_workingCosmos->get_entity_signature(localId))
+                if (updateData.sign != m_workingCosmos->get_entity_signature(updateData.entity))
                 {
-                    PLEEPLOG_WARN("Updated entity data has mismatching local signature. Should we implicity create one, or should we expect an explicit \"add component\" event? Skipping for now...");
+                    PLEEPLOG_WARN("Updated entity data has signature mismatching local signature. Should we implicity create one, or should we expect an explicit \"add component\" event? Skipping for now...");
                     return;
                 }
                 

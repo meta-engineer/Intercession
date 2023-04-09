@@ -7,10 +7,11 @@
 #include "logging/pleep_log.h"
 
 #include "core/cosmos_builder.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> build_temporal_cosmos(EventBroker* eventBroker, PhysicsDynamo* physicsDynamo, I_NetworkDynamo* networkDynamo)
+    std::shared_ptr<Cosmos> build_temporal_cosmos(EventBroker* eventBroker, I_NetworkDynamo* networkDynamo)
     {
         // TODO: receive config from file?
         CosmosBuilder::Config cosmosConfig;
@@ -24,24 +25,23 @@ namespace pleep
 
         // build cosmos according to config
         CosmosBuilder generator;
-        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, networkDynamo->get_timeslice_id(), eventBroker, nullptr, nullptr, physicsDynamo, networkDynamo, nullptr);
+        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, networkDynamo->get_timeslice_id(), eventBroker, nullptr, nullptr, nullptr, networkDynamo, nullptr);
 
-        UNREFERENCED_PARAMETER(physicsDynamo);
         UNREFERENCED_PARAMETER(networkDynamo);
 
-        Entity time = cosmos->create_temporal_entity();
-        std::pair<TemporalEntity,CausalChainLink> timeTempId = cosmos->get_temporal_identifier(time);
-        PLEEPLOG_DEBUG("(time)  local    Entity: " + std::to_string(time));
-        PLEEPLOG_DEBUG("(time)  temporal Entity: " + std::to_string(timeTempId.first));
-        PLEEPLOG_DEBUG("(time)  causalchainlink: " + std::to_string(timeTempId.second));
-        PLEEPLOG_DEBUG("(time)  temporal  count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(timeTempId.first)));
+        Entity time = cosmos->create_entity();
+        PLEEPLOG_DEBUG("(time)            Entity: " + std::to_string(time));
+        PLEEPLOG_DEBUG("(time)  host TimesliceId: " + std::to_string(derive_timeslice_id(time)));
+        PLEEPLOG_DEBUG("(time)         GenesisId: " + std::to_string(derive_genesis_id(time)));
+        PLEEPLOG_DEBUG("(time)   CausalChainLink: " + std::to_string(derive_causal_chain_link(time)));
+        PLEEPLOG_DEBUG("(time)    instance count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(time)));
 
-        Entity space = cosmos->create_local_entity();
-        std::pair<TemporalEntity,CausalChainLink> spaceTempId = cosmos->get_temporal_identifier(space);
-        PLEEPLOG_DEBUG("(space) local    Entity: " + std::to_string(space));
-        PLEEPLOG_DEBUG("(space) temporal Entity: " + std::to_string(spaceTempId.first));
-        PLEEPLOG_DEBUG("(space) causalchainlink: " + std::to_string(spaceTempId.second));
-        PLEEPLOG_DEBUG("(space) temporal  count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(spaceTempId.first)));
+        Entity space = cosmos->create_entity();
+        PLEEPLOG_DEBUG("(space)            Entity: " + std::to_string(space));
+        PLEEPLOG_DEBUG("(space)  host TimesliceId: " + std::to_string(derive_timeslice_id(space)));
+        PLEEPLOG_DEBUG("(space)         GenesisId: " + std::to_string(derive_genesis_id(space)));
+        PLEEPLOG_DEBUG("(space)   CausalChainLink: " + std::to_string(derive_causal_chain_link(space)));
+        PLEEPLOG_DEBUG("(space)    instance count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(time)));
 
         return cosmos;
     }

@@ -7,7 +7,6 @@
 
 // pass entity values to register
 #include "ecs/ecs_types.h"
-#include "networking/timeline_types.h"
 #include "events/message.h"
 #include "build_config.h"
 
@@ -66,18 +65,16 @@ namespace pleep
             const EventId ENTITY_MODIFIED = __LINE__;
                 struct ENTITY_MODIFIED_params
                 {
-                    Entity id = NULL_ENTITY;
+                    Entity entity = NULL_ENTITY;
                 };
             // Indicates that the cosmos has added a new entity
             // (ambiguous whether WE created it, or we registered it from another host)
             // Entity will exist when this is signalled
-            // (sent over a network implies that the remote has added a new entity)
+            // (sent over a network implies that the remote has added this new entity)
             const EventId ENTITY_CREATED = __LINE__;
                 struct ENTITY_CREATED_params
                 {
-                    Entity localEntity = NULL_ENTITY;
-                    TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
-                    CausalChainLink link = 0;
+                    Entity entity = NULL_ENTITY;
                     // initialize components after creation
                     Signature sign;
                 };
@@ -86,9 +83,7 @@ namespace pleep
             const EventId ENTITY_REMOVED = __LINE__;
                 struct ENTITY_REMOVED_params
                 {
-                    Entity localEntity = NULL_ENTITY;
-                    TemporalEntity temporalEntity = NULL_TEMPORAL_ENTITY;
-                    CausalChainLink link = 0;
+                    Entity entity = NULL_ENTITY;
                 };
         }
 
@@ -127,15 +122,13 @@ namespace pleep
                 };
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
-            // assuming the intercessionAppInfo checks out the component layout should match
-            // then the id (TemporalEntity: 16 bits),
-            // the link (CausalChainLink: 8 bits)
-            // the sign (Signature: 32 bits)
+            //     (assuming the intercessionAppInfo checks out the component layout should match)
+            // the sign (Signature: 32 bits),
+            // then the id (Entity: 16 bits)
             // (remember it is a FIFO stack)
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
-                    TemporalEntity id = NULL_ENTITY;
-                    CausalChainLink link;
+                    Entity entity = NULL_ENTITY;
                     Signature sign;
                 };
             // Info about a timestream modification

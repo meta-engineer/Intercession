@@ -11,7 +11,6 @@
 #include "logging/pleep_log.h"
 #include "networking/ts_queue.h"
 #include "networking/timeline_config.h"
-#include "networking/timeline_types.h"
 #include "networking/entity_timestream_map.h"
 #include "events/event_types.h"
 
@@ -144,7 +143,7 @@ namespace pleep
         }
 
     private:
-        TimesliceId m_timesliceId;   // Store for TemporalEntity calculation
+        TimesliceId m_timesliceId;   // Store for Entity composition
         int m_delayToNextTimeslice;  // SECONDS
         
         double m_simulationHz;       // updates per second
@@ -162,6 +161,8 @@ namespace pleep
     // this should be passed to each TimelineApi, along with each unique id
     inline std::shared_ptr<TimelineApi::Multiplex> generate_timeline_multiplex(TimesliceId numUsers)
     {
+        assert(numUsers < TIMESLICEID_SIZE);
+        
         std::shared_ptr<TimelineApi::Multiplex> multiplex = std::make_shared<TimelineApi::Multiplex>();
         for (TimesliceId i = 0; i < numUsers; i++)
         {

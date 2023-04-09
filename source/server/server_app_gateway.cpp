@@ -20,7 +20,7 @@ namespace pleep
         assert(m_contexts.empty());
         for (TimesliceId i = 0; i < cfg.numTimeslices; i++)
         {
-            PLEEPLOG_TRACE("Start constructing context TimesliceId #" + std::to_string(i));
+            PLEEPLOG_TRACE("Start constructing server context TimesliceId #" + std::to_string(i));
 
             // Inside each context the TimelineConfig information will only be accessible 
             //   through the TimelineApi (to branch based on specific timesliceId)
@@ -29,7 +29,7 @@ namespace pleep
                 TimelineApi(cfg, i, sharedMultiplex)
             );
             
-            PLEEPLOG_TRACE("Done constructing context TimesliceId #" + std::to_string(i));
+            PLEEPLOG_TRACE("Done constructing server context TimesliceId #" + std::to_string(i));
 
             m_contexts.push_back(std::move(ctx));
         }

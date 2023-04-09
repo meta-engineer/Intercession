@@ -115,11 +115,11 @@ namespace pleep
         m_bipedCameraController->clear();
     }
     
-    void ControlDynamo::_signal_modified_entity(Entity id) 
+    void ControlDynamo::_signal_modified_entity(Entity entity) 
     {
         EventMessage entityModified(events::cosmos::ENTITY_MODIFIED);
         events::cosmos::ENTITY_MODIFIED_params entityModifiedData;
-        entityModifiedData.id = id;
+        entityModifiedData.entity = entity;
         entityModified << entityModifiedData;
         m_sharedBroker->send_event(entityModified);
     }

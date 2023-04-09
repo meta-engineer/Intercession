@@ -1,7 +1,7 @@
 #include "client_network_dynamo.h"
 
 #include "logging/pleep_log.h"
-#include "networking/timeline_types.h"
+#include "ecs/ecs_types.h"
 
 namespace pleep
 {
@@ -115,8 +115,8 @@ namespace pleep
                     // Interrogate any components now before serializing!
 
                     // fetch timeline id
-                    std::pair<TemporalEntity, CausalChainLink> timelineId = m_workingCosmos->get_temporal_identifier(ent);
-                    if (timelineId.first == NULL_TEMPORAL_ENTITY)
+                    TimesliceId entTimeslice = derive_timeslice_id(ent);
+                    if (entTimeslice == NULL_TIMESLICEID)
                     {
                         PLEEPLOG_WARN("Tried to report local entity (" + std::to_string(ent) + ") which does not match a TemporalEntity, skipping...");
                         continue;
@@ -125,11 +125,11 @@ namespace pleep
                     m_workingCosmos->serialize_entity_components(ent, entMsg);
                     PLEEPLOG_DEBUG("Finished component serialization");
                     // pack header (params) manually
-                    events::network::ENTITY_UPDATE_params entUpdate = { timelineId.first, timelineId.second, entSign };
+                    events::network::ENTITY_UPDATE_params entUpdate = { ent, entSign };
                     entMsg << entUpdate;
                     PLEEPLOG_DEBUG("Finished header serialization");
 
-                    PLEEPLOG_DEBUG("Sending entity update message for TemporalEntity: " + std::to_string(entUpdate.id) + ", link: " + std::to_string(entUpdate.link));
+                    PLEEPLOG_DEBUG("Sending entity update message for Entity: " + std::to_string(ent));
 
                     // send update message
                     m_networkApi.send_message(entMsg);
@@ -157,6 +157,6 @@ namespace pleep
         entityEvent >> entityData;
 
         // insert maintain uniqueness
-        m_entitiesToReport.insert(entityData.id);
+        m_entitiesToReport.insert(entityData.entity);
     }
 }
