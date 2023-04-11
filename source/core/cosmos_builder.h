@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <memory>
+#include <set>
 
 #include "cosmos.h"
 
@@ -79,37 +80,71 @@ namespace pleep
         };
 
         // Describe all the initial conditions (registrations) for a Cosmos
-        // should use static size containers?
-        struct Config
+        // must abide by ECS capacities
+        class Config
         {
-            // Registered Components
-            ComponentType components[MAX_COMPONENT_TYPES];
-            // Registered Synchros
-            SynchroType synchros[MAX_COMPONENT_TYPES];
-            // Registered Scripts? or are scripts more like models?
+        public:
+            friend class CosmosBuilder;
+
+            // Tries to insert c into config components
+            // Returns false if components capacity is reached
+            bool insert(ComponentType c)
+            {
+                if (components.size() >= MAX_COMPONENT_TYPES) return false;
+
+                components.insert(c);
+                return false;
+            }
+            // Inserts s into config synchros
+            bool insert(SynchroType s)
+            {
+                synchros.insert(s);
+                return false;
+            }
+            bool contains(ComponentType c) const
+            {
+                return components.find(c) != components.end();
+            }
+            bool contains(SynchroType s) const
+            {
+                return synchros.find(s) != synchros.end();
+            }
 
             friend bool operator==(const Config& lhs, const Config& rhs)
             {
-                for (int i = 0; i < MAX_COMPONENT_TYPES; i++)
+                if (lhs.components.size() != rhs.components.size()) return false;
+                if (lhs.synchros.size() != rhs.synchros.size()) return false;
+
+                for (ComponentType c : lhs.components)
                 {
-                    if (lhs.components[i] != rhs.components[i]) return false;
-                    if (lhs.synchros[i]   != rhs.synchros[i])  return false;
+                    if (!rhs.contains(c)) return false;
+                }
+                for (SynchroType s : lhs.synchros)
+                {
+                    if (!rhs.contains(s)) return false;
                 }
                 return true;
             }
+
+        protected:
+            // Registered Components
+            std::set<ComponentType> components;
+            // Registered Synchros
+            std::set<SynchroType> synchros;
+
+            // Should Scripts be a part of the cosmos like synchros?
         };
 
         // Called by CosmosContext to setup their held Cosmos
         // use config parameters to setup
         // return shared pointer? Context may need to regenerate config
         std::shared_ptr<Cosmos> generate(
-            CosmosBuilder::Config config, 
-            const TimesliceId localTimesliceIndex = NULL_TIMESLICEID,
-            EventBroker* callerBroker = nullptr, 
-            RenderDynamo* callerRenderDynamo = nullptr, 
-            InputDynamo* callerInputDynamo = nullptr, 
-            PhysicsDynamo* callerPhysicsDynamo = nullptr, 
-            I_NetworkDynamo* callerNetworkDynamo = nullptr, 
+            CosmosBuilder::Config config,
+            EventBroker* callerBroker = nullptr,
+            RenderDynamo* callerRenderDynamo = nullptr,
+            InputDynamo* callerInputDynamo = nullptr,
+            PhysicsDynamo* callerPhysicsDynamo = nullptr,
+            I_NetworkDynamo* callerNetworkDynamo = nullptr,
             ScriptDynamo* callerScriptDynamo = nullptr
         );
 

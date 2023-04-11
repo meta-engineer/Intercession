@@ -23,31 +23,31 @@ namespace pleep
         // TODO: receive config from server
         // TODO: Should config synchros just imply necessary components? Some are 1-to-1 like physics component, some are many-to-one like transform, some are unique like oscillator
         CosmosBuilder::Config cosmosConfig;
-        cosmosConfig.components[0] = CosmosBuilder::ComponentType::transform;
-        cosmosConfig.components[1] = CosmosBuilder::ComponentType::spacial_input;
-        cosmosConfig.components[2] = CosmosBuilder::ComponentType::renderable;
-        cosmosConfig.components[3] = CosmosBuilder::ComponentType::camera;
-        cosmosConfig.components[4] = CosmosBuilder::ComponentType::light_source;
-        cosmosConfig.components[5] = CosmosBuilder::ComponentType::physics;
-        cosmosConfig.components[6] = CosmosBuilder::ComponentType::box_collider;
-        cosmosConfig.components[7] = CosmosBuilder::ComponentType::ray_collider;
-        cosmosConfig.components[8] = CosmosBuilder::ComponentType::rigid_body;
-        cosmosConfig.components[9] = CosmosBuilder::ComponentType::spring_body;
-        cosmosConfig.components[10] = CosmosBuilder::ComponentType::script;
-        cosmosConfig.components[11] = CosmosBuilder::ComponentType::oscillator;
+        cosmosConfig.insert(CosmosBuilder::ComponentType::transform);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::spacial_input);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::renderable);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::camera);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::light_source);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::physics);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::box_collider);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::ray_collider);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::rigid_body);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::spring_body);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::script);
+        cosmosConfig.insert(CosmosBuilder::ComponentType::oscillator);
 
-        cosmosConfig.synchros[0] = CosmosBuilder::SynchroType::spacial_input;
-        cosmosConfig.synchros[1] = CosmosBuilder::SynchroType::lighting;
-        cosmosConfig.synchros[2] = CosmosBuilder::SynchroType::render;
-        cosmosConfig.synchros[3] = CosmosBuilder::SynchroType::physics;
-        cosmosConfig.synchros[4] = CosmosBuilder::SynchroType::box_collider;
-        cosmosConfig.synchros[5] = CosmosBuilder::SynchroType::ray_collider;
-        cosmosConfig.synchros[6] = CosmosBuilder::SynchroType::network;
-        cosmosConfig.synchros[7] = CosmosBuilder::SynchroType::script;
+        cosmosConfig.insert(CosmosBuilder::SynchroType::spacial_input);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::lighting);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::render);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::physics);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::box_collider);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::ray_collider);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::network);
+        cosmosConfig.insert(CosmosBuilder::SynchroType::script);
 
         // build cosmos according to config
         CosmosBuilder generator;
-        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, NULL_TIMESLICEID , eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
+        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
 
         //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
 
@@ -133,7 +133,7 @@ namespace pleep
         cosmos->add_component(crate, crateTransform);
 
         RenderableComponent crate_renderable;
-        crate_renderable.meshData = ModelLibrary::fetch_cube_supermesh();
+        crate_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::cube);
         ModelLibrary::create_material("crate_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/container2.png"},
             {TextureType::specular, "resources/container2_specular.png"}
@@ -158,7 +158,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
 
         RenderableComponent block_renderable;
-        block_renderable.meshData = ModelLibrary::fetch_cube_supermesh();
+        block_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::cube);
         ModelLibrary::create_material("block_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/bricks2.jpg"},
             {TextureType::specular, "resources/bricks2_disp.jpg"},
@@ -223,7 +223,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(wall1).orientation = glm::angleAxis(1.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
         
         RenderableComponent wall1_renderable;
-        wall1_renderable.meshData = ModelLibrary::fetch_quad_supermesh();
+        wall1_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::quad);
         ModelLibrary::create_material("wall1_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/wood.png"},
             {TextureType::specular, "resources/wood.png"},
@@ -239,7 +239,7 @@ namespace pleep
             glm::normalize(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
             
         RenderableComponent wall2_renderable;
-        wall2_renderable.meshData = ModelLibrary::fetch_quad_supermesh();
+        wall2_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::quad);
         ModelLibrary::create_material("wall2_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/wood.png"},
             {TextureType::specular, "resources/wood.png"},
@@ -257,7 +257,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(10.0f, 10.0f, 0.05f);
         
         RenderableComponent floor_renderable;
-        floor_renderable.meshData = ModelLibrary::fetch_quad_supermesh();
+        floor_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::quad);
         ModelLibrary::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/brickwall.jpg"},
             {TextureType::specular, "resources/brickwall_specular.jpg"},
@@ -290,7 +290,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(10.0f, 10.0f, 0.05f);
 
         RenderableComponent snow_renderable;
-        snow_renderable.meshData = ModelLibrary::fetch_quad_supermesh();
+        snow_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::quad);
         ModelLibrary::create_material("snow_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/snow-packed12-Base_Color.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
@@ -354,7 +354,7 @@ namespace pleep
         cosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         
         RenderableComponent light_renderable;
-        light_renderable.meshData = ModelLibrary::fetch_icosahedron_supermesh();
+        light_renderable.meshData = ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::icosahedron);
         ModelLibrary::create_material("lightbulb_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse,  "resources/blending_transparent_window.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},

@@ -69,6 +69,40 @@ namespace pleep
             std::vector<std::string> animationNames;
         };
 
+        // hardcoded supermeshes
+        enum class BasicSupermesh
+        {
+            // cube with 1m side lengths, normals are not interpolated on corners
+            cube,
+            // quad in x-y plane with 1m side lengths
+            quad,
+            // quad in x-y plane with vertices at +/- 1
+            screen,
+            // regular icosahedron with 1m circumdiameter
+            icosahedron,
+            // geodesic sphere with 1m diameter
+            //sphere,
+        };
+        // Need a matching string value to use m_supermeshMap
+        // use <> characters because they are illegal for filesnames and wont cause collisions
+        // TODO: find an elegant was to convert enum to string
+        static inline std::string ENUM_TO_STR(BasicSupermesh b)
+        {
+            switch(b)
+            {
+                case (BasicSupermesh::cube):
+                    return "<pleep_cube>";
+                case (BasicSupermesh::quad):
+                    return "<pleep_quad>";
+                case (BasicSupermesh::screen):
+                    return "<pleep_screen>";
+                case (BasicSupermesh::icosahedron):
+                    return "<pleep_icosahedron>";
+                default:
+                    return "";
+            }
+        }
+
         // Load all assets from given filepath into cache
         /*
             Assumptions:
@@ -106,18 +140,10 @@ namespace pleep
         static std::shared_ptr<Armature>                fetch_armature(const std::string& name);
         static std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name);
         
-        // fetch or generate-and-fetch hardcoded supermeshes:
-        // cube with 1m side lengths, normals are not interpolated on corners
-        static std::shared_ptr<const Supermesh>         fetch_cube_supermesh();
-        // quad in x-y plane with 1m side lengths
-        static std::shared_ptr<const Supermesh>         fetch_quad_supermesh();
-        // quad in x-y plane with vertices at +/- 1
-        static std::shared_ptr<const Supermesh>         fetch_screen_supermesh();
-        // regular icosahedron with 1m circumdiameter
-        static std::shared_ptr<const Supermesh>         fetch_icosahedron_supermesh();
-        // geodesic sphere with 1m diameter
-        //static std::shared_ptr<const Supermesh>         fetch_sphere_supermesh();
-
+        // convenience method to fetch or generate-and-fetch hardcoded supermeshes
+        // Serialized hardcoded supermeshes will use the same string-based fetch as other assets.
+        static std::shared_ptr<const Supermesh>         fetch_supermesh(ModelLibrary::BasicSupermesh id);
+        
         // Should be called by CosmosContext periodically(?)
         // Remove all models not used anywhere in the Cosmos
         static void clear_unused();
@@ -137,7 +163,6 @@ namespace pleep
         // initialized in model_library.cpp
         static std::unique_ptr<ModelLibrary> m_singleton;
 
-
         // Maintain assets as shared pointers to live independently after a clear_library()
 
         // mesh node name -> Supermesh 
@@ -154,13 +179,6 @@ namespace pleep
         // (Distribute only shared_ptr<const AnimationSkeletal> to not let copies modify)
         // Animation data is shared between entities, animation state is in individual animation component
         std::unordered_map<std::string, std::shared_ptr<AnimationSkeletal>> m_animationMap;
-
-        // use special map keys for hardcoded supermeshes
-        // '<>' characters because they are illegal filename characters, so there will be no collisions
-        const std::string cubeKey =         "<pleep_cube>";
-        const std::string quadKey =         "<pleep_quad>";
-        const std::string screenKey =       "<pleep_screen>";
-        const std::string icosahedronKey =  "<pleep_icosahedron>";
 
         // Check for possible assets (according to format assumptions above) and load into receipt
         // if an asset has no name use nameDeafult_assettype_X

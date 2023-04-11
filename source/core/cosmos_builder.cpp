@@ -3,8 +3,7 @@
 namespace pleep
 {
     std::shared_ptr<Cosmos> CosmosBuilder::generate(
-        CosmosBuilder::Config config, 
-        const TimesliceId localTimesliceIndex,
+        CosmosBuilder::Config config,
         EventBroker* callerBroker, 
         RenderDynamo* callerRenderDynamo, 
         InputDynamo* callerInputDynamo, 
@@ -13,9 +12,12 @@ namespace pleep
         ScriptDynamo* callerScriptDynamo
     )
     {
+        PLEEPLOG_TRACE("Derive TimesliceId from network");
+        TimesliceId localTimesliceID = callerNetworkDynamo ? callerNetworkDynamo->get_timeslice_id() : NULL_TIMESLICEID;
+
         // passthrough broker to Cosmos (null or not)
         PLEEPLOG_TRACE("Create Cosmos");
-        std::shared_ptr<Cosmos> newCosmos = std::make_shared<Cosmos>(callerBroker, localTimesliceIndex);
+        std::shared_ptr<Cosmos> newCosmos = std::make_shared<Cosmos>(callerBroker, localTimesliceID);
 
         PLEEPLOG_TRACE("Register Components");
         for (ComponentType cType : config.components)

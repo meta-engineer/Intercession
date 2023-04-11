@@ -14,28 +14,28 @@ namespace pleep
 
     ModelLibrary::ImportReceipt ModelLibrary::import(std::string filepath)
     {
-        // check for hardcoded assets
-        if (filepath == ModelLibrary::m_singleton->cubeKey)
+        // hardcoded assets need to be able to use the same import pathway as 
+        // other supermeshes for ambiguous deserialization
+        if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::cube))
         {
             ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_cube_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::m_singleton->quadKey)
+        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::quad))
         {
             ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_quad_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::m_singleton->screenKey)
+        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::screen))
         {
             ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_screen_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::m_singleton->icosahedronKey)
+        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::icosahedron))
         {
             ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_icosahedron_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-
 
         // TODO: Unit testing lmao
         const size_t delimiterIndex = filepath.find_last_of("/\\");
@@ -162,56 +162,22 @@ namespace pleep
         }
     }
     
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_cube_supermesh() 
+    std::shared_ptr<const Supermesh> ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh id)
     {
-        // inline "fetch_supermesh(cubeKey)"
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(ModelLibrary::m_singleton->cubeKey);
+        std::string polyName = ModelLibrary::ENUM_TO_STR(id);
+        if (polyName == "") return nullptr;
+        
+        // check if basic supermesh is in cache from previous call
+        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(polyName);
         if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
         {
             return meshIt->second;
         }
 
-        ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->cubeKey);
-        return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->cubeKey];
-    }
-    
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_quad_supermesh() 
-    {
-        // inline "fetch_supermesh(quadKey)"
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(ModelLibrary::m_singleton->quadKey);
-        if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
-        {
-            return meshIt->second;
-        }
-
-        ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->quadKey);
-        return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->quadKey];
-    }
-    
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_screen_supermesh() 
-    {
-        // inline "fetch_supermesh(screenKey)"
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(ModelLibrary::m_singleton->screenKey);
-        if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
-        {
-            return meshIt->second;
-        }
-
-        ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->screenKey);
-        return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->screenKey];
-    }
-    
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_icosahedron_supermesh() 
-    {
-        // inline "fetch_supermesh(screenKey)"
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(ModelLibrary::m_singleton->icosahedronKey);
-        if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
-        {
-            return meshIt->second;
-        }
-
-        ModelLibrary::m_singleton->import(ModelLibrary::m_singleton->icosahedronKey);
-        return ModelLibrary::m_singleton->m_supermeshMap[ModelLibrary::m_singleton->icosahedronKey];
+        // otherwise, since "filepath" and name are identical we can import it
+        ModelLibrary::m_singleton->import(polyName);
+        // and then return it in this single call
+        return ModelLibrary::m_singleton->m_supermeshMap[polyName];
     }
 
     void ModelLibrary::clear_unused()
@@ -752,8 +718,8 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            cubeKey,
-            cubeKey,
+            ENUM_TO_STR(BasicSupermesh::cube),
+            ENUM_TO_STR(BasicSupermesh::cube),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
@@ -795,8 +761,8 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            quadKey,
-            quadKey,
+            ENUM_TO_STR(BasicSupermesh::quad),
+            ENUM_TO_STR(BasicSupermesh::quad),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
@@ -838,8 +804,8 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            screenKey,
-            screenKey,
+            ENUM_TO_STR(BasicSupermesh::screen),
+            ENUM_TO_STR(BasicSupermesh::screen),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
@@ -928,8 +894,8 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            icosahedronKey,
-            icosahedronKey,
+            ENUM_TO_STR(BasicSupermesh::icosahedron),
+            ENUM_TO_STR(BasicSupermesh::icosahedron),
             std::make_shared<Mesh>(vertices, indices)
         );
     }

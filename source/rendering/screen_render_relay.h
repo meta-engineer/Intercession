@@ -17,7 +17,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/bloom_texture.fs"
             )
-            , m_screenSupermesh(ModelLibrary::fetch_screen_supermesh())
+            , m_screenSupermesh(ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::screen))
         {
             // I don't need uniform buffers
         }

@@ -1,5 +1,6 @@
 #include "server_cosmos_context.h"
 
+#include "staging/test_cosmos.h"
 #include "staging/test_temporal_cosmos.h"
 
 namespace pleep
@@ -68,7 +69,8 @@ namespace pleep
 
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_networkDynamo);
+        m_currentCosmos = build_test_cosmos(m_eventBroker, nullptr, nullptr, m_physicsDynamo, m_networkDynamo, nullptr);
+        //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_networkDynamo);
 
         PLEEPLOG_TRACE("Done cosmos construction");
     }

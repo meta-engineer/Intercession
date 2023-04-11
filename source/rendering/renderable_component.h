@@ -45,7 +45,6 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RenderableComponent& data)
     {
         // Pass ModelLibrary keys AND source filepaths incase it needs to be imported
-        // Need to pass strings as fixed sizes!
         // push "number" of  supermeshes
         size_t numMeshes = data.meshData ? 1 : 0;
         msg << numMeshes;
