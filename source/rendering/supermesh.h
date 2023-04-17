@@ -24,6 +24,11 @@ namespace pleep
         {
             m_submeshes.push_back(initSubmesh);
         }
+        // init faux Supermesh
+        Supermesh(const std::string& name, const std::string& sourceFilepath)
+            : m_name(name)
+            , m_sourceFilepath(sourceFilepath)
+        {}
         ~Supermesh() = default;
 
         

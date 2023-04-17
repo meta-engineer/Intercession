@@ -18,9 +18,9 @@ include(external/source_files.cmake)
 # TODO: common engine code should probably be compiled into a shared library
 add_library(${ENGINE_NAME} ${COMMON_SOURCE_FILES} ${EXTERNAL_SOURCE_FILES})
 # and client and server link to it instead of compiling the same common/external sources
-add_executable(${SERVER_NAME} ${SERVER_SOURCE_FILES} config/AppIcon.rc)
+add_executable(${SERVER_NAME} ${SERVER_SOURCE_FILES} config/_server_icon.rc)
 target_link_libraries(${SERVER_NAME} ${ENGINE_NAME})
-add_executable(${CLIENT_NAME} ${CLIENT_SOURCE_FILES} config/AppIcon.rc)
+add_executable(${CLIENT_NAME} ${CLIENT_SOURCE_FILES} config/_client_icon.rc)
 target_link_libraries(${CLIENT_NAME} ${ENGINE_NAME})
 
 # global compiler warning options

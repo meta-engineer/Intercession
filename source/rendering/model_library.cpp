@@ -242,28 +242,6 @@ namespace pleep
         ModelLibrary::m_singleton->m_armatureMap.clear();
         ModelLibrary::m_singleton->m_animationMap.clear();
     }
-
-    void ModelLibrary::set_vertex_bone_data_to_default(Vertex &vertex)
-    {
-        for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
-        {
-            vertex.boneIds[i] = -1;
-            vertex.boneWeights[i] = 0.0f;
-        }
-    }
-
-    void ModelLibrary::set_vertex_bone_data(Vertex &vertex, int boneId, float weight)
-    {
-        for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
-        {
-            if (vertex.boneIds[i] < 0)
-            {
-                vertex.boneWeights[i] = weight;
-                vertex.boneIds[i] = boneId;
-                break;
-            }
-        }
-    }
     
     ModelLibrary::ImportReceipt ModelLibrary::_scan_scene(const aiScene* scene, const std::string& nameDefault) 
     {
@@ -563,7 +541,7 @@ namespace pleep
             }
 
             // setup bone data as default (all disabled)
-            ModelLibrary::set_vertex_bone_data_to_default(vertex);
+            vertex.set_bone_data_to_default();
 
             dest.push_back(vertex);
         }
@@ -615,7 +593,7 @@ namespace pleep
                 // check for weirdness
                 assert(aiVertexId < dest.size());
 
-                ModelLibrary::set_vertex_bone_data(dest[aiVertexId], boneId, boneWeight);
+                dest[aiVertexId].set_bone_data(boneId, boneWeight);
             }
         }
     }
@@ -690,7 +668,7 @@ namespace pleep
             } );
 
             // Don't forget Bones!
-            ModelLibrary::set_vertex_bone_data_to_default(vertices.back());
+            vertices.back().set_bone_data_to_default();
         }
 
         unsigned int CUBE2_INDICES[] = {
@@ -748,7 +726,7 @@ namespace pleep
             } );
             
             // Don't forget Bones!
-            ModelLibrary::set_vertex_bone_data_to_default(vertices.back());
+            vertices.back().set_bone_data_to_default();
         }
 
         const unsigned int QUAD_INDICES[] = {
@@ -791,7 +769,7 @@ namespace pleep
             } );
 
             // Don't forget Bones!
-            ModelLibrary::set_vertex_bone_data_to_default(vertices.back());
+            vertices.back().set_bone_data_to_default();
         }
 
         const unsigned int SCREEN_INDICES[] = {
@@ -861,7 +839,7 @@ namespace pleep
             } );
             
             // Don't forget Bones!
-            ModelLibrary::set_vertex_bone_data_to_default(vertices.back());
+            vertices.back().set_bone_data_to_default();
         }
 
         const unsigned int ICOSA_INDICES[] = {

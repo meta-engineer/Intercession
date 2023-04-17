@@ -5,7 +5,7 @@
 #include <memory>
 #include <set>
 
-#include "cosmos.h"
+#include "core/cosmos.h"
 
 // include Synchros
 #include "inputting/spacial_input_synchro.h"

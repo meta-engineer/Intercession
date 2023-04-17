@@ -22,15 +22,15 @@ git submodule update --init --recursive
 ./cmake_scripts/fresh_cmake_configure.sh
 ./cmake_scripts/release_build_cmake.sh
 
-if [ -f "./build/Release/INTERCESSION.exe" ]
+if [ -f "./build/Release/INTERCESSION_CLIENT.exe" ]
 then
     echo ""
     echo "-- Build success!"
-    echo "-- Release executable: Intercession/build/Release/INTERCESSION.exe"
-    echo "-- Run debug_build_cmake.sh to build Debug config as well."
+    echo "-- Release executable: Intercession/build/Release/INTERCESSION_CLIENT.exe"
+    echo "-- Run debug_build_cmake.sh to build Debug version as well."
     echo "-- Run package.sh to build program installer."
     echo ""
-    echo "-- Start executable with \"INTERCESSION.exe - Release\" shortcut."
+    echo "-- Start executable with \"INTERCESSION_CLIENT.exe - Release\" shortcut."
 else
     echo ""
     echo "-- Build Failure."

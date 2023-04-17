@@ -29,6 +29,29 @@ namespace pleep
 
         int boneIds[MAX_BONE_INFLUENCE];
         float boneWeights[MAX_BONE_INFLUENCE];
+
+        // uses flag id of -1 to disable bone
+        inline void set_bone_data_to_default()
+        {
+            for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
+            {
+                boneIds[i] = -1;
+                boneWeights[i] = 0.0f;
+            }
+        }
+        // finds next disabled bone, and sets id and weight. Sets nothing if all 4 are valid bones
+        inline void set_bone_data(int boneId, float weight)
+        {
+            for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
+            {
+                if (boneIds[i] < 0)
+                {
+                    boneIds[i] = boneId;
+                    boneWeights[i] = weight;
+                    break;
+                }
+            }
+        }
     };
 
 

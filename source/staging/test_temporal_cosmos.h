@@ -6,7 +6,7 @@
 
 #include "logging/pleep_log.h"
 
-#include "core/cosmos_builder.h"
+#include "staging/cosmos_builder.h"
 #include "ecs/ecs_types.h"
 
 namespace pleep

@@ -122,7 +122,7 @@ namespace pleep
             (+ if a submesh has bones associate each vertex with the bones from its armature)
         4. Cache an AnimationSkeletal for every animation in the scene
         5. Cache an animation for every animation in the scene
-            (NodeAnim names reference node/bone names, so we'll need to map use armature nodeIdMaps)
+            (NodeAnim names reference node/bone names, so we'll ned to map use armature nodeIdMaps)
         
         TODO: make this async and set futures in receipt?
         */
@@ -151,12 +151,6 @@ namespace pleep
         // Clear ALL assets
         // Shared pointers will remain with users whos already fetched them
         static void clear_library();
-
-        // ***** Misc Utils *****
-        // uses flag id of -1 to disable bone
-        static void set_vertex_bone_data_to_default(Vertex& vertex);
-        // finds next disabled bone, and sets id and weight. Sets nothing if all 4 are valid bones
-        static void set_vertex_bone_data(Vertex& vertex, int boneId, float weight);
 
     protected:
         // users don't need to be able to literally 'get' this instance, so it can be unique

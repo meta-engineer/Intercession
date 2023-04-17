@@ -7,7 +7,7 @@
 #include "logging/pleep_log.h"
 #include "rendering/model_library.h"
 #include "scripting/script_library.h"
-#include "core/cosmos_builder.h"
+#include "staging/cosmos_builder.h"
 
 namespace pleep
 {
