@@ -20,7 +20,7 @@ namespace pleep
         // no dynamo is a mistake, not necessarily an error
         if (m_attachedPhysicsDynamo == nullptr)
         {
-            PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
+            //PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
             return;
         }
         

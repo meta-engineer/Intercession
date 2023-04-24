@@ -1,5 +1,5 @@
-#ifndef MODEL_LIBRARY_H
-#define MODEL_LIBRARY_H
+#ifndef MODEL_MANAGER_H
+#define MODEL_MANAGER_H
 
 //#include "intercession_pch.h"
 #include <vector>
@@ -16,8 +16,6 @@
 
 namespace pleep
 {
-    const std::string MODEL_DIRECTORY_PATH = "resources/";
-
     // aiScenes contain Meshes, Materials, Animations and Nodes:
     // Meshes contain: vertices, normals, tangents, bitangents, vertex colors, texture coords, SINGLE material, faces (contains vertex indicies), and bones (contains "map" of vertex id to weight):
     //      populateArmature -> bones contain aiNode* (calulate the bone vector with node Transformation * unit vec?)
@@ -35,19 +33,13 @@ namespace pleep
 
     // A static (global) access point to corrdinate memory for model objects
     //  (as multiple entities could want to use the same data)
-    class ModelLibrary
+    // Methods which allocate gpu memory must be virtual (for ModelManagerFaux)
+    class ModelManager
     {
-    protected:
-        // Cannot log from this constructor because it is invoked before logger init in main
-        ModelLibrary() = default;
     public:
-        ~ModelLibrary() = default;
-        // no copy constructor
-        ModelLibrary(const ModelLibrary&) = delete;
-        
-
         // Names of assets guaranteed to be cached after a model import.
-        // Also used during import communicate down the pipeline which assets were loaded in current import 
+        //     (whether or not they already existed in cache before this import call)
+        // Also used during import to communicate which assets have been loaded during current import
         struct ImportReceipt
         {
             // Name of overall import (also used as deafult base name for unnamed assets)
@@ -57,6 +49,9 @@ namespace pleep
 
             // list of all unique Supermesh names from this import
             std::vector<std::string> supermeshNames;
+            // each supermeshSubmeshesNames entry corresponds with the supermeshName at the same index
+            // each supermeshSubmeshesNames ENTRY'S entry corresponds with the submesh at the same index
+            std::vector<std::vector<std::string>> supermeshSubmeshesNames;
             // each supermeshMaterialsNames entry corresponds with the supermeshName at the same index
             // each supermeshMaterialsNames ENTRY'S entry corresponds with the submesh at the same index
             std::vector<std::vector<std::string>> supermeshMaterialsNames;
@@ -69,8 +64,22 @@ namespace pleep
             std::vector<std::string> animationNames;
         };
 
+        // Load all assets from given filepath into cache
+        ImportReceipt import(const std::string filepath);
+
+        // Tries to add Material to the cache, constructed with the given textureDict
+        virtual bool create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict);
+
+        // ***** Fetch Methods *****
+        // if asset exists in library return shallow, const, shared instance from cache
+        // (or a deep copy for armatures)
+        std::shared_ptr<const Supermesh>         fetch_supermesh(const std::string& name);
+        std::shared_ptr<const Material>          fetch_material(const std::string& name);
+        std::shared_ptr<Armature>                fetch_armature(const std::string& name);
+        std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name);
+        
         // hardcoded supermeshes
-        enum class BasicSupermesh
+        enum class BasicSupermeshType
         {
             // cube with 1m side lengths, normals are not interpolated on corners
             cube,
@@ -86,85 +95,47 @@ namespace pleep
         // Need a matching string value to use m_supermeshMap
         // use <> characters because they are illegal for filesnames and wont cause collisions
         // TODO: find an elegant was to convert enum to string
-        static inline std::string ENUM_TO_STR(BasicSupermesh b)
+        inline std::string ENUM_TO_STR(BasicSupermeshType b)
         {
             switch(b)
             {
-                case (BasicSupermesh::cube):
+                case (BasicSupermeshType::cube):
                     return "<pleep_cube>";
-                case (BasicSupermesh::quad):
+                case (BasicSupermeshType::quad):
                     return "<pleep_quad>";
-                case (BasicSupermesh::screen):
+                case (BasicSupermeshType::screen):
                     return "<pleep_screen>";
-                case (BasicSupermesh::icosahedron):
+                case (BasicSupermeshType::icosahedron):
                     return "<pleep_icosahedron>";
                 default:
                     return "";
             }
         }
-
-        // Load all assets from given filepath into cache
-        /*
-            Assumptions:
-        a. We won't record the model filename, only asset names, so users need to know the file & asset (or use the receipt names)
-        b. Importing an asset twice will load it twice, but it will NOT override the assets already in cache
-        c. Importing another asset with a name collision, will not override the first!
-        d. Models and armatures are only DIRECT children of the root node. Models are nodes with at least 1 mesh, and armatures are any other node.
-        e. Different meshes with bones that reference the same armature node are either the same bone (bones are unique) OR they have the same bone-space to mesh-space transform (bones are identical). If not, the last mesh will take priority
-    
-            Process:
-        1. Scan the scene for possible assets (see assumptions b, c and d)
-        2. Cache a Material for every material in the scene scan
-        3. Cache an Armature for every node in the root node AND in the scene scan armatures
-            (give each node a unique packed id, and create a nodeIdMap from their name string)
-        3. Cache a Supermesh for every node in the root node and in the scene scan meshes
-            (+ associate each submesh with its material name in the receipt)
-            (+ if a submesh has bones associate each vertex with the bones from its armature)
-        4. Cache an AnimationSkeletal for every animation in the scene
-        5. Cache an animation for every animation in the scene
-            (NodeAnim names reference node/bone names, so we'll ned to map use armature nodeIdMaps)
-        
-        TODO: make this async and set futures in receipt?
-        */
-        static ModelLibrary::ImportReceipt import(std::string filepath);
-
-        // returns false if name was taken
-        // (Should instead generate an available name and return it as a receipt?)
-        static bool create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict);
-
-        // ***** Fetch Methods *****
-        // if asset exists in library return shallow, const, shared instance from cache
-        // (or a deep copy for armatures)
-        static std::shared_ptr<const Supermesh>         fetch_supermesh(const std::string& name);
-        static std::shared_ptr<const Material>          fetch_material(const std::string& name);
-        static std::shared_ptr<Armature>                fetch_armature(const std::string& name);
-        static std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name);
-        
         // convenience method to fetch or generate-and-fetch hardcoded supermeshes
         // Serialized hardcoded supermeshes will use the same string-based fetch as other assets.
-        static std::shared_ptr<const Supermesh>         fetch_supermesh(ModelLibrary::BasicSupermesh id);
+        std::shared_ptr<const Supermesh>  fetch_supermesh(const BasicSupermeshType id);
         
         // Should be called by CosmosContext periodically(?)
         // Remove all models not used anywhere in the Cosmos
-        static void clear_unused();
+        void clear_unused();
 
         // Clear ALL assets
         // Shared pointers will remain with users whos already fetched them
-        static void clear_library();
+        void clear_all();
+        
+        static void debug_scene(const aiScene* scene);
+        static void debug_nodes(const aiScene* scene, aiNode* node, const unsigned int depth = 0);
+        static void debug_receipt(const ImportReceipt& receipt);
 
     protected:
-        // users don't need to be able to literally 'get' this instance, so it can be unique
-        // initialized in model_library.cpp
-        static std::unique_ptr<ModelLibrary> m_singleton;
-
-        // Maintain assets as shared pointers to live independently after a clear_library()
+        // Maintain assets as shared pointers to live independently of ModelManager object
 
         // mesh node name -> Supermesh 
         // (Distribute only shared_ptr<const Superesh> to not let copies delete GPU memory)
         std::unordered_map<std::string, std::shared_ptr<Supermesh>> m_supermeshMap;
         // material name -> Material
         // (Distribute only shared_ptr<const Material> to not let copies delete GPU memory)
-        // Modifying materials across ALL entities can only be done through ModelLibrary methods.
+        // Modifying materials across ALL entities can only be done through ModelCache methods.
         std::unordered_map<std::string, std::shared_ptr<Material>> m_materialMap;
         // armature node name -> Armature
         // Armatures are individual to each entity and should be copied NOT shared
@@ -175,44 +146,43 @@ namespace pleep
         std::unordered_map<std::string, std::shared_ptr<AnimationSkeletal>> m_animationMap;
 
         // Check for possible assets (according to format assumptions above) and load into receipt
-        // if an asset has no name use nameDeafult_assettype_X
-        //   where X is the index of that asset in its respective container
-        ModelLibrary::ImportReceipt _scan_scene(const aiScene* scene, const std::string& nameDefault = "Pleep");
+        // if an asset has no name use nameDefault_assetType_x
+        //   where x is the index of that asset in its respective container
+        // Use omitDuplicates = true for scanning assets which need to be created
+        // Use omitDuplicates = false for scanning assets which need to be reported
+        ImportReceipt _scan_scene(const aiScene* scene, const std::string& nameDefault = "Pleep", const bool omitDuplicates = true);
 
         // Iterate through scene materials, load and emplace as new Material in m_materialMap
         // can only search for textures contained exactly in given directory (no postfix / or \\)
-        void _process_materials(const aiScene* scene, ImportReceipt& receipt, const std::string directory = "./");
-        std::shared_ptr<Material> _build_material(aiMaterial* material, const std::string& materialName, const std::string& directory);
+        void _process_materials(const aiScene* scene, const ImportReceipt& receipt, const std::string directory = "./");
+        virtual std::shared_ptr<Material> _build_material(const aiMaterial* material, const std::string& materialName, const std::string& directory);
 
         // Iterate through root nodes for those in scanned receipt armatures,
         //   emplace as Armaturse m_armatureMap named as node name
-        void _process_armatures(const aiScene* scene, ImportReceipt& receipt);
-        std::shared_ptr<Armature> _build_armature(aiNode* node, const std::string& armatureName);
-        void _extract_bones_from_node(aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap);
+        void _process_armatures(const aiScene* scene, const ImportReceipt& receipt);
+        virtual std::shared_ptr<Armature> _build_armature(const aiNode* node, const std::string& armatureName);
+        void _extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap);
 
         // Iterate through root nodes for those in scanned receipt meshes,
         //   emplace as Supermeshes m_supermeshMap named as node name
         // use scanned armatures to set vertex bone weights
         // use scanned materials to set receipt supermeshMaterialsNames
-        void _process_supermeshes(const aiScene* scene, ImportReceipt& receipt);
-        std::shared_ptr<Mesh> _build_mesh(aiMesh* mesh, ImportReceipt& receipt);
-        void _extract_vertices(std::vector<Vertex>& dest, aiMesh* src);
-        void _extract_indices(std::vector<unsigned int>& dest, aiMesh* src);
-        void _extract_bone_weights_for_vertices(std::vector<Vertex>& dest, aiMesh* src, ImportReceipt& receipt);
+        void _process_supermeshes(const aiScene* scene, const ImportReceipt& receipt);
+        std::shared_ptr<Supermesh> _build_supermesh(const aiScene* scene, const aiNode* node, const ImportReceipt& receipt);
+        virtual std::shared_ptr<Mesh> _build_mesh(const aiMesh* mesh, const ImportReceipt& receipt);
+        void _extract_vertices(std::vector<Vertex>& dest, const aiMesh* src);
+        void _extract_indices(std::vector<unsigned int>& dest, const aiMesh* src);
+        void _extract_bone_weights_for_vertices(std::vector<Vertex>& dest, const aiMesh* src, const ImportReceipt& receipt);
 
         // Iterate through scene animations, load and emplace as new AnimationSkeletal in m_animationMap
-        void _process_animations(const aiScene* scene, ImportReceipt& receipt);
-        std::shared_ptr<AnimationSkeletal> _build_animation(aiAnimation* animation, const std::string& animationName);
+        void _process_animations(const aiScene* scene, const ImportReceipt& receipt);
+        virtual std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation* animation, const std::string& animationName);
 
-        std::shared_ptr<Supermesh> _build_cube_supermesh();
-        std::shared_ptr<Supermesh> _build_quad_supermesh();
-        std::shared_ptr<Supermesh> _build_screen_supermesh();
-        std::shared_ptr<Supermesh> _build_icosahedron_supermesh();
-
-        static void _debug_scene(const aiScene* scene);
-        static void _debug_nodes(const aiScene* scene, aiNode* node, const unsigned int depth = 0);
-        static void _debug_receipt(const ImportReceipt& receipt);
+        virtual std::shared_ptr<Supermesh> _build_cube_supermesh();
+        virtual std::shared_ptr<Supermesh> _build_quad_supermesh();
+        virtual std::shared_ptr<Supermesh> _build_screen_supermesh();
+        virtual std::shared_ptr<Supermesh> _build_icosahedron_supermesh();
     };
 }
 
-#endif // MODEL_LIBRARY_H
+#endif // MODEL_MANAGER_H

@@ -99,8 +99,12 @@ namespace pleep
             }
         }
 
-        // report entities modified this frame
         // TODO: move this to a relay
+        // Should relays accumulate "packets" via events signalled from other subsystems
+        //     (like ENTITY_MODIFIED)
+        // and then in run we can send messages over the network all at once?
+
+        // report entities modified this frame
         if (m_networkApi.is_connected())
         {
             // package entities to report as events::network::ENTITY_UPDATE

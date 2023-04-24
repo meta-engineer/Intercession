@@ -44,7 +44,7 @@ namespace pleep
     template<typename T_Msg>
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RenderableComponent& data)
     {
-        // Pass ModelLibrary keys AND source filepaths incase it needs to be imported
+        // Pass ModelCache keys AND source filepaths incase it needs to be imported
         // push "number" of  supermeshes
         size_t numMeshes = data.meshData ? 1 : 0;
         msg << numMeshes;
@@ -101,19 +101,19 @@ namespace pleep
             // then fetch from library
             else if (data.meshData == nullptr || data.meshData->m_name != newSupermeshName)
             {
-                std::shared_ptr<const Supermesh> libMesh = ModelLibrary::fetch_supermesh(newSupermeshName);
+                std::shared_ptr<const Supermesh> libMesh = ModelCache::fetch_supermesh(newSupermeshName);
 
                 // check if fetch was not successful
                 if (libMesh == nullptr)
                 {
                     // try to import file
-                    ModelLibrary::ImportReceipt supermeshReceipt = ModelLibrary::import(newSupermeshPath);
+                    ModelCache::ImportReceipt supermeshReceipt = ModelCache::import(newSupermeshPath);
 
                     // confirm the msg supermesh name was imported
                     if (std::find(supermeshReceipt.supermeshNames.begin(), supermeshReceipt.supermeshNames.end(), newSupermeshName) != supermeshReceipt.supermeshNames.end())
                     {
                         // try to fetch again
-                        libMesh = ModelLibrary::fetch_supermesh(newSupermeshName);
+                        libMesh = ModelCache::fetch_supermesh(newSupermeshName);
                     }
                 }
 
@@ -148,19 +148,19 @@ namespace pleep
                 || data.materials[m] == nullptr
                 || data.materials[m]->m_name != newMaterialName)
             {
-                std::shared_ptr<const Material> libMat = ModelLibrary::fetch_material(newMaterialName);
+                std::shared_ptr<const Material> libMat = ModelCache::fetch_material(newMaterialName);
 
                 // check if fetch was not successful
                 if (libMat == nullptr)
                 {
                     // try to import file
-                    ModelLibrary::ImportReceipt materialReceipt = ModelLibrary::import(newMaterialPath);
+                    ModelCache::ImportReceipt materialReceipt = ModelCache::import(newMaterialPath);
 
                     // confirm the msg material name was imported
                     if (std::find(materialReceipt.materialNames.begin(), materialReceipt.materialNames.end(), newMaterialName) != materialReceipt.materialNames.end())
                     {
                         //try to fetch again
-                        libMat = ModelLibrary::fetch_material(newMaterialName);
+                        libMat = ModelCache::fetch_material(newMaterialName);
                     }
                 }
 

@@ -6,7 +6,7 @@
 #include "rendering/a_render_relay.h"
 #include "logging/pleep_log.h"
 #include "rendering/shader_manager.h"
-#include "rendering/model_library.h"
+#include "rendering/model_cache.h"
 
 namespace pleep
 {
@@ -18,7 +18,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/gaussian_1d.fs"
             )
-            , m_screenSupermesh(ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh::screen))
+            , m_screenSupermesh(ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::screen))
         {
             // I don't need uniform buffers
 

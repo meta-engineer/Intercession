@@ -24,7 +24,7 @@ namespace pleep
         {
             m_submeshes.push_back(initSubmesh);
         }
-        // init faux Supermesh
+        // init Supermesh without and gpu data
         Supermesh(const std::string& name, const std::string& sourceFilepath)
             : m_name(name)
             , m_sourceFilepath(sourceFilepath)

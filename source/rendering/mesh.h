@@ -59,6 +59,9 @@ namespace pleep
     class Mesh
     {
     public:
+        // Init Mesh with no gpu data
+        Mesh() = default;
+        // Allocate gpu buffers with these vertices and indices
         Mesh(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices);
         // copying a Mesh would mean GPU memory could be freed by the copy
         Mesh(const Mesh&) = delete;
@@ -86,7 +89,7 @@ namespace pleep
         std::vector<unsigned int> m_indices;
 
         // Array Buffer Object, Vertex Buffer Object, Element Buffer Object
-        unsigned int VAO_ID, VBO_ID, EBO_ID;
+        unsigned int VAO_ID, VBO_ID, EBO_ID = 0;
         //unsigned int m_vaoId, m_vboId, m_eboId;
 
 

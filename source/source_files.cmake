@@ -13,10 +13,11 @@ set(COMMON_SOURCE_FILES
     source/rendering/render_dynamo.cpp
     source/rendering/render_synchro.cpp
     source/rendering/lighting_synchro.cpp
-    source/rendering/model_library.cpp
     source/rendering/mesh.cpp
     source/rendering/texture.cpp
     source/rendering/shader_manager.cpp
+    source/rendering/model_manager.cpp
+    source/rendering/model_manager_faux.cpp
 
     source/inputting/input_dynamo.cpp
     source/inputting/spacial_input_synchro.cpp
@@ -43,6 +44,8 @@ set(CLIENT_SOURCE_FILES
     source/client/client_app_gateway.cpp
     source/client/client_cosmos_context.cpp
 
+    source/client/client_model_cache.cpp
+
     source/client/client_network_dynamo.cpp
 )
 
@@ -50,6 +53,8 @@ set(SERVER_SOURCE_FILES
     source/server_main.cpp
     source/server/server_app_gateway.cpp
     source/server/server_cosmos_context.cpp
+    
+    source/server/server_model_cache.cpp
 
     source/server/server_network_dynamo.cpp
 )

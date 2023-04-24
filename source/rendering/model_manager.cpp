@@ -1,4 +1,4 @@
-#include "rendering/model_library.h"
+#include "rendering/model_manager.h"
 
 #include <cassert>
 
@@ -7,33 +7,28 @@
 
 namespace pleep
 {
-    // Create static library instance immediately
-    // we must call constructor ourselves (it is protected)
-    // but we pass ownership to unique_ptr, so no delete needed
-    std::unique_ptr<ModelLibrary> ModelLibrary::m_singleton(new ModelLibrary);
-
-    ModelLibrary::ImportReceipt ModelLibrary::import(std::string filepath)
+    ModelManager::ImportReceipt ModelManager::import(const std::string filepath)
     {
         // hardcoded assets need to be able to use the same import pathway as 
         // other supermeshes for ambiguous deserialization
-        if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::cube))
+        if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::cube))
         {
-            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_cube_supermesh();
+            this->m_supermeshMap[filepath] = this->_build_cube_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::quad))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::quad))
         {
-            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_quad_supermesh();
+            this->m_supermeshMap[filepath] = this->_build_quad_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::screen))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::screen))
         {
-            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_screen_supermesh();
+            this->m_supermeshMap[filepath] = this->_build_screen_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
-        else if (filepath == ModelLibrary::ENUM_TO_STR(BasicSupermesh::icosahedron))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::icosahedron))
         {
-            ModelLibrary::m_singleton->m_supermeshMap[filepath] = ModelLibrary::m_singleton->_build_icosahedron_supermesh();
+            this->m_supermeshMap[filepath] = this->_build_icosahedron_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
 
@@ -60,29 +55,31 @@ namespace pleep
         }
 
         // ***********************************
-        //_debug_scene(scene);
+        //debug_scene(scene);
         //return ImportReceipt{};
         // ***********************************
 
         // check for possible assets and load into receipt
-        ImportReceipt receipt = ModelLibrary::m_singleton->_scan_scene(scene, filestem);
-        receipt.importSourceFilepath = filepath;
+        ImportReceipt scan = this->_scan_scene(scene, filestem);
+        scan.importSourceFilepath = filepath;
         
         // process materials and armatures first for meshes to reference
-        ModelLibrary::m_singleton->_process_materials(scene, receipt, directory);
-        ModelLibrary::m_singleton->_process_armatures(scene, receipt);
-        ModelLibrary::m_singleton->_process_supermeshes(scene, receipt);
-        ModelLibrary::m_singleton->_process_animations(scene, receipt);
+        this->_process_materials(scene, scan, directory);
+        this->_process_armatures(scene, scan);
+        this->_process_supermeshes(scene, scan);
+        this->_process_animations(scene, scan);
 
-        //_debug_receipt(receipt);
+        ImportReceipt receipt = this->_scan_scene(scene, filestem, false);
+        receipt.importSourceFilepath = filepath;
+        //debug_receipt(receipt);
         // now all assets are cached, user can call fetch methods using receipt names
         return receipt;
     }
 
-    bool ModelLibrary::create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict) 
+    bool ModelManager::create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict) 
     {
-        auto materialIt = ModelLibrary::m_singleton->m_materialMap.find(name);
-        if (materialIt != ModelLibrary::m_singleton->m_materialMap.end())
+        auto materialIt = this->m_materialMap.find(name);
+        if (materialIt != this->m_materialMap.end())
         {
             PLEEPLOG_WARN("Could not create material " + name + " because that name is already taken");
             return false;
@@ -101,14 +98,14 @@ namespace pleep
 
         std::shared_ptr<Material> newMat = std::make_shared<Material>(std::move(newTextures));
         newMat->m_name = name;
-        ModelLibrary::m_singleton->m_materialMap[name] = newMat;
+        this->m_materialMap[name] = newMat;
         return true;
     }
 
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_supermesh(const std::string& name)
+    std::shared_ptr<const Supermesh> ModelManager::fetch_supermesh(const std::string& name)
     {
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(name);
-        if (meshIt == ModelLibrary::m_singleton->m_supermeshMap.end())
+        auto meshIt = this->m_supermeshMap.find(name);
+        if (meshIt == this->m_supermeshMap.end())
         {
             PLEEPLOG_WARN("Supermesh " + name + " is not cached.");
             return nullptr;
@@ -119,10 +116,10 @@ namespace pleep
         }
     }
 
-    std::shared_ptr<const Material> ModelLibrary::fetch_material(const std::string& name)
+    std::shared_ptr<const Material> ModelManager::fetch_material(const std::string& name)
     {
-        auto materialIt = ModelLibrary::m_singleton->m_materialMap.find(name);
-        if (materialIt == ModelLibrary::m_singleton->m_materialMap.end())
+        auto materialIt = this->m_materialMap.find(name);
+        if (materialIt == this->m_materialMap.end())
         {
             PLEEPLOG_WARN("Material " + name + " is not cached.");
             return nullptr;
@@ -133,10 +130,10 @@ namespace pleep
         }
     }
 
-    std::shared_ptr<Armature> ModelLibrary::fetch_armature(const std::string& name)
+    std::shared_ptr<Armature> ModelManager::fetch_armature(const std::string& name)
     {
-        auto armatureIt = ModelLibrary::m_singleton->m_armatureMap.find(name);
-        if (armatureIt == ModelLibrary::m_singleton->m_armatureMap.end())
+        auto armatureIt = this->m_armatureMap.find(name);
+        if (armatureIt == this->m_armatureMap.end())
         {
             PLEEPLOG_WARN("Armature " + name + " is not cached.");
             return nullptr;
@@ -148,10 +145,10 @@ namespace pleep
         }
     }
 
-    std::shared_ptr<const AnimationSkeletal> ModelLibrary::fetch_animation(const std::string& name)
+    std::shared_ptr<const AnimationSkeletal> ModelManager::fetch_animation(const std::string& name)
     {
-        auto animationIt = ModelLibrary::m_singleton->m_animationMap.find(name);
-        if (animationIt == ModelLibrary::m_singleton->m_animationMap.end())
+        auto animationIt = this->m_animationMap.find(name);
+        if (animationIt == this->m_animationMap.end())
         {
             PLEEPLOG_WARN("Material " + name + " is not cached.");
             return nullptr;
@@ -162,88 +159,88 @@ namespace pleep
         }
     }
     
-    std::shared_ptr<const Supermesh> ModelLibrary::fetch_supermesh(ModelLibrary::BasicSupermesh id)
+    std::shared_ptr<const Supermesh> ModelManager::fetch_supermesh(const ModelManager::BasicSupermeshType id)
     {
-        std::string polyName = ModelLibrary::ENUM_TO_STR(id);
+        std::string polyName = ModelManager::ENUM_TO_STR(id);
         if (polyName == "") return nullptr;
         
         // check if basic supermesh is in cache from previous call
-        auto meshIt = ModelLibrary::m_singleton->m_supermeshMap.find(polyName);
-        if (meshIt != ModelLibrary::m_singleton->m_supermeshMap.end())
+        auto meshIt = this->m_supermeshMap.find(polyName);
+        if (meshIt != this->m_supermeshMap.end())
         {
             return meshIt->second;
         }
 
         // otherwise, since "filepath" and name are identical we can import it
-        ModelLibrary::m_singleton->import(polyName);
+        this->import(polyName);
         // and then return it in this single call
-        return ModelLibrary::m_singleton->m_supermeshMap[polyName];
+        return this->m_supermeshMap[polyName];
     }
 
-    void ModelLibrary::clear_unused()
+    void ModelManager::clear_unused()
     {
         PLEEPLOG_WARN("NO IMPLEMENTATION!");
         // Classic removing from dynamic container problem
         /*
-                ModelLibrary::m_singleton->m_meshMap.erase(
+                this->m_meshMap.erase(
                     std::remove_if(
-                        ModelLibrary::m_singleton->m_meshMap.begin(),
-                        ModelLibrary::m_singleton->m_meshMap.end(),
+                        this->m_meshMap.begin(),
+                        this->m_meshMap.end(),
                         [](std::pair<std::string, std::shared_ptr<const Mesh>> meshIt) {
                             if (meshIt.second.use_count() > 1) return false;
                             return true;
                         }
                     ),
-                    ModelLibrary::m_singleton->m_meshMap.end()
+                    this->m_meshMap.end()
                 );
 
-                ModelLibrary::m_singleton->m_materialMap.erase(
+                this->m_materialMap.erase(
                     std::remove_if(
-                        ModelLibrary::m_singleton->m_materialMap.begin(),
-                        ModelLibrary::m_singleton->m_materialMap.end(),
+                        this->m_materialMap.begin(),
+                        this->m_materialMap.end(),
                         [](std::pair<std::string, std::shared_ptr<const Material>> materialIt) {
                             if (materialIt.second.use_count() > 1) return false;
                             return true;
                         }
                     ),
-                    ModelLibrary::m_singleton->m_materialMap.end()
+                    this->m_materialMap.end()
                 );
 
-                ModelLibrary::m_singleton->m_armatureMap.erase(
+                this->m_armatureMap.erase(
                     std::remove_if(
-                        ModelLibrary::m_singleton->m_armatureMap.begin(),
-                        ModelLibrary::m_singleton->m_armatureMap.end(),
+                        this->m_armatureMap.begin(),
+                        this->m_armatureMap.end(),
                         [](std::pair<std::string, std::shared_ptr<Armature>> armatureIt) {
                             if (armatureIt.second.use_count() > 1) return false;
                             return true;
                         }
                     ),
-                    ModelLibrary::m_singleton->m_armatureMap.end()
+                    this->m_armatureMap.end()
                 );
 
-                ModelLibrary::m_singleton->m_animationMap.erase(
+                this->m_animationMap.erase(
                     std::remove_if(
-                        ModelLibrary::m_singleton->m_animationMap.begin(),
-                        ModelLibrary::m_singleton->m_animationMap.end(),
+                        this->m_animationMap.begin(),
+                        this->m_animationMap.end(),
                         [](std::pair<std::string, std::shared_ptr<const AnimationSkeletal>> animationIt) {
                             if (animationIt.second.use_count() > 1) return false;
                             return true;
                         }
                     ),
-                    ModelLibrary::m_singleton->m_animationMap.end()
+                    this->m_animationMap.end()
                 );
          */
     }
 
-    void ModelLibrary::clear_library()
+    void ModelManager::clear_all()
     {
-        ModelLibrary::m_singleton->m_supermeshMap.clear();
-        ModelLibrary::m_singleton->m_materialMap.clear();
-        ModelLibrary::m_singleton->m_armatureMap.clear();
-        ModelLibrary::m_singleton->m_animationMap.clear();
+        this->m_supermeshMap.clear();
+        this->m_materialMap.clear();
+        this->m_armatureMap.clear();
+        this->m_animationMap.clear();
     }
     
-    ModelLibrary::ImportReceipt ModelLibrary::_scan_scene(const aiScene* scene, const std::string& nameDefault) 
+    ModelManager::ImportReceipt ModelManager::_scan_scene(const aiScene* scene, const std::string& nameDefault, const bool omitDuplicates) 
     {
         ImportReceipt receipt;
         receipt.importName = nameDefault;
@@ -258,9 +255,9 @@ namespace pleep
             }
             
             // check uniqueness
-            if (m_materialMap.find(matName) != m_materialMap.end())
+            if (omitDuplicates && m_materialMap.find(matName) != m_materialMap.end())
             {
-                PLEEPLOG_WARN("Could not import " + matName + " it already exists in the library");
+                PLEEPLOG_WARN("Could not import " + matName + " it already exists");
                 // we could try to generate a default name here?
                 continue;
             }
@@ -278,9 +275,9 @@ namespace pleep
             }
 
             // check uniqueness
-            if (m_animationMap.find(animName) != m_animationMap.end())
+            if (omitDuplicates && m_animationMap.find(animName) != m_animationMap.end())
             {
-                PLEEPLOG_WARN("Could not import " + animName + " it already exists in the library");
+                PLEEPLOG_WARN("Could not import " + animName + " it already exists");
                 // we could try to generate a default name here? unless this already is the deafult name
                 continue;
             }
@@ -305,13 +302,27 @@ namespace pleep
                     supermeshName = receipt.importName + "_supermesh_" + std::to_string(i);
                 }
                 // check uniqueness
-                if (m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
+                if (omitDuplicates && m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
                 {
-                    PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists in the library");
+                    PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists");
                     // we could try to generate a default name here? unless this already is the deafult name
                     continue;
                 }
                 receipt.supermeshNames.push_back(supermeshName);
+
+                // emplace empty submesh names list
+                receipt.supermeshSubmeshesNames.push_back({});
+                // Associate a material with each submesh for this supermesh
+                // emplace empty submesh material names list
+                receipt.supermeshMaterialsNames.push_back({});
+                for (unsigned int m = 0; m < scene->mRootNode->mChildren[i]->mNumMeshes; m++)
+                {
+                    aiMesh* submesh = scene->mMeshes[scene->mRootNode->mChildren[i]->mMeshes[m]];
+                    receipt.supermeshSubmeshesNames.back().push_back(submesh->mName.C_Str());
+
+                    aiMaterial* material = scene->mMaterials[submesh->mMaterialIndex];
+                    receipt.supermeshMaterialsNames.back().push_back(material->GetName().C_Str());
+                }
             }
             else
             {
@@ -321,9 +332,9 @@ namespace pleep
                     armatureName = receipt.importName + "_armature_" + std::to_string(i);
                 }
                 // check uniqueness
-                if (m_armatureMap.find(armatureName) != m_armatureMap.end())
+                if (omitDuplicates && m_armatureMap.find(armatureName) != m_armatureMap.end())
                 {
-                    PLEEPLOG_WARN("Could not import " + armatureName + " it already exists in the library");
+                    PLEEPLOG_WARN("Could not import " + armatureName + " it already exists");
                     // we could try to generate a default name here? unless this already is the deafult name
                     continue;
                 }
@@ -335,7 +346,7 @@ namespace pleep
     }
 
     
-    void ModelLibrary::_process_materials(const aiScene *scene, ImportReceipt& receipt, const std::string directory)
+    void ModelManager::_process_materials(const aiScene *scene, const ImportReceipt& receipt, const std::string directory)
     {
         // load all materials from scene
         for (unsigned int i = 0; i < scene->mNumMaterials; i++)
@@ -350,13 +361,15 @@ namespace pleep
             if (std::find(receipt.materialNames.begin(), receipt.materialNames.end(), materialName) == receipt.materialNames.end()) continue;
 
             m_materialMap[materialName] = _build_material(material, materialName, directory);
+            m_materialMap[materialName]->m_name = materialName;
             m_materialMap[materialName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    std::shared_ptr<Material> ModelLibrary::_build_material(aiMaterial *material, const std::string& materialName, const std::string& directory)
+    std::shared_ptr<Material> ModelManager::_build_material(const aiMaterial *material, const std::string& materialName, const std::string& directory)
     {
         //PLEEPLOG_DEBUG("Loading material: " + std::string(materialName));
+        UNREFERENCED_PARAMETER(materialName);
 
         std::unordered_map<TextureType, Texture> loadedTextures;
         // for each aiTextureType in material get (only first?) texture filename
@@ -391,12 +404,10 @@ namespace pleep
             }
         }
 
-        std::shared_ptr<Material> newMaterial = std::make_shared<Material>(std::move(loadedTextures));
-        newMaterial->m_name = materialName;
-        return newMaterial;
+        return std::make_shared<Material>(std::move(loadedTextures));
     }
 
-    void ModelLibrary::_process_armatures(const aiScene *scene, ImportReceipt& receipt)
+    void ModelManager::_process_armatures(const aiScene *scene, const ImportReceipt& receipt)
     {
         for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
         {
@@ -411,13 +422,15 @@ namespace pleep
             if (std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName) == receipt.armatureNames.end()) continue;
 
             m_armatureMap[armatureName] = _build_armature(scene->mRootNode->mChildren[i], armatureName);
+            m_armatureMap[armatureName]->m_sourceFilepath = armatureName;
             m_armatureMap[armatureName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    std::shared_ptr<Armature> ModelLibrary::_build_armature(aiNode* node, const std::string& armatureName)
+    std::shared_ptr<Armature> ModelManager::_build_armature(const aiNode* node, const std::string& armatureName)
     {
         //PLEEPLOG_DEBUG("Loading armature: " + std::string(armatureName));
+        UNREFERENCED_PARAMETER(armatureName);
         std::vector<Bone> armatureBones;
         std::unordered_map<std::string, unsigned int> armatureBoneIdMap;
 
@@ -428,13 +441,11 @@ namespace pleep
         _extract_bones_from_node(node->mChildren[0], armatureBones, armatureBoneIdMap);
 
         // assume every descendant node is a bone?
-        std::shared_ptr<Armature> newArmature = std::make_shared<Armature>(armatureBones, armatureBoneIdMap);
-        newArmature->m_name = armatureName;
-        return newArmature;
+        return std::make_shared<Armature>(armatureBones, armatureBoneIdMap);
     }
 
     
-    void ModelLibrary::_extract_bones_from_node(aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap)
+    void ModelManager::_extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap)
     {
         // add this bone to map
         unsigned int thisBoneId = static_cast<unsigned int>(armatureBones.size());
@@ -455,7 +466,7 @@ namespace pleep
         }
     }
     
-    void ModelLibrary::_process_supermeshes(const aiScene *scene, ImportReceipt& receipt)
+    void ModelManager::_process_supermeshes(const aiScene *scene, const ImportReceipt& receipt)
     {
         for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
         {
@@ -469,30 +480,30 @@ namespace pleep
             // check if key was validated by scan
             if (std::find(receipt.supermeshNames.begin(), receipt.supermeshNames.end(), supermeshName) == receipt.supermeshNames.end()) continue;
 
-            // inline _build_supermesh()
-            std::shared_ptr<Supermesh> newSupermesh = std::make_shared<Supermesh>();
-            newSupermesh->m_name = supermeshName;
-            newSupermesh->m_sourceFilepath = receipt.importSourceFilepath;
-            // emplace empty submesh material names list for this supermesh
-            receipt.supermeshMaterialsNames.push_back({});
-            for (unsigned int m = 0; m < scene->mRootNode->mChildren[i]->mNumMeshes; m++)
-            {
-                aiMesh* submesh = scene->mMeshes[scene->mRootNode->mChildren[i]->mMeshes[m]];
-                newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
-                // I don't know if both levels need to have the source, but might aswell
-                newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
-
-                // Associate a material with this submesh in the receipt for this supermesh
-                aiMaterial* material = scene->mMaterials[submesh->mMaterialIndex];
-                receipt.supermeshMaterialsNames.back().push_back(material->GetName().C_Str());
-            }
-
-            // should be validated by scene scan to not override
-            m_supermeshMap[supermeshName] = newSupermesh;
+            m_supermeshMap[supermeshName] = _build_supermesh(scene, scene->mRootNode->mChildren[i], receipt);
+            m_supermeshMap[supermeshName]->m_name = supermeshName;
+            m_supermeshMap[supermeshName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
+    
+    std::shared_ptr<Supermesh> ModelManager::_build_supermesh(const aiScene* scene, const aiNode* node, const ImportReceipt& receipt) 
+    {
+        std::shared_ptr<Supermesh> newSupermesh = std::make_shared<Supermesh>();
 
-    std::shared_ptr<Mesh> ModelLibrary::_build_mesh(aiMesh *mesh, ImportReceipt& receipt)
+        for (unsigned int m = 0; m < node->mNumMeshes; m++)
+        {
+            aiMesh* submesh = scene->mMeshes[node->mMeshes[m]];
+            newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
+            // apply name outside of _build_mesh for ModelManagerFaux
+            newSupermesh->m_submeshes.back()->m_name = std::string(submesh->mName.C_Str());
+            // I don't know if both levels need to have the source, but might aswell
+            newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
+        }
+
+        return newSupermesh;
+    }
+
+    std::shared_ptr<Mesh> ModelManager::_build_mesh(const aiMesh *mesh, const ImportReceipt& receipt)
     {
         //PLEEPLOG_DEBUG("Loading mesh " + std::string(mesh->mName.C_Str()));
         std::vector<Vertex> vertices;
@@ -510,7 +521,7 @@ namespace pleep
         return std::make_shared<Mesh>(vertices, indices);
     }
 
-    void ModelLibrary::_extract_vertices(std::vector<Vertex> &dest, aiMesh *src)
+    void ModelManager::_extract_vertices(std::vector<Vertex> &dest, const aiMesh *src)
     {
         for (unsigned int i = 0; i < src->mNumVertices; i++)
         {
@@ -547,7 +558,7 @@ namespace pleep
         }
     }
 
-    void ModelLibrary::_extract_indices(std::vector<unsigned int> &dest, aiMesh *src)
+    void ModelManager::_extract_indices(std::vector<unsigned int> &dest, const aiMesh *src)
     {
         for (unsigned int i = 0; i < src->mNumFaces; i++)
         {
@@ -557,7 +568,7 @@ namespace pleep
         }
     }
 
-    void ModelLibrary::_extract_bone_weights_for_vertices(std::vector<Vertex> &dest, aiMesh *src, ImportReceipt& receipt)
+    void ModelManager::_extract_bone_weights_for_vertices(std::vector<Vertex> &dest, const aiMesh *src, const ImportReceipt& receipt)
     {
         // parse through assimp bone list
         for (unsigned int boneIndex = 0; boneIndex < src->mNumBones; boneIndex++)
@@ -598,17 +609,19 @@ namespace pleep
         }
     }
 
-    void ModelLibrary::_process_animations(const aiScene *scene, ImportReceipt& receipt)
+    void ModelManager::_process_animations(const aiScene *scene, const ImportReceipt& receipt)
     {
         // load all animations from scene
         for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
             aiAnimation *animation = scene->mAnimations[i];
             m_animationMap[std::string(animation->mName.C_Str())] = _build_animation(animation, receipt.animationNames[i]);
+
+            // TODO: provide name, filepath, and ALL data required for serialization OUTSIDE of _build_animation, so that ModelManagerFaux's life is easy
         }
     }
 
-    std::shared_ptr<AnimationSkeletal> ModelLibrary::_build_animation(aiAnimation *animation, const std::string& animationName)
+    std::shared_ptr<AnimationSkeletal> ModelManager::_build_animation(const aiAnimation *animation, const std::string& animationName)
     {
         PLEEPLOG_WARN("NO IMPLEMENTATION FOR Loading animation: " + std::string(animation->mName.C_Str()));
         UNREFERENCED_PARAMETER(animation);
@@ -618,7 +631,7 @@ namespace pleep
         return nullptr;
     }
     
-    std::shared_ptr<Supermesh> ModelLibrary::_build_cube_supermesh() 
+    std::shared_ptr<Supermesh> ModelManager::_build_cube_supermesh() 
     {
         // generate cube mesh data
         std::vector<Vertex>       vertices;
@@ -696,13 +709,13 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermesh::cube),
-            ENUM_TO_STR(BasicSupermesh::cube),
+            ENUM_TO_STR(BasicSupermeshType::cube),
+            ENUM_TO_STR(BasicSupermeshType::cube),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
     
-    std::shared_ptr<Supermesh> ModelLibrary::_build_quad_supermesh() 
+    std::shared_ptr<Supermesh> ModelManager::_build_quad_supermesh() 
     {
         // generate quad mesh data
         std::vector<Vertex>       vertices;
@@ -739,13 +752,13 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermesh::quad),
-            ENUM_TO_STR(BasicSupermesh::quad),
+            ENUM_TO_STR(BasicSupermeshType::quad),
+            ENUM_TO_STR(BasicSupermeshType::quad),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
     
-    std::shared_ptr<Supermesh> ModelLibrary::_build_screen_supermesh() 
+    std::shared_ptr<Supermesh> ModelManager::_build_screen_supermesh() 
     {
         // generate screen plane mesh data
         std::vector<Vertex>       vertices;
@@ -782,13 +795,13 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermesh::screen),
-            ENUM_TO_STR(BasicSupermesh::screen),
+            ENUM_TO_STR(BasicSupermeshType::screen),
+            ENUM_TO_STR(BasicSupermeshType::screen),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
     
-    std::shared_ptr<Supermesh> ModelLibrary::_build_icosahedron_supermesh() 
+    std::shared_ptr<Supermesh> ModelManager::_build_icosahedron_supermesh() 
     {
         /*
         The vertices of an icosahedron centered at the origin with 
@@ -872,14 +885,14 @@ namespace pleep
         }
 
         return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermesh::icosahedron),
-            ENUM_TO_STR(BasicSupermesh::icosahedron),
+            ENUM_TO_STR(BasicSupermeshType::icosahedron),
+            ENUM_TO_STR(BasicSupermeshType::icosahedron),
             std::make_shared<Mesh>(vertices, indices)
         );
     }
     
 
-    void ModelLibrary::_debug_scene(const aiScene *scene)
+    void ModelManager::debug_scene(const aiScene *scene)
     {
         PLEEPLOG_DEBUG("Scene name: " + std::string(scene->mName.C_Str()));
         PLEEPLOG_DEBUG("    meshes: " + std::to_string(scene->mNumMeshes));
@@ -887,10 +900,10 @@ namespace pleep
         PLEEPLOG_DEBUG("    textures: " + std::to_string(scene->mNumTextures));
         PLEEPLOG_DEBUG("    animations: " + std::to_string(scene->mNumAnimations));
         
-        _debug_nodes(scene, scene->mRootNode);
+        debug_nodes(scene, scene->mRootNode);
     }
 
-    void ModelLibrary::_debug_nodes(const aiScene *scene, aiNode *node, const unsigned int depth)
+    void ModelManager::debug_nodes(const aiScene *scene, aiNode *node, const unsigned int depth)
     {
         PLEEPLOG_DEBUG("Node name: " + std::string(node->mName.C_Str()));
         PLEEPLOG_DEBUG("meshes:");
@@ -921,11 +934,11 @@ namespace pleep
 
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            _debug_nodes(scene, node->mChildren[i], depth + 1);
+            debug_nodes(scene, node->mChildren[i], depth + 1);
         }
     }
     
-    void ModelLibrary::_debug_receipt(const ImportReceipt& receipt) 
+    void ModelManager::debug_receipt(const ImportReceipt& receipt) 
     {
         PLEEPLOG_DEBUG("Import receipt: " + receipt.importName);
         PLEEPLOG_DEBUG("from file: " + receipt.importSourceFilepath);
@@ -934,8 +947,17 @@ namespace pleep
         {
             PLEEPLOG_DEBUG("    " + name);
         }
+        PLEEPLOG_DEBUG("Supermesh subMeshes names:");
+        for (int i = 0; i < receipt.supermeshNames.size(); i++)
+        {
+            PLEEPLOG_DEBUG("    " + receipt.supermeshNames[i] + ":");
+            for (auto name : receipt.supermeshSubmeshesNames[i])
+            {
+                PLEEPLOG_DEBUG("        " + name);
+            }
+        }
         PLEEPLOG_DEBUG("Supermesh Materials names:");
-        for (int i = 0; i < receipt.supermeshMaterialsNames.size(); i++)
+        for (int i = 0; i < receipt.supermeshNames.size(); i++)
         {
             PLEEPLOG_DEBUG("    " + receipt.supermeshNames[i] + ":");
             for (auto name : receipt.supermeshMaterialsNames[i])

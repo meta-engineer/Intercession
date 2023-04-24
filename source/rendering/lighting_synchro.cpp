@@ -15,14 +15,14 @@ namespace pleep
         // No owner is a fatal error
         if (m_ownerCosmos == nullptr)
         {
-            PLEEPLOG_ERROR("Lighting Synchro has no owner Cosmos");
+            PLEEPLOG_ERROR("Synchro has no owner Cosmos");
             throw std::runtime_error("Lighting Synchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
         if (m_attachedRenderDynamo == nullptr)
         {
-            PLEEPLOG_WARN("Lighting Synchro update was called without an attached Dynamo");
+            //PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
             return;
         }
 

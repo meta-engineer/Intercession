@@ -14,6 +14,8 @@ namespace pleep
     class Armature
     {
     public:
+        // Init Armature with no bone data
+        Armature() = default;
         Armature(const std::vector<Bone>& bones, const std::unordered_map<std::string, unsigned int>& boneIdMap)
             : m_bones(bones)
             , m_boneIdMap(boneIdMap)

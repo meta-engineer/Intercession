@@ -14,7 +14,7 @@ namespace pleep
     // PBR: albedo,  metallic, normal, roughness, AO, displace? emission?
 
     // Material defines a specific collection of textures according to a rendering method
-    // Materials are sharable (maintained by ModelLibrary), but we'll assume once a material
+    // Materials are sharable (maintained by ModelCache), but we'll assume once a material
     // is created we wont require sharing, mixing, and matching Textures between Materials
     // basic material variation can be handled by options inside 
     // MaterialComponents per entity and/or by shaders.
@@ -22,6 +22,8 @@ namespace pleep
     class Material
     {
     public:
+        // Init material with no gpu data
+        Material() = default;
         // Must move texture hashmap into Material to avoid auto-destroying the copy
         // movedTextures will be invalid after calling this constructor
         Material(std::unordered_map<TextureType, Texture>&& movedTextures)

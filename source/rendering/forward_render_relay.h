@@ -227,7 +227,7 @@ namespace pleep
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
                 for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
                 {
-                    // if there are no materials... do nothing? get debug material from ModelLibrary?
+                    // if there are no materials... do nothing? get debug material from ModelCache?
                     if (data.renderable.materials.empty())
                     {
                         _set_material_textures(m_sm, nullptr);

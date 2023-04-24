@@ -40,9 +40,7 @@ namespace pleep
                 // ***** Setup Frame *****
                 this->_prime_frame();
 
-                // ***** Run fixed timesteps for dynamos *****
-                // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
-                //   know which dynamos to call fixed and which to call on frametime
+                // ***** Run fixed timestep(s) *****
                 size_t stepsTaken = 0;
                 m_timeRemaining += deltaTime;
                 while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
@@ -53,7 +51,7 @@ namespace pleep
                     this->_on_fixed(m_fixedTimeStep.count());
                 }
 
-                // ***** Run "frame time" timsteps for dynamos *****
+                // ***** Run "frame time" timestep *****
                 this->_on_frame(deltaTime.count());
 
                 // ***** Finish Frame *****
