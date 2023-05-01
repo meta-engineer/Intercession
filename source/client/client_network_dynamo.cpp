@@ -12,24 +12,8 @@ namespace pleep
         // setup relays
 
         m_networkApi.connect("127.0.0.1", 61336);
-
-        // *** TESTING ***
-        // wait until connection is ready (max timeout 1 sec)
-        std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-        std::chrono::duration<double> deltaTime;
-        while(!m_networkApi.is_ready() && deltaTime < std::chrono::seconds(1))
-        {
-            deltaTime = std::chrono::system_clock::now() - startTime;
-        }
-        PLEEPLOG_DEBUG("Waited " + std::to_string(deltaTime.count()) + " seconds for client to connect");
-        Message<EventId> msg;
-        // for serialization testing server will reply with a new serialized entity
-        msg.header.id = events::network::INTERCESSION_UPDATE;
-        char pleep[10] = "pleep";
-        msg << pleep;
-        PLEEPLOG_DEBUG("Sending intercession update message");
-        m_networkApi.send_message(msg);
-        // *** TESTING ***
+        // Server will send message to acknowledge connection is ready
+        // Keep frame loop alive until then
 
         // setup handlers
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ClientNetworkDynamo::_entity_modified_handler) );
@@ -46,8 +30,7 @@ namespace pleep
         UNREFERENCED_PARAMETER(deltaTime);
 
         // Handling incoming server messages from network
-        //_process_network_messages();
-        // aka
+        //inline _process_network_messages()
         const size_t maxMessages = static_cast<size_t>(-1);
         size_t messageCount = 0;
         while ((messageCount++) < maxMessages && m_networkApi.is_message_available())
@@ -57,7 +40,7 @@ namespace pleep
             {
             case events::network::APP_INFO:
             {
-                PLEEPLOG_DEBUG("Recieved appInfo message");
+                PLEEPLOG_TRACE("Recieved appInfo message");
                 events::network::APP_INFO_params localInfo;
                 events::network::APP_INFO_params remoteInfo;
                 msg >> remoteInfo;
@@ -80,26 +63,51 @@ namespace pleep
             break;
             case events::network::ENTITY_UPDATE:
             {
-                PLEEPLOG_DEBUG("Recieved entityUpdate message");
+                PLEEPLOG_TRACE("Recieved entityUpdate message");
+
+                events::network::ENTITY_UPDATE_params updateInfo;
+                msg >> updateInfo;
+                PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
+
+                // confirm entity exists?
+                // confirm entity signatures match?
+
+                // read update into Cosmos
+                // This assumes entity's current signature is correct!
+                //m_workingCosmos->deserialize_entity_components(updateInfo.entity, msg);
+            }
+            break;
+            case events::cosmos::ENTITY_CREATED:
+            {
+                PLEEPLOG_TRACE("Recieved entityCreated message");
+
+                // register entity and create components to match signature
+                events::cosmos::ENTITY_CREATED_params createInfo;
+                msg >> createInfo;
+                PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+
+                m_workingCosmos->register_entity(createInfo.entity);
+                for (ComponentType c = 0; c < createInfo.sign.size(); c++)
+                {
+                    if (createInfo.sign.test(c)) m_workingCosmos->add_component(createInfo.entity, c);
+                }
             }
             break;
             case events::network::INTERCESSION_UPDATE:
             {
-                PLEEPLOG_DEBUG("Recieved intercessionUpdate message");
-                char msgString[10];
-                msg >> msgString;
-                PLEEPLOG_DEBUG("Message body: " + std::string(msgString));
+                PLEEPLOG_TRACE("Recieved intercessionUpdate message");
             }
             break;
             default:
             {
-                PLEEPLOG_DEBUG("Recieved unknown message");
+                PLEEPLOG_TRACE("Recieved unknown message");
             }
             break;
             }
         }
 
-        // TODO: move this to a relay
+
+        // TODO: move this to a relay, EntityUpdateRelay?
         // Should relays accumulate "packets" via events signalled from other subsystems
         //     (like ENTITY_MODIFIED)
         // and then in run we can send messages over the network all at once?

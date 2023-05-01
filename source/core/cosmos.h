@@ -59,6 +59,9 @@ namespace pleep
         // passthrough to EntityRegistry->get_signature()
         Signature get_entity_signature(Entity entity);
 
+        // get reference to signature map for iterating
+        std::unordered_map<Entity, Signature>& get_signatures_ref();
+
         // find which entity has this component
         // Linear complexity (with number of components of this type)
         // operator == must be defined for T
@@ -87,6 +90,9 @@ namespace pleep
         template<typename T>
         void add_component(Entity entity, T component);
 
+        // add default constructed component to a registered entity
+        void add_component(Entity entity, ComponentType componentId);
+
         // remove component T from entity, and update all syncrhos
         template<typename T>
         void remove_component(Entity entity);
@@ -111,34 +117,35 @@ namespace pleep
 
         // TODO: Do we need a method to change a synchro signature after registry and then recalculate its entities accordingly?
 
-        // concat all synchro typeids into one identifying string
-        // typeids are sorted alphabetically, delimited by ,
-        std::string stringify_synchro_registry();
-
 
         ///// Helper methods for sending entity information in Messages (for events or network) /////
 
         // Pack each component of entity into message in reverse (stacked) order
-        // ***Does NOT include timeline id and signature (header)
+        // ***Does NOT include entity id and signature (header)
         // We have to specify Message<EventId> becuase IComponentArray must use virtual methods
-        void serialize_entity_components(Entity entity, EventMessage msg);
+        void serialize_entity_components(Entity entity, EventMessage& msg);
+
+        // Unpack each component according to entity signature
+        // ***Does NOT include entity id and signature (header)
+        void Cosmos::deserialize_entity_components(Entity entity, EventMessage& msg);
 
         // Unpack a component (specified by name) from message and update entity with its new values
-        void deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg);
+        // Use if you want to manually unpack each component and validate them before writing
+        // *** compnentName MUST BE THE pointer from typeid!!! USE get_component_name()!!!
+        // ***See deserialize_entity_components for template
+        void deserialize_and_write_component(Entity entity, const char* componentName, EventMessage& msg);
+        
+        // Ordered vector of all synchro typeid names
+        std::vector<std::string> stringify_synchro_registry();
+
+        // Ordered vector of all synchro typeid names
+        std::vector<std::string> stringify_component_registry();
 
     private:
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
         std::unique_ptr<ComponentRegistry> m_componentRegistry;
         std::unique_ptr<EntityRegistry>    m_entityRegistry;
         std::unique_ptr<SynchroRegistry>   m_synchroRegistry;
-
-        // ECS synchros know attach dynamos and feed components into them on update
-        // synchros are given a dynamo to attach to by register_synchro caller (context)
-        // deleting or significantly mutating a dynamo must apply to any synchros attached to it
-        //   to avoid a synchro dereferencing an invalid dynamo
-        
-        // synchros are dynamically created by CosmosContext
-        //   (it will need some input "scene" file to know what to do)
 
         // for emitting events::cosmos
         EventBroker* m_sharedBroker = nullptr;
@@ -206,6 +213,11 @@ namespace pleep
         return m_entityRegistry->get_signature(entity);
     }
     
+    inline std::unordered_map<Entity, Signature>& Cosmos::get_signatures_ref()
+    {
+        return m_entityRegistry->get_signatures_ref();
+    }
+    
     template<typename T>
     Entity Cosmos::find_entity(T component)
     {
@@ -243,6 +255,18 @@ namespace pleep
         // flip signature bit for this component
         Signature sign = m_entityRegistry->get_signature(entity);
         sign.set(m_componentRegistry->get_component_type<T>(), true);
+        m_entityRegistry->set_signature(entity, sign);
+
+        m_synchroRegistry->change_entity_signature(entity, sign);
+    }
+
+    inline void Cosmos::add_component(Entity entity, ComponentType componentId)
+    {
+        m_componentRegistry->add_component(entity, componentId);
+
+        // flip signature bit for this component
+        Signature sign = m_entityRegistry->get_signature(entity);
+        sign.set(componentId, true);
         m_entityRegistry->set_signature(entity, sign);
 
         m_synchroRegistry->change_entity_signature(entity, sign);

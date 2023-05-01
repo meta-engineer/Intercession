@@ -95,7 +95,7 @@ namespace pleep
         // Need a matching string value to use m_supermeshMap
         // use <> characters because they are illegal for filesnames and wont cause collisions
         // TODO: find an elegant was to convert enum to string
-        inline std::string ENUM_TO_STR(BasicSupermeshType b)
+        inline const char* ENUM_TO_STR(BasicSupermeshType b)
         {
             switch(b)
             {

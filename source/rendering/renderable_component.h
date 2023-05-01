@@ -74,9 +74,11 @@ namespace pleep
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, RenderableComponent& data)
     {
+        PLEEPLOG_DEBUG("Reading renderable.");
         // Stream out SuperMesh
         size_t numMeshes = 0;
         msg >> numMeshes;
+        PLEEPLOG_DEBUG("With number of meshes: " + std::to_string(numMeshes));
         // if no meshes in msg, than clear component
         if (numMeshes == 0)
         {
@@ -126,6 +128,7 @@ namespace pleep
         // Stream out Materials
         size_t numMats = 0;
         msg >> numMats;
+        PLEEPLOG_DEBUG("With number of mats: " + std::to_string(numMats));
         // if msg mats is 0 then clear our mats
         if (numMats == 0)
         {
@@ -137,10 +140,12 @@ namespace pleep
             // extract material name
             std::string newMaterialName;
             msg >> newMaterialName;
+            PLEEPLOG_DEBUG("Mat name: " + newMaterialName);
 
             // extract material path
             std::string newMaterialPath;
             msg >> newMaterialPath;
+            PLEEPLOG_DEBUG("Mat path: " + newMaterialPath);
 
             // check if component's material at this index has different mat (or none)
             // (m starts at 0, so we should only ever be 1 index above current materials size)
@@ -155,6 +160,9 @@ namespace pleep
                 {
                     // try to import file
                     ModelCache::ImportReceipt materialReceipt = ModelCache::import(newMaterialPath);
+                    
+                    // TODO: in-code created materials will not have a path
+                    //   if it isn't fetched we'll need to create_material from the texture names?
 
                     // confirm the msg material name was imported
                     if (std::find(materialReceipt.materialNames.begin(), materialReceipt.materialNames.end(), newMaterialName) != materialReceipt.materialNames.end())

@@ -35,6 +35,10 @@ namespace pleep
         // THROWS runtime_error if templated type has not yet been registered
         template<typename T>
         void add_component(Entity entity, T component);
+        
+        // add default constructed component of given ID
+        // THROWS runtime_error if componentId does not exist
+        void add_component(Entity entity, ComponentType componentId);
 
         // remove component from registry array for given type and entity
         // THROWS runtime_error if templated type has not yet been registered
@@ -59,11 +63,20 @@ namespace pleep
 
         // loop through each ComponentType in entitySign, map to name, index that component array,
         // get the component data for entity, then push it into message
-        void serialize_entity_components(Entity entity, Signature entitySign, EventMessage msg);
+        void serialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg);
+
+        // loop through each ComponentType in entitySign, map to name, index that component array,
+        // call deserialize_and_write_component with that component
+        void deserialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg);
 
         // index component array using name,
         // get that array to unpack next data in msg, and copy it into entity's data
-        void deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg);
+        // *** componentName MUST BE THE pointer from typeid!!! use get_component_name()!!!
+        void deserialize_and_write_component(Entity entity, const char* componentTypename, EventMessage& msg);
+
+        // Return list of component typeid names
+        // MUST be ordered by ComponentType
+        std::vector<std::string> stringify();
 
     private:
         // cast ComponentArray into mapped type
@@ -80,7 +93,7 @@ namespace pleep
 
         // track total components registered
         // this isn't a queue (unlike entities) so component types can't be recycled
-        ComponentType m_componentTypeCount;
+        ComponentType m_componentTypeCount = 0;
     };
 
     
@@ -95,7 +108,7 @@ namespace pleep
             throw std::runtime_error("ComponentRegistry cannot register component type " + std::string(typeName) + " which already exists");
         }
         
-        if (m_componentTypeCount > MAX_COMPONENT_TYPES)
+        if (m_componentTypeCount >= MAX_COMPONENT_TYPES)
         {
             PLEEPLOG_ERROR("Cannot register component type " + std::string(typeName) + ". Max component count " + std::to_string(MAX_COMPONENT_TYPES) + " exceeded.");
             throw std::runtime_error("ComponentRegistry cannot register component type " + std::string(typeName) + ". Max component count " + std::to_string(MAX_COMPONENT_TYPES) + " exceeded.");
@@ -144,6 +157,11 @@ namespace pleep
         this->_get_component_array<T>()->insert_data_for(entity, component);
     }
 
+    inline void ComponentRegistry::add_component(Entity entity, ComponentType componentId)
+    {
+        m_componentArrays[get_component_name(componentId)]->emplace_data_for(entity);
+    }
+
     template<typename T>
     void ComponentRegistry::remove_component(Entity entity)
     {
@@ -172,7 +190,7 @@ namespace pleep
         return this->_get_component_array<T>()->find_entity_for(component);
     }
     
-    inline void ComponentRegistry::serialize_entity_components(Entity entity, Signature entitySign, EventMessage msg)
+    inline void ComponentRegistry::serialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg)
     {
         // Signature size is defined as a ComponentType so no loss is possible
         assert(entitySign.size() == MAX_COMPONENT_TYPES);
@@ -191,9 +209,30 @@ namespace pleep
         }
     }
 
-    inline void ComponentRegistry::deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg)
+    inline void ComponentRegistry::deserialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg)
     {
-        m_componentArrays[componentName.c_str()]->deserialize_data_for(entity, msg);
+        for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
+        {
+            if (entitySign.test(i))
+            {
+                // TODO: check if component exists locally? 
+                // If not we can implicitly add_component a default one (and then it will be updated)
+
+                const char* componentName = get_component_name(i);
+
+                // ***If you want to validate components as they are deserialized, do that HERE!
+                // stream>> them myself, interrogate their values, and then overwrite the ecs
+
+                // default:
+                this->deserialize_and_write_component(entity, componentName, msg);
+            }
+        }
+    }
+
+    inline void ComponentRegistry::deserialize_and_write_component(Entity entity, const char* componentTypename, EventMessage& msg)
+    {
+        PLEEPLOG_DEBUG("Deserializing " + std::to_string(msg.size()) + " ... " + std::string(componentTypename));
+        m_componentArrays[componentTypename]->deserialize_data_for(entity, msg);
     }
     
     template<typename T>
@@ -210,6 +249,27 @@ namespace pleep
         }
 
         return std::static_pointer_cast<ComponentArray<T>>(m_componentArrays[typeName]);
+    }
+
+    
+    inline std::vector<std::string> ComponentRegistry::stringify()
+    {
+        std::vector<std::string> componentNames;
+        componentNames.reserve(m_componentNames.size());
+        for (auto componentIt : m_componentNames)
+        {
+            componentNames.push_back(componentIt.second);
+        }
+
+        // Just sort AFTER extracting from the map?
+        std::sort(componentNames.begin(), componentNames.end(), 
+            [this](std::string a, std::string b)
+            {
+                return this->m_componentTypes[a.c_str()] < this->m_componentTypes[b.c_str()];
+            }
+        );
+        
+        return componentNames;
     }
 }
 

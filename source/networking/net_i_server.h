@@ -115,7 +115,7 @@ namespace net
                 m_connectionDeque.erase(
                     std::remove(m_connectionDeque.begin(), m_connectionDeque.end(), nullptr),
                     m_connectionDeque.end()
-                )
+                );
             }
         }
 

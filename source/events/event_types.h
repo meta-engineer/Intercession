@@ -92,17 +92,25 @@ namespace pleep
         namespace network {
             // Generic/basic app properties
             // Should probably be only info generic to all potential apps for consistent size
+            // different versionMinor should indicate apps are incompatible
             const EventId APP_INFO = __LINE__;
                 struct APP_INFO_params
                 {
-                    char name[32]        = BUILD_PROJECT_NAME;
+                    std::string name     = BUILD_PROJECT_NAME;
                     uint8_t versionMajor = BUILD_VERSION_MAJOR;
                     uint8_t versionMinor = BUILD_VERSION_MINOR;
                     uint8_t versionPatch = BUILD_VERSION_PATCH;
                     
+                    bool is_compatible(const APP_INFO_params& other)
+                    {
+                        return (this->name == other.name
+                            && this->versionMajor == other.versionMajor
+                            && this->versionMinor == other.versionMinor);
+                    }
+                    
                     friend bool operator==(const APP_INFO_params& lhs, const APP_INFO_params& rhs)
                     {
-                        return (strcmp(lhs.name, rhs.name) == 0
+                        return (lhs.name == rhs.name
                             && lhs.versionMajor == rhs.versionMajor
                             && lhs.versionMinor == rhs.versionMinor
                             && lhs.versionPatch == rhs.versionPatch);
@@ -118,7 +126,7 @@ namespace pleep
             const EventId INTERCESSION_APP_INFO = __LINE__;
                 struct INTERCESSION_APP_INFO_params
                 {
-                    // pass cosmos builder config
+                    // pass CosmosBuilder::Config ?
                 };
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
@@ -137,6 +145,12 @@ namespace pleep
                 struct INTERCESSION_UPDATE_params
                 {
 
+                };
+            // Allow I_Server to notify dynamo about new client
+            const EventId NEW_CLIENT = __LINE__;
+                struct NEW_CLIENT_params
+                {
+                    // shared pointer to remote already contained in OwnedMessage
                 };
         }
     }

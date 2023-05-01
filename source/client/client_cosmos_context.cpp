@@ -3,44 +3,33 @@
 // TODO: This is temporary until proper cosmos staging is implemented
 #include "staging/test_cosmos.h"
 #include "staging/test_temporal_cosmos.h"
+#include "staging/test_client_cosmos.h"
 
 namespace pleep
 {
     ClientCosmosContext::ClientCosmosContext(GLFWwindow* windowApi)
         : I_CosmosContext()
-        , m_renderDynamo(nullptr)
-        , m_inputDynamo(nullptr)
-        , m_physicsDynamo(nullptr)
-        , m_networkDynamo(nullptr)
-        , m_scriptDynamo(nullptr)
     {
         // I_CosmosContext() has setup broker
         
         // construct dynamos
-        m_renderDynamo  = new RenderDynamo(m_eventBroker, windowApi);
-        m_inputDynamo   = new InputDynamo(m_eventBroker, windowApi);
-        m_physicsDynamo = new PhysicsDynamo(m_eventBroker);
-        m_networkDynamo = new ClientNetworkDynamo(m_eventBroker);
-        m_scriptDynamo  = new ScriptDynamo(m_eventBroker);
+        m_dynamoCluster.renderer  = std::make_shared<RenderDynamo>(m_eventBroker, windowApi);
+        m_dynamoCluster.inputter  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
+        m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
+        m_dynamoCluster.networker = std::make_shared<ClientNetworkDynamo>(m_eventBroker);
+        m_dynamoCluster.scripter  = std::make_shared<ScriptDynamo>(m_eventBroker);
 
         // build and populate starting cosmos
-        // TODO: use network dynamo to get cosmos config from server (some loading cosmos while waiting?)
         _build_cosmos();
+        // TODO: use network dynamo to get cosmos config from server (some loading cosmos while waiting?)
     }
     
     ClientCosmosContext::~ClientCosmosContext() 
     {
         // delete cosmos first to avoid null dynamo dereferences?
-        // TODO: passed pointers will not be null... they will just point to delete memory!
         // TODO: deleting entities could cause dynamos to have null references... exit needs to be more secure
         // investigate weak pointers? dynamos can check if pointer is still valid before use
         m_currentCosmos = nullptr;
-
-        delete m_scriptDynamo;
-        delete m_networkDynamo;
-        delete m_physicsDynamo;
-        delete m_inputDynamo;
-        delete m_renderDynamo;
     }
     
     void ClientCosmosContext::_prime_frame() 
@@ -48,22 +37,22 @@ namespace pleep
         // ***** Cosmos Update *****
         // invokes all registered synchros to process their entities
         // this fills the dynamo relays with packets which should be cleared in _clean_frame()
-        m_currentCosmos->update();
+        if (m_currentCosmos) m_currentCosmos->update();
     }
     
     void ClientCosmosContext::_on_fixed(double fixedTime)
     {
         // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
         //   know which dynamos to call fixed and which to call on frametime
-        m_networkDynamo->run_relays(fixedTime);
-        m_physicsDynamo->run_relays(fixedTime);
-        m_inputDynamo->run_relays(fixedTime);
-        m_scriptDynamo->run_relays(fixedTime);
+        m_dynamoCluster.networker->run_relays(fixedTime);
+        m_dynamoCluster.physicser->run_relays(fixedTime);
+        m_dynamoCluster.inputter->run_relays(fixedTime);
+        m_dynamoCluster.scripter->run_relays(fixedTime);
     }
     
     void ClientCosmosContext::_on_frame(double deltaTime) 
     {
-        m_renderDynamo->run_relays(deltaTime);
+        m_dynamoCluster.renderer->run_relays(deltaTime);
 
         // ***** Post Processing *****
         // top ui layer in context for debug
@@ -85,9 +74,9 @@ namespace pleep
             ImGui::Text("This window runs above the cosmos");
 
             // Report Cosmos info
-            std::string entityCountString = "Local Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
+            std::string entityCountString = "Local Entity Count: " + std::to_string(m_currentCosmos ? m_currentCosmos->get_entity_count() : -1);
             ImGui::Text(entityCountString.c_str());
-            std::string hostedCountString = "Hosted TemporalEntity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
+            std::string hostedCountString = "Hosted TemporalEntity Count: " + std::to_string(m_currentCosmos ? m_currentCosmos->get_num_hosted_temporal_entities() : -1);
             ImGui::Text(hostedCountString.c_str());
 
             // Edit bools storing our window open/close state
@@ -117,14 +106,14 @@ namespace pleep
         //   and we invoke all dynamos (to avoid having to specify)
         
         // flush dynamos of all synchro submissions
-        m_scriptDynamo->reset_relays();
-        m_networkDynamo->reset_relays();
-        m_physicsDynamo->reset_relays();
-        m_inputDynamo->reset_relays();
-        m_renderDynamo->reset_relays();
+        m_dynamoCluster.scripter->reset_relays();
+        m_dynamoCluster.networker->reset_relays();
+        m_dynamoCluster.physicser->reset_relays();
+        m_dynamoCluster.inputter->reset_relays();
+        m_dynamoCluster.renderer->reset_relays();
         
         // RenderDynamo calls swap buffers
-        m_renderDynamo->flush_frame();
+        m_dynamoCluster.renderer->flush_frame();
     }
 
     
@@ -134,8 +123,9 @@ namespace pleep
 
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        m_currentCosmos = build_test_cosmos(m_eventBroker, m_renderDynamo, m_inputDynamo, m_physicsDynamo, m_networkDynamo, m_scriptDynamo);
+        m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
         //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_networkDynamo);
+        //m_currentCosmos = build_test_client_cosmos(m_eventBroker, m_dynamoCluster);
         // use imgui input in main loop do add more at runtime
         
         PLEEPLOG_TRACE("Done cosmos construction");

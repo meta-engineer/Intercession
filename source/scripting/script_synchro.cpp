@@ -51,7 +51,7 @@ namespace pleep
         return sign;
     }
     
-    void ScriptSynchro::attach_dynamo(ScriptDynamo* contextDynamo) 
+    void ScriptSynchro::attach_dynamo(std::shared_ptr<ScriptDynamo> contextDynamo) 
     {
         m_attachedScriptDynamo = contextDynamo;
     }

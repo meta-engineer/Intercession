@@ -4,52 +4,52 @@
 //#include "intercession_pch.h"
 #include <memory>
 
+#include "events/event_broker.h"
+#include "staging/dynamo_cluster.h"
+#include "staging/cosmos_builder.h"
 #include "logging/pleep_log.h"
 #include "rendering/model_cache.h"
 #include "scripting/script_library.h"
-#include "staging/cosmos_builder.h"
+
+#include "staging/test_hard_config.h"
 
 namespace pleep
 {
     std::shared_ptr<Cosmos> build_test_cosmos(
         EventBroker* eventBroker, 
-        RenderDynamo* renderDynamo, 
-        InputDynamo* inputDynamo, 
-        PhysicsDynamo* physicsDynamo, 
-        I_NetworkDynamo* networkDynamo, 
-        ScriptDynamo* scriptDynamo
+        DynamoCluster& dynamoCluster
     )
     {
         // TODO: receive config from server
         // TODO: Should config synchros just imply necessary components? Some are 1-to-1 like physics component, some are many-to-one like transform, some are unique like oscillator
-        CosmosBuilder::Config cosmosConfig;
-        cosmosConfig.insert(CosmosBuilder::ComponentType::transform);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::spacial_input);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::renderable);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::camera);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::light_source);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::physics);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::box_collider);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::ray_collider);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::rigid_body);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::spring_body);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::script);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::oscillator);
+/* 
+        cosmos_builder::Config cosmosConfig;
+        cosmosConfig.insert_component<TransformComponent>();
+        cosmosConfig.insert_component<SpacialInputComponent>();
+        cosmosConfig.insert_component<RenderableComponent>();
+        cosmosConfig.insert_component<CameraComponent>();
+        cosmosConfig.insert_component<LightSourceComponent>();
+        cosmosConfig.insert_component<PhysicsComponent>();
+        cosmosConfig.insert_component<BoxColliderComponent>();
+        cosmosConfig.insert_component<RayColliderComponent>();
+        cosmosConfig.insert_component<RigidBodyComponent>();
+        cosmosConfig.insert_component<SpringBodyComponent>();
+        cosmosConfig.insert_component<ScriptComponent>();
+        cosmosConfig.insert_component<OscillatorComponent>();
 
-        cosmosConfig.insert(CosmosBuilder::SynchroType::spacial_input);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::lighting);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::render);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::physics);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::box_collider);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::ray_collider);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::network);
-        cosmosConfig.insert(CosmosBuilder::SynchroType::script);
-
+        cosmosConfig.insert_synchro<SpacialInputSynchro>();
+        cosmosConfig.insert_synchro<LightingSynchro>();
+        cosmosConfig.insert_synchro<RenderSynchro>();
+        cosmosConfig.insert_synchro<PhysicsSynchro>();
+        cosmosConfig.insert_synchro<BoxColliderSynchro>();
+        cosmosConfig.insert_synchro<RayColliderSynchro>();
+        cosmosConfig.insert_synchro<NetworkSynchro>();
+        cosmosConfig.insert_synchro<ScriptSynchro>();
         // build cosmos according to config
-        CosmosBuilder generator;
-        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, eventBroker, renderDynamo, inputDynamo, physicsDynamo, networkDynamo, scriptDynamo);
-
-        //PLEEPLOG_DEBUG(cosmos->stringify_synchro_registry());
+        //std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
+ */
+        // Setup hard configed Cosmos
+        std::shared_ptr<Cosmos> cosmos = build_test_hard_config(eventBroker, dynamoCluster);
 
         PLEEPLOG_TRACE("Create Entities");
         // create entities
@@ -61,7 +61,7 @@ namespace pleep
         //ModelCache::import("C:/Users/Stephen/Repos/Intercession/resources/vampire/dancing_vampire3.dae");
         //ModelCache::import("./resources/12268_banjofrog_v1_L3.obj");
         //return;
-        ModelManager::debug_receipt(frog_import);
+        //ModelManager::debug_receipt(frog_import);
         // ***************************************************************************
 
         // ***************************************************************************
@@ -156,6 +156,26 @@ namespace pleep
         cosmos->add_component(crate, BoxColliderComponent{});
         cosmos->add_component(crate, RigidBodyComponent{});
         // ***************************************************************************
+
+        
+        /***************************************************************************
+        Entity fakeCrate = compose_entity(11, 20, 1);
+
+        EventMessage lanMsg(events::network::ENTITY_UPDATE);
+        cosmos->serialize_entity_components(crate, lanMsg);
+        events::network::ENTITY_UPDATE_params lanInfo = { fakeCrate, cosmos->get_entity_signature(crate) };
+        //lanMsg << lanInfo;
+
+        cosmos->destroy_entity(crate);
+
+        cosmos->register_entity(fakeCrate);
+        for (ComponentType c = 0; c < lanInfo.sign.size(); c++)
+        {
+            if (lanInfo.sign.test(c)) cosmos->add_component(lanInfo.entity, c);
+        }
+        cosmos->deserialize_entity_components(fakeCrate, lanMsg);
+        // ***************************************************************************/
+
 
         // ***************************************************************************
         Entity block = cosmos->create_entity();
@@ -276,7 +296,6 @@ namespace pleep
             {TextureType::specular, "resources/brickwall_specular.jpg"},
             {TextureType::normal, "resources/brickwall_normal_up.jpg"},
         });
-        //ModelCache::create_material("floor_mat", ...);
         floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
         cosmos->add_component(floor, floor_renderable);
 

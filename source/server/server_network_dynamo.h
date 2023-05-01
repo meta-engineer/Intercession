@@ -15,11 +15,12 @@ namespace pleep
     // receives a TimelineApi passed from Appgateway which provides communication to
     // Network dynamos in other concurrent timeslices
     // It also constructs a server using the TimelineApi configuration
-    // Network dynamo should handle networking sub-classed events and dispatch them to
+    // Network dynamo should handle networking typed events and dispatch them to
     // either the api (to other servers) or the server interface (to clients)
     // incoming messages on the server or api should be submitted to specific relays 
     // (or emitted as events to the rest of the context)
-    // Ideally the Dynamo itself should be as agnostic as possible and relays specify behaviour
+    // We handle all message by polling the networkApi.
+    // But the networkApi handles all connected/validated/disconnected events asynchronously!
     class ServerNetworkDynamo : public I_NetworkDynamo
     {
     public:

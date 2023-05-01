@@ -38,21 +38,18 @@ namespace pleep
         void set_signature(Entity entity, Signature sign);
 
         Signature get_signature(Entity entity);
+        
+        std::unordered_map<Entity, Signature>& get_signatures_ref();
 
     private:
         // queue of ALL unused Entity ids
         // Only contains TemporalEntityIds with TimesliceId = m_timesliceId
         std::queue<Entity> m_availableTemporalEntityIds{};
 
-        // static array of entity signatures for ALL possible entities
+        // entity signatures for ALL possible entities
         // even those from other host timeslices
-        // this is excessive, but at least robust
-        // NOTE: std::array does not check bounds
-        // TODO: can this be a hashmap? unlisted entry implies empty signature?
-        std::array<Signature, ENTITY_SIZE> m_signatures{};
-
-        // runtime tally - used to keep entity limits
-        Entity m_entityCount = 0;
+        // unlisted entry implies empty signature
+        std::unordered_map<Entity, Signature> m_signatures;
 
         // Known timesliceId to compose Entity values with,
         // and check if we are a server (timeslice host) 
@@ -86,17 +83,17 @@ namespace pleep
     inline Entity EntityRegistry::create_entity()
     {
         // assert() entity count doesn't go beyond max
-        if (m_entityCount > GENESISID_SIZE)
+        size_t localEntityCount = m_hostedTemporalEntityCounts.size();
+        if (localEntityCount > GENESISID_SIZE)
         {
             PLEEPLOG_ERROR("Cannot exceed max entity capacity of: " + std::to_string(GENESISID_SIZE));
-            throw std::range_error("EntityRegistry is at entity count " + std::to_string(m_entityCount) + " and cannot create more Entities.");
+            throw std::range_error("EntityRegistry is at entity count " + std::to_string(localEntityCount) + " and cannot create more Entities.");
         }
 
         // use queue to get Entity id
         Entity ent = m_availableTemporalEntityIds.front();
         assert(m_hostedTemporalEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedTemporalEntityCounts.end());
         m_availableTemporalEntityIds.pop();
-        m_entityCount++;
 
         // TODO: how do clients signal to their host to validate this Entity? (and override with a proper TimesliceId)
 
@@ -118,7 +115,7 @@ namespace pleep
         }
 
         // If non empty signature already exists for this entity then something has gone wrong
-        assert(m_signatures.at(entity).none());
+        assert(m_signatures.find(entity) == m_signatures.end());
 
         return true;
     }
@@ -132,7 +129,7 @@ namespace pleep
         }
 
         // Clear signature (if it exists)
-        m_signatures[entity].reset();
+        m_signatures.erase(entity);
 
         // Entity will be re-added to availability queue once it's host count decrements to 0
 
@@ -143,7 +140,7 @@ namespace pleep
 
     inline size_t EntityRegistry::get_entity_count()
     {
-        return m_entityCount;
+        return m_signatures.size();
     }
     
     inline void EntityRegistry::increment_hosted_temporal_entity_count(Entity entity)
@@ -231,7 +228,24 @@ namespace pleep
             throw std::range_error("EntityRegistry cannot get signature of entity " + std::to_string(entity) + " greater than capacity " + std::to_string(ENTITY_SIZE));
         }
 
-        return m_signatures[entity];
+        try
+        {
+            return m_signatures.at(entity);
+        }
+        catch(const std::out_of_range& e)
+        {
+            // Could be adding first component, so this is expected
+            UNREFERENCED_PARAMETER(e);
+            //PLEEPLOG_ERROR(e.what());
+            //PLEEPLOG_ERROR("No signature exists for Entity: " + std::to_string(entity));
+        }
+        
+        return Signature{};
+    }
+    
+    inline std::unordered_map<Entity, Signature>& EntityRegistry::get_signatures_ref()
+    {
+        return m_signatures;
     }
 }
 

@@ -23,7 +23,7 @@ namespace pleep
         Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
 
         // synchro needs a RenderDynamo to operate on
-        void attach_dynamo(RenderDynamo* contextDynamo);
+        void attach_dynamo(std::shared_ptr<RenderDynamo> contextDynamo);
 
     private:
         // Register Cosmos/CosmosBuilder setting the entity of the main camera
@@ -36,7 +36,7 @@ namespace pleep
         void _resize_main_camera(int width, int height);
 
         // dynamo provided by cosmos context to invoke on update
-        RenderDynamo* m_attachedRenderDynamo = nullptr;
+        std::shared_ptr<RenderDynamo> m_attachedRenderDynamo = nullptr;
 
 
         // Rendering specific data

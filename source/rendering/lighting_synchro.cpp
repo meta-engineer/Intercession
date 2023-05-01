@@ -61,7 +61,7 @@ namespace pleep
         return sign;
     }
     
-    void LightingSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
+    void LightingSynchro::attach_dynamo(std::shared_ptr<RenderDynamo> contextDynamo) 
     {
         m_attachedRenderDynamo = contextDynamo;
     }

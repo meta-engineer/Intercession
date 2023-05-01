@@ -27,6 +27,7 @@ namespace pleep
             PLEEPLOG_DEBUG("[----] Checking new connection: " + remote->get_endpoint().address().to_string() + ":" + std::to_string(remote->get_endpoint().port()));
 
             // check against some banned ips?
+            //return false;
 
             return true;
         }
@@ -36,14 +37,13 @@ namespace pleep
             UNREFERENCED_PARAMETER(remote);
             PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Checking validated connection");
 
-            PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Responding with app info message");
-            Message<EventId> msg(events::network::APP_INFO);
-            events::network::APP_INFO_params localInfo;
-            msg << localInfo;
-            remote->send(msg);
-
-            // TODO: signal "new player" event for dynamo on queue
-            //m_incomingMessages.push_back();
+            // "forward" new client notice in lieu of client sending it (it is implied when client calls to connect)
+            net::OwnedMessage<EventId> msg;
+            msg.msg = EventMessage(events::network::NEW_CLIENT);
+            msg.remote = remote;
+            events::network::NEW_CLIENT_params clientInfo;  // is this necessary?
+            msg.msg << clientInfo;
+            m_incomingMessages.push_back(msg);
         }
         
         void on_remote_disconnect(std::shared_ptr<net::Connection<EventId>> remote) override
@@ -52,6 +52,7 @@ namespace pleep
             PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Disconnected connection");
 
             // TODO: signal "player exit" event for dynamo on queue
+            // TODO: Check if remote shared_pointer beyond this method if we pass it to network dynamo
             //m_incomingMessages.push_back();
         }
     };

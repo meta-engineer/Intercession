@@ -23,6 +23,9 @@ namespace pleep
         // does NOT overwrite, THROWS if component already exists
 	    void insert_data_for(Entity entity, T component);
 
+        // adddefault constructed component to entity
+        void emplace_data_for(Entity entity) override;
+
         // remove component from entity
         // compels strict usage, THROWS if component does not exist
         void remove_data_for(Entity entity);
@@ -32,11 +35,11 @@ namespace pleep
         
         // Push component data into msg
         // does nothing if component does not exist
-        void serialize_data_for(Entity entity, EventMessage msg) override;
+        void serialize_data_for(Entity entity, EventMessage& msg) override;
         
         // Pop component data from msg and overwrite;
         // non-strict usage, does nothing if component does not exist
-        void deserialize_data_for(Entity entity, EventMessage msg) override;
+        void deserialize_data_for(Entity entity, EventMessage& msg) override;
 
         // return reference to component for this entity
         // does NOT return "not found", THROWS if no component exists
@@ -75,6 +78,12 @@ namespace pleep
         m_mapIndexToEntity[newIndex] = entity;
         m_array[newIndex]            = component;
         m_size++;
+    }
+
+    template<typename T>
+    void ComponentArray<T>::emplace_data_for(Entity entity)
+    {
+        this->insert_data_for(entity, T{});
     }
 
     template<typename T>
@@ -127,7 +136,7 @@ namespace pleep
     }
     
     template<typename T>
-    void ComponentArray<T>::serialize_data_for(Entity entity, EventMessage msg)
+    void ComponentArray<T>::serialize_data_for(Entity entity, EventMessage& msg)
     {
         // exit safely if not found
         if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
@@ -136,7 +145,7 @@ namespace pleep
     }
 
     template<typename T>
-    void ComponentArray<T>::deserialize_data_for(Entity entity, EventMessage msg)
+    void ComponentArray<T>::deserialize_data_for(Entity entity, EventMessage& msg)
     {
         // exit safely if not found
         if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;

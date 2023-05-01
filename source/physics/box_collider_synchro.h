@@ -2,6 +2,8 @@
 #define BOX_COLLIDER_SYNCHRO_H
 
 //#include "intercession_pch.h"
+#include <memory>
+
 #include "ecs/i_synchro.h"
 #include "physics/physics_dynamo.h"
 
@@ -21,11 +23,11 @@ namespace pleep
         Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
 
         // synchro needs a RenderDynamo to operate on
-        void attach_dynamo(PhysicsDynamo* contextDynamo);
+        void attach_dynamo(std::shared_ptr<PhysicsDynamo> contextDynamo);
         
     private:
         // dynamo provided by cosmos context to invoke on update
-        PhysicsDynamo* m_attachedPhysicsDynamo;
+        std::shared_ptr<PhysicsDynamo> m_attachedPhysicsDynamo;
     };
 }
 

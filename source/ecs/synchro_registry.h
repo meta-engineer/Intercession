@@ -39,6 +39,10 @@ namespace pleep
         // this is potentially dangerous, but cosmos needs access to iterate
         std::unordered_map<const char*, std::shared_ptr<I_Synchro>>& get_synchros_ref();
 
+        // Return list of synchro typeid names
+        // Not ordered, though it should not matter
+        std::vector<std::string> stringify();
+
     private:
         // synchro typeid -> synchros desired entity signature
         std::unordered_map<const char*, Signature> m_signatures{};
@@ -116,6 +120,22 @@ namespace pleep
     inline std::unordered_map<const char*, std::shared_ptr<I_Synchro>>& SynchroRegistry::get_synchros_ref()
     {
         return m_synchros;
+    }
+    
+    inline std::vector<std::string> SynchroRegistry::stringify()
+    {
+        std::vector<std::string> synchroNames;
+        synchroNames.reserve(m_synchros.size());
+        for (auto synchroIt : m_synchros)
+        {
+            synchroNames.push_back(synchroIt.first);
+        }
+
+        // sort alphabetically just for consistency?
+        std::sort(synchroNames.begin(), synchroNames.end());
+
+        // leave order as whatever map was in
+        return synchroNames;
     }
 }
 

@@ -20,12 +20,12 @@ namespace pleep
         Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
 
         // synchro needs a RenderDynamo to operate on
-        void attach_dynamo(RenderDynamo* contextDynamo);
+        void attach_dynamo(std::shared_ptr<RenderDynamo> contextDynamo);
 
     private:
         
         // dynamo provided by cosmos context to invoke on update
-        RenderDynamo* m_attachedRenderDynamo = nullptr;
+        std::shared_ptr<RenderDynamo> m_attachedRenderDynamo = nullptr;
     };
 }
 

@@ -2,113 +2,79 @@
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> CosmosBuilder::generate(
-        CosmosBuilder::Config config,
-        EventBroker* callerBroker, 
-        RenderDynamo* callerRenderDynamo, 
-        InputDynamo* callerInputDynamo, 
-        PhysicsDynamo* callerPhysicsDynamo, 
-        I_NetworkDynamo* callerNetworkDynamo, 
-        ScriptDynamo* callerScriptDynamo
+    std::shared_ptr<Cosmos> cosmos_builder::generate(
+        cosmos_builder::Config& config,
+        DynamoCluster& callerDynamos,
+        EventBroker* callerBroker
     )
     {
+        static std::unordered_map<const char*, std::function<void(std::shared_ptr<Cosmos>, DynamoCluster&)>> componentRegisters;
+        if (componentRegisters.empty())
+        {
+            componentRegisters.insert({ 
+                typeid(TransformComponent).name(), 
+                [](std::shared_ptr<Cosmos> cosmos, DynamoCluster& dynamos)
+                {
+                    UNREFERENCED_PARAMETER(dynamos);
+                    cosmos->register_component<TransformComponent>();
+                }
+            });
+        }
+
+        
         PLEEPLOG_TRACE("Derive TimesliceId from network");
-        TimesliceId localTimesliceID = callerNetworkDynamo ? callerNetworkDynamo->get_timeslice_id() : NULL_TIMESLICEID;
+        TimesliceId localTimesliceID = callerDynamos.networker ? callerDynamos.networker->get_timeslice_id() : NULL_TIMESLICEID;
 
         // passthrough broker to Cosmos (null or not)
         PLEEPLOG_TRACE("Create Cosmos");
         std::shared_ptr<Cosmos> newCosmos = std::make_shared<Cosmos>(callerBroker, localTimesliceID);
 
         PLEEPLOG_TRACE("Register Components");
-        for (ComponentType cType : config.components)
+        for (std::string c : config.components)
         {
-            switch(cType)
-            {
-                case ComponentType::transform:
-                    newCosmos->register_component<TransformComponent>();
-                    break;
-                case ComponentType::spacial_input:
-                    newCosmos->register_component<SpacialInputComponent>();
-                    break;
-                case ComponentType::renderable:
-                    newCosmos->register_component<RenderableComponent>();
-                    break;
-                case ComponentType::camera:
-                    newCosmos->register_component<CameraComponent>();
-                    break;
-                case ComponentType::light_source:
-                    newCosmos->register_component<LightSourceComponent>();
-                    break;
-                case ComponentType::physics:
-                    newCosmos->register_component<PhysicsComponent>();
-                    break;
-                case ComponentType::box_collider:
-                    newCosmos->register_component<BoxColliderComponent>();
-                    break;
-                case ComponentType::ray_collider:
-                    newCosmos->register_component<RayColliderComponent>();
-                    break;
-                case ComponentType::rigid_body:
-                    newCosmos->register_component<RigidBodyComponent>();
-                    break;
-                case ComponentType::spring_body:
-                    newCosmos->register_component<SpringBodyComponent>();
-                    break;
-                case ComponentType::script:
-                    newCosmos->register_component<ScriptComponent>();
-                    break;
-                case ComponentType::oscillator:
-                    newCosmos->register_component<OscillatorComponent>();
-                    break;
-                default:
-                    //PLEEPLOG_WARN("Found unknown component enum value: " + std::to_string(static_cast<uint16_t>(cType)));
-                    break;
-            }
+            //componentRegisters.at(c.c_str()).operator()(newCosmos, callerDynamos);
         }
+/* 
+        newCosmos->register_component<TransformComponent>();
+        newCosmos->register_component<SpacialInputComponent>();
+        newCosmos->register_component<RenderableComponent>();
+        newCosmos->register_component<CameraComponent>();
+        newCosmos->register_component<LightSourceComponent>();
+        newCosmos->register_component<PhysicsComponent>();
+        newCosmos->register_component<BoxColliderComponent>();
+        newCosmos->register_component<RayColliderComponent>();
+        newCosmos->register_component<RigidBodyComponent>();
+        newCosmos->register_component<SpringBodyComponent>();
+        newCosmos->register_component<ScriptComponent>();
+        newCosmos->register_component<OscillatorComponent>();
+        //PLEEPLOG_WARN("Found unknown component enum value: " + std::to_string(static_cast<uint16_t>(cType)));
+*/
 
-        // synchros are in an unordered map so it isn't guarenteed that LightingSynchro is invoked before RenderSynchro
-        // TODO: ordering of synchros in unordered_map DOES AFFECT run order, with undefined, NON-DETERMINISTIC behaviour
-        // TODO: Is there a better way to attach dynamos?
         PLEEPLOG_TRACE("Create Synchros");
-        for (SynchroType sType : config.synchros)
+        for (std::string s : config.synchros)
         {
-            switch(sType)
-            {
-                case SynchroType::spacial_input:
-                    newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(callerInputDynamo);
-                    break;
-                case SynchroType::lighting:
-                    newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(callerRenderDynamo);
-                    break;
-                case SynchroType::render:
-                    newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(callerRenderDynamo);
-                    break;
-                case SynchroType::physics:
-                    newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(callerPhysicsDynamo);
-                    break;
-                case SynchroType::box_collider:
-                    newCosmos->register_synchro<BoxColliderSynchro>()->attach_dynamo(callerPhysicsDynamo);
-                    break;
-                case SynchroType::ray_collider:
-                    newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(callerPhysicsDynamo);
-                    break;
-                case SynchroType::network:
-                    newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(callerNetworkDynamo);
-                    break;
-                case SynchroType::script:
-                    newCosmos->register_synchro<ScriptSynchro>()->attach_dynamo(callerScriptDynamo);
-                    break;
-                default:
-                    //PLEEPLOG_WARN("found unknown synchro enum value: " + std::to_string(static_cast<uint16_t>(sType)));
-                    break;
-            }
+            //synchroRegisters.at(s.c_str()).operator()(newCosmos, callerDynamos);
         }
-        
+/* 
+        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(callerDynamos.inputter);
+        newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(callerDynamos.renderer);
+        newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(callerDynamos.renderer);
+        newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(callerDynamos.physicser);
+        newCosmos->register_synchro<BoxColliderSynchro>()->attach_dynamo(callerDynamos.physicser);
+        newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(callerDynamos.physicser);
+        newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(callerDynamos.networker);
+        newCosmos->register_synchro<ScriptSynchro>()->attach_dynamo(callerDynamos.scripter);
+        //PLEEPLOG_WARN("found unknown synchro enum value: " + std::to_string(static_cast<uint16_t>(sType)));
+*/
         return newCosmos;
     }
     
-    CosmosBuilder::Config CosmosBuilder::scan(std::shared_ptr<Cosmos> cosmos) 
+    cosmos_builder::Config cosmos_builder::scan(std::shared_ptr<Cosmos> cosmos) 
     {
-        return Config{};
+        // Return data in Config
+        return Config(
+            cosmos->stringify_component_registry(),
+            cosmos->stringify_synchro_registry()
+        );
     }
 }

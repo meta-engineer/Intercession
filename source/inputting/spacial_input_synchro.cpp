@@ -51,7 +51,7 @@ namespace pleep
         return sign;
     }
     
-    void SpacialInputSynchro::attach_dynamo(InputDynamo* contextDynamo) 
+    void SpacialInputSynchro::attach_dynamo(std::shared_ptr<InputDynamo> contextDynamo) 
     {
         m_attachedInputDynamo = contextDynamo;
     }

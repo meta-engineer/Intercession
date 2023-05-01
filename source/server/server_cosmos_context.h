@@ -32,13 +32,6 @@ namespace pleep
         // provide registered synchros with our related dynamos
         // for now this has no parameters (scene filename in future?)
         void _build_cosmos();
-
-        // Server specific Dynamos
-        // Dynamos possess relevant api references passed in on construction from AppGateway
-        // Our cosmos shares these dynamos with their synchros
-        PhysicsDynamo* m_physicsDynamo;
-        ServerNetworkDynamo* m_networkDynamo;
-        ScriptDynamo* m_scriptDynamo;
     };
 }
 

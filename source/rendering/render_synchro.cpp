@@ -79,7 +79,7 @@ namespace pleep
         return sign;
     }
     
-    void RenderSynchro::attach_dynamo(RenderDynamo* contextDynamo) 
+    void RenderSynchro::attach_dynamo(std::shared_ptr<RenderDynamo> contextDynamo) 
     {
         // We cannot subscribe to events until the dynamo is attached (to have broker access)
         // So we have to do it here, but make sure we don't double subscribe if dynamo changes

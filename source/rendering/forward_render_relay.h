@@ -315,6 +315,10 @@ namespace pleep
             std::unordered_map<TextureType, bool> setTextures;
             // would it be slower to set all defaults BEFORE material?
             //   or is tracking on cpu to avoid more opengl calls optimal?
+
+            // re-use one string to avoid as many string destructions as possible
+            std::string uniformName = "";
+            
             if (material) // incase of nullptr
             {
                 for (auto materialIt = material->m_textures.begin(); materialIt != material->m_textures.end(); materialIt++)
@@ -324,17 +328,17 @@ namespace pleep
 
                     // shader material format is: material.TYPESTR
                     // Careful! Not all material types might be accepted by the shader
-                    sm.set_int("material." + TEXTURETYPE_TO_STR(materialIt->first), texIndex);
+                    uniformName = "material."; uniformName.append(TEXTURETYPE_TO_STR(materialIt->first));
+                    sm.set_int(uniformName, texIndex);
                     setTextures[materialIt->first] = true;
                     
                     // set flags for optional maps
                     switch(materialIt->first)
                     {
                         case(TextureType::normal):
-                            sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(materialIt->first), true);
-                            break;
                         case(TextureType::height):
-                            sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(materialIt->first), true);
+                            uniformName = "material.use_"; uniformName.append(TEXTURETYPE_TO_STR(materialIt->first));
+                            sm.set_bool(uniformName, true);
                             break;
                         default:
                             // no flag needed
@@ -351,11 +355,31 @@ namespace pleep
             glActiveTexture(GL_TEXTURE0 + texIndex);
             glBindTexture(GL_TEXTURE_2D, 0); // texture_id 0 should be black
             // check for textures this shader requires
-            if (setTextures[TextureType::diffuse] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::diffuse), texIndex);
-            if (setTextures[TextureType::specular] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::specular), texIndex);
-            if (setTextures[TextureType::normal] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::normal), false);
-            if (setTextures[TextureType::height] == false) sm.set_bool("material.use_" + TEXTURETYPE_TO_STR(TextureType::height), false);
-            if (setTextures[TextureType::emissive] == false) sm.set_int("material." + TEXTURETYPE_TO_STR(TextureType::emissive), texIndex);
+            if (setTextures[TextureType::diffuse] == false)
+            {
+                uniformName = "material."; uniformName.append(TEXTURETYPE_TO_STR(TextureType::diffuse));
+                sm.set_int(uniformName, texIndex);
+            }
+            if (setTextures[TextureType::specular] == false)
+            {
+                uniformName = "material."; uniformName.append(TEXTURETYPE_TO_STR(TextureType::specular));
+                sm.set_int(uniformName, texIndex);
+            }
+            if (setTextures[TextureType::normal] == false)
+            {
+                uniformName = "material.use_"; uniformName.append(TEXTURETYPE_TO_STR(TextureType::normal));
+                sm.set_bool(uniformName, false);
+            }
+            if (setTextures[TextureType::height] == false)
+            {
+                uniformName = "material.use_"; uniformName.append(TEXTURETYPE_TO_STR(TextureType::height));
+                sm.set_bool(uniformName, false);
+            }
+            if (setTextures[TextureType::emissive] == false)
+            {
+                uniformName = "material."; uniformName.append(TEXTURETYPE_TO_STR(TextureType::emissive));
+                sm.set_int(uniformName, texIndex);
+            }
 
 
             // environment map (data.renderable.environmentCubemap.id)

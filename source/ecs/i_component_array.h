@@ -22,13 +22,16 @@ namespace pleep
         // non-strict usage, does nothing if component does not exist
         virtual void clear_data_for(Entity entity) = 0;
 
+        // add default constructed component to entity
+        virtual void emplace_data_for(Entity entity) = 0;
+
         // Push component data into msg
         // non-strict usage, does nothing if component does not exist
-        virtual void serialize_data_for(Entity entity, EventMessage msg) = 0;
+        virtual void serialize_data_for(Entity entity, EventMessage& msg) = 0;
 
         // Pop component data from msg and overwrite;
         // non-strict usage, does nothing if component does not exist
-        virtual void deserialize_data_for(Entity entity, EventMessage msg) = 0;
+        virtual void deserialize_data_for(Entity entity, EventMessage& msg) = 0;
     };
 }
 

@@ -36,35 +36,32 @@ namespace pleep
             synchroIter->second->update();
         }
     }
-    
-    std::string Cosmos::stringify_synchro_registry() 
-    {
-        std::vector<std::string> synchroNames;
-        synchroNames.reserve(m_synchroRegistry->get_synchros_ref().size());
-        for (auto synchroIt : m_synchroRegistry->get_synchros_ref())
-        {
-            synchroNames.push_back(synchroIt.first);
-        }
 
-        std::sort(synchroNames.begin(), synchroNames.end());
-
-        std::string synchroConcat;
-        for (auto synchroName : synchroNames)
-        {
-            synchroConcat.append(synchroName + ", ");
-        }
-
-        return synchroConcat;
-    }
-
-    void Cosmos::serialize_entity_components(Entity entity, EventMessage msg)
+    void Cosmos::serialize_entity_components(Entity entity, EventMessage& msg)
     {
         Signature entitySign = this->get_entity_signature(entity);
         m_componentRegistry->serialize_entity_components(entity, entitySign, msg);
     }
 
-    void Cosmos::deserialize_and_write_component(Entity entity, std::string componentName, EventMessage msg)
+    void Cosmos::deserialize_entity_components(Entity entity, EventMessage& msg)
+    {
+        Signature entitySign = this->get_entity_signature(entity);
+        m_componentRegistry->deserialize_entity_components(entity, entitySign, msg);
+    }
+
+    void Cosmos::deserialize_and_write_component(Entity entity, const char* componentName, EventMessage& msg)
     {
         m_componentRegistry->deserialize_and_write_component(entity, componentName, msg);
+    }
+
+    
+    std::vector<std::string> Cosmos::stringify_synchro_registry() 
+    {
+        return m_synchroRegistry->stringify();
+    }
+    
+    std::vector<std::string> Cosmos::stringify_component_registry() 
+    {
+        return m_componentRegistry->stringify();
     }
 }

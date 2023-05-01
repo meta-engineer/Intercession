@@ -45,7 +45,7 @@ namespace pleep
    };
     // TODO: find a more elegant way to convert enum to string
     // these will be used as the prefix for shader Material struct members
-    inline std::string TEXTURETYPE_TO_STR(TextureType t)
+    inline const char* TEXTURETYPE_TO_STR(TextureType t)
     {
         switch(t)
         {

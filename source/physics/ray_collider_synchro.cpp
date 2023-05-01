@@ -58,7 +58,7 @@ namespace pleep
         return sign;
     }
     
-    void RayColliderSynchro::attach_dynamo(PhysicsDynamo* contextDynamo) 
+    void RayColliderSynchro::attach_dynamo(std::shared_ptr<PhysicsDynamo> contextDynamo) 
     {
         // clear events registered through old dynamo
 

@@ -2,6 +2,7 @@
 
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
+#include "staging/cosmos_builder.h"
 
 namespace pleep
 {
@@ -132,6 +133,44 @@ namespace pleep
                 //m_entityUpdateRelay->submit(msg.msg);
             }
             break;
+            case events::network::NEW_CLIENT:
+            {
+                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received new client notice");
+
+                // TODO: send app_info? then Intercession_info?
+
+                // Send Cosmos config
+                // should be stateless and scan current workingCosmos?
+                // How should scan work, just store config into Cosmos when it is built? What if it changes afterwards?
+                // If CosmosBuilder could use synchro/component typeid then we could scan Cosmos' registries
+                // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
+
+                PLEEPLOG_CRITICAL("New client joined, I should send them a cosmos config!");
+                /* Message<EventId> configMsg(events::cosmos::CONFIG);
+                events::cosmos::CONFIG_params configInfo;
+                CosmosBuilder scanner;
+                configInfo.config = scanner.scan(m_workingCosmos);
+                configMsg << configInfo;
+                msg.remote->send(configMsg); */
+
+                // Send initialization for all entities
+                for (auto signIt : m_workingCosmos->get_signatures_ref())
+                {
+                    EventMessage createMsg(events::cosmos::ENTITY_CREATED);
+                    events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
+                    createMsg << createInfo;
+                    msg.remote->send(createMsg);
+
+                    // TEST: send one-time update
+                    EventMessage updateMsg(events::network::ENTITY_UPDATE);
+                    m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
+                    events::network::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
+                    updateMsg << updateInfo;
+                    msg.remote->send(updateMsg);
+
+                }
+            }
+            break;
             default:
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Recieved unknown message");
@@ -141,10 +180,20 @@ namespace pleep
         }
 
         // Fourth: Process all submitted data in relays
-        m_entityUpdateRelay->engage(deltaTime);
+        //m_entityUpdateRelay->engage(deltaTime);
 
-        // Fifth: After all ingesting is done, send/broadcast fresh data to timestreams
-        // TODO: Fetch all temporal entities and feed updates into timelineApi
+        // Fifth: After all ingesting is done, send/broadcast fresh data to timestreams & clients
+        // TODO: how do we compensate for latency?
+        /*
+        for (auto signIt : m_workingCosmos->get_signatures_ref())
+        {
+            EventMessage updateMsg(events::network::ENTITY_UPDATE);
+            m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
+            events::network::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
+            updateMsg << updateInfo;
+            m_networkApi.broadcast_message(updateMsg);
+        }
+        */
     }
     
     void ServerNetworkDynamo::reset_relays() 

@@ -6,28 +6,29 @@
 
 #include "logging/pleep_log.h"
 
+#include "events/event_broker.h"
+#include "staging/dynamo_cluster.h"
 #include "staging/cosmos_builder.h"
 #include "ecs/ecs_types.h"
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> build_temporal_cosmos(EventBroker* eventBroker, I_NetworkDynamo* networkDynamo)
+    std::shared_ptr<Cosmos> build_temporal_cosmos(
+        EventBroker* eventBroker, 
+        DynamoCluster& dynamoCluster)
     {
         // TODO: receive config from file?
-        CosmosBuilder::Config cosmosConfig;
-        cosmosConfig.insert(CosmosBuilder::ComponentType::transform);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::physics);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::box_collider);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::ray_collider);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::rigid_body);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::spring_body);
-        cosmosConfig.insert(CosmosBuilder::ComponentType::script);
+        cosmos_builder::Config cosmosConfig;
+        cosmosConfig.insert_component<TransformComponent>();
+        cosmosConfig.insert_component<PhysicsComponent>();
+        cosmosConfig.insert_component<BoxColliderComponent>();
+        cosmosConfig.insert_component<RayColliderComponent>();
+        cosmosConfig.insert_component<RigidBodyComponent>();
+        cosmosConfig.insert_component<SpringBodyComponent>();
+        cosmosConfig.insert_component<ScriptComponent>();
 
         // build cosmos according to config
-        CosmosBuilder generator;
-        std::shared_ptr<Cosmos> cosmos = generator.generate(cosmosConfig, eventBroker, nullptr, nullptr, nullptr, networkDynamo, nullptr);
-
-        UNREFERENCED_PARAMETER(networkDynamo);
+        std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
 
         Entity time = cosmos->create_entity();
         UNREFERENCED_PARAMETER(time);

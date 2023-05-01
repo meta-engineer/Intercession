@@ -35,7 +35,7 @@ namespace pleep
         return Signature();
     }
     
-    void NetworkSynchro::attach_dynamo(I_NetworkDynamo* contextDynamo) 
+    void NetworkSynchro::attach_dynamo(std::shared_ptr<I_NetworkDynamo> contextDynamo) 
     {
         // clear events registered through old dynamo
 

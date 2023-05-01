@@ -16,6 +16,7 @@
 
 #include "core/cosmos.h"
 #include "events/event_broker.h"
+#include "staging/dynamo_cluster.h"
 
 namespace pleep
 {
@@ -66,7 +67,9 @@ namespace pleep
         std::shared_ptr<Cosmos> m_currentCosmos = nullptr;
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos
         EventBroker* m_eventBroker;
-
+        // Subclasses should instantiate whichever dynamos as they see fit
+        // Our cosmos shares these dynamos with their synchros
+        DynamoCluster m_dynamoCluster;
 
         bool m_running = false;
         // runtime calibrations

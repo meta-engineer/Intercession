@@ -2,6 +2,8 @@
 #define SPACIAL_INPUT_SYNCHRO_H
 
 //#include "intercession_pch.h"
+#include <memory>
+
 #include "ecs/i_synchro.h"
 #include "inputting/input_dynamo.h"
 
@@ -20,11 +22,11 @@ namespace pleep
         Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
 
         // synchro needs a ControlDynamo to operate on
-        void attach_dynamo(InputDynamo* contextDynamo);
+        void attach_dynamo(std::shared_ptr<InputDynamo> contextDynamo);
 
     private:
         // dynamo provided by CosmosContext to invoke on update
-        InputDynamo* m_attachedInputDynamo = nullptr;
+        std::shared_ptr<InputDynamo> m_attachedInputDynamo = nullptr;
     };
 }
 
