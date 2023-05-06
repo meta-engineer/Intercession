@@ -45,40 +45,44 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const RenderableComponent& data)
     {
         // Pass ModelCache keys AND source filepaths incase it needs to be imported
-        // push "number" of  supermeshes
-        size_t numMeshes = data.meshData ? 1 : 0;
-        msg << numMeshes;
-        if (numMeshes > 0)
-        {
-            // send name string
-            msg << data.meshData->m_name;
+        // REMEMBER this is a STACK so reverse the order!!!
 
-            // send path string
-            msg << data.meshData->m_sourceFilepath;
-        }
-
-        // push number of materials
+        // stack mat data first
+        // TODO: What if material has no sourceFilepath? (created manually)
         size_t numMats = data.materials.size();
-        msg << numMats;
         for (size_t m = 0; m < numMats; m++)
         {
+            // send path string
+            msg << data.materials[m]->m_sourceFilepath;
+            
             // send name string
             msg << data.materials[m]->m_name;
 
-            // send path string
-            msg << data.materials[m]->m_sourceFilepath;
         }
+        // then push number of materials
+        msg << numMats;
         
+        // stack mesh data first
+        size_t numMeshes = data.meshData ? 1 : 0;
+        if (numMeshes > 0)
+        {
+            // send path string
+            msg << data.meshData->m_sourceFilepath;
+
+            // send name string
+            msg << data.meshData->m_name;
+        }
+        // then push "number" of supermeshes
+        msg << numMeshes;
+
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, RenderableComponent& data)
     {
-        PLEEPLOG_DEBUG("Reading renderable.");
         // Stream out SuperMesh
         size_t numMeshes = 0;
         msg >> numMeshes;
-        PLEEPLOG_DEBUG("With number of meshes: " + std::to_string(numMeshes));
         // if no meshes in msg, than clear component
         if (numMeshes == 0)
         {
@@ -128,7 +132,6 @@ namespace pleep
         // Stream out Materials
         size_t numMats = 0;
         msg >> numMats;
-        PLEEPLOG_DEBUG("With number of mats: " + std::to_string(numMats));
         // if msg mats is 0 then clear our mats
         if (numMats == 0)
         {
@@ -140,12 +143,10 @@ namespace pleep
             // extract material name
             std::string newMaterialName;
             msg >> newMaterialName;
-            PLEEPLOG_DEBUG("Mat name: " + newMaterialName);
 
             // extract material path
             std::string newMaterialPath;
             msg >> newMaterialPath;
-            PLEEPLOG_DEBUG("Mat path: " + newMaterialPath);
 
             // check if component's material at this index has different mat (or none)
             // (m starts at 0, so we should only ever be 1 index above current materials size)

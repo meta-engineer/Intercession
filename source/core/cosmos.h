@@ -173,6 +173,8 @@ namespace pleep
     
     inline bool Cosmos::register_entity(Entity entity)
     {
+        if (entity == NULL_ENTITY) return false;
+
         bool isEntityValid = m_entityRegistry->register_entity(entity);
 
         if (!isEntityValid) return false;
@@ -190,6 +192,8 @@ namespace pleep
     
     inline void Cosmos::destroy_entity(Entity entity) 
     {
+        if (entity == NULL_ENTITY) return;
+
         m_entityRegistry->destroy_entity(entity);
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);

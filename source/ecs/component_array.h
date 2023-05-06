@@ -117,8 +117,8 @@ namespace pleep
         auto indexIt = m_mapEntityToIndex.find(entity);
         if (indexIt == m_mapEntityToIndex.end())
         {
-            PLEEPLOG_ERROR("Cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
-            throw std::range_error("ComponentArray cannot retrieve component from entity " + std::to_string(entity) + " which has no component of this type");
+            PLEEPLOG_ERROR("Cannot retrieve component '" + std::string(typeid(T).name()) + "' from entity " + std::to_string(entity) + " which has no component of this type");
+            throw std::range_error("ComponentArray cannot retrieve component '" + std::string(typeid(T).name()) + "' from entity " + std::to_string(entity) + " which has no component of this type");
         }
         // If we found data for NULL_ENTITY, something has gone wrong
         assert(entity != NULL_ENTITY);

@@ -15,7 +15,8 @@
 #include "networking/net_i_server.h"
 #include "networking/pleep_crypto.h"
 
-#define MAX_MESSAGE_BODY_BYTES 256
+// Max number of bytes in a message header size before we consider it corrupt
+#define CORRUPT_MESSAGE_BYTES_THRESHOLD 65536
 
 namespace pleep
 {
@@ -175,9 +176,11 @@ namespace net
                     UNREFERENCED_PARAMETER(length);
                     if (!ec)
                     {
-                        if (m_scratchMessage.header.size > MAX_MESSAGE_BODY_BYTES)
+                        if (m_scratchMessage.header.size > CORRUPT_MESSAGE_BYTES_THRESHOLD)
                         {
-                            PLEEPLOG_WARN("Message header size " + std::to_string(m_scratchMessage.header.size) + ", greater than max " + std::to_string(MAX_MESSAGE_BODY_BYTES) + ". Ignoring...");
+                            // TODO: Should we ignore the message, assuming its body size is not real? Worst case it is real and we then read in a bunch of garbage.
+                            // or should we try to read the data and just dump it? Worst case it isn't real and we are essentially ddosed while reading 113849273 bytes
+                            PLEEPLOG_WARN("Message header size " + std::to_string(m_scratchMessage.header.size) + ", greater than corrupt threshold " + std::to_string(CORRUPT_MESSAGE_BYTES_THRESHOLD) + ". Ignoring...");
                             this->_read_header();
                         }
                         else if (m_scratchMessage.header.size > 0)
@@ -353,7 +356,6 @@ namespace net
         // respond and proceed to _read_header() loop
         void _riposte_validation()
         {
-
             asio::async_read(
                 m_socket, 
                 asio::buffer(&m_handshakePlaintext, sizeof(uint32_t)),

@@ -74,7 +74,7 @@ namespace pleep
 
                 // read update into Cosmos
                 // This assumes entity's current signature is correct!
-                //m_workingCosmos->deserialize_entity_components(updateInfo.entity, msg);
+                m_workingCosmos->deserialize_entity_components(updateInfo.entity, msg);
             }
             break;
             case events::cosmos::ENTITY_CREATED:
@@ -86,10 +86,12 @@ namespace pleep
                 msg >> createInfo;
                 PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
-                m_workingCosmos->register_entity(createInfo.entity);
-                for (ComponentType c = 0; c < createInfo.sign.size(); c++)
+                if (m_workingCosmos->register_entity(createInfo.entity))
                 {
-                    if (createInfo.sign.test(c)) m_workingCosmos->add_component(createInfo.entity, c);
+                    for (ComponentType c = 0; c < createInfo.sign.size(); c++)
+                    {
+                        if (createInfo.sign.test(c)) m_workingCosmos->add_component(createInfo.entity, c);
+                    }
                 }
             }
             break;
@@ -100,7 +102,7 @@ namespace pleep
             break;
             default:
             {
-                PLEEPLOG_TRACE("Recieved unknown message");
+                PLEEPLOG_TRACE("Recieved unknown message: " + msg.info());
             }
             break;
             }

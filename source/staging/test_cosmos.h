@@ -157,7 +157,7 @@ namespace pleep
         cosmos->add_component(crate, RigidBodyComponent{});
         // ***************************************************************************
 
-        
+
         /***************************************************************************
         Entity fakeCrate = compose_entity(11, 20, 1);
 

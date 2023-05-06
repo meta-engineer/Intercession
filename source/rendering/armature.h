@@ -38,7 +38,7 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const Armature& data)
     {
         PLEEPLOG_DEBUG("Reached unimplemented Message stream in <Armature> overload!");
-        
+        // REMEMBER this is a STACK so reverse the order!!!
 
         return msg;
     }

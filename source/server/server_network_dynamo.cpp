@@ -159,6 +159,7 @@ namespace pleep
                     EventMessage createMsg(events::cosmos::ENTITY_CREATED);
                     events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
                     createMsg << createInfo;
+                    PLEEPLOG_DEBUG("Sending create: " + createMsg.info());
                     msg.remote->send(createMsg);
 
                     // TEST: send one-time update
@@ -166,8 +167,8 @@ namespace pleep
                     m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
                     events::network::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
                     updateMsg << updateInfo;
+                    PLEEPLOG_DEBUG("Sending update: " + updateMsg.info());
                     msg.remote->send(updateMsg);
-
                 }
             }
             break;

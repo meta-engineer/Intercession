@@ -203,7 +203,7 @@ namespace pleep
                 // this index is valid
                 // get component typename from index (component Id)
                 const char* componentTypename = m_componentNames[i];
-                //PLEEPLOG_DEBUG("Found component to serialize: " + std::string(componentTypename));
+                //PLEEPLOG_DEBUG("Serializing component: " + std::string(componentTypename) + " into msg(" + std::to_string(msg.size()) + ")");
                 m_componentArrays[componentTypename]->serialize_data_for(entity, msg);
             }
         }
@@ -218,20 +218,20 @@ namespace pleep
                 // TODO: check if component exists locally? 
                 // If not we can implicitly add_component a default one (and then it will be updated)
 
-                const char* componentName = get_component_name(i);
+                const char* componentTypename = get_component_name(i);
 
                 // ***If you want to validate components as they are deserialized, do that HERE!
                 // stream>> them myself, interrogate their values, and then overwrite the ecs
 
                 // default:
-                this->deserialize_and_write_component(entity, componentName, msg);
+                //PLEEPLOG_DEBUG("Deserializing msg(" + std::to_string(msg.size()) + ") into " + std::string(componentTypename));
+                this->deserialize_and_write_component(entity, componentTypename, msg);
             }
         }
     }
 
     inline void ComponentRegistry::deserialize_and_write_component(Entity entity, const char* componentTypename, EventMessage& msg)
     {
-        PLEEPLOG_DEBUG("Deserializing " + std::to_string(msg.size()) + " ... " + std::string(componentTypename));
         m_componentArrays[componentTypename]->deserialize_data_for(entity, msg);
     }
     
