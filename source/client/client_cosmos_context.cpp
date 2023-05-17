@@ -4,6 +4,7 @@
 #include "staging/test_cosmos.h"
 #include "staging/test_temporal_cosmos.h"
 #include "staging/test_client_cosmos.h"
+#include "staging/build_pc.h"
 
 namespace pleep
 {
@@ -74,10 +75,13 @@ namespace pleep
             ImGui::Text("This window runs above the cosmos");
 
             // Report Cosmos info
-            std::string entityCountString = "Local Entity Count: " + std::to_string(m_currentCosmos ? m_currentCosmos->get_entity_count() : -1);
-            ImGui::Text(entityCountString.c_str());
-            std::string hostedCountString = "Hosted TemporalEntity Count: " + std::to_string(m_currentCosmos ? m_currentCosmos->get_num_hosted_temporal_entities() : -1);
-            ImGui::Text(hostedCountString.c_str());
+            if (m_currentCosmos)
+            {
+                std::string entityCountString = "Total  Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
+                ImGui::Text(entityCountString.c_str());
+                std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
+                ImGui::Text(hostedCountString.c_str());
+            }
 
             // Edit bools storing our window open/close state
             ImGui::Checkbox("checkbox", &checkbox);
@@ -124,7 +128,10 @@ namespace pleep
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
         //m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
+        //build_pc(m_currentCosmos);
+
         //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_dynamoCluster);
+
         m_currentCosmos = build_test_client_cosmos(m_eventBroker, m_dynamoCluster);
         // use imgui input in main loop do add more at runtime
         

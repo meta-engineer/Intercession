@@ -3,6 +3,8 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 
+#include "staging/build_pc.h"
+
 namespace pleep
 {
     ClientNetworkDynamo::ClientNetworkDynamo(EventBroker* sharedBroker) 
@@ -11,6 +13,8 @@ namespace pleep
         PLEEPLOG_TRACE("Start client networking pipeline setup");
         // setup relays
 
+        // TEMP: direct connect to known address
+        // Recieve this address from? User input?
         m_networkApi.connect("127.0.0.1", 61336);
         // Server will send message to acknowledge connection is ready
         // Keep frame loop alive until then
@@ -61,13 +65,14 @@ namespace pleep
                 }
             }
             break;
-            case events::network::ENTITY_UPDATE:
+            case events::cosmos::ENTITY_UPDATE:
             {
-                PLEEPLOG_TRACE("Recieved entityUpdate message");
+                //PLEEPLOG_TRACE("Recieved entityUpdate message");
 
-                events::network::ENTITY_UPDATE_params updateInfo;
+                events::cosmos::ENTITY_UPDATE_params updateInfo;
                 msg >> updateInfo;
-                PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
+                //PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
+                PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
 
                 // confirm entity exists?
                 // confirm entity signatures match?
@@ -100,6 +105,16 @@ namespace pleep
                 PLEEPLOG_TRACE("Recieved intercessionUpdate message");
             }
             break;
+            break;
+            case events::network::NEW_CLIENT:
+            {
+                PLEEPLOG_TRACE("Recieved newClient message");
+                // Server has forwarded our connection request back to us to confirm
+
+                build_pc(m_workingCosmos);
+
+                // send request to server to validate our new entity
+            }
             default:
             {
                 PLEEPLOG_TRACE("Recieved unknown message: " + msg.info());
@@ -117,12 +132,12 @@ namespace pleep
         // report entities modified this frame
         if (m_networkApi.is_connected())
         {
-            // package entities to report as events::network::ENTITY_UPDATE
+            // package entities to report as events::cosmos::ENTITY_UPDATE
             if (m_workingCosmos)
             {
                 for (Entity ent : m_entitiesToReport)
                 {
-                    Message<EventId> entMsg(events::network::ENTITY_UPDATE);
+                    Message<EventId> entMsg(events::cosmos::ENTITY_UPDATE);
                     Signature entSign = m_workingCosmos->get_entity_signature(ent);
                     PLEEPLOG_DEBUG("Found modified entity to report: " + std::to_string(ent) + " (" + entSign.to_string() + ")");
 
@@ -139,7 +154,7 @@ namespace pleep
                     m_workingCosmos->serialize_entity_components(ent, entMsg);
                     PLEEPLOG_DEBUG("Finished component serialization");
                     // pack header (params) manually
-                    events::network::ENTITY_UPDATE_params entUpdate = { ent, entSign };
+                    events::cosmos::ENTITY_UPDATE_params entUpdate = { ent, entSign };
                     entMsg << entUpdate;
                     PLEEPLOG_DEBUG("Finished header serialization");
 

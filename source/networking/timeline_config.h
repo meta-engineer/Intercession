@@ -15,7 +15,7 @@ namespace pleep
         // (explicitly definine delay means duration is always cleanly divisible)
 
         // number of seconds between each timeslice
-        int timesliceDelay = 60;
+        int timesliceDelay = 5;
         // must not exceed TIMESLICEID_SIZE
         TimesliceId numTimeslices = 2;
 

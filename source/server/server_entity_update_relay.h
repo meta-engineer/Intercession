@@ -24,7 +24,7 @@ namespace pleep
             {
                 EventMessage& updateMsg = *message_it;
 
-                events::network::ENTITY_UPDATE_params updateData;
+                events::cosmos::ENTITY_UPDATE_params updateData;
                 updateMsg >> updateData;
                 PLEEPLOG_DEBUG("Handling entity update event for Entity: " + std::to_string(updateData.entity) + " (" + updateData.sign.to_string() + ")");
                 

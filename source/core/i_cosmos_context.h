@@ -80,7 +80,7 @@ namespace pleep
         std::chrono::duration<double> m_timeRemaining =
             std::chrono::duration<double>(0.0);
         // max number of fixed iterations to catchup before letting system progress/respond
-        const size_t m_maxSteps = 30;
+        const size_t m_maxSteps = 50;
     };
 }
 

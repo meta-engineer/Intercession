@@ -68,7 +68,7 @@ namespace pleep
         Entity frog = cosmos->create_entity();
 
         //cosmos->add_component(frog, MetaComponent{ "froog" });
-        cosmos->add_component(frog, TransformComponent(glm::vec3(6.0f, 2.0f, -0.5f)));
+        cosmos->add_component(frog, TransformComponent(glm::vec3(7.0f, 2.0f, -0.5f)));
         //cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.2f, 0.2f, 0.2f);
         cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.001f, 0.001f, 0.001f);
         
@@ -161,9 +161,9 @@ namespace pleep
         /***************************************************************************
         Entity fakeCrate = compose_entity(11, 20, 1);
 
-        EventMessage lanMsg(events::network::ENTITY_UPDATE);
+        EventMessage lanMsg(events::cosmos::ENTITY_UPDATE);
         cosmos->serialize_entity_components(crate, lanMsg);
-        events::network::ENTITY_UPDATE_params lanInfo = { fakeCrate, cosmos->get_entity_signature(crate) };
+        events::cosmos::ENTITY_UPDATE_params lanInfo = { fakeCrate, cosmos->get_entity_signature(crate) };
         //lanMsg << lanInfo;
 
         cosmos->destroy_entity(crate);
@@ -350,11 +350,11 @@ namespace pleep
         // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity();
-        cosmos->add_component(mainCamera, TransformComponent(glm::vec3(5.0f, 2.5f, 6.0f)));
+        cosmos->add_component(mainCamera, TransformComponent(glm::vec3(4.0f, 4.0f, 2.5f)));
         PhysicsComponent mainCamera_physics;
         mainCamera_physics.isAsleep = true;
         cosmos->add_component(mainCamera, mainCamera_physics);
-        cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.2f));
+        cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.7f));
         cosmos->add_component(mainCamera, CameraComponent());
 
         cosmos->add_component(mainCamera, SpacialInputComponent());

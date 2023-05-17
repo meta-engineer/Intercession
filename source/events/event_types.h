@@ -85,6 +85,17 @@ namespace pleep
                 {
                     Entity entity = NULL_ENTITY;
                 };
+            // entity update will be a dynamically packed series of components:
+            // Each consecutive component represented in the entity's signature.
+            //     (assuming the intercessionAppInfo checks out the component layout should match)
+            // the sign (Signature: 32 bits),
+            // then the id (Entity: 16 bits)
+            // (remember it is a FIFO stack)
+            const EventId ENTITY_UPDATE = __LINE__;
+                struct ENTITY_UPDATE_params {
+                    Entity entity = NULL_ENTITY;
+                    Signature sign;
+                };
         }
 
         // events used as network messages sent over net::Connection
@@ -127,17 +138,6 @@ namespace pleep
                 struct INTERCESSION_APP_INFO_params
                 {
                     // pass CosmosBuilder::Config ?
-                };
-            // entity update will be a dynamically packed series of components:
-            // Each consecutive component represented in the entity's signature.
-            //     (assuming the intercessionAppInfo checks out the component layout should match)
-            // the sign (Signature: 32 bits),
-            // then the id (Entity: 16 bits)
-            // (remember it is a FIFO stack)
-            const EventId ENTITY_UPDATE = __LINE__;
-                struct ENTITY_UPDATE_params {
-                    Entity entity = NULL_ENTITY;
-                    Signature sign;
                 };
             // Info about a timestream modification
             //  ???

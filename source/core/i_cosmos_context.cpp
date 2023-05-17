@@ -58,7 +58,10 @@ namespace pleep
                 // Context gets last word on any final superceding actions
                 this->_clean_frame();
 
-                // TODO: cleanup all entities signalled to be deleted during frame
+                // TODO: let Cosmos make any volitile changes now that entity references are cleared
+                // e.g. cleanup all entities signalled to be deleted during frame
+                // who should listen for delete requests? me or Cosmos?
+                //m_currentCosmos->flush_entity_changes?();
             }
         }
         catch (const std::exception& expt)

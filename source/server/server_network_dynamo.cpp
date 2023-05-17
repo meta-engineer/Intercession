@@ -126,7 +126,7 @@ namespace pleep
                 msg.remote->send(msg.msg);
             }
             break;
-            case events::network::ENTITY_UPDATE:
+            case events::cosmos::ENTITY_UPDATE:
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received entity update message");
                 // what do we do with data now?
@@ -145,7 +145,7 @@ namespace pleep
                 // If CosmosBuilder could use synchro/component typeid then we could scan Cosmos' registries
                 // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
 
-                PLEEPLOG_CRITICAL("New client joined, I should send them a cosmos config!");
+                PLEEPLOG_DEBUG("New client joined, I should send them a cosmos config!");
                 /* Message<EventId> configMsg(events::cosmos::CONFIG);
                 events::cosmos::CONFIG_params configInfo;
                 CosmosBuilder scanner;
@@ -153,23 +153,22 @@ namespace pleep
                 configMsg << configInfo;
                 msg.remote->send(configMsg); */
 
+                PLEEPLOG_DEBUG("Setup Entity for new client to control?");
+                // Should client have control of how the entity is created?
+                // or should the server control how the entity is created?
+
                 // Send initialization for all entities
                 for (auto signIt : m_workingCosmos->get_signatures_ref())
                 {
                     EventMessage createMsg(events::cosmos::ENTITY_CREATED);
                     events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
                     createMsg << createInfo;
-                    PLEEPLOG_DEBUG("Sending create: " + createMsg.info());
+                    PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
                     msg.remote->send(createMsg);
-
-                    // TEST: send one-time update
-                    EventMessage updateMsg(events::network::ENTITY_UPDATE);
-                    m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
-                    events::network::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
-                    updateMsg << updateInfo;
-                    PLEEPLOG_DEBUG("Sending update: " + updateMsg.info());
-                    msg.remote->send(updateMsg);
                 }
+
+                // Forward new client message to signal for cosmos to initialize client side entities
+                msg.remote->send(msg.msg);
             }
             break;
             default:
@@ -185,16 +184,14 @@ namespace pleep
 
         // Fifth: After all ingesting is done, send/broadcast fresh data to timestreams & clients
         // TODO: how do we compensate for latency?
-        /*
         for (auto signIt : m_workingCosmos->get_signatures_ref())
         {
-            EventMessage updateMsg(events::network::ENTITY_UPDATE);
+            EventMessage updateMsg(events::cosmos::ENTITY_UPDATE);
             m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
-            events::network::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
+            events::cosmos::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
             updateMsg << updateInfo;
             m_networkApi.broadcast_message(updateMsg);
         }
-        */
     }
     
     void ServerNetworkDynamo::reset_relays() 
@@ -222,18 +219,17 @@ namespace pleep
     
     void ServerNetworkDynamo::_entity_created_handler(EventMessage entityEvent)
     {
-        // if we have a child timeslice, that means next frame this entity will enter the timestream
+        // Entity created locally. If we have a child timeslice, that means next frame this entity will enter the past timestream
         // so we need to increment its host's count
-
-        // TODO: we should also emplace the timestream now and add the ENTITY_CREATED message
-        
         events::cosmos::ENTITY_CREATED_params newEntityParams;
         entityEvent >> newEntityParams;
-
+        entityEvent << newEntityParams; // re-fill message for forwarding
         if (m_timelineApi.has_past())
         {
             TimesliceId host = derive_timeslice_id(newEntityParams.entity);
             m_timelineApi.send_message(host, entityEvent);
+
+            // TODO: we should also emplace in the past timestream now and add the ENTITY_CREATED message
         }
     }
     

@@ -26,7 +26,7 @@ namespace pleep
             //   through the TimelineApi (to branch based on specific timesliceId)
             std::unique_ptr<I_CosmosContext> ctx = std::make_unique<ServerCosmosContext>(
                 // TODO: construct timestreams
-                TimelineApi(cfg, i, sharedMultiplex)
+                TimelineApi(cfg, i, sharedMultiplex, nullptr, nullptr)
             );
             
             PLEEPLOG_TRACE("Done constructing server context TimesliceId #" + std::to_string(i));
