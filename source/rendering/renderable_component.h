@@ -52,10 +52,21 @@ namespace pleep
         size_t numMats = data.materials.size();
         for (size_t m = 0; m < numMats; m++)
         {
-            // send path string
+            // push texture map for material
+            for (auto texturesIt = data.materials[m]->m_textures.begin(); texturesIt != data.materials[m]->m_textures.end(); texturesIt++)
+            {
+                msg << texturesIt->second.get_source_filepath();
+                msg << texturesIt->first;
+            }
+            size_t numSources = data.materials[m]->m_textures.size();
+            
+            // push number of sources (0 -> material-level source, or actually empty)
+            msg << numSources;
+
+            // push material source, may be empty if material was created in-code
             msg << data.materials[m]->m_sourceFilepath;
             
-            // send name string
+            // push name string to be received first
             msg << data.materials[m]->m_name;
 
         }
@@ -137,6 +148,11 @@ namespace pleep
         {
             data.materials.clear();
         }
+        // if mats deserialized is less than exist in data.materials, clear the excess
+        else if (numMats < data.materials.size())
+        {
+            data.materials.erase(data.materials.begin()+numMats, data.materials.end());
+        }
 
         for (size_t m = 0; m < numMats; m++)
         {
@@ -144,9 +160,46 @@ namespace pleep
             std::string newMaterialName;
             msg >> newMaterialName;
 
-            // extract material path
-            std::string newMaterialPath;
+            // check if material already exists early
+            std::shared_ptr<const Material> libMat = ModelCache::fetch_material(newMaterialName);
+            
+            // extract (or create) material path
+            std::string newMaterialPath = "";
             msg >> newMaterialPath;
+            //PLEEPLOG_DEBUG("Unpacked material: " + newMaterialName + " with path: " + newMaterialPath);
+
+            // extract number of texture sources
+            size_t numSources = 0;
+            msg >> numSources;
+
+            // 0 indicates material-level sources
+            if (numSources == 0)
+            {
+                //PLEEPLOG_DEBUG("Found material level source.");
+            }
+            else
+            {
+                //PLEEPLOG_DEBUG("Unpacking material: " + newMaterialName + " with " + std::to_string(numSources) + " textures");
+                // extract all data to ensure message is cleared
+                std::unordered_map<TextureType, std::string> newTextures;
+                for (size_t i = 0; i < numSources; i++)
+                {
+                    TextureType newTextureType;
+                    std::string newTexturePath;
+                    msg >> newTextureType;
+                    msg >> newTexturePath;
+
+                    newTextures.insert({ newTextureType, newTexturePath });
+                }
+
+                // check if newMaterialName was already found, if not create new material and then refetch libMat
+                if (libMat == nullptr && newMaterialName != "")
+                {
+                    ModelCache::create_material(newMaterialName, newTextures);
+                    libMat = ModelCache::fetch_material(newMaterialName);
+                }
+            }
+
 
             // check if component's material at this index has different mat (or none)
             // (m starts at 0, so we should only ever be 1 index above current materials size)
@@ -154,17 +207,12 @@ namespace pleep
                 || data.materials[m] == nullptr
                 || data.materials[m]->m_name != newMaterialName)
             {
-                std::shared_ptr<const Material> libMat = ModelCache::fetch_material(newMaterialName);
-
-                // check if fetch was not successful
+                // check if early fetch was not successful
                 if (libMat == nullptr)
                 {
                     // try to import file
                     ModelCache::ImportReceipt materialReceipt = ModelCache::import(newMaterialPath);
                     
-                    // TODO: in-code created materials will not have a path
-                    //   if it isn't fetched we'll need to create_material from the texture names?
-
                     // confirm the msg material name was imported
                     if (std::find(materialReceipt.materialNames.begin(), materialReceipt.materialNames.end(), newMaterialName) != materialReceipt.materialNames.end())
                     {
@@ -173,7 +221,7 @@ namespace pleep
                     }
                 }
 
-                // if material was empty or failed it will be nullptr insert anyway to maintain ordering
+                // if material was empty or failed it will be nullptr, insert anyway to maintain ordering
                 if (m >= data.materials.size()) data.materials.push_back(libMat);
                 else data.materials[m] = libMat;
             }

@@ -87,6 +87,7 @@ namespace pleep
     {
     public:
         // load texture from file into GPU memory using stbi
+        // use TextureType::none to signal NO GPU MEMORY should be allocated
         Texture(TextureType type, const std::string& filepath);
         // load cubemap texture from multiple files (ordered by GL_TEXTURE_CUBE_MAP_...)
         Texture(const std::vector<std::string> filepaths);
@@ -100,9 +101,12 @@ namespace pleep
         std::string get_source_filepath() const { return m_sourceFilepath; }
 
     private:
-        unsigned int m_id = 0;                  // gl handle
+        // gl handle
+        unsigned int m_id = 0;                 
+        // Do NOT allow changing type to none after construction, it will leak gpu memory 
         TextureType m_type = TextureType::none;
-        std::string m_sourceFilepath = "";      // location where file was loaded from
+        // location where texture was loaded from
+        std::string m_sourceFilepath = "";
     };
 }
 

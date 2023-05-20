@@ -72,7 +72,7 @@ namespace pleep
                 events::cosmos::ENTITY_UPDATE_params updateInfo;
                 msg >> updateInfo;
                 //PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
-                PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
+                //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
 
                 // confirm entity exists?
                 // confirm entity signatures match?
@@ -105,7 +105,6 @@ namespace pleep
                 PLEEPLOG_TRACE("Recieved intercessionUpdate message");
             }
             break;
-            break;
             case events::network::NEW_CLIENT:
             {
                 PLEEPLOG_TRACE("Recieved newClient message");
@@ -115,6 +114,7 @@ namespace pleep
 
                 // send request to server to validate our new entity
             }
+            break;
             default:
             {
                 PLEEPLOG_TRACE("Recieved unknown message: " + msg.info());

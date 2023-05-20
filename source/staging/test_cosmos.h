@@ -329,7 +329,9 @@ namespace pleep
             {TextureType::normal, "resources/snow-packed12-normal-ogl.png"},
             {TextureType::height, "resources/snow-packed12-Height.png"}
         });
-        snow_renderable.materials.push_back(ModelCache::fetch_material("snow_mat"));
+        //snow_renderable.materials.push_back(ModelCache::fetch_material("snow_mat"));
+        ModelCache::ImportReceipt snowy = ModelCache::import("./resources/snow_material.obj");
+        snow_renderable.materials.push_back(ModelCache::fetch_material("snow_with_height"));
         cosmos->add_component(snow, snow_renderable);
 
         PhysicsComponent snow_physics;

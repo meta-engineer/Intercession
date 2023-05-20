@@ -1,0 +1,18 @@
+# Blender MTL File: 'snow_material.obj'
+# Material Count: 1
+
+newmtl snow_with_height
+Ns 54.901961
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.180000 0.180000 0.180000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Ka snow-packed12-Base_Color.png
+map_Kd snow-packed12-Base_Color.png
+map_Ks snow-packed12-Specular.png
+map_Kn snow-packed12-normal-ogl.png
+map_Bump snow-packed12-Height.png
+

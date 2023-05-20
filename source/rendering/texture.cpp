@@ -10,7 +10,10 @@ namespace pleep
 {
     Texture::~Texture()
     {
-        glDeleteTextures(1, &m_id);
+        if (m_type != TextureType::none)
+        {
+            glDeleteTextures(1, &m_id);
+        }
     }
 
     Texture::Texture(TextureType type, const std::string& filepath)
@@ -18,6 +21,8 @@ namespace pleep
         // Auxilary members
         m_type = type;
         m_sourceFilepath = filepath;
+
+        if (m_type == TextureType::none) return;
 
         // Load GL texture handle
         glGenTextures(1, &m_id);

@@ -12,9 +12,21 @@ namespace pleep
             PLEEPLOG_WARN("Could not create material " + name + " because that name is already taken");
             return false;
         }
+        
+        // Created material needs to serialize each texture source since there is no single material source file (.mtl)
+        // create Textures with type none, so that gpu memory is not allocated
+        // but keep correct type in the material's map
+        std::unordered_map<TextureType, Texture> emptyTextures;
+        for (auto sourceIt = textureDict.begin(); sourceIt != textureDict.end(); sourceIt++)
+        {
+            emptyTextures.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(static_cast<TextureType>(sourceIt->first)),
+                std::forward_as_tuple(TextureType::none, sourceIt->second)
+            );
+        }
 
-        // Material will have no textures
-        std::shared_ptr<Material> newMat = std::make_shared<Material>();
+        std::shared_ptr<Material> newMat = std::make_shared<Material>(std::move(emptyTextures));
         newMat->m_name = name;
         this->m_materialMap[name] = newMat;
         return true;

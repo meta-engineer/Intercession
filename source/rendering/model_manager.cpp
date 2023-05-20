@@ -436,9 +436,13 @@ namespace pleep
 
         // node format should be that this node is the name of the armature
         // with only 1 child: the root bone of the actual bone heirarchy
-        assert(node->mNumChildren == 1);
-        // assuming every descendant node is a bone
-        _extract_bones_from_node(node->mChildren[0], armatureBones, armatureBoneIdMap);
+        //assert(node->mNumChildren == 1);
+        if (node->mNumChildren == 1)
+        {
+            // assuming every descendant node is a bone
+            _extract_bones_from_node(node->mChildren[0], armatureBones, armatureBoneIdMap);
+        }
+        // otherwise we'll have to investigate how armatures are formatted
 
         // assume every descendant node is a bone?
         return std::make_shared<Armature>(armatureBones, armatureBoneIdMap);

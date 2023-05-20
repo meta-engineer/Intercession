@@ -67,7 +67,7 @@ namespace pleep
         // Load all assets from given filepath into cache
         ImportReceipt import(const std::string filepath);
 
-        // Tries to add Material to the cache, constructed with the given textureDict
+        // Tries to add Material to the cache, constructed with the given dict of texture filepaths
         virtual bool create_material(const std::string& name, const std::unordered_map<TextureType, std::string>& textureDict);
 
         // ***** Fetch Methods *****

@@ -110,7 +110,6 @@ namespace pleep
 
     // Stream operator specializations for strings
 
-    // inString.length() will indicate how many characters to write;
     template<typename T_Msg>
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const std::string& inString)
     {
@@ -120,17 +119,17 @@ namespace pleep
         uint32_t i = static_cast<uint32_t>(msg.size());
 
         // resize for data to be pushed
+        size_t inStringLength = inString.length();
         // does this break the amortized exponential auto-allocating?
         // No, i think resize is ACTUALLY making elements, not just capacity
-        msg.body.resize(msg.body.size() + sizeof(size_t) + (sizeof(char) * inString.length()));
+        msg.body.resize(msg.body.size() + sizeof(size_t) + (sizeof(char) * inStringLength));
 
         // actually physically copy the data into allocated space
         // copy data
-        std::memcpy(msg.body.data() + i, inString.data(), inString.length());
-        i += static_cast<uint32_t>(sizeof(char) * inString.length());
+        std::memcpy(msg.body.data() + i, inString.data(), inStringLength);
+        i += static_cast<uint32_t>(sizeof(char) * inStringLength);
 
         // copy size (to be extracted first)
-        size_t inStringLength = inString.length();
         std::memcpy(msg.body.data() + i, &inStringLength, sizeof(size_t));
 
         // recalc message size
@@ -139,7 +138,6 @@ namespace pleep
         return msg;
     }
 
-    // inString.length() will indicate how many characters to read;
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, std::string& outString)
     {
