@@ -25,6 +25,15 @@ namespace pleep
         std::shared_ptr<Cosmos> cosmos = build_test_hard_config(eventBroker, dynamoCluster);
 
         // ***************************************************************************
+        // Create interface entity for this client
+        // It is a incorporeal "singleton" which collects all the client side interactions and manipulates our assigned entity
+
+
+
+        // ***************************************************************************
+
+
+        // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity();
         cosmos->add_component(mainCamera, TransformComponent(glm::vec3(4.0f, 4.0f, 2.5f)));

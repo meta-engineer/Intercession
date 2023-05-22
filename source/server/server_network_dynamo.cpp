@@ -3,6 +3,7 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 #include "staging/cosmos_builder.h"
+#include "staging/build_pc.h"
 
 namespace pleep
 {
@@ -13,17 +14,7 @@ namespace pleep
     {
         PLEEPLOG_TRACE("Start server networking pipeline setup");
 
-        // ***** TESTING *****
-        if (m_timelineApi.get_timeslice_id() == 0)
-        {
-            PLEEPLOG_DEBUG("I am origin timeslice (0), sending a test message to timeslice 1 via timeline api");
-            EventMessage testMsg(events::network::INTERCESSION_UPDATE);
-            m_timelineApi.send_message(1, testMsg);
-        }
-        // ***** TESTING *****
-
         // setup relays
-        m_entityUpdateRelay = std::make_unique<ServerEntityUpdateRelay>();
 
         // start listening on asio server
         m_networkApi.start();
@@ -31,6 +22,7 @@ namespace pleep
         
         // setup handlers
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
 
         PLEEPLOG_TRACE("Done server networking pipeline setup");
@@ -61,12 +53,14 @@ namespace pleep
         //_process_timeline_messages();
         while(m_timelineApi.is_message_available())
         {
-            PLEEPLOG_TRACE("I received a message from another timeslice!");
+            PLEEPLOG_TRACE("I (" + std::to_string(m_timelineApi.get_timeslice_id()) + ") received a message from another timeslice!");
             EventMessage msg = m_timelineApi.pop_message();
             switch (msg.header.id)
             {
             case events::cosmos::ENTITY_CREATED:
             {
+                // Someone telling me that an entity has been created
+                // NOT to create one ourselves, that will be received over the timeSTREAM
                 events::cosmos::ENTITY_CREATED_params data;
                 msg >> data;
                 PLEEPLOG_DEBUG("Received ENTITY_CREATED message for Entity " + std::to_string(data.entity) + " directly from timeslice " + std::to_string(derive_timeslice_id(data.entity)));
@@ -75,7 +69,7 @@ namespace pleep
                 {
                     PLEEPLOG_WARN("Received a ENTITY_CREATED signal for an entity we don't host. Is this intentional?");
                 }
-                else
+                else if (m_workingCosmos)
                 {
                     m_workingCosmos->increment_hosted_temporal_entity_count(data.entity);
                 }
@@ -91,7 +85,7 @@ namespace pleep
                 {
                     PLEEPLOG_WARN("Received a ENTITY_REMOVED signal for an entity we don't host. Is this intentional?");
                 }
-                else
+                else if (m_workingCosmos)
                 {
                     m_workingCosmos->decrement_hosted_temporal_entity_count(data.entity);
                 }
@@ -137,7 +131,11 @@ namespace pleep
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received new client notice");
 
-                // TODO: send app_info? then Intercession_info?
+                // new client entity value is not real yet, IServer generated this event
+                events::network::NEW_CLIENT_params clientInfo;
+                msg.msg >> clientInfo;
+
+                // TODO: send app_info? then intercession_app_info?
 
                 // Send Cosmos config
                 // should be stateless and scan current workingCosmos?
@@ -146,6 +144,10 @@ namespace pleep
                 // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
 
                 PLEEPLOG_DEBUG("New client joined, I should send them a cosmos config!");
+                // if we have no cosmos at this point we can't proceed
+                // maybe we should deny client connections if there is no cosmos?
+                // assert(m_workingCosmos);
+                if (!m_workingCosmos) break;
                 /* Message<EventId> configMsg(events::cosmos::CONFIG);
                 events::cosmos::CONFIG_params configInfo;
                 CosmosBuilder scanner;
@@ -153,21 +155,26 @@ namespace pleep
                 configMsg << configInfo;
                 msg.remote->send(configMsg); */
 
-                PLEEPLOG_DEBUG("Setup Entity for new client to control?");
-                // Should client have control of how the entity is created?
-                // or should the server control how the entity is created?
-
-                // Send initialization for all entities
+                PLEEPLOG_DEBUG("Sending Entities to new client");
+                // Send initialization for all entities that already exist
                 for (auto signIt : m_workingCosmos->get_signatures_ref())
                 {
                     EventMessage createMsg(events::cosmos::ENTITY_CREATED);
                     events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
                     createMsg << createInfo;
-                    PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
+                    //PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
                     msg.remote->send(createMsg);
                 }
+                
+                // Server will create client character and then pass it its Entity
+                // Client may have to do predictive entity creation in the future,
+                // but we'll avoid that here for now because client has to wait anyways
+                clientInfo.entity = build_pc(m_workingCosmos);
+                PLEEPLOG_DEBUG("Created entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
 
                 // Forward new client message to signal for cosmos to initialize client side entities
+                PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
+                msg.msg << clientInfo;
                 msg.remote->send(msg.msg);
             }
             break;
@@ -180,17 +187,19 @@ namespace pleep
         }
 
         // Fourth: Process all submitted data in relays
-        //m_entityUpdateRelay->engage(deltaTime);
 
         // Fifth: After all ingesting is done, send/broadcast fresh data to timestreams & clients
         // TODO: how do we compensate for latency?
-        for (auto signIt : m_workingCosmos->get_signatures_ref())
+        if (m_workingCosmos)
         {
-            EventMessage updateMsg(events::cosmos::ENTITY_UPDATE);
-            m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
-            events::cosmos::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
-            updateMsg << updateInfo;
-            m_networkApi.broadcast_message(updateMsg);
+            for (auto signIt : m_workingCosmos->get_signatures_ref())
+            {
+                EventMessage updateMsg(events::cosmos::ENTITY_UPDATE);
+                m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
+                events::cosmos::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
+                updateMsg << updateInfo;
+                m_networkApi.broadcast_message(updateMsg);
+            }
         }
     }
     
@@ -199,8 +208,7 @@ namespace pleep
         // clear our working cosmos
         m_workingCosmos = nullptr;
 
-        // AND clear relay working cosmos and leftover submittions
-        m_entityUpdateRelay->clear();
+        // clear relay working cosmos and leftover submittions
     }
 
     void ServerNetworkDynamo::submit(CosmosAccessPacket data) 
@@ -209,7 +217,6 @@ namespace pleep
         m_workingCosmos = data.owner;
 
         // pass working cosmos to relays
-        m_entityUpdateRelay->submit(data);
     }
     
     TimesliceId ServerNetworkDynamo::get_timeslice_id()
@@ -217,31 +224,61 @@ namespace pleep
         return m_timelineApi.get_timeslice_id();
     }
     
+    size_t ServerNetworkDynamo::get_num_connections()
+    {
+        return m_networkApi.get_num_connections();
+    }
+    
     void ServerNetworkDynamo::_entity_created_handler(EventMessage entityEvent)
     {
-        // Entity created locally. If we have a child timeslice, that means next frame this entity will enter the past timestream
-        // so we need to increment its host's count
+        PLEEPLOG_DEBUG("Handling ENTITY_CREATED event");
         events::cosmos::ENTITY_CREATED_params newEntityParams;
         entityEvent >> newEntityParams;
         entityEvent << newEntityParams; // re-fill message for forwarding
+
+        // if entity was created locally, its host count starts at 1
+        // if entity was send from the future, it will have been incrememnted when it entered our future timestream
+
+        // If we have a child timeslice, that means next frame this entity updates will enter the past timestream
         if (m_timelineApi.has_past())
         {
+            // TODO: we should also emplace in the past timestream
+
+            // signal for host to increment now that entity is in the past
             TimesliceId host = derive_timeslice_id(newEntityParams.entity);
             m_timelineApi.send_message(host, entityEvent);
-
-            // TODO: we should also emplace in the past timestream now and add the ENTITY_CREATED message
         }
+
+        // Broadcast creation event to clients, the run_relays update will populate it
+        // WARN: when entity is created it has no components, so it cannot be updated until ENTITY_MODIFIED events
+        m_networkApi.broadcast_message(entityEvent);
+    }
+    
+    void ServerNetworkDynamo::_entity_modified_handler(EventMessage entityEvent)
+    {
+        PLEEPLOG_DEBUG("Handling ENTITY_MODIFIED event");
+        // entity signature has been modified
+        events::cosmos::ENTITY_MODIFIED_params modEntityParams;
+        entityEvent >> modEntityParams;
+        entityEvent << modEntityParams; // re-fill message for forwarding
+        
+        if (m_timelineApi.has_past())
+        {
+            // TODO: we should also emplace in the past timestream
+        }
+
+        m_networkApi.broadcast_message(entityEvent);
     }
     
     void ServerNetworkDynamo::_entity_removed_handler(EventMessage entityEvent)
     {
-        // entity has left our timeslice so we need to decrement its host's count
-        
+        PLEEPLOG_DEBUG("Handling ENTITY_REMOVED event");
         events::cosmos::ENTITY_REMOVED_params removedEntityParams;
         entityEvent >> removedEntityParams;
+        entityEvent << removedEntityParams; // re-fill message for forwarding
+
+        // entity has left our timeslice so we need to decrement its host's count
         TimesliceId host = derive_timeslice_id(removedEntityParams.entity);
-
-
         m_timelineApi.send_message(host, entityEvent);
 
         if (m_timelineApi.has_past())
@@ -250,7 +287,10 @@ namespace pleep
             //   our child can remove aswell
             // should timstream index on entity of temporalId?
             //m_timelineApi.push_past_timestream();
+
+            // once child receives the above event, it will signal another decrement
         }
         
+        m_networkApi.broadcast_message(entityEvent);
     }
 }

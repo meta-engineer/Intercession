@@ -17,7 +17,10 @@ namespace pleep
         
         // build and populate starting cosmos
         // eventually we'll pass some cosmos config param here
-        _build_cosmos();
+        if (m_dynamoCluster.networker->get_timeslice_id() == 0)
+        {
+            _build_cosmos();
+        }
 
         // Send test entity to clients
         // flag entity as updated once here:
@@ -35,7 +38,7 @@ namespace pleep
         // ***** Cosmos Update *****
         // invokes all registered synchros to process their entities
         // this fills the dynamo relays with packets which should be cleared in _clean_frame()
-        m_currentCosmos->update();
+        if (m_currentCosmos) m_currentCosmos->update();
     }
     
     void ServerCosmosContext::_on_fixed(double fixedTime) 

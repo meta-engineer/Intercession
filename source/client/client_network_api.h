@@ -11,7 +11,7 @@ namespace pleep
     {
     public:
         ClientNetworkApi()
-            : I_Client<EventId>()
+            : net::I_Client<EventId>()
         {}
 
         // no callbacks required

@@ -129,6 +129,11 @@ namespace net
             return m_incomingMessages.pop_front().first;
         }
 
+        size_t get_num_connections()
+        {
+            return m_connectionDeque.size();
+        }
+
     private:
         // ASYNC - Task asio to wait for connection
         // asio will provide us with the connected socket to use to append m_connectionDeque

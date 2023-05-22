@@ -13,7 +13,7 @@ namespace pleep
     // An Entity is a (possibly empty) set of components
     // The Entity value is treated AS an entity
     using Entity = std::uint16_t;
-    #define NULL_ENTITY UINT16_MAX
+    #define NULL_ENTITY UINT16_MAX  // 65535
     #define ENTITY_SIZE NULL_ENTITY
     
     // Entity values have 3 constituents: TimesliceId, GenesisId and CausalChainLink

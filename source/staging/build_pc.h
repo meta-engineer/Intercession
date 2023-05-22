@@ -8,7 +8,7 @@
 
 namespace pleep
 {
-    inline void build_pc(std::shared_ptr<Cosmos> cosmos)
+    inline Entity build_pc(std::shared_ptr<Cosmos> cosmos)
     {
         // we have to implicitly know what components are registered
         assert(cosmos);
@@ -22,7 +22,8 @@ namespace pleep
         pc_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
         ModelCache::create_material("pc_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/container.jpg"},
-            {TextureType::specular, "resources/snow-packed12-ao.png"}
+            {TextureType::specular, "resources/snow-packed12-Specular.jpg"},
+            {TextureType::normal, "resources/snow-packed12-Normal-ogl.png"}
         });
         pc_renderable.materials.push_back(ModelCache::fetch_material("pc_mat"));
         cosmos->add_component(pc, pc_renderable);
@@ -35,6 +36,8 @@ namespace pleep
         cosmos->add_component(pc, BoxColliderComponent{});
         cosmos->add_component(pc, RigidBodyComponent{});
         // ***************************************************************************
+
+        return pc;
     }
 }
 

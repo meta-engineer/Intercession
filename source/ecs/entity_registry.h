@@ -95,6 +95,9 @@ namespace pleep
         assert(m_hostedTemporalEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedTemporalEntityCounts.end());
         m_availableTemporalEntityIds.pop();
 
+        // add empty signature
+        this->set_signature(ent, Signature{});
+
         // TODO: how do clients signal to their host to validate this Entity? (and override with a proper TimesliceId)
 
         // Add ent to hosted map. Set host count to start at 1
@@ -116,6 +119,9 @@ namespace pleep
 
         // If non empty signature already exists for this entity then something has gone wrong
         assert(m_signatures.find(entity) == m_signatures.end());
+
+        // add empty signature
+        this->set_signature(entity, Signature{});
 
         return true;
     }

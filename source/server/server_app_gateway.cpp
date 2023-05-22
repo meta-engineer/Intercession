@@ -18,7 +18,10 @@ namespace pleep
         // Build contexts and pass apis
         PLEEPLOG_INFO("Constructing " + std::to_string(cfg.numTimeslices) + " timeslices");
         assert(m_contexts.empty());
-        for (TimesliceId i = 0; i < cfg.numTimeslices; i++)
+
+        // construct timeslices in reverse order so that origin/present (0) is created LAST
+        //     remember TimesliceId is uint32, use underflow to stop loop
+        for (TimesliceId i = cfg.numTimeslices - 1; i < cfg.numTimeslices; i--)
         {
             PLEEPLOG_TRACE("Start constructing server context TimesliceId #" + std::to_string(i));
 
@@ -81,7 +84,7 @@ namespace pleep
             m_contextThreads.push_back(std::move(thrd));
 
             std::ostringstream thrdId; thrdId << m_contextThreads.back().get_id();
-            PLEEPLOG_INFO("Constructed context " + std::to_string(i) + " thread #" + thrdId.str());
+            PLEEPLOG_INFO("Constructed context " + std::to_string(m_contexts.size() - 1 - i) + " thread #" + thrdId.str());
         }
         PLEEPLOG_TRACE("Finished constructing " + std::to_string(m_contextThreads.size()) + " threads");
         assert(m_contexts.size() == m_contextThreads.size());

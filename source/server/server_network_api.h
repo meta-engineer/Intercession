@@ -15,7 +15,7 @@ namespace pleep
     {
     public:
         ServerNetworkApi(uint16_t port)
-            : I_Server<EventId>(port)
+            : net::I_Server<EventId>(port)
         {}
 
     protected:

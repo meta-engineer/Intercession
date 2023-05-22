@@ -29,9 +29,10 @@ namespace pleep
         // should they be shared in I_NetworkDynamo? or specified for my relays
         void submit(CosmosAccessPacket data) override;
 
+        size_t get_num_connections() override;
+
     private:
         // event handlers
-        void _entity_modified_handler(EventMessage entityEvent);
 
         // Networking relays
 
@@ -40,7 +41,7 @@ namespace pleep
 
         // TODO: Move this to be held in a specific relay
         std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
-        std::unordered_set<Entity> m_entitiesToReport;
+        Entity m_interfaceEntity = NULL_ENTITY;
     };
 }
 

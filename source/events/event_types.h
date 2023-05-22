@@ -41,11 +41,6 @@ namespace pleep
                     int width = 0;
                     int height = 0;
                 };
-            const EventId INPUT = __LINE__;
-                struct INPUT_params
-                {
-                    // bitset of keys values? single key values? command abstraction (for remapping/controllers)
-                };
         }
 
         // events pertaining to the rendering system
@@ -60,12 +55,14 @@ namespace pleep
         // cross-concerning events that exist within the virtual verse
         // maybe the cosmos should have it's own seperate broker which can be erased when context changes cosmos
         namespace cosmos {
-            // notify that an entity has been modified locally (not specific to any component)
+            // notify that an entity SIGNATURE has been modified locally
             // and those changes should be propagated to other servers/clients
+            // Does not include the content/members of those components
             const EventId ENTITY_MODIFIED = __LINE__;
                 struct ENTITY_MODIFIED_params
                 {
                     Entity entity = NULL_ENTITY;
+                    Signature sign;
                 };
             // Indicates that the cosmos has added a new entity
             // (ambiguous whether WE created it, or we registered it from another host)
@@ -151,6 +148,9 @@ namespace pleep
                 struct NEW_CLIENT_params
                 {
                     // shared pointer to remote already contained in OwnedMessage
+
+                    // For passing the single associated entity with the client
+                    Entity entity;
                 };
         }
     }

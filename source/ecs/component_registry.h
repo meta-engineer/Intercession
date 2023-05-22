@@ -44,6 +44,10 @@ namespace pleep
         // THROWS runtime_error if templated type has not yet been registered
         template<typename T>
         void remove_component(Entity entity);
+
+        // remove component of given ID
+        // THROWS runtime_error if componentId does not exist
+        void remove_component(Entity entity, ComponentType componentId);
         
         // get reference to specific component of given type for entity
         // THROWS if component does not exist or component type has not yet been registered
@@ -166,6 +170,11 @@ namespace pleep
     void ComponentRegistry::remove_component(Entity entity)
     {
         this->_get_component_array<T>()->remove_data_for(entity);
+    }
+
+    inline void ComponentRegistry::remove_component(Entity entity, ComponentType componentId)
+    {
+        m_componentArrays[get_component_name(componentId)]->clear_data_for(entity);
     }
     
     template<typename T>

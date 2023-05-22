@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "networking/i_network_dynamo.h"
-#include "server/server_entity_update_relay.h"
 #include "server/server_network_api.h"
 #include "networking/timeline_api.h"
 
@@ -38,13 +37,15 @@ namespace pleep
 
         TimesliceId get_timeslice_id() override;
 
+        size_t get_num_connections() override;
+
     private:
         // event handlers
         void _entity_created_handler(EventMessage entityEvent);
+        void _entity_modified_handler(EventMessage entityEvent);
         void _entity_removed_handler(EventMessage entityEvent);
         
         // Networking relays
-        std::unique_ptr<ServerEntityUpdateRelay> m_entityUpdateRelay;
 
         // TimelineApi (generated for us by AppGateway) to communicate with other servers
         TimelineApi m_timelineApi;

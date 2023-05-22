@@ -57,14 +57,18 @@ namespace pleep
         size_t get_entity_count();
         
         // passthrough to EntityRegistry->get_signature()
+        // returns empty signature if entity does not exist (or it is actually empty)
         Signature get_entity_signature(Entity entity);
+
+        // returns true if this entity exists in this cosmos (exact match)
+        bool entity_exists(Entity entity);
 
         // get reference to signature map for iterating
         std::unordered_map<Entity, Signature>& get_signatures_ref();
 
         // find which entity has this component
         // Linear complexity (with number of components of this type)
-        // operator == must be defined for T
+        // operator== must be defined for T
         // if components aren't unique this may be invalid
         // if component doesn't exist, returns NULL_ENTITY
         template<typename T>
@@ -96,6 +100,9 @@ namespace pleep
         // remove component T from entity, and update all syncrhos
         template<typename T>
         void remove_component(Entity entity);
+
+        // remove component of id from entity, and update all synchros
+        void remove_component(Entity entity, ComponentType componentId);
 
         // find component T of entity
         template<typename T>
@@ -217,6 +224,11 @@ namespace pleep
         return m_entityRegistry->get_signature(entity);
     }
     
+    inline bool Cosmos::entity_exists(Entity entity)
+    {
+        return m_entityRegistry->get_signatures_ref().count(entity);
+    }
+    
     inline std::unordered_map<Entity, Signature>& Cosmos::get_signatures_ref()
     {
         return m_entityRegistry->get_signatures_ref();
@@ -260,8 +272,15 @@ namespace pleep
         Signature sign = m_entityRegistry->get_signature(entity);
         sign.set(m_componentRegistry->get_component_type<T>(), true);
         m_entityRegistry->set_signature(entity, sign);
-
         m_synchroRegistry->change_entity_signature(entity, sign);
+
+        // signal entity has been modified
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
+            entity, sign
+        };
+        modEntityEvent << modEntityParams;
+        m_sharedBroker->send_event(modEntityEvent);
     }
 
     inline void Cosmos::add_component(Entity entity, ComponentType componentId)
@@ -272,8 +291,15 @@ namespace pleep
         Signature sign = m_entityRegistry->get_signature(entity);
         sign.set(componentId, true);
         m_entityRegistry->set_signature(entity, sign);
-
         m_synchroRegistry->change_entity_signature(entity, sign);
+        
+        // signal entity has been modified
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
+            entity, sign
+        };
+        modEntityEvent << modEntityParams;
+        m_sharedBroker->send_event(modEntityEvent);
     }
     
     template<typename T>
@@ -285,8 +311,34 @@ namespace pleep
         Signature sign = m_entityRegistry->get_signature(entity);
         sign.set(m_componentRegistry->get_component_type<T>(), false);
         m_entityRegistry->set_signature(entity, sign);
-
         m_synchroRegistry->change_entity_signature(entity, sign);
+        
+        // signal entity has been modified
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
+            entity, sign
+        };
+        modEntityEvent << modEntityParams;
+        m_sharedBroker->send_event(modEntityEvent);
+    }
+    
+    inline void Cosmos::remove_component(Entity entity, ComponentType componentId)
+    {
+        m_componentRegistry->remove_component(entity, componentId);
+        
+        // flip signature bit for this component
+        Signature sign = m_entityRegistry->get_signature(entity);
+        sign.set(componentId, false);
+        m_entityRegistry->set_signature(entity, sign);
+        m_synchroRegistry->change_entity_signature(entity, sign);
+        
+        // signal entity has been modified
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
+            entity, sign
+        };
+        modEntityEvent << modEntityParams;
+        m_sharedBroker->send_event(modEntityEvent);
     }
     
     template<typename T>
