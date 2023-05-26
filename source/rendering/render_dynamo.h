@@ -51,7 +51,7 @@ namespace pleep
         void read_viewport_size(int* viewportDims);
 
     private:
-        // Listening to events::window::RESIZE sent by ControlDynamo
+        // Listening to events::window::RESIZE sent by InputDynamo
         void _resize_handler(EventMessage resizeEvent);
         // viewport should be proportionally dependant on the window (respond to resize event)
         // note framebuffers/textures are dependant only on camera (in submit(CameraPacket))

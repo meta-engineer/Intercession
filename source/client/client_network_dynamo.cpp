@@ -3,7 +3,8 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 
-#include "staging/build_pc.h"
+#include "staging/build_client_entity.h"
+#include "staging/build_local_entities.h"
 
 namespace pleep
 {
@@ -31,6 +32,16 @@ namespace pleep
     void ClientNetworkDynamo::run_relays(double deltaTime) 
     {
         UNREFERENCED_PARAMETER(deltaTime);
+
+        if (!m_networkApi.is_ready()) return;
+
+        // before receiving any entity updates, send our focal entity state
+        EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
+        Entity focalEntity = m_workingCosmos->get_focal_entity();
+        m_workingCosmos->serialize_entity_components(focalEntity, focalUpdate);
+        events::cosmos::ENTITY_UPDATE_params focalInfo = { focalEntity, m_workingCosmos->get_entity_signature(focalEntity) };
+        focalUpdate << focalInfo;
+        m_networkApi.send_message(focalUpdate);
 
         // Handling incoming server messages from network
         //inline _process_network_messages()
@@ -136,11 +147,14 @@ namespace pleep
                 msg >> clientInfo;
 
                 PLEEPLOG_DEBUG("My assigned entity is " + std::to_string(clientInfo.entity));
-
-                // create camera, abstract input entity?
+                // any need to have an event? Does anyone other than the cosmos need to know?
+                m_workingCosmos->set_focal_entity(clientInfo.entity);
+                
+                // create client side entities
                 // only entities which the server doesn't need for simulation
-                // maybe it wants out input entity also then?
-
+                // will broadcast SET_MAIN_CAMERA
+                // will check for cosmos' focal entity
+                build_local_entities(m_workingCosmos, m_sharedBroker);
             }
             break;
             default:

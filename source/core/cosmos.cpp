@@ -54,6 +54,27 @@ namespace pleep
         m_componentRegistry->deserialize_and_write_component(entity, componentName, msg);
     }
 
+    bool Cosmos::set_focal_entity(Entity entity)
+    {
+        if (!this->entity_exists(entity))
+        {
+            return false;
+        }
+
+        m_focalEntity = entity;
+        return true;
+    }
+
+    Entity Cosmos::get_focal_entity()
+    {
+        if (!this->entity_exists(m_focalEntity))
+        {
+            m_focalEntity = NULL_ENTITY;
+        }
+
+        return m_focalEntity;
+    }
+
     
     std::vector<std::string> Cosmos::stringify_synchro_registry() 
     {

@@ -135,6 +135,8 @@ namespace pleep
         // invalidate volatile camera data from ecs
         m_viewTransform = nullptr;
         m_viewCamera = nullptr;
+
+        this->flush_frame();
     }
     
     void RenderDynamo::flush_frame() 

@@ -42,7 +42,7 @@ namespace pleep
             PLEEPLOG_WARN("Update called while no main camera entity was set");
         }
 
-        // feed components of m_entities to attached ControlDynamo
+        // feed components of m_entities to attached RenderDynamo
         // I should implicitly know my signature and therefore what components i can fetch
         for (Entity const& entity : m_entities)
         {
@@ -88,7 +88,7 @@ namespace pleep
             // events subscribed elsewhere during runtime also need to be here?
 
             m_attachedRenderDynamo->get_shared_broker()->remove_listener(METHOD_LISTENER(events::rendering::SET_MAIN_CAMERA, RenderSynchro::_set_main_camera_handler));
-            
+
             m_attachedRenderDynamo->get_shared_broker()->remove_listener(METHOD_LISTENER(events::window::RESIZE, RenderSynchro::_resize_handler));
         }
 
@@ -111,6 +111,19 @@ namespace pleep
         
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(setCameraParams.cameraEntity) + " }");
 
+        // ensure entity has camera component AT LEAST at time of setting
+        try
+        {
+            m_ownerCosmos->get_component<CameraComponent>(setCameraParams.cameraEntity);
+        }
+        catch(const std::exception& e)
+        {
+            UNREFERENCED_PARAMETER(e);
+            PLEEPLOG_WARN("Tried to set main camera as entity " + std::to_string(setCameraParams.cameraEntity) + " which has no CameraComponent, ignoring...");
+            return;
+        }
+        
+        // camera is good
         m_mainCamera = setCameraParams.cameraEntity;
 
         // we'll have camera match to whatever the current viewport size is

@@ -10,11 +10,40 @@
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> build_test_hard_config(
+    inline std::shared_ptr<Cosmos> build_test_hard_config(
         EventBroker* eventBroker,
         DynamoCluster& dynamoCluster
     )
     {
+        // TODO: receive config from server
+        // TODO: Should config synchros just imply necessary components? Some are 1-to-1 like physics component, some are many-to-one like transform, some are unique like oscillator
+/* 
+        cosmos_builder::Config cosmosConfig;
+        cosmosConfig.insert_component<TransformComponent>();
+        cosmosConfig.insert_component<SpacialInputComponent>();
+        cosmosConfig.insert_component<RenderableComponent>();
+        cosmosConfig.insert_component<CameraComponent>();
+        cosmosConfig.insert_component<LightSourceComponent>();
+        cosmosConfig.insert_component<PhysicsComponent>();
+        cosmosConfig.insert_component<BoxColliderComponent>();
+        cosmosConfig.insert_component<RayColliderComponent>();
+        cosmosConfig.insert_component<RigidBodyComponent>();
+        cosmosConfig.insert_component<SpringBodyComponent>();
+        cosmosConfig.insert_component<ScriptComponent>();
+        cosmosConfig.insert_component<OscillatorComponent>();
+
+        cosmosConfig.insert_synchro<SpacialInputSynchro>();
+        cosmosConfig.insert_synchro<LightingSynchro>();
+        cosmosConfig.insert_synchro<RenderSynchro>();
+        cosmosConfig.insert_synchro<PhysicsSynchro>();
+        cosmosConfig.insert_synchro<BoxColliderSynchro>();
+        cosmosConfig.insert_synchro<RayColliderSynchro>();
+        cosmosConfig.insert_synchro<NetworkSynchro>();
+        cosmosConfig.insert_synchro<ScriptSynchro>();
+        // build cosmos according to config
+        //std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
+ */
+
         TimesliceId localTimesliceId = dynamoCluster.networker ? dynamoCluster.networker->get_timeslice_id() : NULL_TIMESLICEID;
 
         std::shared_ptr<Cosmos> newCosmos = std::make_shared<Cosmos>(eventBroker, localTimesliceId);
@@ -31,8 +60,9 @@ namespace pleep
         newCosmos->register_component<SpringBodyComponent>();
         newCosmos->register_component<ScriptComponent>();
         newCosmos->register_component<OscillatorComponent>();
+        newCosmos->register_component<BipedComponent>();
 
-        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputter);
+        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputer);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(dynamoCluster.physicser);

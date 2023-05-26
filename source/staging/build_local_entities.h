@@ -1,5 +1,5 @@
-#ifndef TEST_CLIENT_COSMOS_H
-#define TEST_CLIENT_COSMOS_H
+#ifndef BUILD_LOCAL_ENTITIES_H
+#define BUILD_LOCAL_ENTITIES_H
 
 //#include "intercession_pch.h"
 #include <memory>
@@ -17,22 +17,11 @@ namespace pleep
 {
     // build only client side entities:
     // - camera
-    std::shared_ptr<Cosmos> build_test_client_cosmos(
-        EventBroker* eventBroker, 
-        DynamoCluster& dynamoCluster
+    inline void build_local_entities(
+        std::shared_ptr<Cosmos> cosmos,
+        EventBroker* eventBroker
     )
     {
-        std::shared_ptr<Cosmos> cosmos = build_test_hard_config(eventBroker, dynamoCluster);
-
-        // ***************************************************************************
-        // Create interface entity for this client
-        // It is a incorporeal "singleton" which collects all the client side interactions and manipulates our assigned entity
-
-
-
-        // ***************************************************************************
-
-
         // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity();
@@ -41,11 +30,15 @@ namespace pleep
         mainCamera_physics.isAsleep = true;
         cosmos->add_component(mainCamera, mainCamera_physics);
         cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.7f));
-        cosmos->add_component(mainCamera, CameraComponent());
 
-        cosmos->add_component(mainCamera, SpacialInputComponent());
+        CameraComponent mainCamera_camera;
+        // set camera target to be the current focal entity
+        mainCamera_camera.target = cosmos->get_focal_entity();
+        cosmos->add_component(mainCamera, mainCamera_camera);
+
+        cosmos->add_component(mainCamera, SpacialInputComponent{});
         ScriptComponent camera_scripts;
-        camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::fly_control);
+        camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::lakitu);
         camera_scripts.use_fixed_update = true;
         cosmos->add_component(mainCamera, camera_scripts);
 
@@ -53,7 +46,6 @@ namespace pleep
         // assuming there is only ever 1 main camera we can notify over event broker
         // dynamos don't have access to cosmos, so they can't lookup entity
         // synchro can maintain camera and pass its data each frame
-        
         EventMessage cameraEvent(events::rendering::SET_MAIN_CAMERA);
         events::rendering::SET_MAIN_CAMERA_params cameraParams {
             mainCamera
@@ -61,9 +53,7 @@ namespace pleep
         cameraEvent << cameraParams;
         eventBroker->send_event(cameraEvent);
         // ***************************************************************************
-
-        return cosmos;
     }
 }
 
-#endif // TEST_CLIENT_COSMOS_H
+#endif // BUILD_LOCAL_ENTITIES_H

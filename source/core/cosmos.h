@@ -141,6 +141,12 @@ namespace pleep
         // *** compnentName MUST BE THE pointer from typeid!!! USE get_component_name()!!!
         // ***See deserialize_entity_components for template
         void deserialize_and_write_component(Entity entity, const char* componentName, EventMessage& msg);
+
+        // Set shared "special" entity for this cosmos instance
+        // returns false if entity does not exist
+        bool set_focal_entity(Entity entity);
+        // If entity no longer exists since last set/get, sets to NULL_ENITTY before return
+        Entity get_focal_entity(); 
         
         // Ordered vector of all synchro typeid names
         std::vector<std::string> stringify_synchro_registry();
@@ -149,6 +155,9 @@ namespace pleep
         std::vector<std::string> stringify_component_registry();
 
     private:
+        // Focal Entity only set through events?
+        void _set_main_entity_handler(EventMessage setCameraEvent);
+
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
         std::unique_ptr<ComponentRegistry> m_componentRegistry;
         std::unique_ptr<EntityRegistry>    m_entityRegistry;
@@ -156,6 +165,9 @@ namespace pleep
 
         // for emitting events::cosmos
         EventBroker* m_sharedBroker = nullptr;
+
+        // Barycenter of the cosmos, stored centrally for dynamos to coordinate
+        Entity m_focalEntity = NULL_ENTITY;
     };
 
 

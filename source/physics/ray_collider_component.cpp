@@ -184,7 +184,7 @@ namespace pleep
         float& collisionDepth,
         glm::vec3& collisionPoint)
     {
-        PLEEPLOG_WARN("No implementation for ray-ray collision, skipping...");
+        //PLEEPLOG_WARN("No implementation for ray-ray collision, skipping...");
         UNREFERENCED_PARAMETER(otherRay);
         UNREFERENCED_PARAMETER(thisTransform);
         UNREFERENCED_PARAMETER(otherTransform);

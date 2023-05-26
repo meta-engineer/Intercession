@@ -36,6 +36,7 @@
 // include Scripts
 #include "scripting/script_component.h"
 #include "scripting/oscillator_component.h"
+#include "scripting/biped_component.h"
 
 namespace pleep
 {

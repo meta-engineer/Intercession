@@ -21,7 +21,7 @@ namespace pleep
 
         Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
 
-        // synchro needs a ControlDynamo to operate on
+        // synchro needs a InputDynamo to operate on
         void attach_dynamo(std::shared_ptr<InputDynamo> contextDynamo);
 
     private:

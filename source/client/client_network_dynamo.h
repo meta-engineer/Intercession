@@ -41,7 +41,6 @@ namespace pleep
 
         // TODO: Move this to be held in a specific relay
         std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
-        Entity m_interfaceEntity = NULL_ENTITY;
     };
 }
 

@@ -64,6 +64,7 @@ namespace pleep
                     Entity entity = NULL_ENTITY;
                     Signature sign;
                 };
+            
             // Indicates that the cosmos has added a new entity
             // (ambiguous whether WE created it, or we registered it from another host)
             // Entity will exist when this is signalled
@@ -75,6 +76,7 @@ namespace pleep
                     // initialize components after creation
                     Signature sign;
                 };
+            
             // upon deleting an entity we may need to notify its host
             // CAREFUL! entity will NOT exist when this is signalled
             const EventId ENTITY_REMOVED = __LINE__;
@@ -82,6 +84,7 @@ namespace pleep
                 {
                     Entity entity = NULL_ENTITY;
                 };
+            
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
             //     (assuming the intercessionAppInfo checks out the component layout should match)
@@ -124,6 +127,7 @@ namespace pleep
                             && lhs.versionPatch == rhs.versionPatch);
                     }
                 };
+
             // Info about the Intercession app configuration specifically:
             //  Am I a server or a client (or a dispatch)
             //  What is the ID of my cluster/server group?
@@ -136,6 +140,7 @@ namespace pleep
                 {
                     // pass CosmosBuilder::Config ?
                 };
+
             // Info about a timestream modification
             //  ???
             const EventId INTERCESSION_UPDATE = __LINE__;
@@ -143,6 +148,7 @@ namespace pleep
                 {
 
                 };
+                
             // Allow I_Server to notify dynamo about new client
             const EventId NEW_CLIENT = __LINE__;
                 struct NEW_CLIENT_params

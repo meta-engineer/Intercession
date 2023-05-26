@@ -32,9 +32,11 @@ namespace pleep
 
         // ***** control members (used by scripts) *****
         // target entity
+        Entity target = NULL_ENTITY;
         // ranges/distances
+        float range = 10.0f;
         // spring joint variables
-        // gimbal meta-data (see sotc_camera_control_relay.h)
+        // gimbal meta-data
         // margins/limits
     };
 

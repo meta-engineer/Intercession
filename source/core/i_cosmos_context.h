@@ -60,7 +60,7 @@ namespace pleep
         // cleanup before next cosmos update
         virtual void _clean_frame() {}
 
-        // Listening to events:window::QUIT sent by ControlDynamo
+        // Listening to events:window::QUIT sent by InputDynamo
         void _quit_handler(EventMessage quitEvent);
 
         // subclasses should create this as they see fit

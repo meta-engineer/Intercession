@@ -15,7 +15,7 @@
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> build_temporal_cosmos(
+    inline std::shared_ptr<Cosmos> build_temporal_cosmos(
         EventBroker* eventBroker, 
         DynamoCluster& dynamoCluster)
     {

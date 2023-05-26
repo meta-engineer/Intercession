@@ -32,14 +32,49 @@ namespace pleep
             // fetch Physics, Biped, and SpacialInput
             try
             {
-                UNREFERENCED_PARAMETER(owner);
-                UNREFERENCED_PARAMETER(entity);
-                //PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
-                //BipedComponent& biped = owner->get_component<BipedComponent>(entity);
-                //SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
+                PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
+                BipedComponent& biped = owner->get_component<BipedComponent>(entity);
+                SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
 
-                // TODO: copy basic_biped_control_relay
-                UNREFERENCED_PARAMETER(deltaTime);
+                // generate aim "heading" from aimOrientation and support vector
+                // movement axes while airborn may depend on camera gimbal axis?
+                const glm::mat3 aimRotation = glm::toMat4(biped.aimOrientation);
+                const glm::vec3 aimHeading = glm::normalize(aimRotation * glm::vec3(0.0f, 0.0f, 1.0f));
+                const glm::vec3 aimTangent = glm::normalize(glm::cross(aimHeading, biped.supportAxis));
+                const glm::vec3 aimProjection = glm::normalize(glm::cross(biped.supportAxis, aimTangent));
+                // derive ground velocity perpendicular to support axis
+                const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
+
+                const float rot    = 0.20f * (float)deltaTime;
+                const float aspect = 1.2f;
+                // set new aim vectors
+                if (input.actions.test(SpacialActions::rotatePitch))
+                {
+                    biped.aimOrientation = glm::angleAxis(rot * (float)input.actionVals.at(SpacialActions::rotatePitch), -aimTangent) * biped.aimOrientation;
+                }
+                if (input.actions.test(SpacialActions::rotateYaw))
+                {
+                    biped.aimOrientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), biped.supportAxis) * biped.aimOrientation;
+                }
+
+                glm::vec3 targetInputVector(0.0f);
+                // omit up/down from accelerations
+                if (input.actions.test(SpacialActions::moveParallel))
+                {
+                    targetInputVector += aimProjection * static_cast<float>(input.actionVals.at(SpacialActions::moveParallel));
+                }
+                if (input.actions.test(SpacialActions::moveHorizontal))
+                {
+                    targetInputVector -= aimTangent * static_cast<float>(input.actionVals.at(SpacialActions::moveHorizontal));
+                }
+                
+                if (targetInputVector != glm::vec3(0.0f))
+                    targetInputVector = glm::normalize(targetInputVector);
+                glm::vec3 targetGroundVelocity = targetInputVector * biped.groundMaxSpeed;
+                
+                const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
+
+                physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
             }
             catch(const std::exception& err)
             {

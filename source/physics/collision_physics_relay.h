@@ -131,8 +131,7 @@ namespace pleep
                     {
                         try
                         {
-                            std::shared_ptr<I_ScriptDrivetrain> drivetrain = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget).drivetrain;
-                            ScriptComponent& script = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget);
+                            ScriptComponent& script = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget);
                             if (script.use_collision) script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                         }
                         catch(const std::exception& err)

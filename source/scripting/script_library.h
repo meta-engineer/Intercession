@@ -40,6 +40,7 @@ namespace pleep
         {
             none,
             fly_control,            // FlyControlScripts
+            lakitu,                 // LakituScripts
             biped_control,          // BipedScripts
             oscillator,             // OscillatorScripts
             count

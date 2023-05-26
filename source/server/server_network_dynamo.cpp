@@ -3,7 +3,7 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 #include "staging/cosmos_builder.h"
-#include "staging/build_pc.h"
+#include "staging/build_client_entity.h"
 
 namespace pleep
 {
@@ -123,8 +123,15 @@ namespace pleep
             case events::cosmos::ENTITY_UPDATE:
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received entity update message");
-                // what do we do with data now?
-                //m_entityUpdateRelay->submit(msg.msg);
+
+                // Received update from client, check that it is for their assigned entity
+                events::cosmos::ENTITY_UPDATE_params updateInfo;
+                msg.msg >> updateInfo;
+                // TODO...
+
+                // We dont want the entire entity overritten, just extract the input component.
+                // How do we know which is the input component? ...
+                
             }
             break;
             case events::network::NEW_CLIENT:
@@ -169,13 +176,18 @@ namespace pleep
                 // Server will create client character and then pass it its Entity
                 // Client may have to do predictive entity creation in the future,
                 // but we'll avoid that here for now because client has to wait anyways
-                clientInfo.entity = build_pc(m_workingCosmos);
+                clientInfo.entity = build_client_entity(m_workingCosmos, m_sharedBroker);
                 PLEEPLOG_DEBUG("Created entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
 
                 // Forward new client message to signal for cosmos to initialize client side entities
                 PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
                 msg.msg << clientInfo;
                 msg.remote->send(msg.msg);
+
+                // TODO: we should also keep track of the clientInfo.entity
+                // (store it in msg.remote?)
+                // when we receive input updates from this client, we should only allow
+                // and/or assume they are for this entity only!
             }
             break;
             default:

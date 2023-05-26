@@ -15,44 +15,13 @@
 
 namespace pleep
 {
-    std::shared_ptr<Cosmos> build_test_cosmos(
-        EventBroker* eventBroker, 
-        DynamoCluster& dynamoCluster
+    inline std::shared_ptr<Cosmos> build_test_cosmos(
+        std::shared_ptr<Cosmos> cosmos,
+        EventBroker* eventBroker
     )
     {
-        // TODO: receive config from server
-        // TODO: Should config synchros just imply necessary components? Some are 1-to-1 like physics component, some are many-to-one like transform, some are unique like oscillator
-/* 
-        cosmos_builder::Config cosmosConfig;
-        cosmosConfig.insert_component<TransformComponent>();
-        cosmosConfig.insert_component<SpacialInputComponent>();
-        cosmosConfig.insert_component<RenderableComponent>();
-        cosmosConfig.insert_component<CameraComponent>();
-        cosmosConfig.insert_component<LightSourceComponent>();
-        cosmosConfig.insert_component<PhysicsComponent>();
-        cosmosConfig.insert_component<BoxColliderComponent>();
-        cosmosConfig.insert_component<RayColliderComponent>();
-        cosmosConfig.insert_component<RigidBodyComponent>();
-        cosmosConfig.insert_component<SpringBodyComponent>();
-        cosmosConfig.insert_component<ScriptComponent>();
-        cosmosConfig.insert_component<OscillatorComponent>();
-
-        cosmosConfig.insert_synchro<SpacialInputSynchro>();
-        cosmosConfig.insert_synchro<LightingSynchro>();
-        cosmosConfig.insert_synchro<RenderSynchro>();
-        cosmosConfig.insert_synchro<PhysicsSynchro>();
-        cosmosConfig.insert_synchro<BoxColliderSynchro>();
-        cosmosConfig.insert_synchro<RayColliderSynchro>();
-        cosmosConfig.insert_synchro<NetworkSynchro>();
-        cosmosConfig.insert_synchro<ScriptSynchro>();
-        // build cosmos according to config
-        //std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
- */
-        // Setup hard configed Cosmos
-        std::shared_ptr<Cosmos> cosmos = build_test_hard_config(eventBroker, dynamoCluster);
-
         PLEEPLOG_TRACE("Create Entities");
-        // create entities
+        // create entity then
         // create component and pass or construct inline
         // if component is explicit (no initalizer list), we can omit template
 
@@ -101,6 +70,8 @@ namespace pleep
         cosmos->add_component(frog, frog_rigidBody);
 
         // script handle legs collider events (below)
+        cosmos->add_component(frog, SpacialInputComponent{});
+        cosmos->add_component(frog, BipedComponent{});
         ScriptComponent frog_scripts;
         frog_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
         frog_scripts.use_fixed_update = true;
@@ -359,7 +330,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(mainCamera).orientation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, -0.7f));
         cosmos->add_component(mainCamera, CameraComponent());
 
-        cosmos->add_component(mainCamera, SpacialInputComponent());
+        cosmos->add_component(mainCamera, SpacialInputComponent{});
         ScriptComponent camera_scripts;
         camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::fly_control);
         camera_scripts.use_fixed_update = true;

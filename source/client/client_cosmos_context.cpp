@@ -3,8 +3,7 @@
 // TODO: This is temporary until proper cosmos staging is implemented
 #include "staging/test_cosmos.h"
 #include "staging/test_temporal_cosmos.h"
-#include "staging/test_client_cosmos.h"
-#include "staging/build_pc.h"
+#include "staging/build_client_entity.h"
 
 namespace pleep
 {
@@ -15,7 +14,7 @@ namespace pleep
         
         // construct dynamos
         m_dynamoCluster.renderer  = std::make_shared<RenderDynamo>(m_eventBroker, windowApi);
-        m_dynamoCluster.inputter  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
+        m_dynamoCluster.inputer  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
         m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
         m_dynamoCluster.networker = std::make_shared<ClientNetworkDynamo>(m_eventBroker);
         m_dynamoCluster.scripter  = std::make_shared<ScriptDynamo>(m_eventBroker);
@@ -47,7 +46,7 @@ namespace pleep
         //   know which dynamos to call fixed and which to call on frametime
         m_dynamoCluster.networker->run_relays(fixedTime);
         m_dynamoCluster.physicser->run_relays(fixedTime);
-        m_dynamoCluster.inputter->run_relays(fixedTime);
+        m_dynamoCluster.inputer->run_relays(fixedTime);
         m_dynamoCluster.scripter->run_relays(fixedTime);
     }
     
@@ -72,12 +71,12 @@ namespace pleep
             ImGui::Begin("Client Context Debug");
 
             // Display some text (you can use a format strings too)
-            ImGui::Text("This window runs above the cosmos");
+            ImGui::Text("This window runs outside of the cosmos");
 
             // Report Cosmos info
             if (m_currentCosmos)
             {
-                std::string entityCountString = "Total  Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
+                std::string entityCountString = " Total Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
                 ImGui::Text(entityCountString.c_str());
                 std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
                 ImGui::Text(hostedCountString.c_str());
@@ -97,7 +96,7 @@ namespace pleep
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
             */
-           
+
             ImGui::Text("NetworkDynamo%sconnected", m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -117,11 +116,8 @@ namespace pleep
         m_dynamoCluster.scripter->reset_relays();
         m_dynamoCluster.networker->reset_relays();
         m_dynamoCluster.physicser->reset_relays();
-        m_dynamoCluster.inputter->reset_relays();
-        m_dynamoCluster.renderer->reset_relays();
-        
-        // RenderDynamo calls swap buffers
-        m_dynamoCluster.renderer->flush_frame();
+        m_dynamoCluster.inputer->reset_relays();
+        m_dynamoCluster.renderer->reset_relays();   // render dynamo will flush framebuffer
     }
 
     
@@ -132,11 +128,13 @@ namespace pleep
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
         //m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
-        //build_pc(m_currentCosmos);
+        //build_client_entity(m_currentCosmos, m_eventBroker);
 
         //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_dynamoCluster);
 
-        m_currentCosmos = build_test_client_cosmos(m_eventBroker, m_dynamoCluster);
+        m_currentCosmos = build_test_hard_config(m_eventBroker, m_dynamoCluster);
+        build_test_cosmos(m_currentCosmos, m_eventBroker);
+        build_client_entity(m_currentCosmos, m_eventBroker);
         // use imgui input in main loop do add more at runtime
         
         PLEEPLOG_TRACE("Done cosmos construction");

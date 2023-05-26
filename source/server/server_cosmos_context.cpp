@@ -69,7 +69,8 @@ namespace pleep
 
         // we need to build synchros and link them with dynamos
         // until we can load from file we can manually call methods to build entities in its ecs
-        m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
+        m_currentCosmos = build_test_hard_config(m_eventBroker, m_dynamoCluster);
+        build_test_cosmos(m_currentCosmos, m_eventBroker);
         //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_dynamoCluster);
 
         PLEEPLOG_TRACE("Done cosmos construction");

@@ -3,6 +3,7 @@
 // registered scripts
 #include "scripting/biped_scripts.h"
 #include "scripting/fly_control_scripts.h"
+#include "scripting/lakitu_scripts.h"
 #include "scripting/oscillator_scripts.h"
 
 namespace pleep
@@ -14,6 +15,9 @@ namespace pleep
         {
             case ScriptType::fly_control:
                 newDrivetrain = std::make_shared<FlyControlScripts>();
+                break;
+            case ScriptType::lakitu:
+                newDrivetrain = std::make_shared<LakituScripts>();
                 break;
             case ScriptType::biped_control:
                 newDrivetrain = std::make_shared<BipedScripts>();
