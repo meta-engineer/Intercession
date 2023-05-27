@@ -16,7 +16,7 @@
 
 #include "core/cosmos.h"
 #include "events/event_broker.h"
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 
 namespace pleep
 {
@@ -73,11 +73,11 @@ namespace pleep
 
         bool m_running = false;
         // runtime calibrations
-        // Fixed timestep for stability. 200hz?
-        const std::chrono::duration<double> m_fixedTimeStep = 
-            std::chrono::duration<double>(0.005);
+        // Fixed timestep for input processing. Deafult 60hz?
+        std::chrono::duration<double> m_fixedTimeStep = 
+            std::chrono::duration<double>(1.0/200.0);
         // mechanism for tracking how many fixed timesteps to process
-        std::chrono::duration<double> m_timeRemaining =
+        std::chrono::duration<double> m_timeRemaining = 
             std::chrono::duration<double>(0.0);
         // max number of fixed iterations to catchup before letting system progress/respond
         const size_t m_maxSteps = 50;

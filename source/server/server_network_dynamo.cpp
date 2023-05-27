@@ -3,7 +3,7 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 #include "staging/cosmos_builder.h"
-#include "staging/build_client_entity.h"
+#include "staging/client_focal_entity.h"
 
 namespace pleep
 {
@@ -131,7 +131,7 @@ namespace pleep
 
                 // We dont want the entire entity overritten, just extract the input component.
                 // How do we know which is the input component? ...
-                
+
             }
             break;
             case events::network::NEW_CLIENT:
@@ -176,7 +176,7 @@ namespace pleep
                 // Server will create client character and then pass it its Entity
                 // Client may have to do predictive entity creation in the future,
                 // but we'll avoid that here for now because client has to wait anyways
-                clientInfo.entity = build_client_entity(m_workingCosmos, m_sharedBroker);
+                clientInfo.entity = create_client_focal_entity(m_workingCosmos, m_sharedBroker);
                 PLEEPLOG_DEBUG("Created entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
 
                 // Forward new client message to signal for cosmos to initialize client side entities

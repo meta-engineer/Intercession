@@ -20,11 +20,11 @@ namespace pleep
     // However, each Dynamo could be a polymorphic interface (I_NetworkDynamo)
     struct DynamoCluster
     {
-        std::shared_ptr<RenderDynamo>    renderer  = nullptr;
-        std::shared_ptr<InputDynamo>     inputer   = nullptr;
-        std::shared_ptr<PhysicsDynamo>   physicser = nullptr;
+        std::shared_ptr<InputDynamo>     inputter  = nullptr;
         std::shared_ptr<I_NetworkDynamo> networker = nullptr;
+        std::shared_ptr<PhysicsDynamo>   physicser = nullptr;
         std::shared_ptr<ScriptDynamo>    scripter  = nullptr;
+        std::shared_ptr<RenderDynamo>    renderer  = nullptr;
         //std::shared_ptr<AudioDynamo>     audioer   = nullptr;
     };
 }

@@ -44,15 +44,14 @@ namespace pleep
                 throw std::range_error(errMsg);
             }
 
+            // indexes into sharedMultiplex
             m_timesliceId = id;
 
             // store whole cfg, or just copy individual members?
             m_delayToNextTimeslice = cfg.timesliceDelay;
-            m_simulationHz = cfg.simulationHz;
-            m_networkHz = cfg.networkHz;
 
             // offset port in series by unique timeslice id
-            m_port = cfg.originPort + m_timesliceId;
+            m_port = cfg.presentPort + m_timesliceId;
         }
 
         // get the unique timesliceId registered for this TimelineApi instance
@@ -146,9 +145,6 @@ namespace pleep
         TimesliceId m_timesliceId;   // Store for Entity composition
         int m_delayToNextTimeslice;  // SECONDS
         
-        double m_simulationHz;       // updates per second
-        double m_networkHz;
-
         std::shared_ptr<Multiplex> m_multiplex;
 
         std::shared_ptr<EntityTimestreamMap> m_futureTimestreams;

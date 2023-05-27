@@ -3,7 +3,9 @@
 // TODO: This is temporary until proper cosmos staging is implemented
 #include "staging/test_cosmos.h"
 #include "staging/test_temporal_cosmos.h"
-#include "staging/build_client_entity.h"
+#include "staging/client_focal_entity.h"
+#include "staging/client_local_entities.h"
+#include "staging/hard_config_cosmos.h"
 
 namespace pleep
 {
@@ -13,11 +15,11 @@ namespace pleep
         // I_CosmosContext() has setup broker
         
         // construct dynamos
-        m_dynamoCluster.renderer  = std::make_shared<RenderDynamo>(m_eventBroker, windowApi);
-        m_dynamoCluster.inputer  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
-        m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
+        m_dynamoCluster.inputter  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
         m_dynamoCluster.networker = std::make_shared<ClientNetworkDynamo>(m_eventBroker);
         m_dynamoCluster.scripter  = std::make_shared<ScriptDynamo>(m_eventBroker);
+        m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
+        m_dynamoCluster.renderer  = std::make_shared<RenderDynamo>(m_eventBroker, windowApi);
 
         // build and populate starting cosmos
         _build_cosmos();
@@ -44,10 +46,10 @@ namespace pleep
     {
         // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
         //   know which dynamos to call fixed and which to call on frametime
+        m_dynamoCluster.inputter->run_relays(fixedTime);
         m_dynamoCluster.networker->run_relays(fixedTime);
-        m_dynamoCluster.physicser->run_relays(fixedTime);
-        m_dynamoCluster.inputer->run_relays(fixedTime);
         m_dynamoCluster.scripter->run_relays(fixedTime);
+        m_dynamoCluster.physicser->run_relays(fixedTime);
     }
     
     void ClientCosmosContext::_on_frame(double deltaTime) 
@@ -113,10 +115,10 @@ namespace pleep
         //   and we invoke all dynamos (to avoid having to specify)
         
         // flush dynamos of all synchro submissions
-        m_dynamoCluster.scripter->reset_relays();
+        m_dynamoCluster.inputter->reset_relays();
         m_dynamoCluster.networker->reset_relays();
+        m_dynamoCluster.scripter->reset_relays();
         m_dynamoCluster.physicser->reset_relays();
-        m_dynamoCluster.inputer->reset_relays();
         m_dynamoCluster.renderer->reset_relays();   // render dynamo will flush framebuffer
     }
 
@@ -126,16 +128,14 @@ namespace pleep
         PLEEPLOG_TRACE("Start cosmos construction");
 
         // we need to build synchros and link them with dynamos
-        // until we can load from file we can manually call methods to build entities in its ecs
+        // until we can load from server we can manually call methods to build entities in its ecs
+        m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
+
         //m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
-        //build_client_entity(m_currentCosmos, m_eventBroker);
+        //create_client_focal_entity(m_currentCosmos, m_eventBroker);
+        //create_client_local_entities(m_currentCosmos, m_eventBroker);
 
-        //m_currentCosmos = build_temporal_cosmos(m_eventBroker, m_dynamoCluster);
-
-        m_currentCosmos = build_test_hard_config(m_eventBroker, m_dynamoCluster);
-        build_test_cosmos(m_currentCosmos, m_eventBroker);
-        build_client_entity(m_currentCosmos, m_eventBroker);
-        // use imgui input in main loop do add more at runtime
+        // use imgui input in main loop do add more at runtime?
         
         PLEEPLOG_TRACE("Done cosmos construction");
     }

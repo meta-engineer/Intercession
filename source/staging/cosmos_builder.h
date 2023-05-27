@@ -9,7 +9,7 @@
 #include "core/cosmos.h"
 
 // include Dynamos
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 
 // include Synchros
 #include "inputting/spacial_input_synchro.h"

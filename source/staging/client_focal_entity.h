@@ -1,5 +1,5 @@
-#ifndef BUILD_CLIENT_ENTITY_H
-#define BUILD_CLIENT_ENTITY_H
+#ifndef CLIENT_FOCAL_ENTITY_H
+#define CLIENT_FOCAL_ENTITY_H
 
 //#include "intercession_pch.h"
 #include <memory>
@@ -10,7 +10,7 @@ namespace pleep
 {
     // returns single entity to be created each time a client joins
     // client is signalled to use this entity as its main entity;
-    inline Entity build_client_entity(
+    inline Entity create_client_focal_entity(
         std::shared_ptr<Cosmos> cosmos,
         EventBroker* eventBroker
     )
@@ -77,4 +77,4 @@ namespace pleep
     }
 }
 
-#endif // BUILD_CLIENT_ENTITY_H
+#endif // CLIENT_FOCAL_ENTITY_H

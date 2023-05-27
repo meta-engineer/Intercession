@@ -1,23 +1,23 @@
-#ifndef BUILD_LOCAL_ENTITIES_H
-#define BUILD_LOCAL_ENTITIES_H
+#ifndef CLIENT_LOCAL_ENTITIES_H
+#define CLIENT_LOCAL_ENTITIES_H
 
 //#include "intercession_pch.h"
 #include <memory>
 
 #include "events/event_broker.h"
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 #include "staging/cosmos_builder.h"
 #include "logging/pleep_log.h"
 #include "rendering/model_cache.h"
 #include "scripting/script_library.h"
 
-#include "staging/test_hard_config.h"
+#include "staging/hard_config_cosmos.h"
 
 namespace pleep
 {
-    // build only client side entities:
+    // create only client side entities in cosmos:
     // - camera
-    inline void build_local_entities(
+    inline void create_client_local_entities(
         std::shared_ptr<Cosmos> cosmos,
         EventBroker* eventBroker
     )
@@ -56,4 +56,4 @@ namespace pleep
     }
 }
 
-#endif // BUILD_LOCAL_ENTITIES_H
+#endif // CLIENT_LOCAL_ENTITIES_H

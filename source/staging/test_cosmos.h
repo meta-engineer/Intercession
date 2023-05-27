@@ -5,21 +5,23 @@
 #include <memory>
 
 #include "events/event_broker.h"
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 #include "staging/cosmos_builder.h"
 #include "logging/pleep_log.h"
 #include "rendering/model_cache.h"
 #include "scripting/script_library.h"
 
-#include "staging/test_hard_config.h"
+#include "staging/hard_config_cosmos.h"
 
 namespace pleep
 {
     inline std::shared_ptr<Cosmos> build_test_cosmos(
-        std::shared_ptr<Cosmos> cosmos,
-        EventBroker* eventBroker
+        EventBroker* eventBroker, 
+        DynamoCluster& dynamoCluster
     )
     {
+        std::shared_ptr<Cosmos> cosmos = construct_hard_config_cosmos(eventBroker, dynamoCluster);
+        
         PLEEPLOG_TRACE("Create Entities");
         // create entity then
         // create component and pass or construct inline

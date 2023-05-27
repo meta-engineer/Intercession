@@ -7,17 +7,18 @@
 #include "logging/pleep_log.h"
 
 #include "events/event_broker.h"
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 #include "staging/cosmos_builder.h"
 #include "ecs/ecs_types.h"
 
-#include "staging/test_hard_config.h"
+#include "staging/hard_config_cosmos.h"
 
 namespace pleep
 {
-    inline std::shared_ptr<Cosmos> build_temporal_cosmos(
+    inline std::shared_ptr<Cosmos> build_test_temporal_cosmos(
         EventBroker* eventBroker, 
-        DynamoCluster& dynamoCluster)
+        DynamoCluster& dynamoCluster
+    )
     {
 /* 
         // TODO: receive config from file?
@@ -33,7 +34,7 @@ namespace pleep
         // build cosmos according to config
         std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
  */
-        std::shared_ptr<Cosmos> cosmos = build_test_hard_config(eventBroker, dynamoCluster);
+        std::shared_ptr<Cosmos> cosmos = construct_hard_config_cosmos(eventBroker, dynamoCluster);
 
         Entity time = cosmos->create_entity();
         UNREFERENCED_PARAMETER(time);

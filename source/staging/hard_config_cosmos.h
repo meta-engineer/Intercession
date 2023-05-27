@@ -5,12 +5,12 @@
 #include <memory>
 
 #include "events/event_broker.h"
-#include "staging/dynamo_cluster.h"
+#include "core/dynamo_cluster.h"
 #include "staging/cosmos_builder.h"
 
 namespace pleep
 {
-    inline std::shared_ptr<Cosmos> build_test_hard_config(
+    inline std::shared_ptr<Cosmos> construct_hard_config_cosmos(
         EventBroker* eventBroker,
         DynamoCluster& dynamoCluster
     )
@@ -62,7 +62,7 @@ namespace pleep
         newCosmos->register_component<OscillatorComponent>();
         newCosmos->register_component<BipedComponent>();
 
-        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputer);
+        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputter);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(dynamoCluster.physicser);

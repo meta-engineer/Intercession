@@ -56,7 +56,7 @@ namespace pleep
             //synchroRegisters.at(s.c_str()).operator()(newCosmos, callerDynamos);
         }
 /* 
-        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(callerDynamos.inputer);
+        newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(callerDynamos.inputter);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(callerDynamos.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(callerDynamos.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(callerDynamos.physicser);

@@ -3,8 +3,8 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 
-#include "staging/build_client_entity.h"
-#include "staging/build_local_entities.h"
+#include "staging/client_focal_entity.h"
+#include "staging/client_local_entities.h"
 
 namespace pleep
 {
@@ -154,7 +154,7 @@ namespace pleep
                 // only entities which the server doesn't need for simulation
                 // will broadcast SET_MAIN_CAMERA
                 // will check for cosmos' focal entity
-                build_local_entities(m_workingCosmos, m_sharedBroker);
+                create_client_local_entities(m_workingCosmos, m_sharedBroker);
             }
             break;
             default:

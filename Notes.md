@@ -1,5 +1,10 @@
 # Notes on the tech stacks
 
+## Git
+
+check total lines of code:
+`git ls-files | grep "^source/*" | xargs wc -l`
+
 ## CTT tutorial
 https://www.youtube.com/watch?v=nlKcXPUJGwA&list=PLalVdRk2RC6o5GHu618ARWh0VO0bFlif4&index=1
 

@@ -62,6 +62,21 @@ namespace pleep
     const ComponentType MAX_COMPONENT_TYPES = 32;
     using Signature = std::bitset<MAX_COMPONENT_TYPES>;
 
+    // We want to be able to differentiate component classes
+    // to serialize select groups of components
+    // we could build an inheritance structure for all components to use...
+    // or we could have the component registry assign a clasification on registry...
+/* 
+    enum ComponentClass
+    {
+        normal,
+        not_normal,
+        incoming,   // need better names...
+        outgoing,
+        other,
+        count
+    };
+ */
 
     // Helper functions for comprehending Entity bit-wise composition
 
