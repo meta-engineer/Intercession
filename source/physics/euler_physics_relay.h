@@ -25,8 +25,8 @@ namespace pleep
                 if (data.physics.isAsleep) continue;
                 
                 ////////////////////////////////////////////////////////////////
-                // SHHH... temporary global gravity
-                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);
+                // SHHH... temporary global gravity                           //
+                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);    //
                 ////////////////////////////////////////////////////////////////
 
                 // Apply locking constraints
@@ -76,13 +76,15 @@ namespace pleep
                     data.transform.orientation = quatVelocity * data.transform.orientation;
                 }
 
-                // Should we clear acceleration here or leave it for other relays to use deductively?
-                data.physics.acceleration = glm::vec3(0.0f);
+                // leave acceleration values as-is for next (potential) engage() call?
+                // clear accelerations from last frame
+                data.physics.acceleration        = glm::vec3(0.0f);
                 data.physics.angularAcceleration = glm::vec3(0.0f);
                 
-                // Per frame drag
-                data.physics.velocity        *= 1.0f - data.physics.linearDrag;
-                data.physics.angularVelocity *= 1.0f - data.physics.angularDrag;
+                // Per-step drag
+                data.physics.velocity        *= 1.0f - data.physics.linearDrag * deltaTime;
+                data.physics.angularVelocity *= 1.0f - data.physics.angularDrag * deltaTime;
+
             }
         }
         

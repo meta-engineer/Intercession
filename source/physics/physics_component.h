@@ -31,11 +31,11 @@ namespace pleep
         glm::vec3 angularVelocity       = glm::vec3(0.0f);  // in RADS!
         glm::vec3 angularAcceleration   = glm::vec3(0.0f);  // in RADS!
 
-        // Drag Factors. 
+        // Drag Factors. units of percent momentum lost per second
         // TODO: Should these be determined by the environment (eg. air vs water)
-        float linearDrag            = 0.00f;
-        float angularDrag           = 0.00f;
-        // only applied after collision resolution
+        float linearDrag            = 0.01f;
+        float angularDrag           = 0.01f;
+        // only applied after collision resolution.  units of percent momentum lost instantaneously
         float collisionLinearDrag   = 0.00f;
         float collisionAngularDrag  = 0.03f;
 

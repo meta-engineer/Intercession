@@ -64,7 +64,7 @@ namespace pleep
 
         // frog "body"
         BoxColliderComponent frog_box;
-        //frog_box.localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
+        frog_box.localTransform.scale = glm::vec3(500.0f, 400.0f, 500.0f);
         frog_box.responseType = CollisionResponseType::rigid;
         cosmos->add_component(frog, frog_box);
         RigidBodyComponent frog_rigidBody;
@@ -83,7 +83,7 @@ namespace pleep
         // frog "legs"
         RayColliderComponent frog_ray;
         frog_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        //frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
+        frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 500.0f);
         frog_ray.responseType = CollisionResponseType::spring;
         frog_ray.inheritOrientation = false;
         // link to self biped script
@@ -92,7 +92,7 @@ namespace pleep
         SpringBodyComponent frog_springBody;
         frog_springBody.influenceOrientation = false;
         frog_springBody.stiffness = 10000.0f;
-        frog_springBody.damping = 500.0f;
+        frog_springBody.damping = 100.0f;
         frog_springBody.restLength = 0.1f; // therefore ride height of 0.9
         frog_springBody.staticFriction = 0.0f;
         frog_springBody.dynamicFriction = 0.0f;

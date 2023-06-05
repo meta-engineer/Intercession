@@ -37,7 +37,7 @@ namespace pleep
     
     void PhysicsDynamo::run_relays(double deltaTime) 
     {
-        // BVH is now built? process all physical processes
+        // BVH is now built? process all physics relays
         
         // motion first
         m_motionStep->engage(deltaTime);
@@ -47,7 +47,7 @@ namespace pleep
     
     void PhysicsDynamo::reset_relays()
     {
-        // after 1+ timesteps clear relays
+        // after 1+ integration steps clear relays of entities
         m_motionStep->clear();
         m_collisionStep->clear();
     }

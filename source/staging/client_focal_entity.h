@@ -56,7 +56,7 @@ namespace pleep
         SpringBodyComponent pc_springBody;
         pc_springBody.influenceOrientation = false;
         pc_springBody.stiffness = 10000.0f;
-        pc_springBody.damping = 500.0f;
+        pc_springBody.damping = 100.0f;
         pc_springBody.restLength = 0.1f; // therefore ride height of 0.9
         pc_springBody.staticFriction = 0.0f;
         pc_springBody.dynamicFriction = 0.0f;

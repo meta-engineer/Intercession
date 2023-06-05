@@ -67,7 +67,7 @@ namespace pleep
     // we could build an inheritance structure for all components to use...
     // or we could have the component registry assign a clasification on registry...
 /* 
-    enum ComponentClass
+    enum ComponentCategory
     {
         normal,
         not_normal,

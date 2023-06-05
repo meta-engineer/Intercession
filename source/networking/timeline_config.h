@@ -12,7 +12,7 @@ namespace pleep
     struct TimelineConfig
     {
         // Address is shared for all timeslices
-        const std::string timelineAddress = "127.0.0.1";
+        std::string timelineAddress = "127.0.0.1";
         // Port number for timeslice 0. Further timeslices will have to offset by their id
         // Therefore: highest port == presentPort + numTimeslices - 1
         // EX: origin = 61336 -> 2nd = 61337, 3rd = 61338
@@ -27,10 +27,12 @@ namespace pleep
         TimesliceId numTimeslices = 2;
 
         // Cosmos updates per second
-        // simulation includes input polling, network update, script updates
-        double simulationHz = 60.0;
-        // frequency physics integration/collision steps should run at
-        double physicsHz    = 180.0;
+        // simulation includes input polling, parsing incoming network messages, script updates, physics integration.collision
+        double simulationHz = 90.0;
+        // server updates don't need to happen every frame, client can dead reckon for a few
+        // serializing the whole cosmos is costly so do it less frequently
+        // (client still needs to emit their inputs every simulation update)
+        double networkHz     = 30.0;
         // frame time runs asap after the above fixed timesteps (rendering/animation/ui)
 
     };

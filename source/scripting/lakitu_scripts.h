@@ -9,6 +9,7 @@
 #include "physics/transform_component.h"
 #include "inputting/spacial_input_component.h"
 #include "rendering/camera_component.h"
+#include "scripting/biped_component.h"
 #include "core/cosmos.h"
 
 namespace pleep
@@ -29,15 +30,16 @@ namespace pleep
             {
                 TransformComponent& transform = owner->get_component<TransformComponent>(entity);
                 //PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
-                SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
+                //SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
                 CameraComponent& camera = owner->get_component<CameraComponent>(entity);
 
                 
                 // generate direction vector from euler angles
                 glm::vec3 direction = transform.get_heading();
+/* 
                 // units/time * time (seconds)
                 //const float disp   = 4.0f * (float)deltaTime;
-                const float rot    = 0.20f * (float)deltaTime;
+                const float rot    = 0.10f * (float)deltaTime;
                 const float aspect = 1.2f;
                 //const float gimbalLimit = 0.1f;  // rads
                 glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
@@ -52,16 +54,19 @@ namespace pleep
                 {
                     transform.orientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), -gimbalUp) * transform.orientation;
                 }
+ */
 
-                // set origin to point towards target
-                direction = transform.get_heading();
                 glm::vec3 targetOrigin(0.0f);
+                glm::quat targetOrientation = glm::quat(glm::vec3(0.0f));
                 try
                 {
                     if (camera.target != NULL_ENTITY)
                     {
                         TransformComponent& targetTransform = owner->get_component<TransformComponent>(camera.target);
                         targetOrigin = targetTransform.origin;
+
+                        BipedComponent& targetBiped = owner->get_component<BipedComponent>(camera.target);
+                        targetOrientation = targetBiped.aimOrientation;
                     }
                 }
                 catch(const std::exception& err)
@@ -69,7 +74,13 @@ namespace pleep
                     UNREFERENCED_PARAMETER(err);
                     // if no target just use static coordinates
                 }
-                
+
+                // match orientation to target
+                transform.orientation = targetOrientation;
+
+                // recalc direction after rotation
+                direction = transform.get_heading();
+                // set origin to point towards target (or 0 if no target)
                 transform.origin = targetOrigin - (direction * camera.range);
             }
             catch(const std::exception& err)

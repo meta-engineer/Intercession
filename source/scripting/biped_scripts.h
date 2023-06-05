@@ -45,12 +45,12 @@ namespace pleep
                 // derive ground velocity perpendicular to support axis
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
-                const float rot    = 0.20f * (float)deltaTime;
+                const float rot    = 0.10f * (float)deltaTime;
                 const float aspect = 1.2f;
                 // set new aim vectors
                 if (input.actions.test(SpacialActions::rotatePitch))
                 {
-                    biped.aimOrientation = glm::angleAxis(rot * (float)input.actionVals.at(SpacialActions::rotatePitch), -aimTangent) * biped.aimOrientation;
+                    biped.aimOrientation = glm::angleAxis(rot * (float)input.actionVals.at(SpacialActions::rotatePitch), aimTangent) * biped.aimOrientation;
                 }
                 if (input.actions.test(SpacialActions::rotateYaw))
                 {
@@ -75,6 +75,18 @@ namespace pleep
                 const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
 
                 physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
+
+
+                // jumping
+                if (biped.jumpCooldownRemaining > 0) biped.jumpCooldownRemaining -= deltaTime;
+                if (biped.jumpCooldownRemaining <= 0
+                    && input.actions.test(SpacialActions::moveVertical)
+                    && input.actionVals.at(SpacialActions::moveVertical) > 0)
+                {
+                    // f = m*a
+                    physics.acceleration += -1.0f * biped.supportAxis * biped.jumpForce / physics.mass;
+                    biped.jumpCooldownRemaining = biped.jumpCooldownTime;
+                }
             }
             catch(const std::exception& err)
             {
@@ -99,9 +111,9 @@ namespace pleep
             try
             {
                 // TODO: store collision meta-data in biped component
-                //BipedComponent& biped = callerData.owner->get_component<BipedComponent>(callerData.collidee);
-                //biped.isGrounded = true;
-                //biped.groundNormal = collisionNormal;
+                BipedComponent& biped = callerData.owner->get_component<BipedComponent>(callerData.collidee);
+                biped.isGrounded = true;
+                biped.groundNormal = collisionNormal;
 
                 UNREFERENCED_PARAMETER(collisionPoint);
                 UNREFERENCED_PARAMETER(collisionNormal);

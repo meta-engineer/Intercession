@@ -26,8 +26,9 @@ namespace pleep
         // may have to recalculate collisionPoint relative velocity
         glm::vec3 groundVelocity = glm::vec3(0.0f);
 
-        double jumpCooldownTime = 0.2; // if fixed update is 0.05, this means 4 frames
-        double m_jumpCooldownRemaining = 0.0;
+        double jumpCooldownTime = 1.0; // if fixed update is 60hz, this means 60 frames
+        double jumpCooldownRemaining = 0.0;
+        float jumpForce = 20000.0f;
 
         // units roughly equate to meters and seconds
         float groundAcceleration    = 20.0f;

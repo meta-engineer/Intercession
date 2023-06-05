@@ -193,13 +193,14 @@ namespace pleep
 
         // STEP 5.5: apply angular dampening
         // we'll linearly damp angular velocities after impulse to try to break out of any equilibriums
+        // temporary multiply by 2 for stability until spring response is reworked
         if (this->influenceOrientation)
         {
-            thisPhysics.angularVelocity  *= 1.0f - thisPhysics.collisionAngularDrag;
+            thisPhysics.angularVelocity  *= 1.0f - (thisPhysics.collisionAngularDrag * 2.0f);
         }
         if (otherRigidBody->influenceOrientation)
         {
-            otherPhysics.angularVelocity *= 1.0f - otherPhysics.collisionAngularDrag;
+            otherPhysics.angularVelocity *= 1.0f - (otherPhysics.collisionAngularDrag * 2.0f);
         }
     }
 }
