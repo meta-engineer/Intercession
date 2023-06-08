@@ -38,8 +38,11 @@ namespace pleep
         // before receiving any entity updates, send our focal entity state
         EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
         Entity focalEntity = m_workingCosmos->get_focal_entity();
-        m_workingCosmos->serialize_entity_components(focalEntity, focalUpdate);
-        events::cosmos::ENTITY_UPDATE_params focalInfo = { focalEntity, m_workingCosmos->get_entity_signature(focalEntity) };
+        events::cosmos::ENTITY_UPDATE_params focalInfo = {
+            focalEntity, 
+            m_workingCosmos->get_entity_signature(focalEntity) & m_workingCosmos->get_category_signature(ComponentCategory::upstream)
+        };
+        m_workingCosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
         focalUpdate << focalInfo;
         m_networkApi.send_message(focalUpdate);
 
@@ -88,8 +91,7 @@ namespace pleep
                 // confirm entity signatures match?
 
                 // read update into Cosmos
-                // This assumes entity's current signature is correct!
-                m_workingCosmos->deserialize_entity_components(updateInfo.entity, msg);
+                m_workingCosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
             }
             break;
             case events::cosmos::ENTITY_CREATED:

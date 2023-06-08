@@ -87,8 +87,12 @@ namespace pleep
         size_t get_num_hosted_temporal_entities();
 
         // setup component T to be usable in this cosmos
+        // Assign category to the registered type
         template<typename T>
-        void register_component();
+        void register_component(ComponentCategory category = ComponentCategory::downstream);
+
+        // Returns signature of Cosmos' components only belonging to category
+        Signature get_category_signature(ComponentCategory category);
 
         // add an instance of a registered component T to a registered entity
         template<typename T>
@@ -127,20 +131,24 @@ namespace pleep
 
         ///// Helper methods for sending entity information in Messages (for events or network) /////
 
-        // Pack each component of entity into message in reverse (stacked) order
-        // ***Does NOT include entity id and signature (header)
-        // We have to specify Message<EventId> becuase IComponentArray must use virtual methods
-        void serialize_entity_components(Entity entity, EventMessage& msg);
+        // Pack each component of entity in sign into msg in reverse (stacked) order
+        // Components in entity signature but missing from sign are ignored.
+        // Components in sign but missing from entity signature will THROW range_error
+        // !!! Does NOT include entity id and signature (header)
+        // (We have to specify Message<EventId> because IComponentArray must use virtual methods)
+        void serialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
 
-        // Unpack each component according to entity signature
-        // ***Does NOT include entity id and signature (header)
-        void Cosmos::deserialize_entity_components(Entity entity, EventMessage& msg);
+        // Unpack each component from msg according to entity signature
+        // Components in entity signature but missing from sign are left unchanged.
+        // Components in sign but missing from entity signature will THROW range_error
+        //   add_component() must be called before deserialising data to that component
+        // !!! msg must NOT include header params (entity id and signature)
+        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
 
-        // Unpack a component (specified by name) from message and update entity with its new values
+        // Unpack a component (specified by type) from message and update entity with its new values
         // Use if you want to manually unpack each component and validate them before writing
-        // *** compnentName MUST BE THE pointer from typeid!!! USE get_component_name()!!!
         // ***See deserialize_entity_components for template
-        void deserialize_and_write_component(Entity entity, const char* componentName, EventMessage& msg);
+        void deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg);
 
         // Set shared "special" entity for this cosmos instance
         // returns false if entity does not exist
@@ -270,9 +278,14 @@ namespace pleep
     }
 
     template<typename T>
-    void Cosmos::register_component() 
+    void Cosmos::register_component(ComponentCategory category) 
     {
-        m_componentRegistry->register_component_type<T>();
+        m_componentRegistry->register_component_type<T>(category);
+    }
+
+    inline Signature Cosmos::get_category_signature(ComponentCategory category)
+    {
+        return m_componentRegistry->get_category_signature(category);
     }
     
     template<typename T>

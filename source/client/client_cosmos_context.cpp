@@ -137,14 +137,14 @@ namespace pleep
 
         // we need to build synchros and link them with dynamos
         // until we can load from server we can manually call methods to build entities in its ecs
-        //m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
-
+        m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
+/* 
         m_currentCosmos = build_test_cosmos(m_eventBroker, m_dynamoCluster);
         m_currentCosmos->set_focal_entity(
             create_client_focal_entity(m_currentCosmos, m_eventBroker)
         );
         create_client_local_entities(m_currentCosmos, m_eventBroker);
-
+ */
         // use imgui input in main loop do add more at runtime?
         
         PLEEPLOG_TRACE("Done cosmos construction");

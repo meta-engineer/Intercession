@@ -130,7 +130,10 @@ namespace pleep
     void ComponentArray<T>::clear_data_for(Entity entity)
     {
         // exit safely if not found
-        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
+        {
+            return;
+        }
         
         this->remove_data_for(entity);
     }
@@ -139,7 +142,11 @@ namespace pleep
     void ComponentArray<T>::serialize_data_for(Entity entity, EventMessage& msg)
     {
         // exit safely if not found
-        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
+        {
+            PLEEPLOG_WARN("Tried to serialize component which doesn't exist, ignoring...");
+            return;
+        }
 
         msg << this->get_data_for(entity);
     }
@@ -148,7 +155,11 @@ namespace pleep
     void ComponentArray<T>::deserialize_data_for(Entity entity, EventMessage& msg)
     {
         // exit safely if not found
-        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end()) return;
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
+        {
+            PLEEPLOG_WARN("Tried to deserialize to component which doesn't exist, ignoring...");
+            return;
+        }
 
         // Assume new msg data is for type T
         T newData;

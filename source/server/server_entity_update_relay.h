@@ -46,13 +46,11 @@ namespace pleep
                         // TODO: check if component exists locally? 
                         // If not we can implicitly add_component a default one (and then it will be updated)
 
-                        std::string componentName = m_workingCosmos->get_component_name(i);
-
                         // TODO: switch on known component names:
                         // stream>> them myself, interrogate their values, and then overwrite the ecs
 
                         // default:
-                        //m_workingCosmos->deserialize_and_write_component(updateEvent, componentName, updateData.id);
+                        //m_workingCosmos->deserialize_single_component(updateEvent, i, updateData.id);
                     }
                 }
             }

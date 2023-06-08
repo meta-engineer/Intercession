@@ -124,14 +124,12 @@ namespace pleep
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received entity update message");
 
-                // Received update from client, check that it is for their assigned entity
                 events::cosmos::ENTITY_UPDATE_params updateInfo;
                 msg.msg >> updateInfo;
-                // TODO...
+                // TODO: Check updated entity matches client's assigned entity
 
-                // We dont want the entire entity overritten, just extract the input component.
-                // How do we know which is the input component? ...
-
+                // We should only be receiving upstream components...
+                m_workingCosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg.msg);
             }
             break;
             case events::network::NEW_CLIENT:
@@ -200,19 +198,25 @@ namespace pleep
 
         // Fourth: Process all submitted data in relays
 
-        // Fifth: After all ingesting is done, send/broadcast fresh data to timestreams & clients
-        // TODO: how do we compensate for latency?
+        // Fifth: After all ingesting is done, send/broadcast fresh data to clients
         if (m_workingCosmos)
         {
+            Signature downstreamSign = m_workingCosmos->get_category_signature(ComponentCategory::downstream);
             for (auto signIt : m_workingCosmos->get_signatures_ref())
             {
                 EventMessage updateMsg(events::cosmos::ENTITY_UPDATE);
-                m_workingCosmos->serialize_entity_components(signIt.first, updateMsg);
-                events::cosmos::ENTITY_UPDATE_params updateInfo = { signIt.first, signIt.second };
+                events::cosmos::ENTITY_UPDATE_params updateInfo = {
+                    signIt.first,
+                    signIt.second & downstreamSign
+                };
+                m_workingCosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
                 updateMsg << updateInfo;
                 m_networkApi.broadcast_message(updateMsg);
             }
         }
+
+        // Sixth: Broadcast fresh data to timestreams
+        // m_timelineApi.push_past_timestream(e, updateMsg)
     }
     
     void ServerNetworkDynamo::reset_relays() 

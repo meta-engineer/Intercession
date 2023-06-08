@@ -66,17 +66,13 @@ namespace pleep
     // to serialize select groups of components
     // we could build an inheritance structure for all components to use...
     // or we could have the component registry assign a clasification on registry...
-/* 
-    enum ComponentCategory
+    enum class ComponentCategory
     {
-        normal,
-        not_normal,
-        incoming,   // need better names...
-        outgoing,
-        other,
+        unknown,
+        downstream,     // Components which flow out to clients
+        upstream,       // Components which flow into servers
         count
     };
- */
 
     // Helper functions for comprehending Entity bit-wise composition
 

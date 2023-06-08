@@ -37,21 +37,33 @@ namespace pleep
         }
     }
 
-    void Cosmos::serialize_entity_components(Entity entity, EventMessage& msg)
+    void Cosmos::serialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
     {
         Signature entitySign = this->get_entity_signature(entity);
-        m_componentRegistry->serialize_entity_components(entity, entitySign, msg);
+        // get components ONLY in sign
+        if (((entitySign ^ sign) & sign).any())
+        {
+            PLEEPLOG_ERROR("Requested serialized signature (" + sign.to_string() + ") which is a superset of entity (" + std::to_string(entity) + ") signature (" + entitySign.to_string() + ")");
+            throw std::range_error("Signature mismatch for requested serialization");
+        }
+        m_componentRegistry->serialize_entity_components(entity, sign, msg);
     }
 
-    void Cosmos::deserialize_entity_components(Entity entity, EventMessage& msg)
+    void Cosmos::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
     {
         Signature entitySign = this->get_entity_signature(entity);
-        m_componentRegistry->deserialize_entity_components(entity, entitySign, msg);
+        // get components ONLY in sign
+        if (((entitySign ^ sign) & sign).any())
+        {
+            PLEEPLOG_ERROR("Requested deserialized signature (" + sign.to_string() + ") which is a superset of entity (" + std::to_string(entity) + ") signature (" + entitySign.to_string() + ")");
+            throw std::range_error("Signature mismatch for requested deserialization");
+        }
+        m_componentRegistry->deserialize_entity_components(entity, sign, msg);
     }
 
-    void Cosmos::deserialize_and_write_component(Entity entity, const char* componentName, EventMessage& msg)
+    void Cosmos::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
     {
-        m_componentRegistry->deserialize_and_write_component(entity, componentName, msg);
+        m_componentRegistry->deserialize_single_component(entity, type, msg);
     }
 
     bool Cosmos::set_focal_entity(Entity entity)

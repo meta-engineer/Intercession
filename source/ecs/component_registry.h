@@ -18,9 +18,13 @@ namespace pleep
     {
     public:
         // add templated type to known component types in the registry
+        // assigns category to the created type
         // THROWS runtime_error if component is already registered
         template<typename T>
-        void register_component_type();
+        void register_component_type(ComponentCategory category);
+
+        // Generate signature where ComponentTypes are set if category matches that ComponentType's assigned category
+        Signature get_category_signature(ComponentCategory category);
 
         // get registered component index id for templated type
         // THROWS runtime_error if component type is not yet registered
@@ -67,16 +71,15 @@ namespace pleep
 
         // loop through each ComponentType in entitySign, map to name, index that component array,
         // get the component data for entity, then push it into message
-        void serialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg);
+        void serialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
 
         // loop through each ComponentType in entitySign, map to name, index that component array,
-        // call deserialize_and_write_component with that component
-        void deserialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg);
+        // call deserialize_single_component with that component
+        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
 
         // index component array using name,
         // get that array to unpack next data in msg, and copy it into entity's data
-        // *** componentName MUST BE THE pointer from typeid!!! use get_component_name()!!!
-        void deserialize_and_write_component(Entity entity, const char* componentTypename, EventMessage& msg);
+        void deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg);
 
         // Return list of component typeid names
         // MUST be ordered by ComponentType
@@ -91,6 +94,8 @@ namespace pleep
         std::unordered_map<const char*, ComponentType> m_componentTypes{};
         // reverse map
         std::unordered_map<ComponentType, const char*> m_componentNames{};
+        // map components to categories
+        std::unordered_map<ComponentType, ComponentCategory> m_componentCategories{};
 
         // "type string" pointer to a component Array objeect pointer
         std::unordered_map<const char*, std::shared_ptr<I_ComponentArray>> m_componentArrays{};
@@ -102,7 +107,7 @@ namespace pleep
 
     
     template<typename T>
-    void ComponentRegistry::register_component_type()
+    void ComponentRegistry::register_component_type(ComponentCategory category)
     {
         const char* typeName = typeid(T).name();
 
@@ -122,11 +127,24 @@ namespace pleep
         m_componentTypes.insert({ typeName, m_componentTypeCount });
         m_componentNames.insert({ m_componentTypeCount, typeName });
 
+        // assign category
+        m_componentCategories.insert({ m_componentTypeCount, category });
+
         // create an array object for this type id/name
         m_componentArrays.insert({typeName, std::make_shared<ComponentArray<T>>()});
 
         // Increment count to next available index
         m_componentTypeCount++;
+    }
+
+    inline Signature ComponentRegistry::get_category_signature(ComponentCategory category)
+    {
+        Signature sign;
+        for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
+        {
+            if (m_componentCategories[i] == category) sign.set(i);
+        }
+        return sign;
     }
     
     template<typename T>
@@ -199,49 +217,45 @@ namespace pleep
         return this->_get_component_array<T>()->find_entity_for(component);
     }
     
-    inline void ComponentRegistry::serialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg)
+    inline void ComponentRegistry::serialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
     {
         // Signature size is defined as a ComponentType so no loss is possible
-        assert(entitySign.size() == MAX_COMPONENT_TYPES);
+        assert(sign.size() == MAX_COMPONENT_TYPES);
         // pack in reverse order, so receiver will read in ascending order
         // ComponentType cannot assign to -1, it will underflow to 255
-        for (ComponentType i = static_cast<ComponentType>(entitySign.size()) - 1; i < MAX_COMPONENT_TYPES; i--)
+        for (ComponentType i = static_cast<ComponentType>(sign.size()) - 1; i < MAX_COMPONENT_TYPES; i--)
         {
-            if (entitySign.test(i))
+            if (sign.test(i))
             {
                 // this index is valid
-                // get component typename from index (component Id)
-                const char* componentTypename = m_componentNames[i];
-                //PLEEPLOG_DEBUG("Serializing component: " + std::string(componentTypename) + " into msg(" + std::to_string(msg.size()) + ")");
-                m_componentArrays[componentTypename]->serialize_data_for(entity, msg);
+                //PLEEPLOG_DEBUG("Serializing component: " + std::to_string(i) + " into msg(" + std::to_string(msg.size()) + ")");
+                m_componentArrays[get_component_name(i)]->serialize_data_for(entity, msg);
             }
         }
     }
 
-    inline void ComponentRegistry::deserialize_entity_components(Entity entity, Signature entitySign, EventMessage& msg)
+    inline void ComponentRegistry::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
     {
         for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
         {
-            if (entitySign.test(i))
+            if (sign.test(i))
             {
                 // TODO: check if component exists locally? 
                 // If not we can implicitly add_component a default one (and then it will be updated)
-
-                const char* componentTypename = get_component_name(i);
 
                 // ***If you want to validate components as they are deserialized, do that HERE!
                 // stream>> them myself, interrogate their values, and then overwrite the ecs
 
                 // default:
                 //PLEEPLOG_DEBUG("Deserializing msg(" + std::to_string(msg.size()) + ") into " + std::string(componentTypename));
-                this->deserialize_and_write_component(entity, componentTypename, msg);
+                this->deserialize_single_component(entity, i, msg);
             }
         }
     }
 
-    inline void ComponentRegistry::deserialize_and_write_component(Entity entity, const char* componentTypename, EventMessage& msg)
+    inline void ComponentRegistry::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
     {
-        m_componentArrays[componentTypename]->deserialize_data_for(entity, msg);
+        m_componentArrays[get_component_name(type)]->deserialize_data_for(entity, msg);
     }
     
     template<typename T>

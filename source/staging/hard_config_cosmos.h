@@ -49,7 +49,7 @@ namespace pleep
         std::shared_ptr<Cosmos> newCosmos = std::make_shared<Cosmos>(eventBroker, localTimesliceId);
 
         newCosmos->register_component<TransformComponent>();
-        newCosmos->register_component<SpacialInputComponent>();
+        newCosmos->register_component<SpacialInputComponent>(ComponentCategory::upstream);
         newCosmos->register_component<RenderableComponent>();
         newCosmos->register_component<CameraComponent>();
         newCosmos->register_component<LightSourceComponent>();
