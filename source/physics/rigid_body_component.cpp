@@ -16,8 +16,8 @@ namespace pleep
     void RigidBodyComponent::collision_response(RigidBodyComponent* otherRigidBody, ColliderPacket& thisData, ColliderPacket& otherData, glm::vec3& collisionNormal, float& collisionDepth, glm::vec3& collisionPoint)
     {
         // TODO: Make this exception safe! colliders without physics components will throw!
-        PhysicsComponent& thisPhysics = thisData.owner->get_component<PhysicsComponent>(thisData.collidee);
-        PhysicsComponent& otherPhysics = otherData.owner->get_component<PhysicsComponent>(otherData.collidee);
+        PhysicsComponent& thisPhysics = thisData.owner.lock()->get_component<PhysicsComponent>(thisData.collidee);
+        PhysicsComponent& otherPhysics = otherData.owner.lock()->get_component<PhysicsComponent>(otherData.collidee);
 
         // wake physics since collision has occurred?
         //thisPhysics.isAsleep = false;

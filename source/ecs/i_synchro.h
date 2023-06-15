@@ -31,7 +31,7 @@ namespace pleep
     {
     public:
         // subclasses should "using I_Synchro::I_Synchro" or overload with constructor which calls here
-        I_Synchro(std::shared_ptr<Cosmos> owner)
+        I_Synchro(std::weak_ptr<Cosmos> owner)
             : m_ownerCosmos(owner)
         {}
         virtual ~I_Synchro() = default;
@@ -41,12 +41,17 @@ namespace pleep
 
         // Each subclass can suggest to registry what component signature it requires derived from known cosmos component set
         // returns empty bitset if desired components could not be found
-        virtual Signature derive_signature(std::shared_ptr<Cosmos> cosmos) = 0;
+        virtual Signature derive_signature() = 0;
 
+        // entities to fetch from owner cosmos and feed to dynamo
+        // set by SynchroRegistry
         std::set<Entity> m_entities;
-        
+
+    protected:
         // Access to ecs where m_entities are contained
-        std::shared_ptr<Cosmos> m_ownerCosmos;
+        // weak to avoid circular smart pointer with cosmos, 
+        // deleting context's pointer should delete us (after all dynamos safely are cleared)
+        std::weak_ptr<Cosmos> m_ownerCosmos;
     };
 }
 

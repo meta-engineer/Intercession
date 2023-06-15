@@ -22,6 +22,7 @@ namespace pleep
     struct MessageHeader
     {
         T_Msg id{};
+        uint16_t coherency = 0;
         uint32_t size = 0;
     };
 
@@ -33,9 +34,10 @@ namespace pleep
         
         Message() = default;
         // initialize with header id;
-        Message(T_Msg id)
+        Message(T_Msg id, uint16_t coherency = 0)
         {
             this->header.id = id;
+            this->header.coherency = coherency;
         }
 
         // (in bytes)
@@ -170,6 +172,13 @@ namespace pleep
         msg.header.size = static_cast<uint32_t>(msg.size());
 
         return msg;
+    }
+
+    // cyclical comparator
+    inline bool coherency_greater_or_equal(uint16_t a, uint16_t b)
+    {
+        // if exactly 127 apart, the actual greter number will be greater
+        return (a >= b && a-b <= 32768) || (a <= b && b-a > 32768);
     }
 }
 

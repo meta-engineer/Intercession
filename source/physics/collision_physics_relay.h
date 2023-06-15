@@ -36,7 +36,9 @@ namespace pleep
                 {
                     assert(otherPacket_it != thisPacket_it);
                     ColliderPacket& otherData = *otherPacket_it;
-                    assert(thisData.owner == otherData.owner);
+
+                    std::shared_ptr<Cosmos> cosmos = thisData.owner.expired() ? nullptr : thisData.owner.lock();
+                    assert(cosmos == otherData.owner.lock());
 
                     // check other collider type (for removing double-dispatch later)
                     if (otherData.collider->get_type() == ColliderType::none || !otherData.collider->isActive)
@@ -76,10 +78,10 @@ namespace pleep
                         switch(thisData.collider->responseType)
                         {
                             case CollisionResponseType::rigid:
-                                thisResponse = &(thisData.owner->get_component<RigidBodyComponent>(thisData.collidee));
+                                thisResponse = &(cosmos->get_component<RigidBodyComponent>(thisData.collidee));
                                 break;
                             case CollisionResponseType::spring:
-                                thisResponse = &(thisData.owner->get_component<SpringBodyComponent>(thisData.collidee));
+                                thisResponse = &(cosmos->get_component<SpringBodyComponent>(thisData.collidee));
                                 break;
                             default:
                                 // leave as nullptr
@@ -98,10 +100,10 @@ namespace pleep
                         switch(otherData.collider->responseType)
                         {
                             case CollisionResponseType::rigid:
-                                otherResponse = &(otherData.owner->get_component<RigidBodyComponent>(otherData.collidee));
+                                otherResponse = &(cosmos->get_component<RigidBodyComponent>(otherData.collidee));
                                 break;
                             case CollisionResponseType::spring:
-                                otherResponse = &(otherData.owner->get_component<SpringBodyComponent>(otherData.collidee));
+                                otherResponse = &(cosmos->get_component<SpringBodyComponent>(otherData.collidee));
                                 break;
                             default:
                                 // leave as nullptr
@@ -131,14 +133,14 @@ namespace pleep
                     {
                         try
                         {
-                            ScriptComponent& script = thisData.owner->get_component<ScriptComponent>(thisData.collider->scriptTarget);
+                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(thisData.collider->scriptTarget);
                             if (script.use_collision) script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
+                            PLEEPLOG_WARN("Collider script target entity (" + std::to_string(thisData.collider->scriptTarget) + ") failed (no ScriptComponent, or ScriptDrivetrain is null) for colliding entity (" + std::to_string(thisData.collidee) + "), clearing and skipping");
                             thisData.collider->scriptTarget = NULL_ENTITY;
                         }
                     }
@@ -150,14 +152,14 @@ namespace pleep
                             glm::vec3 invCollisionNormal = -collisionNormal;
                             glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
                             
-                            ScriptComponent& script = otherData.owner->get_component<ScriptComponent>(otherData.collider->scriptTarget);
+                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(otherData.collider->scriptTarget);
                             if (script.use_collision) script.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity failed (no ScriptComponent, or ScriptDrivetrain is null), clearing and skipping");
+                            PLEEPLOG_WARN("Collider script target entity (" + std::to_string(otherData.collider->scriptTarget) + ") failed (no ScriptComponent, or ScriptDrivetrain is null) for colliding entity (" + std::to_string(otherData.collidee) + "), clearing and skipping");
                             otherData.collider->scriptTarget = NULL_ENTITY;
                         }
                     }

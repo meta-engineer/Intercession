@@ -14,7 +14,7 @@ namespace pleep
     // synchro signature would allow (I.E. from the other side of a network)
     struct CosmosAccessPacket
     {
-        std::shared_ptr<Cosmos> owner = nullptr;
+        std::weak_ptr<Cosmos> owner;
     };
 }
 

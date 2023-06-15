@@ -74,7 +74,7 @@ namespace pleep
         // show ui window
         {
             static float f = 0.0f;
-            static int counter = 0;
+            static uint16_t nextTimesliceId = 0;
             static bool checkbox;
 
             // Create a window and append into it.
@@ -88,8 +88,11 @@ namespace pleep
             {
                 std::string entityCountString = " Total Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
                 ImGui::Text(entityCountString.c_str());
+
                 std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
                 ImGui::Text(hostedCountString.c_str());
+
+                ImGui::Text(("Update count: " + std::to_string(m_currentCosmos->get_coherency())).c_str());
             }
 
             // Edit bools storing our window open/close state
@@ -99,15 +102,25 @@ namespace pleep
             //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            // Buttons return true when clicked (most widgets return true when edited/activated)
-            /* 
-            if (ImGui::Button("Button"))
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-            */
-
             ImGui::Text("NetworkDynamo%sconnected", m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
+
+            // Buttons return true when clicked (most widgets return true when edited/activated)
+            if (ImGui::Button("Reconnect"))
+            {
+                // need to clear cosmos, 
+                m_currentCosmos = nullptr;
+                // rebuild base (until we can receive build config from server),
+                _build_cosmos();
+                // and call network to disconnect and reconnect
+                // TODO: build address/port from config
+                m_dynamoCluster.networker->restart_connection("127.0.0.1", 61336 + nextTimesliceId);
+            }
+            ImGui::SameLine();
+            ImGui::Text("to timeslice %d", nextTimesliceId);
+            ImGui::SameLine();
+            if (ImGui::Button("+")) nextTimesliceId++;
+            ImGui::SameLine();
+            if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();

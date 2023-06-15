@@ -155,6 +155,14 @@ namespace pleep
         bool set_focal_entity(Entity entity);
         // If entity no longer exists since last set/get, sets to NULL_ENITTY before return
         Entity get_focal_entity(); 
+
+        // increments coherency counter for state
+        // increment time should reflect the primary update cycle of the simulation
+        void increment_coherency();
+        uint16_t get_coherency();
+        // Jump discontinuously to a new coherency point
+        // make sure you know what you're doing with this!
+        void set_coherency(uint16_t gotoCoherency);
         
         // Ordered vector of all synchro typeid names
         std::vector<std::string> stringify_synchro_registry();
@@ -163,9 +171,6 @@ namespace pleep
         std::vector<std::string> stringify_component_registry();
 
     private:
-        // Focal Entity only set through events?
-        void _set_main_entity_handler(EventMessage setCameraEvent);
-
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
         std::unique_ptr<ComponentRegistry> m_componentRegistry;
         std::unique_ptr<EntityRegistry>    m_entityRegistry;
@@ -176,6 +181,12 @@ namespace pleep
 
         // Barycenter of the cosmos, stored centrally for dynamos to coordinate
         Entity m_focalEntity = NULL_ENTITY;
+
+        // rolling counter of Cosmos state updates
+        // incremented by the Context who owns us when dynamos are invoked
+        // Context decides at what point we have meaningfully changed to the next state
+        // (not necessarily the number of update() calls, because simulation/render updates are not in lockstep)
+        uint16_t m_stateCoherency = 0;
     };
 
 
@@ -188,7 +199,7 @@ namespace pleep
         Entity entity = m_entityRegistry->create_entity();
 
         // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
+        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity
         };
@@ -207,7 +218,7 @@ namespace pleep
         if (!isEntityValid) return false;
 
         // broadcast that new entity exists
-        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED);
+        EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity
         };
@@ -226,7 +237,7 @@ namespace pleep
         m_synchroRegistry->clear_entity(entity);
 
         // broadcast entity no longer exists
-        EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED);
+        EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED, m_stateCoherency);
         events::cosmos::ENTITY_REMOVED_params removedEntityParams {
             entity
         };
@@ -300,7 +311,7 @@ namespace pleep
         m_synchroRegistry->change_entity_signature(entity, sign);
 
         // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
         events::cosmos::ENTITY_MODIFIED_params modEntityParams {
             entity, sign
         };
@@ -319,7 +330,7 @@ namespace pleep
         m_synchroRegistry->change_entity_signature(entity, sign);
         
         // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
         events::cosmos::ENTITY_MODIFIED_params modEntityParams {
             entity, sign
         };
@@ -339,7 +350,7 @@ namespace pleep
         m_synchroRegistry->change_entity_signature(entity, sign);
         
         // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
         events::cosmos::ENTITY_MODIFIED_params modEntityParams {
             entity, sign
         };
@@ -358,7 +369,7 @@ namespace pleep
         m_synchroRegistry->change_entity_signature(entity, sign);
         
         // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED);
+        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
         events::cosmos::ENTITY_MODIFIED_params modEntityParams {
             entity, sign
         };
@@ -373,7 +384,7 @@ namespace pleep
     }
     
     template<typename T>
-    ComponentType Cosmos::get_component_type() 
+    ComponentType Cosmos::get_component_type()
     {
         return m_componentRegistry->get_component_type<T>();
     }
@@ -389,7 +400,7 @@ namespace pleep
         std::shared_ptr<T> newSynchro = m_synchroRegistry->register_synchro<T>(shared_from_this());
 
         // we'll expect T to be ISynchro
-        m_synchroRegistry->set_signature<T>(newSynchro->derive_signature(shared_from_this()));
+        m_synchroRegistry->set_signature<T>(newSynchro->derive_signature());
 
         return newSynchro;
     }

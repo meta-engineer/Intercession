@@ -42,13 +42,13 @@ namespace pleep
         // but is overridable (remember to call A_NetworkRelay::clear()!!!)
         virtual void clear()
         {
-            m_workingCosmos = nullptr;
+            m_workingCosmos.reset();
             m_networkMessages.clear();
         }
 
     protected:
         // only store one loose (unowned) cosmos reference
-        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
+        std::weak_ptr<Cosmos> m_workingCosmos;
         
         // collect packets during message submitting
         std::vector<EventMessage> m_networkMessages;

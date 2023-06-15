@@ -20,9 +20,9 @@ namespace pleep
         // THROWS runtime error if m_ownerCosmos is null
         void update() override;
 
-        Signature derive_signature(std::shared_ptr<Cosmos> cosmos) override;
+        Signature derive_signature() override;
 
-        // synchro needs a RenderDynamo to operate on
+        // synchro needs a PhysicsDynamo to operate on
         void attach_dynamo(std::shared_ptr<PhysicsDynamo> contextDynamo);
         
     private:

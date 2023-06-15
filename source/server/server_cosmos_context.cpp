@@ -21,10 +21,24 @@ namespace pleep
         {
             _build_cosmos();
         }
+        else
+        {
+            // TODO: past servers need to receive config from their parent, like clients
+            m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
 
-        // Send test entity to clients
-        // flag entity as updated once here:
-        //m_eventBroker->send_event(...);
+            // set coherency very far behind 
+            // (65535 - 40000)/90hz = 283 seconds
+            // and wait for coherency sync
+            //m_currentCosmos->set_coherency(40000);
+            
+            // TEMP: delay Cosmos' coherency into the past according to our timeslice id
+            // assume all servers will start at once
+            m_currentCosmos->set_coherency(0 - 
+                static_cast<uint16_t>(localTimelineApi.get_timeslice_delay() * 
+                                      localTimelineApi.get_simulation_hz() * 
+                                      localTimelineApi.get_timeslice_id())
+            );
+        }
     }
     
     ServerCosmosContext::~ServerCosmosContext() 

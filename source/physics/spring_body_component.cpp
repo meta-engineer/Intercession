@@ -33,8 +33,8 @@ namespace pleep
         // apply friction
         
         // TODO: Make this exception safe! colliders don't necessarily have physics components
-        PhysicsComponent& thisPhysics = thisData.owner->get_component<PhysicsComponent>(thisData.collidee);
-        PhysicsComponent& otherPhysics = otherData.owner->get_component<PhysicsComponent>(otherData.collidee);
+        PhysicsComponent& thisPhysics = thisData.owner.lock()->get_component<PhysicsComponent>(thisData.collidee);
+        PhysicsComponent& otherPhysics = otherData.owner.lock()->get_component<PhysicsComponent>(otherData.collidee);
         
         // wake physics since collision has occurred? maybe this should be in top level dispatch
         //thisPhysics.isAsleep = false;

@@ -153,8 +153,8 @@ namespace pleep
     {
         CausalChainlink ccl = derive_causal_chain_link(entity);
         UNREFERENCED_PARAMETER(ccl);
-        entity = strip_causal_chain_link(entity);
-        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(entity);
+        Entity temporalEntity = strip_causal_chain_link(entity);
+        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(temporalEntity);
         if (temporalEntityCountsIt == m_hostedTemporalEntityCounts.end())
         {
             PLEEPLOG_ERROR("Tried to increment the count of a hosted entity which doesn't exist");
@@ -164,14 +164,14 @@ namespace pleep
         assert(temporalEntityCountsIt->second != 0);
 
         temporalEntityCountsIt->second += 1;
-        PLEEPLOG_DEBUG("TemporalEntity " + std::to_string(entity) + " host count has incremented to " + std::to_string(temporalEntityCountsIt->second) + " from link " + std::to_string(ccl));
+        PLEEPLOG_DEBUG("TemporalEntity " + std::to_string(temporalEntity) + " host count has incremented to " + std::to_string(temporalEntityCountsIt->second) + " from creation of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
     }
     inline void EntityRegistry::decrement_hosted_temporal_entity_count(Entity entity)
     {
         CausalChainlink ccl = derive_causal_chain_link(entity);
         UNREFERENCED_PARAMETER(ccl);
-        entity = strip_causal_chain_link(entity);
-        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(entity);
+        Entity temporalEntity = strip_causal_chain_link(entity);
+        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(temporalEntity);
         if (temporalEntityCountsIt == m_hostedTemporalEntityCounts.end())
         {
             PLEEPLOG_ERROR("Tried to decrement the count of a hosted entity which doesn't exist");
@@ -180,13 +180,13 @@ namespace pleep
         // count of 0 means decrementer failed to clear entry when it reached 0
         assert(temporalEntityCountsIt->second != 0);
         temporalEntityCountsIt->second -= 1;
-        PLEEPLOG_DEBUG("Temporal Entity " + std::to_string(entity) + " host count has decremented to " + std::to_string(temporalEntityCountsIt->second) + " from link " + std::to_string(ccl));
+        PLEEPLOG_DEBUG("TemporalEntity " + std::to_string(temporalEntity) + " host count has decremented to " + std::to_string(temporalEntityCountsIt->second) + " from removal of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
 
         // ensure all counts of 0 become unlisted and re-added to pool
         if (temporalEntityCountsIt->second == 0) 
         {
             m_hostedTemporalEntityCounts.erase(temporalEntityCountsIt);
-            m_availableTemporalEntityIds.push(entity);
+            m_availableTemporalEntityIds.push(temporalEntity);
         }
     }
     inline size_t EntityRegistry::get_hosted_temporal_entity_count(Entity entity)

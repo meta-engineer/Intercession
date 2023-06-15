@@ -15,7 +15,7 @@ namespace pleep
     class BipedScripts : public I_ScriptDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
             // should Biped "control" be done here?
             // (we fetch input component, physics/transform, and a standalon biped component and operate on them)
@@ -29,12 +29,15 @@ namespace pleep
             // if script components could store multiple I_ScriptDrivetrains then we could run as many as needed
             // and if commonly used scripts could be shared through smart pointers, it could be more memory conservative and use one object for all (like relays)
 
+            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
+            if (!cosmos) return;    // how was owner null, but ScriptPacket has a component REFERENCE?
+
             // fetch Physics, Biped, and SpacialInput
             try
             {
-                PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
-                BipedComponent& biped = owner->get_component<BipedComponent>(entity);
-                SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
+                PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
+                BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
+                SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
                 // generate aim "heading" from aimOrientation and support vector
                 // movement axes while airborn may depend on camera gimbal axis?
@@ -80,6 +83,7 @@ namespace pleep
                 // jumping
                 if (biped.jumpCooldownRemaining > 0) biped.jumpCooldownRemaining -= deltaTime;
                 if (biped.jumpCooldownRemaining <= 0
+                    && biped.isGrounded
                     && input.actions.test(SpacialActions::moveVertical)
                     && input.actionVals.at(SpacialActions::moveVertical) > 0)
                 {
@@ -87,6 +91,9 @@ namespace pleep
                     physics.acceleration += -1.0f * biped.supportAxis * biped.jumpForce / physics.mass;
                     biped.jumpCooldownRemaining = biped.jumpCooldownTime;
                 }
+                
+                // clear gounded state until next collision
+                biped.isGrounded = false;
             }
             catch(const std::exception& err)
             {
@@ -111,7 +118,7 @@ namespace pleep
             try
             {
                 // TODO: store collision meta-data in biped component
-                BipedComponent& biped = callerData.owner->get_component<BipedComponent>(callerData.collidee);
+                BipedComponent& biped = callerData.owner.lock()->get_component<BipedComponent>(callerData.collidee);
                 biped.isGrounded = true;
                 biped.groundNormal = collisionNormal;
 

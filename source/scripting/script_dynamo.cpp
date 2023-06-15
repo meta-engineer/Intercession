@@ -33,7 +33,7 @@ namespace pleep
             {
                 data.script.drivetrain->on_fixed_update(deltaTime, data.script, data.entity, data.owner);
             }
-            //data.script.drivetrain->on_frame_update(deltaTime, data.entity, data.owner);
+            //data.script.drivetrain->on_frame_update(deltaTime, data.script, data.entity, data.owner);
         }
     }
     

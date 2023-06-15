@@ -53,7 +53,7 @@ namespace pleep
         // Server instance to communicate with clients (we create from m_timelineApi config)
         ServerNetworkApi m_networkApi;
 
-        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
+        std::weak_ptr<Cosmos> m_workingCosmos;
     };
 }
 

@@ -12,13 +12,20 @@
 
 namespace pleep
 {
+    RenderSynchro::~RenderSynchro()
+    {
+        // clear attached dynamo & handlers
+        this->attach_dynamo(nullptr);
+    }
+
     void RenderSynchro::update()
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Render Synchro started update without owner Cosmos");
+            throw std::runtime_error("RenderSynchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
@@ -33,21 +40,21 @@ namespace pleep
         if (m_mainCamera != NULL_ENTITY)
         {
             m_attachedRenderDynamo->submit(CameraPacket {
-                m_ownerCosmos->get_component<TransformComponent>(m_mainCamera),
-                m_ownerCosmos->get_component<CameraComponent>(m_mainCamera)
+                cosmos->get_component<TransformComponent>(m_mainCamera),
+                cosmos->get_component<CameraComponent>(m_mainCamera)
             });
         }
         else
         {
-            PLEEPLOG_WARN("Update called while no main camera entity was set");
+            //PLEEPLOG_WARN("Update called while no main camera entity was set");
         }
 
         // feed components of m_entities to attached RenderDynamo
         // I should implicitly know my signature and therefore what components i can fetch
         for (Entity const& entity : m_entities)
         {
-            TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            RenderableComponent& renderable = m_ownerCosmos->get_component<RenderableComponent>(entity);
+            TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+            RenderableComponent& renderable = cosmos->get_component<RenderableComponent>(entity);
             
             // catch null supermesh and don't even bother dynamo with it
             if (renderable.meshData == nullptr) continue;
@@ -59,8 +66,15 @@ namespace pleep
         // Other components (Context) may draw further and then Context will flush at frame end
     }
     
-    Signature RenderSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature RenderSynchro::derive_signature() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        if (cosmos == nullptr)
+        {
+            PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
+            throw std::runtime_error("RenderSynchro started signature derivation without owner Cosmos");
+        }
+
         Signature sign;
 
         try
@@ -98,7 +112,7 @@ namespace pleep
         {
             // remember this is broadcast so if there are more than 1 synchro they will all be set
             m_attachedRenderDynamo->get_shared_broker()->add_listener(METHOD_LISTENER(events::rendering::SET_MAIN_CAMERA, RenderSynchro::_set_main_camera_handler));
-            
+
             // update main camera entity
             m_attachedRenderDynamo->get_shared_broker()->add_listener(METHOD_LISTENER(events::window::RESIZE, RenderSynchro::_resize_handler));
         }
@@ -108,13 +122,22 @@ namespace pleep
     {
         events::rendering::SET_MAIN_CAMERA_params setCameraParams;
         setCameraEvent >> setCameraParams;
-        
+
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::rendering::SET_MAIN_CAMERA) + " (events::rendering::SET_MAIN_CAMERA) { entity: " + std::to_string(setCameraParams.cameraEntity) + " }");
+
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
+
+        // No owner means we can't verify that this will be a valid camera at update time
+        if (cosmos == nullptr || m_ownerCosmos.expired())
+        {
+            PLEEPLOG_ERROR("Cannot validate camera entity without an owner Cosmos");
+            throw std::runtime_error("RenderSynchro handled SET_MAIN_CAMERA without owner Cosmos");
+        }
 
         // ensure entity has camera component AT LEAST at time of setting
         try
         {
-            m_ownerCosmos->get_component<CameraComponent>(setCameraParams.cameraEntity);
+            cosmos->get_component<CameraComponent>(setCameraParams.cameraEntity);
         }
         catch(const std::exception& e)
         {
@@ -122,7 +145,7 @@ namespace pleep
             PLEEPLOG_WARN("Tried to set main camera as entity " + std::to_string(setCameraParams.cameraEntity) + " which has no CameraComponent, ignoring...");
             return;
         }
-        
+
         // camera is good
         m_mainCamera = setCameraParams.cameraEntity;
 
@@ -137,7 +160,7 @@ namespace pleep
     {
         events::window::RESIZE_params resizeParams;
         resizeEvent >> resizeParams;
-        
+
         PLEEPLOG_TRACE("Handling event " + std::to_string(events::window::RESIZE) + " (events::window::RESIZE) { width: " + std::to_string(resizeParams.width) + ", height: " + std::to_string(resizeParams.height) + " }");
 
         // we'll have the camera always match to window resolution
@@ -148,8 +171,17 @@ namespace pleep
     {
         PLEEPLOG_TRACE("Overwriting registered camera with dimensions (" + std::to_string(width) + ", " + std::to_string(height) + ")");
 
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
+
+        // No owner means we can't verify that this will be a valid camera at update time
+        if (cosmos == nullptr || m_ownerCosmos.expired())
+        {
+            PLEEPLOG_ERROR("Cannot write to camera entity without an owner Cosmos");
+            throw std::runtime_error("RenderSynchro handled RESIZE_MAIN_CAMERA without owner Cosmos");
+        }
+
         // camera components must be registered and this entity must have a camera component
-        CameraComponent& mainCamInfo = m_ownerCosmos->get_component<CameraComponent>(m_mainCamera);
+        CameraComponent& mainCamInfo = cosmos->get_component<CameraComponent>(m_mainCamera);
         mainCamInfo.viewWidth = width;
         mainCamInfo.viewHeight = height;
 

@@ -112,7 +112,9 @@ namespace net
         {
             if (this->is_connected())
             {
-                asio::post(m_asioContext, [this]() { m_socket.close(); });
+                // assuming there is only ever one job in the context,
+                // this should get that job to proc with error_code and end the thread
+                m_socket.close();
             }
         }
 

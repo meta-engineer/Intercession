@@ -19,17 +19,32 @@ namespace pleep
         PLEEPLOG_INFO("Constructing " + std::to_string(cfg.numTimeslices) + " timeslices");
         assert(m_contexts.empty());
 
+        // maintain a pair of future & past timestream maps
+        std::shared_ptr<EntityTimestreamMap> pastTimestreams = nullptr;
+        std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr;
+
         // construct timeslices in reverse order so that origin/present (0) is created LAST
         //     remember TimesliceId is uint32, use underflow to stop loop
         for (TimesliceId i = cfg.numTimeslices - 1; i < cfg.numTimeslices; i--)
         {
+            // swap future with past, construct new future
+            pastTimestreams = futureTimestreams;
+            if (i == 0)
+            {
+                // timeslice 0 will have no future
+                futureTimestreams = nullptr;
+            }
+            else
+            {
+                futureTimestreams = std::make_shared<EntityTimestreamMap>();
+            }
+
             PLEEPLOG_TRACE("Start constructing server context TimesliceId #" + std::to_string(i));
 
             // Inside each context the TimelineConfig information will only be accessible 
             //   through the TimelineApi (to branch based on specific timesliceId)
             std::unique_ptr<I_CosmosContext> ctx = std::make_unique<ServerCosmosContext>(
-                // TODO: construct timestreams
-                TimelineApi(cfg, i, sharedMultiplex, nullptr, nullptr)
+                TimelineApi(cfg, i, sharedMultiplex, pastTimestreams, futureTimestreams)
             );
             
             PLEEPLOG_TRACE("Done constructing server context TimesliceId #" + std::to_string(i));

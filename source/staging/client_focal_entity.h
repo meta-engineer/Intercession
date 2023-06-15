@@ -69,6 +69,7 @@ namespace pleep
         ScriptComponent pc_scripts;
         pc_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
         pc_scripts.use_fixed_update = true;
+        pc_scripts.use_collision = true;
         cosmos->add_component(pc, pc_scripts);
 
         // ***************************************************************************

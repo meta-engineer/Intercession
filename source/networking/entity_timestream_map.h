@@ -4,6 +4,7 @@
 //#include "intercession_pch.h"
 //#include <deque>
 #include <unordered_map>
+#include <mutex>
 
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
@@ -48,41 +49,75 @@ namespace pleep
         // do we need use of deque iterators? or do we need threadsafe?
         // we could provide specific extra threadsafe operations like searches to maintain threadsafety
         // Hard-code message type to use EventId (to avoid template cascading)
-        using Timestream = TsQueue<TimestampedMessage<EventId>>;
+        using Timestream = TsQueue<Message<EventId>>;
 
         // Wrap message Queue methods to maintain timestamp ordering.
 
-        // TODO: Can we know which queues have messages available without iterating through the whole map?
-        // We need a way to get every message for any entity which is ready (dependant on system clock?
-        // or dependant on semi-regular intercessionAppInfo updates with system clock dead-reckoning)
-        // and then pass each event to eventBroker (maybe use network dynamo's?)
-        // is there any better method than iterating throught the whole map and checkign timestamps?
-
         // If no stream exists emplace it.
-        void push_to_timestream(Entity entity, TimestampedMessage<EventId> msg)
+        // No strict ordering of messages enforced, msg coherency will be use for pop availability
+        // coherency is circular so there is no catch-all default value
+        void push_to_timestream(Entity entity, Message<EventId> msg)
         {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+
+            // TODO: detect when timstreams has gone way beyond expected capacity and stop pushing
+            //PLEEPLOG_DEBUG("Pushing event: " + std::to_string(msg.header.id) + " for entity: " + std::to_string(entity) + " at coherency: " + std::to_string(msg.header.coherency));
+
             // operator[] emplaces with default constructor for TsQueue
             m_timestreams[entity].push_back(msg);
         }
 
-        // check if timestream exists for an entity and if it is non-empty
-        bool is_data_available(Entity entity)
+        // check if timestream exists for an entity, if it is non-empty,
+        // and if the front value has a coherency <= currentCoherency
+        bool is_data_available(Entity entity, uint16_t currentCoherency)
         {
-            return m_timestreams.find(entity) != m_timestreams.end()
-                && !m_timestreams.at(entity).empty();
-                //&& m_timestreams.at(entity).front().timeVal >= currentTime - timesliceDelay;
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+
+            auto timestreams_it = m_timestreams.find(entity);
+            return timestreams_it != m_timestreams.end()
+                && !timestreams_it->second.empty()
+                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.front().header.coherency);
+        }
+
+        // Return all Entities which exist in the timestream
+        std::vector<Entity> get_entities_with_streams()
+        {
+            std::vector<Entity> entities;
+
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+
+            for (auto const& timestream_it : m_timestreams)
+            {
+                entities.push_back(timestream_it.first);
+            }
+
+            return entities;
         }
 
         // we should only be able to pop once the correct time has been reached
-        TimestampedMessage<EventId> pop_from_timestream(Entity entity)
+        // returns Message with EventId 0 if no data is available
+        Message<EventId> pop_from_timestream(Entity entity, uint16_t currentCoherency)
         {
-            return m_timestreams.at(entity).pop_back().first;
+            if (!is_data_available(entity, currentCoherency))
+            {
+                //PLEEPLOG_ERROR("Tried to pop from timestream which has no data available for this entity/coherency, returning null Message");
+                return Message<EventId>(0);
+            }
+
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            
+            //PLEEPLOG_DEBUG("Popping for entity: " + std::to_string(entity) + " on coherency: " + std::to_string(currentCoherency) + ". There are " + std::to_string(m_timestreams.at(entity).count()) + " messages.");
+
+            return m_timestreams.at(entity).pop_front().first;
+
             // TODO: either check for empty timestream or check for when we pop a ENTITY_REMOVED
             //   message and remove index (entity) from timestream map
         }
 
     private:
         std::unordered_map<Entity, Timestream> m_timestreams;
+
+        std::mutex m_mapMux;
     };
 }
 

@@ -30,19 +30,6 @@ namespace net
         }
     };
 }
-
-    // Wraps Message with a chrono time_point
-    template <typename T_Msg>
-    struct TimestampedMessage
-    {
-        std::chrono::system_clock::time_point timeVal;// = std::chrono::system_clock::now();
-        Message<T_Msg> msg;
-        
-        std::string info() const
-        {
-            return "(" + std::to_string(timeVal.count()) + ") " + msg.info();
-        }
-    };
 }
 
 #endif // NET_MESSAGE_H

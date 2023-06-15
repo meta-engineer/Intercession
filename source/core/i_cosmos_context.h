@@ -75,7 +75,7 @@ namespace pleep
         // runtime calibrations
         // Fixed timestep for input processing. Default 60hz?
         std::chrono::duration<double> m_fixedTimeStep = 
-            std::chrono::duration<double>(1.0/90.0);
+            std::chrono::duration<double>(1.0/72.0);
         // mechanism for tracking how many fixed timesteps to process
         std::chrono::duration<double> m_timeRemaining = 
             std::chrono::duration<double>(0.0);

@@ -20,8 +20,8 @@ namespace pleep
         I_ColliderComponent* collider;
 
         // provide access to ecs for different collision responses
-        Entity collidee;
-        std::shared_ptr<Cosmos> owner;
+        Entity collidee = NULL_ENTITY;
+        std::weak_ptr<Cosmos> owner;
     };
 }
 

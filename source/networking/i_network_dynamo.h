@@ -41,10 +41,20 @@ namespace pleep
             return NULL_TIMESLICEID;
         }
 
-        // for servers number of active clients, for clients either 0 or 1.
+        // for servers: number of active clients
+        // for clients: either 1 or 0 if connected to a server or not
         virtual size_t get_num_connections()
         {
             return 0;
+        }
+
+        // for servers: close all connections and reopen with address/port
+        // for clients: close connection and try to reconnect to address/port
+        virtual void restart_connection(const std::string& address, uint16_t port)
+        {
+            UNREFERENCED_PARAMETER(address);
+            UNREFERENCED_PARAMETER(port);
+            return;
         }
     };
 }

@@ -18,7 +18,7 @@ namespace pleep
 
     Cosmos::~Cosmos() 
     {
-        // registry smart pointers cleared 
+        // registry smart pointers cleared
     }
     
     void Cosmos::update() 
@@ -85,6 +85,19 @@ namespace pleep
         }
 
         return m_focalEntity;
+    }
+    
+    void Cosmos::increment_coherency()
+    {
+        m_stateCoherency++;
+    }
+    uint16_t Cosmos::get_coherency()
+    {
+        return m_stateCoherency;
+    }
+    void Cosmos::set_coherency(uint16_t gotoCoherency)
+    {
+        m_stateCoherency = gotoCoherency;
     }
 
     

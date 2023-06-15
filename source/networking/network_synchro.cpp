@@ -7,11 +7,12 @@ namespace pleep
 {
     void NetworkSynchro::update() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Network Synchro started update without owner Cosmos");
+            throw std::runtime_error("NetworkSynchro started update without owner Cosmos");
         }
         
         // no dynamo is a mistake, not necessarily an error
@@ -28,9 +29,8 @@ namespace pleep
         m_attachedNetworkDynamo->submit(CosmosAccessPacket{ m_ownerCosmos });
     }
     
-    Signature NetworkSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature NetworkSynchro::derive_signature() 
     {
-        UNREFERENCED_PARAMETER(cosmos);
         // blank sign should mean NO matched entities
         return Signature();
     }

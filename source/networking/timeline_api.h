@@ -49,6 +49,7 @@ namespace pleep
 
             // store whole cfg, or just copy individual members?
             m_delayToNextTimeslice = cfg.timesliceDelay;
+            m_simulationHz = cfg.simulationHz;
 
             // offset port in series by unique timeslice id
             m_port = cfg.presentPort + m_timesliceId;
@@ -69,6 +70,16 @@ namespace pleep
         uint16_t get_port()
         {
             return m_port;
+        }
+
+        int get_timeslice_delay()
+        {
+            return m_delayToNextTimeslice;
+        }
+
+        double get_simulation_hz()
+        {
+            return m_simulationHz;
         }
 
         // ***** Accessors for multiplex *****
@@ -120,7 +131,8 @@ namespace pleep
         }
 
         // because event type is ambiguous, caller must specify entity regardless
-        void push_past_timestream(Entity entity, TimestampedMessage<EventId>& data)
+        // data should have coherency set, but is not strictly enforced
+        void push_past_timestream(Entity entity, Message<EventId>& data)
         {
             if (!m_pastTimestreams)
             {
@@ -130,23 +142,39 @@ namespace pleep
             m_pastTimestreams->push_to_timestream(entity, data);
         }
 
+        // give potenial Entities to pop from
+        std::vector<Entity> get_entities_with_future_streams()
+        {
+            if (!m_futureTimestreams)
+            {
+                PLEEPLOG_WARN("This timeslice has no future timestream at all!");
+                return std::vector<Entity>{};
+            }
+
+            return m_futureTimestreams->get_entities_with_streams();
+        }
+
         // Restrict access to future timestreams to only be receivable
-        // Has same exception behaviour of deque on popping empty deque
-        EventMessage pop_future_timestream(Entity entity)
+        // returns Message with EventId 0 if no data is available
+        EventMessage pop_future_timestream(Entity entity, uint16_t coherency)
         {
             if (!m_futureTimestreams)
             {
                 PLEEPLOG_WARN("This timeslice has no future timestream to pop from");
             }
-            return m_futureTimestreams->pop_from_timestream(entity).msg;
+            return m_futureTimestreams->pop_from_timestream(entity, coherency);
         }
 
     private:
         TimesliceId m_timesliceId;   // Store for Entity composition
         int m_delayToNextTimeslice;  // SECONDS
+        double m_simulationHz;
         
+        // Direct message multiplex shared with all other timeslices
         std::shared_ptr<Multiplex> m_multiplex;
 
+        // timestream queues shared with timeslices ahead and behind in the timeline
+        // future-most timeslice will have no future, past-most timelisce will have no past
         std::shared_ptr<EntityTimestreamMap> m_futureTimestreams;
         std::shared_ptr<EntityTimestreamMap> m_pastTimestreams;
 

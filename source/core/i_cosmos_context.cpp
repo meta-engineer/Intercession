@@ -14,6 +14,8 @@ namespace pleep
     
     I_CosmosContext::~I_CosmosContext()
     {
+        PLEEPLOG_WARN("Deleting event broker!");
+        // Careful, dynamos will be deleted after this, so if they try to reference event broker, they will segfault. This should be put in a shared pointer and declared after dynamos
         delete m_eventBroker;
     }
     
@@ -49,6 +51,7 @@ namespace pleep
                     stepsTaken++;
 
                     this->_on_fixed(m_fixedTimeStep.count());
+                    if (m_currentCosmos) m_currentCosmos->increment_coherency();
                 }
 
                 // ***** Run "frame time" timestep *****

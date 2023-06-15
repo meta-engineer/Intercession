@@ -14,8 +14,8 @@ namespace pleep
         ScriptComponent& script;
 
         // Provide Cosmos-wide access
-        Entity entity;
-        std::shared_ptr<Cosmos> owner;
+        Entity entity = NULL_ENTITY;
+        std::weak_ptr<Cosmos> owner;
     };
 }
 

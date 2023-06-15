@@ -10,11 +10,12 @@ namespace pleep
 {
     void BoxColliderSynchro::update() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Box Collider Synchro started update without owner Cosmos");
+            throw std::runtime_error("BoxColliderSynchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
@@ -23,11 +24,11 @@ namespace pleep
             //PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
             return;
         }
-        
+
         for (Entity const& entity : m_entities)
         {
-            TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            BoxColliderComponent& box = m_ownerCosmos->get_component<BoxColliderComponent>(entity);
+            TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+            BoxColliderComponent& box = cosmos->get_component<BoxColliderComponent>(entity);
             
             m_attachedPhysicsDynamo->submit(ColliderPacket{ transform, &box, entity, m_ownerCosmos });
         }
@@ -35,8 +36,15 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature BoxColliderSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature BoxColliderSynchro::derive_signature() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        if (cosmos == nullptr)
+        {
+            PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
+            throw std::runtime_error("BoxColliderSynchro started signature derivation without owner Cosmos");
+        }
+
         Signature sign;
 
         try

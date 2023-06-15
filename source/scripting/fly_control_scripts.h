@@ -17,17 +17,19 @@ namespace pleep
     class FlyControlScripts : public I_ScriptDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
             UNREFERENCED_PARAMETER(deltaTime);
-            UNREFERENCED_PARAMETER(script);
+
+            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
+            if (!cosmos) return;    // how was owner null, but ScriptPacket has a component REFERENCE?
 
             // fetch my Transform and SpacialInput components
             try
             {
-                TransformComponent& transform = owner->get_component<TransformComponent>(entity);
-                //PhysicsComponent& physics = owner->get_component<PhysicsComponent>(entity);
-                SpacialInputComponent& input = owner->get_component<SpacialInputComponent>(entity);
+                TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+                //PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
+                SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
                 // generate direction vector from euler angles
                 glm::vec3 direction = transform.get_heading();

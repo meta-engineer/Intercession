@@ -158,6 +158,14 @@ namespace pleep
                     // For passing the single associated entity with the client
                     Entity entity;
                 };
+
+            // Server reports the current coherency at time of sending
+            const EventId COHERENCY_SYNC = __LINE__;
+                struct COHERENCY_SYNC_params
+                {
+                    TimesliceId senderId;
+                    uint16_t coherency;
+                };
         }
     }
 }

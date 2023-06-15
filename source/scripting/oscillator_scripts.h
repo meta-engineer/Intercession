@@ -14,13 +14,16 @@ namespace pleep
     class OscillatorScripts : public I_ScriptDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr) override
+        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
+            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
+            if (!cosmos) return;    // how was owner null, but ScriptPacket has a component REFERENCE?
+
             // fetch Oscilator and Transform
             try
             {
-                TransformComponent& transform = owner->get_component<TransformComponent>(entity);
-                OscillatorComponent& oscillator = owner->get_component<OscillatorComponent>(entity);
+                TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+                OscillatorComponent& oscillator = cosmos->get_component<OscillatorComponent>(entity);
 
                 // This is not a physical integration, so if this entity has collision it might get funky
 

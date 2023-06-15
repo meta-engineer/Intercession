@@ -8,11 +8,12 @@ namespace pleep
 {
     void ScriptSynchro::update() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Script Synchro started update without owner Cosmos");
+            throw std::runtime_error("ScriptSynchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
@@ -21,10 +22,10 @@ namespace pleep
             PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
             return;
         }
-        
+
         for (Entity const& entity : m_entities)
         {
-            ScriptComponent& script = m_ownerCosmos->get_component<ScriptComponent>(entity);
+            ScriptComponent& script = cosmos->get_component<ScriptComponent>(entity);
 
             m_attachedScriptDynamo->submit(ScriptPacket{ script, entity, m_ownerCosmos });
         }
@@ -32,8 +33,15 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature ScriptSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature ScriptSynchro::derive_signature() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        if (cosmos == nullptr)
+        {
+            PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
+            throw std::runtime_error("ScriptSynchro started signature derivation without owner Cosmos");
+        }
+
         Signature sign;
 
         try

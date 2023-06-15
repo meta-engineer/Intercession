@@ -31,6 +31,8 @@ namespace pleep
 
         size_t get_num_connections() override;
 
+        void restart_connection(const std::string& address, uint16_t port) override;
+
     private:
         // event handlers
 
@@ -40,7 +42,7 @@ namespace pleep
         ClientNetworkApi m_networkApi;
 
         // TODO: Move this to be held in a specific relay
-        std::shared_ptr<Cosmos> m_workingCosmos = nullptr;
+        std::weak_ptr<Cosmos> m_workingCosmos;
     };
 }
 

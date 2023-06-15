@@ -35,16 +35,27 @@ namespace pleep
 
         if (!m_networkApi.is_ready()) return;
 
+        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.expired() ? nullptr : m_workingCosmos.lock();
+
+        if (!cosmos)
+        {
+            //PLEEPLOG_WARN("Relays cannot do any meaningful work with a null Cosmos");
+            // don't return so that we can actively clear out incoming messages
+        }
+
         // before receiving any entity updates, send our focal entity state
-        EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
-        Entity focalEntity = m_workingCosmos->get_focal_entity();
-        events::cosmos::ENTITY_UPDATE_params focalInfo = {
-            focalEntity, 
-            m_workingCosmos->get_entity_signature(focalEntity) & m_workingCosmos->get_category_signature(ComponentCategory::upstream)
-        };
-        m_workingCosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
-        focalUpdate << focalInfo;
-        m_networkApi.send_message(focalUpdate);
+        if (cosmos)
+        {
+            EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
+            Entity focalEntity = cosmos->get_focal_entity();
+            events::cosmos::ENTITY_UPDATE_params focalInfo = {
+                focalEntity, 
+                cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream)
+            };
+            cosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
+            focalUpdate << focalInfo;
+            m_networkApi.send_message(focalUpdate);
+        }
 
         // Handling incoming server messages from network
         //inline _process_network_messages()
@@ -53,6 +64,8 @@ namespace pleep
         while ((messageCount++) < maxMessages && m_networkApi.is_message_available())
         {
             Message<EventId> msg = m_networkApi.pop_message();
+            if (!cosmos) continue;
+            
             switch (msg.header.id)
             {
             case events::network::APP_INFO:
@@ -91,7 +104,7 @@ namespace pleep
                 // confirm entity signatures match?
 
                 // read update into Cosmos
-                m_workingCosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
+                cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
             }
             break;
             case events::cosmos::ENTITY_CREATED:
@@ -103,11 +116,11 @@ namespace pleep
                 msg >> createInfo;
                 PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
-                if (m_workingCosmos->register_entity(createInfo.entity))
+                if (cosmos->register_entity(createInfo.entity))
                 {
                     for (ComponentType c = 0; c < createInfo.sign.size(); c++)
                     {
-                        if (createInfo.sign.test(c)) m_workingCosmos->add_component(createInfo.entity, c);
+                        if (createInfo.sign.test(c)) cosmos->add_component(createInfo.entity, c);
                     }
                 }
             }
@@ -122,18 +135,17 @@ namespace pleep
                 PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
 
                 // ensure entity exists
-                if (m_workingCosmos->entity_exists(modInfo.entity))
+                if (cosmos->entity_exists(modInfo.entity))
                 {
-                    Signature entitySign = m_workingCosmos->get_entity_signature(modInfo.entity);
+                    Signature entitySign = cosmos->get_entity_signature(modInfo.entity);
 
                     for (ComponentType c = 0; c < modInfo.sign.size(); c++)
                     {
-                        if (modInfo.sign.test(c) && !entitySign.test(c)) m_workingCosmos->add_component(modInfo.entity, c);
+                        if (modInfo.sign.test(c) && !entitySign.test(c)) cosmos->add_component(modInfo.entity, c);
 
-                        if (!modInfo.sign.test(c) && entitySign.test(c)) m_workingCosmos->remove_component(modInfo.entity, c);
+                        if (!modInfo.sign.test(c) && entitySign.test(c)) cosmos->remove_component(modInfo.entity, c);
                     }
                 }
-
             }
             break;
             case events::network::INTERCESSION_UPDATE:
@@ -150,13 +162,13 @@ namespace pleep
 
                 PLEEPLOG_DEBUG("My assigned entity is " + std::to_string(clientInfo.entity));
                 // any need to have an event? Does anyone other than the cosmos need to know?
-                m_workingCosmos->set_focal_entity(clientInfo.entity);
+                cosmos->set_focal_entity(clientInfo.entity);
                 
                 // create client side entities
                 // only entities which the server doesn't need for simulation
                 // will broadcast SET_MAIN_CAMERA
                 // will check for cosmos' focal entity
-                create_client_local_entities(m_workingCosmos, m_sharedBroker);
+                create_client_local_entities(cosmos, m_sharedBroker);
             }
             break;
             default:
@@ -171,7 +183,7 @@ namespace pleep
     void ClientNetworkDynamo::reset_relays() 
     {
         // clear cosmos reference each frame
-        m_workingCosmos = nullptr;
+        m_workingCosmos.reset();
     }
     
     void ClientNetworkDynamo::submit(CosmosAccessPacket data) 
@@ -185,5 +197,12 @@ namespace pleep
     size_t ClientNetworkDynamo::get_num_connections()
     {
         return m_networkApi.is_ready();
+    }
+
+    
+    void ClientNetworkDynamo::restart_connection(const std::string& address, uint16_t port)
+    {
+        m_networkApi.disconnect();
+        m_networkApi.connect(address, port);
     }
 }

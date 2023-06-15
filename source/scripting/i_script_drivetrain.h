@@ -28,10 +28,12 @@ namespace pleep
         virtual ~I_ScriptDrivetrain() = default;
 
         // invoked once per fixed interval per entity which holds it in their ScriptComponent
-        virtual void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr);
+        // Passes individual ScriptPacket members to avoid circular dependency
+        virtual void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner);
         
         // invoked once per frame interval per entity which holds it in their ScriptComponent
-        virtual void on_frame_update(double deltaTime, ScriptComponent& script, Entity entity = NULL_ENTITY, std::shared_ptr<Cosmos> owner = nullptr);
+        // Passes individual ScriptPacket members to avoid circular dependency
+        virtual void on_frame_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner);
 
         // invoked at most once per fixed interval per entity which holds it as their
         //   I_ColliderComponent::scriptTarget when it collides with another collider

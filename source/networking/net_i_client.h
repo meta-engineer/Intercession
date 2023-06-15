@@ -73,14 +73,16 @@ namespace net
 
             m_asioContext.stop();
             if (m_contextThread.joinable())
+            {
                 m_contextThread.join();
+            }
 
             // remove member reference to connection
             m_connection = nullptr;
-
-            // remove all queue references to connection
-            // to invoke destructor
+            // remove all shared queue references to connection to invoke destructor
             m_incomingMessages.clear();
+
+            m_asioContext.restart();
         }
 
         // passthrough connection status
@@ -127,7 +129,7 @@ namespace net
         // thread for asio context
         std::thread m_contextThread;
         // client interface has single connection
-        std::shared_ptr<Connection<T_Msg>> m_connection;
+        std::shared_ptr<Connection<T_Msg>> m_connection = nullptr;
     };
 }
 }

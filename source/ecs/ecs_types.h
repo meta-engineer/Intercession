@@ -5,6 +5,7 @@
 #include <bitset>
 #include <cstdint>
 #include <cassert>
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
@@ -104,6 +105,24 @@ namespace pleep
         assert(g < NULL_GENESISID);
         assert(c < NULL_CAUSALCHAINLINK);
         return (t << TIMESLICEID_OFFSET) | (g << GENESISID_OFFSET) | (c << CAUSALCHAINLINK_OFFSET);
+    }
+
+    inline bool increment_causal_chain_link(Entity& e)
+    {
+        TimesliceId timeId = derive_timeslice_id(e);
+        GenesisId genId = derive_genesis_id(e);
+        CausalChainlink link = derive_causal_chain_link(e);
+
+        link++;
+        // Cannot increment causal link above max, undefined behaviour
+        if (link >= CAUSALCHAINLINK_SIZE)
+        {
+            PLEEPLOG_ERROR("Cannot increment causal chainlink of entity " + std::to_string(e) + " above maximum value " + std::to_string(CAUSALCHAINLINK_SIZE));
+            return false;
+        }
+
+        e = compose_entity(timeId, genId, link);
+        return true;
     }
 }
 

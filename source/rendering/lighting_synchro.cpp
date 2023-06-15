@@ -12,11 +12,12 @@ namespace pleep
 {
     void LightingSynchro::update() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Lighting Synchro started update without owner Cosmos");
+            throw std::runtime_error("LightingSynchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
@@ -29,8 +30,8 @@ namespace pleep
         // feed components of m_entities to attached RenderDynamo
         for (Entity const& entity : m_entities)
         {
-            TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            LightSourceComponent& light = m_ownerCosmos->get_component<LightSourceComponent>(entity);
+            TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+            LightSourceComponent& light = cosmos->get_component<LightSourceComponent>(entity);
 
             m_attachedRenderDynamo->submit(LightSourcePacket{ transform, light });
         }
@@ -41,8 +42,15 @@ namespace pleep
         //   update anyway, this isn't THAT much overhead
     }
     
-    Signature LightingSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature LightingSynchro::derive_signature() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        if (cosmos == nullptr)
+        {
+            PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
+            throw std::runtime_error("LightingSynchro started signature derivation without owner Cosmos");
+        }
+
         Signature sign;
 
         try

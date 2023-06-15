@@ -11,11 +11,12 @@ namespace pleep
 {
     void PhysicsSynchro::update() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (m_ownerCosmos == nullptr)
+        if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
-            throw std::runtime_error("Physics Synchro started update without owner Cosmos");
+            throw std::runtime_error("PhysicsSynchro started update without owner Cosmos");
         }
 
         // no dynamo is a mistake, not necessarily an error
@@ -27,8 +28,8 @@ namespace pleep
 
         for (Entity const& entity : m_entities)
         {
-            TransformComponent& transform = m_ownerCosmos->get_component<TransformComponent>(entity);
-            PhysicsComponent& physics = m_ownerCosmos->get_component<PhysicsComponent>(entity);
+            TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+            PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
             
             m_attachedPhysicsDynamo->submit(PhysicsPacket{ transform, physics });
         }
@@ -36,8 +37,15 @@ namespace pleep
         // Cosmos Context will flush dynamo relays once all synchros are done
     }
     
-    Signature PhysicsSynchro::derive_signature(std::shared_ptr<Cosmos> cosmos) 
+    Signature PhysicsSynchro::derive_signature() 
     {
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        if (cosmos == nullptr)
+        {
+            PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
+            throw std::runtime_error("PhysicsSynchro started signature derivation without owner Cosmos");
+        }
+
         Signature sign;
 
         try
