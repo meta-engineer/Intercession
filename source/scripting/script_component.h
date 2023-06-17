@@ -23,7 +23,8 @@ namespace pleep
         // each flag should mirror the structure of I_ScriptDrivetrain
         bool use_fixed_update       = false;
         bool use_frame_update       = false;
-        bool use_collision          = false;
+        // using collision will be selected by the I_Collider
+        //bool use_collision          = false;
         //bool use_collision_enter    = false;
         //bool use_collision_exit    = false;
     };
@@ -35,13 +36,11 @@ namespace pleep
         msg << (data.drivetrain ? data.drivetrain->m_libraryType : ScriptLibrary::ScriptType::none);
         msg << data.use_fixed_update;
         msg << data.use_frame_update;
-        msg << data.use_collision;
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, ScriptComponent& data)
     {
-        msg >> data.use_collision;
         msg >> data.use_frame_update;
         msg >> data.use_fixed_update;
 

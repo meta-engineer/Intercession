@@ -125,26 +125,31 @@ namespace pleep
                         thisResponse->collision_response(otherResponse, thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                     }
 
-                    // ***** SCRIPT RESPONSE *****                    
-                    // TODO: before or after physics response?
+                    // ***** SCRIPT RESPONSE *****
+                    // script method should be called just AFTER the physics response (static/dynamic resolution)
+                    // CAREFUL! ScriptComponent fetch could fail OR script drivetrain could be null
                     // TODO: can collision relay track when a collision enter/exit across frames? Which entities collided last frame?
-                    // Careful! collider scriptTarget could be NULL, scriptTarget could not have ScriptComponent, and/or ScriptComponent could have null drivetrain
-                    if (thisData.collider->scriptTarget != NULL_ENTITY)
+                    // TODO: is it inefficient to need to search for the script each time?
+                    if (thisData.collider->useScriptResponse == true)
                     {
                         try
                         {
-                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(thisData.collider->scriptTarget);
-                            if (script.use_collision) script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(thisData.collidee);
+                            if (!script.drivetrain)
+                            {
+                                throw std::runtime_error("Cannot call collision script response for null ScriptDrivetrain");
+                            }
+                            script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity (" + std::to_string(thisData.collider->scriptTarget) + ") failed (no ScriptComponent, or ScriptDrivetrain is null) for colliding entity (" + std::to_string(thisData.collidee) + "), clearing and skipping");
-                            thisData.collider->scriptTarget = NULL_ENTITY;
+                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(thisData.collidee) + ") could not trigger script response, disabling and skipping");
+                            thisData.collider->useScriptResponse = false;
                         }
                     }
-                    if (otherData.collider->scriptTarget != NULL_ENTITY)
+                    if (otherData.collider->useScriptResponse == true)
                     {
                         try
                         {
@@ -152,15 +157,19 @@ namespace pleep
                             glm::vec3 invCollisionNormal = -collisionNormal;
                             glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
                             
-                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(otherData.collider->scriptTarget);
-                            if (script.use_collision) script.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
+                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(otherData.collidee);
+                            if (!script.drivetrain)
+                            {
+                                throw std::runtime_error("Cannot call collision script response for null ScriptDrivetrain");
+                            }
+                            script.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collider script target entity (" + std::to_string(otherData.collider->scriptTarget) + ") failed (no ScriptComponent, or ScriptDrivetrain is null) for colliding entity (" + std::to_string(otherData.collidee) + "), clearing and skipping");
-                            otherData.collider->scriptTarget = NULL_ENTITY;
+                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(otherData.collidee) + ") could not trigger script response, disabling and skipping");
+                            otherData.collider->useScriptResponse = false;
                         }
                     }
                 }

@@ -61,13 +61,27 @@ namespace pleep
 
         uint16_t currentCoherency = 0;
         if (cosmos) currentCoherency = cosmos->get_coherency();
+        // sync coherency with child and clients, every ~5 seconds
+        if (currentCoherency % 360 == 0)
+        {
+            EventMessage syncMessage(events::network::COHERENCY_SYNC, currentCoherency);
+            events::network::COHERENCY_SYNC_params syncParams = { m_timelineApi.get_timeslice_id() };
+            syncMessage << syncParams;
+
+            if (m_timelineApi.has_past())
+            {
+                // timesliceId increases into the past
+                m_timelineApi.send_message(m_timelineApi.get_timeslice_id() + 1, syncMessage);
+            }
+
+            m_networkApi.broadcast_message(syncMessage);
+        }
 
         // Ordering of methods?
         // First: process DIRECT messages from other timeslices
         //_process_timeline_messages();
         while(m_timelineApi.is_message_available())
         {
-            PLEEPLOG_TRACE("I (" + std::to_string(m_timelineApi.get_timeslice_id()) + ") received a direct message from another timeslice:");
             EventMessage msg = m_timelineApi.pop_message();
             // No message handlers whos side effects don't rely on modifying the cosmos
             if (!cosmos) continue;
@@ -105,6 +119,21 @@ namespace pleep
                 else
                 {
                     cosmos->decrement_hosted_temporal_entity_count(data.entity);
+                }
+            }
+            break;
+            case events::network::COHERENCY_SYNC:
+            {
+                events::network::COHERENCY_SYNC_params data;
+                msg >> data;
+                uint16_t targetCoherency = msg.header.coherency -
+                    static_cast<uint16_t>(m_timelineApi.get_timeslice_delay() * m_timelineApi.get_simulation_hz());
+
+                if (targetCoherency != cosmos->get_coherency())
+                {
+                    PLEEPLOG_DEBUG("Detected Coherency Desync! COHERENCY_SYNC message from slice " + std::to_string(data.senderId) + " of " + std::to_string(targetCoherency) + " does not match my coherency " + std::to_string(cosmos->get_coherency()));
+
+                    cosmos->set_coherency(targetCoherency);
                 }
             }
             break;
@@ -253,7 +282,7 @@ namespace pleep
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received new client notice");
 
-                // new client entity value is not real yet, IServer generated this event
+                // new client entity value is not real yet, I_Server generated this event
                 events::network::NEW_CLIENT_params clientInfo;
                 msg.msg >> clientInfo;
 
@@ -281,7 +310,7 @@ namespace pleep
                 // Send initialization for all entities that already exist
                 for (auto signIt : cosmos->get_signatures_ref())
                 {
-                    EventMessage createMsg(events::cosmos::ENTITY_CREATED);
+                    EventMessage createMsg(events::cosmos::ENTITY_CREATED, currentCoherency);
                     events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
                     createMsg << createInfo;
                     //PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
@@ -296,6 +325,7 @@ namespace pleep
 
                 // Forward new client message to signal for cosmos to initialize client side entities
                 PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
+                msg.msg.header.coherency = currentCoherency;
                 msg.msg << clientInfo;
                 msg.remote->send(msg.msg);
 
@@ -307,7 +337,7 @@ namespace pleep
             break;
             default:
             {
-                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Recieved unknown message");
+                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received unknown message");
             }
             break;
             }

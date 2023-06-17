@@ -164,7 +164,8 @@ namespace pleep
                 struct COHERENCY_SYNC_params
                 {
                     TimesliceId senderId;
-                    uint16_t coherency;
+                    // use coherency from message header
+                    //uint16_t coherency;
                 };
         }
     }

@@ -35,8 +35,7 @@ namespace pleep
         // Passes individual ScriptPacket members to avoid circular dependency
         virtual void on_frame_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner);
 
-        // invoked at most once per fixed interval per entity which holds it as their
-        //   I_ColliderComponent::scriptTarget when it collides with another collider
+        // invoked when the script owner collides with another collider
         // we'll copy parameters just incase
         // collision metadata is relative to collidee
         // NOTE: both colliders will have their on_collision scripts invoked independantly

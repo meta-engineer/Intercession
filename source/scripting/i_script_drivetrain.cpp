@@ -36,7 +36,7 @@ namespace pleep
         UNREFERENCED_PARAMETER(collisionDepth);
         UNREFERENCED_PARAMETER(collisionPoint);
         PLEEPLOG_WARN("Drivetrain has no implementation for called script. Disabling...");
-        colliderData.collider->scriptTarget = NULL_ENTITY;
+        colliderData.collider->useScriptResponse = false;
     }
 
     void I_ScriptDrivetrain::on_collision_enter()

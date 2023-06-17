@@ -86,8 +86,7 @@ namespace pleep
         frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 500.0f);
         frog_ray.responseType = CollisionResponseType::spring;
         frog_ray.inheritOrientation = false;
-        // link to self biped script
-        frog_ray.scriptTarget = frog;
+        frog_ray.useScriptResponse = true;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
         frog_springBody.influenceOrientation = false;

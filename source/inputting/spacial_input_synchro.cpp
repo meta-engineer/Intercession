@@ -25,6 +25,13 @@ namespace pleep
         
         for (Entity const& entity : m_entities)
         {
+            // only bother feeding input to local or focal entities
+            if (derive_timeslice_id(entity) != NULL_TIMESLICEID 
+                && entity != cosmos->get_focal_entity())
+            {
+                continue;
+            }
+
             SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
             
             m_attachedInputDynamo->submit(SpacialInputPacket{ input });

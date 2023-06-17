@@ -50,8 +50,7 @@ namespace pleep
         //pc_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
         pc_ray.responseType = CollisionResponseType::spring;
         pc_ray.inheritOrientation = false;
-        // link to self biped script
-        pc_ray.scriptTarget = pc;
+        pc_ray.useScriptResponse = true;
         cosmos->add_component(pc, pc_ray);
         SpringBodyComponent pc_springBody;
         pc_springBody.influenceOrientation = false;
@@ -69,7 +68,6 @@ namespace pleep
         ScriptComponent pc_scripts;
         pc_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
         pc_scripts.use_fixed_update = true;
-        pc_scripts.use_collision = true;
         cosmos->add_component(pc, pc_scripts);
 
         // ***************************************************************************

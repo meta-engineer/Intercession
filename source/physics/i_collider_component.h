@@ -51,9 +51,10 @@ namespace pleep
 
         // ***** Universal collider attributes *****
         // !!! Make sure to update serializers at page end if members are updated !!!
-        static const uint32_t dataSize = sizeof(CollisionResponseType) 
+        static const uint32_t dataSize = 0
+            + sizeof(CollisionResponseType) 
             + sizeof(bool) 
-            + sizeof(Entity)
+            + sizeof(bool)
             + sizeof(TransformComponent)
             + sizeof(bool);
 
@@ -61,15 +62,12 @@ namespace pleep
         // (which body component to fetch for on the same entity)
         // This may be best implemented with a table/map between response type pairs and functions
         CollisionResponseType responseType = CollisionResponseType::rigid;
-        
+
+        // if true, in addition to collision responseType, also call on_collision for this entity's script drivetrain
+        bool useScriptResponse = false;
+
         // Flag for external components to temporarily disable
         bool isActive = true;
-
-        // Other entity (or self) that contains a script component to call
-        // TODO: does this serialize safely across timeslices?
-        // it would be safer, but less flexible to use only scripts attached to self
-        // otherwise we must cache a target based on... entity tag?
-        Entity scriptTarget = NULL_ENTITY;
 
         // nested transform component "offset" (in local space) from entity's origin
         // Transform scale makes geometrically defined collider shapes
@@ -324,7 +322,7 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const I_ColliderComponent& data)
     {
         // make sure stream operators are updated if members are updated
-        static_assert(I_ColliderComponent::dataSize == 48, "I_ColliderComponent Message serializer found unexpected data size");
+        static_assert(I_ColliderComponent::dataSize == 47, "I_ColliderComponent Message serializer found unexpected data size");
         
         uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once
@@ -336,8 +334,8 @@ namespace pleep
         std::memcpy(msg.body.data() + i, &(data.isActive), sizeof(bool));
         i += sizeof(bool);
         
-        std::memcpy(msg.body.data() + i, &(data.scriptTarget), sizeof(Entity));
-        i += sizeof(Entity);
+        std::memcpy(msg.body.data() + i, &(data.useScriptResponse), sizeof(bool));
+        i += sizeof(bool);
         
         std::memcpy(msg.body.data() + i, &(data.localTransform), sizeof(TransformComponent));
         i += sizeof(TransformComponent);
@@ -365,8 +363,8 @@ namespace pleep
         std::memcpy(&(data.isActive), msg.body.data() + i, sizeof(bool));
         i += sizeof(bool);
         
-        std::memcpy(&(data.scriptTarget), msg.body.data() + i, sizeof(Entity));
-        i += sizeof(Entity);
+        std::memcpy(&(data.useScriptResponse), msg.body.data() + i, sizeof(bool));
+        i += sizeof(bool);
         
         std::memcpy(&(data.localTransform), msg.body.data() + i, sizeof(TransformComponent));
         i += sizeof(TransformComponent);
@@ -388,7 +386,7 @@ namespace pleep
     {
         return lhs.responseType == rhs.responseType
             && lhs.isActive == rhs.isActive
-            //&& lhs.scriptTarget == rhs.scriptTarget
+            //&& lhs.useScriptResponse == rhs.useScriptResponse
             && lhs.localTransform == rhs.localTransform
             && lhs.inheritOrientation == rhs.inheritOrientation;
     }

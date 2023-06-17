@@ -169,6 +169,17 @@ namespace pleep
                 // will broadcast SET_MAIN_CAMERA
                 // will check for cosmos' focal entity
                 create_client_local_entities(cosmos, m_sharedBroker);
+
+                // sync coherency
+                cosmos->set_coherency(msg.header.coherency);
+            }
+            break;
+            case events::network::COHERENCY_SYNC:
+            {
+                events::network::COHERENCY_SYNC_params syncInfo;
+                msg >> syncInfo;
+
+                cosmos->set_coherency(msg.header.coherency);
             }
             break;
             default:

@@ -123,7 +123,6 @@ namespace pleep
                 biped.groundNormal = collisionNormal;
 
                 UNREFERENCED_PARAMETER(collisionPoint);
-                UNREFERENCED_PARAMETER(collisionNormal);
                 UNREFERENCED_PARAMETER(collisionDepth);
                 UNREFERENCED_PARAMETER(collidedData);
             }
@@ -132,8 +131,8 @@ namespace pleep
                 UNREFERENCED_PARAMETER(err);
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
-                PLEEPLOG_WARN("Could not fetch a Biped Component for entity " + std::to_string(callerData.collidee) + " calling script. This script cannot operate on this entity without it. Disabling caller's collider script target.");
-                callerData.collider->scriptTarget = NULL_ENTITY;
+                PLEEPLOG_WARN("Could not fetch a Biped Component for entity " + std::to_string(callerData.collidee) + " calling script. This script cannot operate on this entity without it. Disabling caller's collider script response.");
+                callerData.collider->useScriptResponse = false;
             }
         }
     };
