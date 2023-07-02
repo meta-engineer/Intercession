@@ -18,6 +18,9 @@ namespace pleep
         glm::quat orientation = glm::quat(glm::vec3(0.0f));
         glm::vec3 scale       = glm::vec3(1.0f);
 
+        // "lock" flag for space-time modification of this entity
+        bool superposition    = false;
+
         // default constructors are needed for ComponentArray
 		TransformComponent() = default;
 		TransformComponent(const TransformComponent&) = default;

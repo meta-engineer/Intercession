@@ -14,15 +14,26 @@ namespace pleep
 
         m_sharedBroker = sharedBroker;
         // setup handlers?
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
     }
 
     Cosmos::~Cosmos() 
     {
         // registry smart pointers cleared
+
+        // clear handlers
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
     }
     
     void Cosmos::update() 
     {
+        // delete all condemned entities
+        for (Entity e : m_condemned)
+        {
+            this->destroy_entity(e);
+        }
+        m_condemned.clear();
+
         // get synchro map from registry
         auto synchroIter = m_synchroRegistry->get_synchros_ref().begin();
         auto synchroEnd  = m_synchroRegistry->get_synchros_ref().end();
@@ -109,5 +120,14 @@ namespace pleep
     std::vector<std::string> Cosmos::stringify_component_registry() 
     {
         return m_componentRegistry->stringify();
+    }
+    
+    void Cosmos::_condemn_entity_handler(EventMessage condemnEvent) 
+    {
+        events::cosmos::CONDEMN_ENTITY_params condemnInfo;
+        condemnEvent >> condemnInfo;
+        
+        PLEEPLOG_TRACE("Entity " + std::to_string(condemnInfo.entity) + " was condemned to deletion.");
+        m_condemned.insert(condemnInfo.entity);
     }
 }

@@ -23,6 +23,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::INTERCESSION, ServerNetworkDynamo::_intercession_handler));
 
         PLEEPLOG_TRACE("Done server networking pipeline setup");
     }
@@ -33,6 +34,7 @@ namespace pleep
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::INTERCESSION, ServerNetworkDynamo::_intercession_handler));
     }
     
     void ServerNetworkDynamo::run_relays(double deltaTime) 
@@ -94,7 +96,7 @@ namespace pleep
                 // NOT to create one ourselves, that will be received over the timeSTREAM
                 events::cosmos::ENTITY_CREATED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received ENTITY_CREATED message for Entity " + std::to_string(data.entity));
+                //PLEEPLOG_DEBUG("Received ENTITY_CREATED message for Entity " + std::to_string(data.entity));
                 // double check if we are it's host
                 if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
@@ -135,6 +137,52 @@ namespace pleep
 
                     cosmos->set_coherency(targetCoherency);
                 }
+            }
+            break;
+            case events::network::INTERCESSION:
+            {
+                // we are signalled that an intercession has occurred sometime/where
+                events::network::INTERCESSION_params data;
+                msg >> data;
+
+                CausalChainlink link = derive_causal_chain_link(data.intercessee);
+                assert(link > 0);
+                //PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(data.intercessee) + ") cannot have been interceded.");
+
+                TimesliceId host = derive_timeslice_id(data.intercessee);
+                GenesisId genesis = derive_genesis_id(data.intercessee);
+
+                // ASSUME intercession happened in our direct child, therefore
+                // check for entity with 1 less causalchainlink than the reported intercessee
+                Entity presentIntercesee = compose_entity(host, genesis, link - 1);
+
+                // Put the entity into a superposition
+                // superposition is constrained to physical objects, so if it is not physical
+                //   an unexpected entity has been interceeded
+                try
+                {
+                    TransformComponent& trans = cosmos->get_component<TransformComponent>(presentIntercesee);
+                    trans.superposition = true;
+                }
+                catch(const std::exception& e)
+                {
+                    PLEEPLOG_ERROR(e.what());
+                    PLEEPLOG_ERROR("Could not fetch TransformComponent for interceeded entity " + std::to_string(presentIntercesee) + ". Superpositions can only be applied to physical entities, ignoring this intercession event.");
+                    break;
+                }
+                
+                // Superposition will stop any further pushes to timestream so we can clear it
+                // TODO: Store timestream for resetting upon a paradox
+                m_timelineApi.clear_past_timestream(data.intercessee);
+
+                // TEMP: Resolve superposition by just deleting it?
+                // Signal for intercessee to be cleaned up when Cosmos is safe
+                EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
+                events::cosmos::CONDEMN_ENTITY_params condemnInfo{
+                    presentIntercesee
+                };
+                condemnMsg << condemnInfo;
+                //m_sharedBroker->send_event(condemnMsg);
             }
             break;
             default:
@@ -186,12 +234,12 @@ namespace pleep
                     break;
                     case events::cosmos::ENTITY_CREATED:
                     {
-                        PLEEPLOG_TRACE("Received ENTITY_CREATED message from future");
+                        //PLEEPLOG_TRACE("Received ENTITY_CREATED message from future");
 
                         // register entity and create components to match signature
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         msg >> createInfo;
-                        PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+                        //PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                         if (cosmos->register_entity(createInfo.entity))
                         {
@@ -204,12 +252,12 @@ namespace pleep
                     break;
                     case events::cosmos::ENTITY_MODIFIED:
                     {
-                        PLEEPLOG_TRACE("Received ENTITY_MODIFIED message from future");
+                        //PLEEPLOG_TRACE("Received ENTITY_MODIFIED message from future");
 
                         // create any new components, remove any components message does not have
                         events::cosmos::ENTITY_MODIFIED_params modInfo;
                         msg >> modInfo;
-                        PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
+                        //PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
 
                         // ensure entity exists
                         if (cosmos->entity_exists(modInfo.entity))
@@ -233,9 +281,14 @@ namespace pleep
                         // (sender SHOULD have correctly offset causalchainlink already)
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         msg >> removeInfo;
-                        PLEEPLOG_DEBUG(std::to_string(removeInfo.entity));
 
-                        cosmos->destroy_entity(removeInfo.entity);
+                        // use condemn event to avoid double deletion
+                        EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
+                        events::cosmos::CONDEMN_ENTITY_params condemnInfo{
+                            removeInfo.entity
+                        };
+                        condemnMsg << condemnInfo;
+                        m_sharedBroker->send_event(condemnMsg);
                     }
                     break;
                     default:
@@ -259,7 +312,7 @@ namespace pleep
 
             switch (msg.msg.header.id)
             {
-            case events::network::INTERCESSION_UPDATE:
+            case events::network::INTERCESSION:
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Bouncing intercession update message");
                 // just bounce back
@@ -360,6 +413,19 @@ namespace pleep
                 updateMsg << updateInfo;
                 m_networkApi.broadcast_message(updateMsg);
 
+
+                // DON'T broadcast superposition entities into the past
+                // TODO: better way to determine superposition without exceptions?
+                try
+                {
+                    bool superposition = cosmos->get_component<TransformComponent>(updateInfo.entity).superposition;
+                    if (superposition) continue;
+                }
+                catch(...)
+                {
+                    // This entity didn't have a TransformComponent, therefore it cannot be in a superposition
+                }
+
                 // 5b: Broadcast to past timestreams 
                 //     with incremented CausalChainLink
                 if (m_timelineApi.has_past())
@@ -409,7 +475,9 @@ namespace pleep
         events::cosmos::ENTITY_CREATED_params newEntityParams;
         entityEvent >> newEntityParams;
         
-        PLEEPLOG_DEBUG("Handling ENTITY_CREATED event for entity " + std::to_string(newEntityParams.entity));
+        //PLEEPLOG_DEBUG("Handling ENTITY_CREATED event for entity " + std::to_string(newEntityParams.entity));
+
+        // Entity cannot be created in a superposition?
 
         // if entity was created locally, its host count starts at 1
         // if entity was send from the future, it will have been incrememnted when it entered our future timestream
@@ -431,7 +499,7 @@ namespace pleep
     
     void ServerNetworkDynamo::_entity_modified_handler(EventMessage entityEvent)
     {
-        PLEEPLOG_DEBUG("Handling ENTITY_MODIFIED event");
+        //PLEEPLOG_DEBUG("Handling ENTITY_MODIFIED event");
         
         m_networkApi.broadcast_message(entityEvent);
 
@@ -439,6 +507,7 @@ namespace pleep
         events::cosmos::ENTITY_MODIFIED_params modEntityParams;
         entityEvent >> modEntityParams;
         
+        // TODO: check superposition
         if (m_timelineApi.has_past())
         {
             events::cosmos::ENTITY_MODIFIED_params propogateModEntityParams = modEntityParams;
@@ -451,7 +520,7 @@ namespace pleep
     
     void ServerNetworkDynamo::_entity_removed_handler(EventMessage entityEvent)
     {
-        PLEEPLOG_DEBUG("Handling ENTITY_REMOVED event");
+        //PLEEPLOG_DEBUG("Handling ENTITY_REMOVED event");
 
         m_networkApi.broadcast_message(entityEvent);
 
@@ -463,6 +532,7 @@ namespace pleep
         TimesliceId host = derive_timeslice_id(removedEntityParams.entity);
         m_timelineApi.send_message(host, entityEvent);
 
+        // TODO: check superposition
         if (m_timelineApi.has_past())
         {
             events::cosmos::ENTITY_REMOVED_params propogateRemovedEntityParams;
@@ -473,6 +543,31 @@ namespace pleep
             m_timelineApi.push_past_timestream(propogateRemovedEntityParams.entity, entityEvent);
 
             // once child receives the above event, it will signal another decrement
+        }
+    }
+    
+    void ServerNetworkDynamo::_intercession_handler(EventMessage intercessionEvent)
+    {
+        PLEEPLOG_DEBUG("Handling INTERCESSION event");
+
+        events::network::INTERCESSION_params intercessionInfo;
+        intercessionEvent >> intercessionInfo;
+        intercessionEvent << intercessionInfo;
+
+        // signal to future timeslice to put intercesee into superposition
+        // maybe the future timeslice should clear the timestream to avoid race condition?
+        //   this means response time may be delayed by 1 frame? Theoretically more... it is not strictly guarenteed that another timeslice will process a frame before we process another one...
+
+        PLEEPLOG_INFO("Detected interaction event from entity " + std::to_string(intercessionInfo.intercessor) + " to " + std::to_string(intercessionInfo.intercessee));
+
+        // We also need to be able to detect knock-on interactions an object with a non-zero chainlink might cause after being modified by a chainlink zero entity, before and after superposition resolution
+        // how is superposition represented? Static bool array in Cosmos? Maybe enum: normal, superposition, superposition-start
+
+        if (m_timelineApi.has_future())
+        {
+            // timesliceId decreases into the future
+            assert(m_timelineApi.get_timeslice_id() > 0);
+            m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, intercessionEvent);
         }
     }
 }

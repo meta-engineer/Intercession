@@ -100,10 +100,11 @@ namespace pleep
 
     inline Entity compose_entity(TimesliceId t, GenesisId g, CausalChainlink c)
     {
-        // clients can compose entities using NULL_TIMESLICEID
+        // clients can compose entities using NULL_TIMESLICEID (local entities)
         assert(t <= NULL_TIMESLICEID);
         assert(g < NULL_GENESISID);
-        assert(c < NULL_CAUSALCHAINLINK);
+        // clients can compose entities using NULL_CAUSALCHAINLINK (non-temporal entities)
+        assert(c <= NULL_CAUSALCHAINLINK);
         return (t << TIMESLICEID_OFFSET) | (g << GENESISID_OFFSET) | (c << CAUSALCHAINLINK_OFFSET);
     }
 
@@ -117,7 +118,8 @@ namespace pleep
         // Cannot increment causal link above max, undefined behaviour
         if (link >= CAUSALCHAINLINK_SIZE)
         {
-            PLEEPLOG_ERROR("Cannot increment causal chainlink of entity " + std::to_string(e) + " above maximum value " + std::to_string(CAUSALCHAINLINK_SIZE));
+            // if CausalChainLink is at max, this is a non-temporal entity, leave it as is
+            //PLEEPLOG_ERROR("Cannot increment causal chainlink of entity " + std::to_string(e) + " above maximum value " + std::to_string(CAUSALCHAINLINK_SIZE));
             return false;
         }
 

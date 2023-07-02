@@ -242,15 +242,18 @@ namespace pleep
                     data.renderable.meshData->m_submeshes[i]->invoke_draw(m_sm);
                 }
                 m_sm.deactivate();
-/* 
-                m_normalVisualizerSm.activate();
-                m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());
-                for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
+
+                // TEMP: apply normalVisualizer if entity is in superposition, in lieu of a special shader uniform
+                if (data.transform.superposition)
                 {
-                    data.renderable.meshData->m_submeshes[i]->invoke_draw(m_normalVisualizerSm);
+                    m_normalVisualizerSm.activate();
+                    m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());
+                    for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
+                    {
+                        data.renderable.meshData->m_submeshes[i]->invoke_draw(m_normalVisualizerSm);
+                    }
+                    m_normalVisualizerSm.deactivate();
                 }
-                m_normalVisualizerSm.deactivate();
- */
             }
 
             // clear options

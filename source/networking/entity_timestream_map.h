@@ -114,6 +114,20 @@ namespace pleep
             //   message and remove index (entity) from timestream map
         }
 
+        // Clear timestream for specified Entity
+        void clear(Entity entity)
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            m_timestreams.erase(entity);
+        }
+
+        // clear ALL timestreams
+        void clear()
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            m_timestreams.clear();
+        }
+
     private:
         std::unordered_map<Entity, Timestream> m_timestreams;
 

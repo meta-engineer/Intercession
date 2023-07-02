@@ -322,7 +322,7 @@ namespace pleep
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const I_ColliderComponent& data)
     {
         // make sure stream operators are updated if members are updated
-        static_assert(I_ColliderComponent::dataSize == 47, "I_ColliderComponent Message serializer found unexpected data size");
+        static_assert(I_ColliderComponent::dataSize == 51, "I_ColliderComponent Message serializer found unexpected data size");
         
         uint32_t i = static_cast<uint32_t>(msg.size());
         // resize all at once

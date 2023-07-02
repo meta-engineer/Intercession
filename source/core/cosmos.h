@@ -41,7 +41,7 @@ namespace pleep
         // create & register empty entity hosted by us
         // If we are not a timeslice host (client) we have to create a temporary entity
         // with a null TimesliceId and signal to our current connected host to create a valid version to overwrite it
-        Entity create_entity();
+        Entity create_entity(bool isTemporal = true);
 
         // create empty entity & register it as the given value
         // Check Entity should be from another host?
@@ -171,6 +171,9 @@ namespace pleep
         std::vector<std::string> stringify_component_registry();
 
     private:
+        // event handlers
+        void _condemn_entity_handler(EventMessage condemnEvent);
+
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
         std::unique_ptr<ComponentRegistry> m_componentRegistry;
         std::unique_ptr<EntityRegistry>    m_entityRegistry;
@@ -187,6 +190,11 @@ namespace pleep
         // Context decides at what point we have meaningfully changed to the next state
         // (not necessarily the number of update() calls, because simulation/render updates are not in lockstep)
         uint16_t m_stateCoherency = 0;
+
+        // Set containing entities who were requested to be deleted.
+        // They will be deleted directly before next update,
+        // so all component references should be cleared by then
+        std::set<Entity> m_condemned;
     };
 
 
@@ -194,9 +202,9 @@ namespace pleep
     // templates need to be accessable to all translation units that use Cosmos
     // (non-template entity methods also provided as inline for organization)
     
-    inline Entity Cosmos::create_entity() 
+    inline Entity Cosmos::create_entity(bool isTemporal) 
     {
-        Entity entity = m_entityRegistry->create_entity();
+        Entity entity = m_entityRegistry->create_entity(isTemporal);
 
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
@@ -232,9 +240,15 @@ namespace pleep
     {
         if (entity == NULL_ENTITY) return;
 
-        m_entityRegistry->destroy_entity(entity);
+        if (!m_entityRegistry->destroy_entity(entity))
+        {
+            // Entity may not have existed
+            return;
+        }
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);
+
+        PLEEPLOG_TRACE("Entity " + std::to_string(entity) + " was destroyed");
 
         // broadcast entity no longer exists
         EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED, m_stateCoherency);

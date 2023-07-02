@@ -84,6 +84,13 @@ namespace pleep
                 {
                     Entity entity = NULL_ENTITY;
                 };
+            // Request for an entity to be removed at the end of the frame
+            // once all unsafe references are cleared
+            const EventId CONDEMN_ENTITY = __LINE__;
+                struct CONDEMN_ENTITY_params
+                {
+                    Entity entity = NULL_ENTITY;
+                };
             
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
@@ -143,10 +150,13 @@ namespace pleep
 
             // Info about a timestream modification
             //  ???
-            const EventId INTERCESSION_UPDATE = __LINE__;
-                struct INTERCESSION_UPDATE_params
+            const EventId INTERCESSION = __LINE__;
+                struct INTERCESSION_params
                 {
-
+                    // time-travelling entity
+                    Entity intercessor;
+                    // Entity who was changed by a time-traveller
+                    Entity intercessee;
                 };
                 
             // Allow I_Server to notify dynamo about new client

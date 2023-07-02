@@ -10,9 +10,14 @@ namespace pleep
     // so they can implement submit() methods as needed
     class A_PhysicsRelay
     {
-    protected:
-        A_PhysicsRelay() = default;
     public:
+        // Dynamo should provide shared broker for physics events to trigger callbacks
+        // subclasses should be: using A_PhysicsRelay::A_PhysicsRelay;
+        // virtual relay methods keep this abstract even without a protected constructor
+        A_PhysicsRelay(EventBroker* sharedBroker)
+            : m_sharedBroker(sharedBroker)
+        {
+        }
         virtual ~A_PhysicsRelay() = default;
 
         // submittions are done, process entities
@@ -21,6 +26,10 @@ namespace pleep
         // relays may be engaged multiply times per frame (fixed time step)
         // once done they should clear they're packets
         virtual void clear() = 0;
+
+    protected:
+        // broker given to us by Dynamo
+        EventBroker* m_sharedBroker = nullptr;
     };
 }
 

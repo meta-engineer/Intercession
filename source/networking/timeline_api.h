@@ -142,6 +142,18 @@ namespace pleep
             m_pastTimestreams->push_to_timestream(entity, data);
         }
 
+        // Removes all data in the past timestream for this data
+        // This will stop the past timeslice from receiving any more updates immediately
+        void clear_past_timestream(Entity entity)
+        {
+            if (!m_pastTimestreams)
+            {
+                PLEEPLOG_WARN("This timeslice has no past timestream to clear");
+                return;
+            }
+            m_pastTimestreams->clear(entity);
+        }
+
         // give potenial Entities to pop from
         std::vector<Entity> get_entities_with_future_streams()
         {

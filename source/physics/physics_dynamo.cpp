@@ -10,8 +10,8 @@ namespace pleep
         PLEEPLOG_TRACE("Start Physics pipeline setup");
         
         // setup relays
-        m_motionStep = std::make_unique<EulerPhysicsRelay>();
-        m_collisionStep = std::make_unique<CollisionPhysicsRelay>();
+        m_motionStep = std::make_unique<EulerPhysicsRelay>(m_sharedBroker);
+        m_collisionStep = std::make_unique<CollisionPhysicsRelay>(m_sharedBroker);
 
         PLEEPLOG_TRACE("Done Physics pipeline setup");
     }

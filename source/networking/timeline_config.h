@@ -23,7 +23,7 @@ namespace pleep
         // total timeline duration can be inferred as timesliceDelay * numTimeslices
         // (explicitly define delay means total duration is always cleanly divisible)
         // total delay in frames is simulationHz * timesliceDelay
-        int timesliceDelay = 6;
+        int timesliceDelay = 10;
         // must not exceed TIMESLICEID_SIZE
         TimesliceId numTimeslices = 2;
 
@@ -32,9 +32,9 @@ namespace pleep
         double simulationHz = 72.0;
         // server updates don't need to happen every frame, client can dead reckon for a few
         // serializing the whole cosmos is costly so do it less frequently
-        // (client still needs to emit their inputs every simulation update)
-        double networkHz     = 30.0;
-        // frame time runs asap after the above fixed timesteps (rendering/animation/ui)
+        // (client upstream changes would still need to happen every simulation update)
+        //double networkHz    = 30.0;
+        // renderHz is as-fast-as-possible after the above fixed timesteps (rendering/animation/ui)
 
     };
 }

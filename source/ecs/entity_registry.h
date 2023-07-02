@@ -16,9 +16,9 @@ namespace pleep
     public:
         EntityRegistry(const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
 
-        Entity create_entity();
+        Entity create_entity(bool isTemporal = true);
         bool register_entity(Entity entity);
-        void destroy_entity(Entity entity);
+        size_t destroy_entity(Entity entity);
 
         // total entities in this Cosmos
         size_t get_entity_count();
@@ -80,7 +80,7 @@ namespace pleep
         }
     }
 
-    inline Entity EntityRegistry::create_entity()
+    inline Entity EntityRegistry::create_entity(bool isTemporal)
     {
         // assert() entity count doesn't go beyond max
         size_t localEntityCount = m_hostedTemporalEntityCounts.size();
@@ -94,6 +94,12 @@ namespace pleep
         Entity ent = m_availableTemporalEntityIds.front();
         assert(m_hostedTemporalEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedTemporalEntityCounts.end());
         m_availableTemporalEntityIds.pop();
+
+        if (!isTemporal) {
+            TimesliceId entHostId = derive_timeslice_id(ent);
+            GenesisId entGenesisId = derive_genesis_id(ent);
+            ent = compose_entity(entHostId, entGenesisId, NULL_CAUSALCHAINLINK);
+        }
 
         // add empty signature
         this->set_signature(ent, Signature{});
@@ -126,7 +132,7 @@ namespace pleep
         return true;
     }
 
-    inline void EntityRegistry::destroy_entity(Entity entity)
+    inline size_t EntityRegistry::destroy_entity(Entity entity)
     {
         if (entity >= ENTITY_SIZE)
         {
@@ -135,7 +141,7 @@ namespace pleep
         }
 
         // Clear signature (if it exists)
-        m_signatures.erase(entity);
+        return m_signatures.erase(entity);
 
         // Entity will be re-added to availability queue once it's host count decrements to 0
 

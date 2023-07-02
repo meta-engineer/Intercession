@@ -255,7 +255,7 @@ namespace pleep
         cosmos->add_component(wall2, wall2_renderable);
 
         // ***************************************************************************
-        Entity floor = cosmos->create_entity();
+        Entity floor = cosmos->create_entity(false);
         cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -287,7 +287,7 @@ namespace pleep
         // ***************************************************************************
 
         // ***************************************************************************
-        Entity snow = cosmos->create_entity();
+        Entity snow = cosmos->create_entity(false);
         cosmos->add_component(snow, TransformComponent(glm::vec3(15.0f, -2.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));

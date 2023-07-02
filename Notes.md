@@ -225,6 +225,13 @@ Then we render the fragment based on only that 1 lights info.
 We need to use the right glBlendFunc so that colors from each rendered light are added togther.
 This can only be possible with deferred rendering becuase we have already done a pass with the real objects and in the lighting step we can use any geometry to "stencil" the areas with light
 
+Non-Photorealistic Rendering (NPR):
+Different, less realistic shading techniques for interesting visual style.
+Helps pull you out of the uncanny valley and coverup less detailed textures and animations.
+https://www.youtube.com/watch?v=jlKNOirh66E
+
+## Physics
+
 Motion integration:
 Euler method is FIRST-ORDER which means it is inaccurate for all but constant velocity (no acceleration)
 What else is there though?

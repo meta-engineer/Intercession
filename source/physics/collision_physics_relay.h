@@ -17,6 +17,9 @@ namespace pleep
     class CollisionPhysicsRelay : public A_PhysicsRelay
     {
     public:
+        // explicitly inherit constructors
+        using A_PhysicsRelay::A_PhysicsRelay;
+
         // motion integration should already have happened
         // test for collision, do static resolution, do dynamic resolution
         void engage(double deltaTime) override
@@ -171,6 +174,29 @@ namespace pleep
                             PLEEPLOG_WARN("Collidee entity (" + std::to_string(otherData.collidee) + ") could not trigger script response, disabling and skipping");
                             otherData.collider->useScriptResponse = false;
                         }
+                    }
+
+                    // check causal chain link descrepancy
+                    CausalChainlink thisLink  = derive_causal_chain_link(thisData.collidee);
+                    CausalChainlink otherLink = derive_causal_chain_link(otherData.collidee);
+
+                    //Intercession can only happen if one chainlink is 0 (exclusive)
+                    //   and other is non-zero and non-null
+                    // TODO: also need to check if either entity has a superposition in the future
+                    if (thisLink != otherLink
+                        && (thisLink == 0 || otherLink == 0)
+                        && thisLink != NULL_CAUSALCHAINLINK
+                        && otherLink != NULL_CAUSALCHAINLINK)
+                    {
+                        // Signal to NetworkDynamo to delete this entity from the future timeslice slice and then clear timestream for this entity
+                        // (this should happen propagate up the timeline)
+                        EventMessage IntercessionMessage(events::network::INTERCESSION);
+                        events::network::INTERCESSION_params IntercessionInfo {
+                            thisLink == 0 ?  thisData.collidee : otherData.collidee,
+                            thisLink == 0 ? otherData.collidee :  thisData.collidee
+                        };
+                        IntercessionMessage << IntercessionInfo;
+                        m_sharedBroker->send_event(IntercessionMessage);
                     }
                 }
             }

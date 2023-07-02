@@ -148,9 +148,9 @@ namespace pleep
                 }
             }
             break;
-            case events::network::INTERCESSION_UPDATE:
+            case events::network::INTERCESSION:
             {
-                PLEEPLOG_TRACE("Received INTERCESSION_UPDATE message");
+                PLEEPLOG_TRACE("Received INTERCESSION message");
             }
             break;
             case events::network::NEW_CLIENT:

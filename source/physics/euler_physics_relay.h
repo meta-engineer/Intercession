@@ -14,6 +14,9 @@ namespace pleep
     class EulerPhysicsRelay : public A_PhysicsRelay
     {
     public:
+        // explicitly inherit constructors
+        using A_PhysicsRelay::A_PhysicsRelay;
+
         // consume acceleration values and step motion integration forward
         void engage(double deltaTime) override
         {
