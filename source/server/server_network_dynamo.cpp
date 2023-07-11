@@ -185,6 +185,65 @@ namespace pleep
                 //m_sharedBroker->send_event(condemnMsg);
             }
             break;
+            case events::network::JUMP_REQUEST:
+            {
+                PLEEPLOG_DEBUG("Received jump request from a server");
+
+                events::network::JUMP_REQUEST_params jumpInfo;
+                msg >> jumpInfo;
+                msg << jumpInfo;
+                
+                // generate transfer code for client
+                uint32_t timeSeed = static_cast<uint32_t>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+                );
+                uint32_t transferCode = Squirrel3(jumpInfo.entity, timeSeed);
+                while(m_transferCache.count(transferCode))
+                {
+                    PLEEPLOG_ERROR("Generated transfer code is already taken, trying again...");
+                    timeSeed--;
+                    transferCode = Squirrel3(jumpInfo.entity, timeSeed);
+                }
+
+                // save entity in preparation for client to connect soon
+                m_transferCache.insert({transferCode, msg});
+
+                // return good jump response
+                EventMessage responseMsg(events::network::JUMP_RESPONSE);
+                events::network::JUMP_RESPONSE_params responseInfo{
+                    jumpInfo.requesterConnId,
+                    transferCode,
+                    m_timelineApi.get_port()
+                };
+                responseMsg << responseInfo;
+
+                // return to sender
+                int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
+                m_timelineApi.send_message(static_cast<TimesliceId>(source), responseMsg);
+            }
+            break;
+            case events::network::JUMP_RESPONSE:
+            {
+                PLEEPLOG_DEBUG("Received jump response from a server");
+
+                events::network::JUMP_RESPONSE_params jumpInfo;
+                msg >> jumpInfo;
+                msg << jumpInfo;
+
+                // forward message to jump requesting client
+                PLEEPLOG_DEBUG("Forwarding to " + std::to_string(jumpInfo.requesterConnId));
+                m_networkApi.send_message(jumpInfo.requesterConnId, msg);
+            }
+            break;
+            case events::cosmos::CONDEMN_ENTITY:
+            {
+                PLEEPLOG_DEBUG("Received explicit condemn from a server");
+                // another timeslice has called for us to destroy an entity
+                // this is likely after a successfull timeslice jump
+                // forward it to our cosmos
+                m_sharedBroker->send_event(msg);
+            }
+            break;
             default:
             {
                 PLEEPLOG_DEBUG("Received unknown message id " + std::to_string(msg.header.id));
@@ -333,25 +392,25 @@ namespace pleep
             break;
             case events::network::NEW_CLIENT:
             {
+                // this is the first message a client will send us after connection
                 PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received new client notice");
 
-                // new client entity value is not real yet, I_Server generated this event
                 events::network::NEW_CLIENT_params clientInfo;
                 msg.msg >> clientInfo;
 
-                // TODO: send app_info? then intercession_app_info?
-
-                // Send Cosmos config
+                // TODO: Send Cosmos config
                 // should be stateless and scan current workingCosmos?
                 // How should scan work, just store config into Cosmos when it is built? What if it changes afterwards?
                 // If CosmosBuilder could use synchro/component typeid then we could scan Cosmos' registries
                 // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
 
-                PLEEPLOG_DEBUG("New client joined, I should send them a cosmos config!");
                 // if we have no cosmos at this point we can't proceed
                 // maybe we should deny client connections if there is no cosmos?
                 // assert(cosmos);
                 if (!cosmos) break;
+                
+                PLEEPLOG_WARN("New client joined, I should send them a cosmos config!");
+                msg.remote->enable_sending();
                 /* Message<EventId> configMsg(events::cosmos::CONFIG);
                 events::cosmos::CONFIG_params configInfo;
                 CosmosBuilder scanner;
@@ -369,12 +428,67 @@ namespace pleep
                     //PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
                     msg.remote->send(createMsg);
                 }
+
                 
-                // Server will create client character and then pass it its Entity
-                // Client may have to do predictive entity creation in the future,
-                // but we'll avoid that here for now because client has to wait anyways
-                clientInfo.entity = create_client_focal_entity(cosmos, m_sharedBroker);
-                PLEEPLOG_DEBUG("Created entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
+                // check transfer codes for available entity
+                if (clientInfo.transferCode != 0 && m_transferCache.count(clientInfo.transferCode))
+                {
+                    // fetch serialized entity data cache from previous JUMP_REQUEST
+                    EventMessage jumpMsg = m_transferCache.at(clientInfo.transferCode);
+                    m_transferCache.erase(clientInfo.transferCode);
+                    events::network::JUMP_REQUEST_params jumpInfo;
+                    jumpMsg >> jumpInfo;
+
+                    if (cosmos->register_entity(jumpInfo.entity))
+                    {
+                        clientInfo.entity = jumpInfo.entity;
+                        
+                        // manually add components
+                        Signature entitySign = cosmos->get_entity_signature(jumpInfo.entity);
+                        for (ComponentType c = 0; c < jumpInfo.sign.size(); c++)
+                        {
+                            if (jumpInfo.sign.test(c) && !entitySign.test(c)) cosmos->add_component(jumpInfo.entity, c);
+
+                            if (!jumpInfo.sign.test(c) && entitySign.test(c)) cosmos->remove_component(jumpInfo.entity, c);
+                        }
+                        // this could be eschewed if deserialize could auto-add components
+        
+                        cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpMsg);
+                        PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
+
+                        // signal to host to incrememnt host count (like create_entity does locally)
+                        EventMessage createMsg(events::cosmos::ENTITY_CREATED);
+                        events::cosmos::ENTITY_CREATED_params createInfo{
+                            jumpInfo.entity,
+                            jumpInfo.sign
+                        };
+                        createMsg << createInfo;
+                        m_timelineApi.send_message(derive_timeslice_id(createInfo.entity), createMsg);
+
+                        // signal jump source timeslice to delete its copy of entity
+                        // (as long as the above createMsg is received first, host count will not 0 out)
+                        EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
+                        events::cosmos::CONDEMN_ENTITY_params condemnInfo{
+                            jumpInfo.entity
+                        };
+                        condemnMsg << condemnInfo;
+                        int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
+                        m_timelineApi.send_message(static_cast<TimesliceId>(source), condemnMsg);
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("Registry of transferred entity " + std::to_string(jumpInfo.entity) + " failed");
+                        clientInfo.entity = NULL_ENTITY;
+                    }
+                }
+                else
+                {
+                    // Server will create client character and then pass it its Entity
+                    // Client may have to do predictive entity creation in the future,
+                    // but we'll avoid that here for now because client has to wait anyways
+                    clientInfo.entity = create_client_focal_entity(cosmos, m_sharedBroker);
+                    PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
+                }
 
                 // Forward new client message to signal for cosmos to initialize client side entities
                 PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
@@ -386,6 +500,37 @@ namespace pleep
                 // (store it in msg.remote?)
                 // when we receive input updates from this client, we should only allow
                 // and/or assume they are for this entity only!
+                
+            }
+            break;
+            case events::network::JUMP_REQUEST:
+            {
+                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received jump request from a client");
+
+                // lead local client connection id into message
+                events::network::JUMP_REQUEST_params jumpInfo;
+                msg.msg >> jumpInfo;
+                jumpInfo.requesterConnId = msg.remote->get_id();
+                msg.msg << jumpInfo;
+
+                // send to server based on timesliceDelta
+                int destination = m_timelineApi.get_timeslice_id() + jumpInfo.timesliceDelta;
+
+                // ensure destination is in range
+                if (destination < 0 || destination > m_timelineApi.get_num_timeslices() - 1)
+                {
+                    // create error response for client
+                    EventMessage errorMsg(events::network::JUMP_RESPONSE);
+                    events::network::JUMP_RESPONSE_params errorInfo{
+                        0, 0, 0
+                    };
+                    errorMsg << errorInfo;
+                    msg.remote->send(errorMsg);
+                    break;
+                }
+
+                // good to send now
+                m_timelineApi.send_message(static_cast<TimesliceId>(destination), msg.msg);
             }
             break;
             default:

@@ -15,6 +15,7 @@ namespace pleep
         m_sharedBroker = sharedBroker;
         // setup handlers?
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
     }
 
     Cosmos::~Cosmos() 
@@ -23,6 +24,7 @@ namespace pleep
 
         // clear handlers
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
     }
     
     void Cosmos::update() 
@@ -129,5 +131,18 @@ namespace pleep
         
         PLEEPLOG_TRACE("Entity " + std::to_string(condemnInfo.entity) + " was condemned to deletion.");
         m_condemned.insert(condemnInfo.entity);
+    }
+
+    void Cosmos::_condemn_all_handler(EventMessage condemnEvent)
+    {
+        UNREFERENCED_PARAMETER(condemnEvent);
+        // keep cosmos config the same but remove all entities
+        
+        // Add all entities to condemned list
+        PLEEPLOG_TRACE("All existing entities condemned to deletion.");
+        for (auto kv : get_signatures_ref())
+        {
+            m_condemned.insert(kv.first);
+        }
     }
 }

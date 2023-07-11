@@ -85,6 +85,21 @@ namespace net
             }
         }
 
+        // Don't do this often it is linear time to search for connectionId
+        void send_message(uint32_t connectionId, const Message<T_Msg>& msg)
+        {
+            // Can a new connection push interrupt this and cause iterators to fail?
+            // if so broadcast_message can as well
+            for (auto& remote : m_connectionDeque)
+            {
+                if (remote->get_id() == connectionId)
+                {
+                    this->send_message(remote, msg);
+                    break;
+                }
+            }
+        }
+
         // option to ignore 1 particular connection?
         void broadcast_message(const Message<T_Msg>& msg, std::shared_ptr<Connection<T_Msg>> ignoredConnection = nullptr)
         {

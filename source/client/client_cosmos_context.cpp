@@ -102,15 +102,16 @@ namespace pleep
             //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            ImGui::Text("NetworkDynamo%sconnected", m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
+            ImGui::Text("NetworkDynamo%sconnected to timeslice %d",
+                 m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ",
+                 m_dynamoCluster.networker->get_timeslice_id());
 
             // Buttons return true when clicked (most widgets return true when edited/activated)
             if (ImGui::Button("Reconnect"))
             {
-                // need to clear cosmos, 
-                m_currentCosmos = nullptr;
-                // rebuild base (until we can receive build config from server),
-                _build_cosmos();
+                // need to clear cosmos
+                EventMessage clearMsg(events::cosmos::CONDEMN_ALL);
+                m_eventBroker->send_event(clearMsg);
                 // and call network to disconnect and reconnect
                 // TODO: build address/port from config
                 m_dynamoCluster.networker->restart_connection("127.0.0.1", 61336 + nextTimesliceId);
@@ -121,6 +122,34 @@ namespace pleep
             if (ImGui::Button("+")) nextTimesliceId++;
             ImGui::SameLine();
             if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
+
+            if (ImGui::Button("Jump to past"))
+            {
+                // usually this would be invoked from some control script (responding to a keystroke)
+                // which means it must occur via eventBroker
+                EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                Entity me = m_currentCosmos->get_focal_entity();
+                Signature mySign = m_currentCosmos->get_entity_signature(me);
+                m_currentCosmos->serialize_entity_components(me, mySign, jumpMessage);
+                events::network::JUMP_REQUEST_params jumpInfo{
+                    1, 0, me, mySign
+                };
+                jumpMessage << jumpInfo;
+                m_eventBroker->send_event(jumpMessage);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Jump to future"))
+            {
+                EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                Entity me = m_currentCosmos->get_focal_entity();
+                Signature mySign = m_currentCosmos->get_entity_signature(me);
+                m_currentCosmos->serialize_entity_components(me, mySign, jumpMessage);
+                events::network::JUMP_REQUEST_params jumpInfo{
+                    -1, 0, me, mySign
+                };
+                jumpMessage << jumpInfo;
+                m_eventBroker->send_event(jumpMessage);
+            }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();

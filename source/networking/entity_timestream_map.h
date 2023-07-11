@@ -69,14 +69,11 @@ namespace pleep
 
         // check if timestream exists for an entity, if it is non-empty,
         // and if the front value has a coherency <= currentCoherency
-        bool is_data_available(Entity entity, uint16_t currentCoherency)
+        bool is_timestream_empty(Entity entity, uint16_t currentCoherency)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
-            auto timestreams_it = m_timestreams.find(entity);
-            return timestreams_it != m_timestreams.end()
-                && !timestreams_it->second.empty()
-                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.front().header.coherency);
+            return !(is_data_available(entity, currentCoherency));
         }
 
         // Return all Entities which exist in the timestream
@@ -98,13 +95,14 @@ namespace pleep
         // returns Message with EventId 0 if no data is available
         Message<EventId> pop_from_timestream(Entity entity, uint16_t currentCoherency)
         {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+
+            // check if data is available to avoid lock juggling
             if (!is_data_available(entity, currentCoherency))
             {
                 //PLEEPLOG_ERROR("Tried to pop from timestream which has no data available for this entity/coherency, returning null Message");
                 return Message<EventId>(0);
             }
-
-            const std::lock_guard<std::mutex> lk(m_mapMux);
             
             //PLEEPLOG_DEBUG("Popping for entity: " + std::to_string(entity) + " on coherency: " + std::to_string(currentCoherency) + ". There are " + std::to_string(m_timestreams.at(entity).count()) + " messages.");
 
@@ -129,6 +127,18 @@ namespace pleep
         }
 
     private:
+        // check if timestream exists for an entity, if it is non-empty,
+        // and if the front value has a coherency <= currentCoherency
+        // without holding the lock
+        bool is_data_available(Entity entity, uint16_t currentCoherency)
+        {
+            // no lock
+            auto timestreams_it = m_timestreams.find(entity);
+            return timestreams_it != m_timestreams.end()
+                && !timestreams_it->second.empty()
+                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.front().header.coherency);
+        }
+
         std::unordered_map<Entity, Timestream> m_timestreams;
 
         std::mutex m_mapMux;

@@ -173,6 +173,7 @@ namespace pleep
     private:
         // event handlers
         void _condemn_entity_handler(EventMessage condemnEvent);
+        void _condemn_all_handler(EventMessage condemnEvent);
 
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
         std::unique_ptr<ComponentRegistry> m_componentRegistry;
@@ -242,13 +243,16 @@ namespace pleep
 
         if (!m_entityRegistry->destroy_entity(entity))
         {
-            // Entity may not have existed
+            // Entity may not have existed, allow impodent calls
             return;
         }
         m_componentRegistry->clear_entity(entity);
         m_synchroRegistry->clear_entity(entity);
 
         PLEEPLOG_TRACE("Entity " + std::to_string(entity) + " was destroyed");
+
+        // clear focal entity if we just deleted it
+        if (entity == m_focalEntity) set_focal_entity(NULL_ENTITY);
 
         // broadcast entity no longer exists
         EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED, m_stateCoherency);

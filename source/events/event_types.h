@@ -91,6 +91,8 @@ namespace pleep
                 {
                     Entity entity = NULL_ENTITY;
                 };
+            // Request for all entities to be removed from cosmos
+            const EventId CONDEMN_ALL = __LINE__;
             
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
@@ -103,6 +105,11 @@ namespace pleep
                     Entity entity = NULL_ENTITY;
                     Signature sign;
                 };
+
+            // Request for the whole cosmos to be remade
+            // (removing all entities, components, and syncrhos)
+            // not be guarenteed to happen immediately, but before next frame
+            //const EventId RESET = __LINE__;
         }
 
         // events used as network messages sent over net::Connection
@@ -114,21 +121,21 @@ namespace pleep
             const EventId APP_INFO = __LINE__;
                 struct APP_INFO_params
                 {
-                    std::string name     = BUILD_PROJECT_NAME;
+                    char name[32]        = BUILD_PROJECT_NAME;
                     uint8_t versionMajor = BUILD_VERSION_MAJOR;
                     uint8_t versionMinor = BUILD_VERSION_MINOR;
                     uint8_t versionPatch = BUILD_VERSION_PATCH;
                     
                     bool is_compatible(const APP_INFO_params& other)
                     {
-                        return (this->name == other.name
+                        return (strcmp(this->name, other.name) == 0
                             && this->versionMajor == other.versionMajor
                             && this->versionMinor == other.versionMinor);
                     }
                     
                     friend bool operator==(const APP_INFO_params& lhs, const APP_INFO_params& rhs)
                     {
-                        return (lhs.name == rhs.name
+                        return (strcmp(lhs.name, rhs.name) == 0
                             && lhs.versionMajor == rhs.versionMajor
                             && lhs.versionMinor == rhs.versionMinor
                             && lhs.versionPatch == rhs.versionPatch);
@@ -159,14 +166,20 @@ namespace pleep
                     Entity intercessee;
                 };
                 
-            // Allow I_Server to notify dynamo about new client
+            // Servers receive this as a request froma  client to be added to the cosmos
+            // Clients receive this as an acknowledgment that their request was received
             const EventId NEW_CLIENT = __LINE__;
                 struct NEW_CLIENT_params
                 {
                     // shared pointer to remote already contained in OwnedMessage
 
-                    // For passing the single associated entity with the client
-                    Entity entity;
+                    // Used to notify server that client is transferring from another timeslice
+                    // 0 indicates no transfer (brand-new)
+                    // value should be copied from a received JUMP_RESPONSE
+                    uint32_t transferCode = 0;
+
+                    // used by server to respond to new client with their assigned focal entity
+                    Entity entity = 0;
                 };
 
             // Server reports the current coherency at time of sending
@@ -176,6 +189,39 @@ namespace pleep
                     TimesliceId senderId;
                     // use coherency from message header
                     //uint16_t coherency;
+                };
+
+            // Request timetravel
+            // entity will be serialized into the Message before _params
+            const EventId JUMP_REQUEST = __LINE__;
+                struct JUMP_REQUEST_params
+                {
+                    // relative number of timeslices requested to jump (negative is to future)
+                    // Should this be relative or absolute?
+                    int timesliceDelta = 0;
+
+                    // assigned by source timeslice then reflected back by destination in JUMP_RESPONSE
+                    uint32_t requesterConnId;
+
+                    // Entity belonging to address who is jumping
+                    // REMEMBER to serialize this entity in message before adding params!
+                    Entity entity = NULL_ENTITY;
+                    Signature sign;
+                };
+            // Reponse returned by destination timeslice to confirm that they are ready to receive the time traveller
+            const EventId JUMP_RESPONSE = __LINE__;
+                struct JUMP_RESPONSE_params
+                {
+                    // return client connection id which server provided us in the JUMP_REQUEST
+                    uint32_t requesterConnId = 0;
+
+                    // generated secret code for client to use when they connect
+                    // 0 implies failure, do not jump
+                    uint32_t transferCode = 0;
+
+                    // inform client of where to connect
+                    // they must already know the address
+                    uint16_t port = 0;
                 };
         }
     }

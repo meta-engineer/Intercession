@@ -36,8 +36,8 @@ namespace pleep
         }
 
         // update view info with registered camera
-        // re-get camera each time becuase ECS pointers are volatile
-        if (m_mainCamera != NULL_ENTITY)
+        // re-get camera each time because ECS pointers are volatile
+        if (cosmos->entity_exists(m_mainCamera))
         {
             m_attachedRenderDynamo->submit(CameraPacket {
                 cosmos->get_component<TransformComponent>(m_mainCamera),
@@ -46,6 +46,7 @@ namespace pleep
         }
         else
         {
+            m_mainCamera = NULL_ENTITY;
             //PLEEPLOG_WARN("Update called while no main camera entity was set");
         }
 

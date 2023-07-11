@@ -112,9 +112,11 @@ namespace net
         {
             if (this->is_connected())
             {
-                // assuming there is only ever one job in the context,
-                // this should get that job to proc with error_code and end the thread
+                // this should proc any jobs to receive with error_code and end the thread
                 m_socket.close();
+                // poll a few(?) times to try to clear any jobs (1 for async_read and async_write?)
+                m_asioContext.poll_one();
+                m_asioContext.poll_one();
             }
         }
 
@@ -127,7 +129,7 @@ namespace net
         // report if connection is connected, initialized, and safe to send across
         bool is_ready() const
         {
-            return this->is_connected() && m_handshakeSuccess;
+            return this->is_connected() && m_isSendable && m_handshakeSuccess;
         }
 
         asio::ip::tcp::endpoint get_endpoint()
@@ -159,6 +161,15 @@ namespace net
                     }
                 }
             );
+        }
+
+        void disable_sending()
+        {
+            m_isSendable = false;
+        }
+        void enable_sending()
+        {
+            m_isSendable = true;
         }
 
     private:
@@ -462,6 +473,9 @@ namespace net
 
         // unique id to distinguish multiple connections used by a server
         uint32_t m_id = 0;
+
+        // app level flag to lock outgoing messages to connection during initialization and transition phases
+        bool m_isSendable = true;
 
         // Basic (application level) handshake validation
         uint32_t m_handshakePlaintext = 0;

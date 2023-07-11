@@ -35,6 +35,7 @@ namespace pleep
 
     private:
         // event handlers
+        void _jump_request_handler(EventMessage jumpMsg);
 
         // Networking relays
 
@@ -43,6 +44,9 @@ namespace pleep
 
         // TODO: Move this to be held in a specific relay
         std::weak_ptr<Cosmos> m_workingCosmos;
+
+        // code for validating timeslice jumps
+        uint32_t m_transferCode = 0;
     };
 }
 

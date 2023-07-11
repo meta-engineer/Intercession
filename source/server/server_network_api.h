@@ -37,13 +37,18 @@ namespace pleep
             UNREFERENCED_PARAMETER(remote);
             PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Checking validated connection");
 
-            // "forward" new client notice in lieu of client sending it (it is implied when client calls to connect)
-            net::OwnedMessage<EventId> msg;
-            msg.msg = EventMessage(events::network::NEW_CLIENT);
-            msg.remote = remote;
-            events::network::NEW_CLIENT_params clientInfo;  // is this necessary?
-            msg.msg << clientInfo;
-            m_incomingMessages.push_back(msg);
+            // New Connection Could be BRAND-new client, or could be a client transferring from another timeslice
+            // So we have to wait for them to notify us
+            // For safety this should be a 1 time notification, once they initalize their type, we respond accordingly and then they cannot change it.
+
+            // send app info to client immediately from here (as an ACK), then client can send NEW_CLIENT msg to normal network message queue
+
+            EventMessage appMessage(events::network::APP_INFO);
+            events::network::APP_INFO_params appInfo{};
+            appMessage << appInfo;
+            remote->send(appMessage);
+            // Don't send any frame updates to this connection until it is initialized
+            remote->disable_sending();
         }
         
         void on_remote_disconnect(std::shared_ptr<net::Connection<EventId>> remote) override

@@ -21,12 +21,15 @@ namespace pleep
         // Keep frame loop alive until then
 
         // setup any event handlers
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_REQUEST, ClientNetworkDynamo::_jump_request_handler));
         
         PLEEPLOG_TRACE("Done client networking pipeline setup");
     }
 
     ClientNetworkDynamo::~ClientNetworkDynamo() 
     {
+        // clear event handlers
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_REQUEST, ClientNetworkDynamo::_jump_request_handler));
     }
 
     void ClientNetworkDynamo::run_relays(double deltaTime) 
@@ -46,15 +49,18 @@ namespace pleep
         // before receiving any entity updates, send our focal entity state
         if (cosmos)
         {
-            EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
             Entity focalEntity = cosmos->get_focal_entity();
-            events::cosmos::ENTITY_UPDATE_params focalInfo = {
-                focalEntity, 
-                cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream)
-            };
-            cosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
-            focalUpdate << focalInfo;
-            m_networkApi.send_message(focalUpdate);
+            if (focalEntity != NULL_ENTITY)
+            {
+                EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
+                events::cosmos::ENTITY_UPDATE_params focalInfo = {
+                    focalEntity, 
+                    cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream)
+                };
+                cosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
+                focalUpdate << focalInfo;
+                m_networkApi.send_message(focalUpdate);
+            }
         }
 
         // Handling incoming server messages from network
@@ -63,7 +69,7 @@ namespace pleep
         size_t messageCount = 0;
         while ((messageCount++) < maxMessages && m_networkApi.is_message_available())
         {
-            Message<EventId> msg = m_networkApi.pop_message();
+            Message<EventId> msg = m_networkApi.pop_message();  // TODO: race condition between is_message_available and pop **************************************
             if (!cosmos) continue;
             
             switch (msg.header.id)
@@ -71,24 +77,32 @@ namespace pleep
             case events::network::APP_INFO:
             {
                 PLEEPLOG_TRACE("Received APP_INFO message");
+                // this message is received when connection succeeds
+
+                // check app infos match
                 events::network::APP_INFO_params localInfo;
                 events::network::APP_INFO_params remoteInfo;
                 msg >> remoteInfo;
 
-                if (localInfo == remoteInfo)
+                if (!(localInfo == remoteInfo))
                 {
-                    PLEEPLOG_DEBUG("Remote appInfo matches local appInfo! Good to keep communicating.");
-                    PLEEPLOG_DEBUG("I will respond with my INTERCESSION_APP_INFO");
-                    Message<EventId> response(events::network::INTERCESSION_APP_INFO);
-                    events::network::INTERCESSION_APP_INFO_params localIntercessionInfo;
-                    response << localIntercessionInfo;
+                    PLEEPLOG_WARN("Remote appInfo DOES NOT match local appInfo! I should consider disconnecting.");
+                    // In future we can reduce this to only check compadibility not exact match
+                    assert(localInfo == remoteInfo);
+                    return;
+                }
 
-                    //m_networkApi.send_message(response);
-                }
-                else
-                {
-                    PLEEPLOG_DEBUG("Remote appInfo DOES NOT match local appInfo! I should consider disconnecting.");
-                }
+                PLEEPLOG_INFO("Remote appInfo matches local appInfo! Good to keep communicating.");
+
+                EventMessage newClientMsg(events::network::NEW_CLIENT);
+                events::network::NEW_CLIENT_params newClientInfo{
+                    m_transferCode // 0 if we are a brand-new client connecting
+                };
+                newClientMsg << newClientInfo;
+                m_networkApi.send_message(newClientMsg);
+
+                // only use transfer code once
+                m_transferCode = 0;
             }
             break;
             case events::cosmos::ENTITY_UPDATE:
@@ -148,6 +162,22 @@ namespace pleep
                 }
             }
             break;
+            case events::cosmos::ENTITY_REMOVED:
+            {
+                PLEEPLOG_TRACE("Received ENTITY_REMOVED message");
+
+                // entity deletion should be idempotent, incase our local simulation also deletes
+                events::cosmos::ENTITY_REMOVED_params removeInfo;
+                msg >> removeInfo;
+                // use condemn event to avoid double deletion
+                EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
+                events::cosmos::CONDEMN_ENTITY_params condemnInfo{
+                    removeInfo.entity
+                };
+                condemnMsg << condemnInfo;
+                m_sharedBroker->send_event(condemnMsg);
+            }
+            break;
             case events::network::INTERCESSION:
             {
                 PLEEPLOG_TRACE("Received INTERCESSION message");
@@ -180,6 +210,27 @@ namespace pleep
                 msg >> syncInfo;
 
                 cosmos->set_coherency(msg.header.coherency);
+            }
+            break;
+            case events::network::JUMP_RESPONSE:
+            {
+                events::network::JUMP_RESPONSE_params jumpInfo;
+                msg >> jumpInfo;
+
+                // check if server has denied our jump request
+                if (jumpInfo.port == 0) break;
+                
+                PLEEPLOG_TRACE("Received JUMP_RESPONSE message, i can connect to: " + std::to_string(jumpInfo.port) + " with trasfer code: " + std::to_string(jumpInfo.transferCode));
+
+                // signal to clear the cosmos and prep for data from the new connection
+                EventMessage condemnMsg(events::cosmos::CONDEMN_ALL);
+                m_sharedBroker->send_event(condemnMsg);
+
+                // TODO: I should know the currently connected address from startup
+                restart_connection("127.0.0.1", jumpInfo.port);
+
+                // save transfer code to use when connection succeeds
+                m_transferCode = jumpInfo.transferCode;
             }
             break;
             default:
@@ -215,5 +266,12 @@ namespace pleep
     {
         m_networkApi.disconnect();
         m_networkApi.connect(address, port);
+    }
+
+    void ClientNetworkDynamo::_jump_request_handler(EventMessage jumpMsg)
+    {
+        // some control script has called to request a timeslice jump
+        // forward message on to server, expecting a JUMP_RESPONSE sometime soon
+        m_networkApi.send_message(jumpMsg);
     }
 }

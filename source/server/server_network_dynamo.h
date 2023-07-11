@@ -55,6 +55,9 @@ namespace pleep
         ServerNetworkApi m_networkApi;
 
         std::weak_ptr<Cosmos> m_workingCosmos;
+
+        // Save serialized entities waiting for their clients to connect
+        std::unordered_map<uint32_t, EventMessage> m_transferCache;
     };
 }
 
