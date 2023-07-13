@@ -23,14 +23,28 @@ namespace pleep
         
         // Wrap deque methods
 
+        // directly access dq front
+        // Cannot be exception safe because you cannot return pass by reference without moving the value
+        // MUST catch exception in case deque is empty
         const T_Element& front()
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
+            if (m_deque.empty())
+            {
+                throw std::range_error("Called front() on empty TsQueue");
+            }
             return m_deque.front();
         }
+        // directly access dq back
+        // Cannot be exception safe because you cannot return pass by reference without moving the value
+        // MUST catch exception in case deque is empty
         const T_Element& back()
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
+            if (m_deque.empty())
+            {
+                throw std::range_error("Called back() on empty TsQueue");
+            }
             return m_deque.back();
         }
         
@@ -71,21 +85,24 @@ namespace pleep
             m_deque.clear();
         }
 
-        // return popped element and remaining size of queue
-        std::pair<T_Element,size_t> pop_front()
+        // return false if deque is empty
+        // otherwise move popped element to reference and return true
+        bool pop_front(T_Element& dest)
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
-            const T_Element item = std::move(m_deque.front());
+            if (m_deque.empty()) return false;
+            dest = std::move(m_deque.front());
             m_deque.pop_front();
-            return {item, m_deque.size()};
+            return true;
         }
         // return popped element and remaining size of queue
-        std::pair<T_Element,size_t> pop_back()
+        bool pop_back(T_Element& dest)
         {
             const std::lock_guard<std::mutex> lk(m_dequeMux);
-            const T_Element item = std::move(m_deque.back());
+            if (m_deque.empty()) return false;
+            dest = std::move(m_deque.back());
             m_deque.pop_back();
-            return {item, m_deque.size()};
+            return true;
         }
 
         // use this to block until incoming message queue is populated by async connections

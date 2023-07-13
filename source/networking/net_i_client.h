@@ -114,10 +114,15 @@ namespace net
         {
             return !(m_incomingMessages.empty());
         }
-        Message<T_Msg> pop_message()
+        // returns false if nothing was available
+        bool pop_message(Message<T_Msg>& dest)
         {
             // Do we want to return the owned message for convenience? (even though there is only 1 connection)
-            return m_incomingMessages.pop_front().first.msg;
+            OwnedMessage<T_Msg> ownedDest;
+            bool res = m_incomingMessages.pop_front(ownedDest);
+            if (res) dest = ownedDest.msg;
+
+            return res;
         }
 
     protected:

@@ -67,9 +67,9 @@ namespace pleep
         //inline _process_network_messages()
         const size_t maxMessages = static_cast<size_t>(-1);
         size_t messageCount = 0;
-        while ((messageCount++) < maxMessages && m_networkApi.is_message_available())
+        Message<EventId> msg;
+        while ((messageCount++) < maxMessages && m_networkApi.pop_message(msg))
         {
-            Message<EventId> msg = m_networkApi.pop_message();  // TODO: race condition between is_message_available and pop **************************************
             if (!cosmos) continue;
             
             switch (msg.header.id)

@@ -109,12 +109,12 @@ namespace pleep
         {
             return !(m_multiplex->at(m_timesliceId).empty());
         }
-        // Restrict access to incoming queue to only be receivable
-        // Has same exception behaviour of deque on popping empty deque
-        EventMessage pop_message()
+        // Restrict access to incoming queue to only be poppable
+        // returns false if nothing was available at time of call
+        bool pop_message(EventMessage& dest)
         {
             // MUST ONLY POP FROM m_timesliceId
-            return m_multiplex->at(m_timesliceId).pop_front().first;
+            return m_multiplex->at(m_timesliceId).pop_front(dest);
         }
 
         // ***** Accessors for Timestreams *****
@@ -166,15 +166,14 @@ namespace pleep
             return m_futureTimestreams->get_entities_with_streams();
         }
 
-        // Restrict access to future timestreams to only be receivable
-        // returns Message with EventId 0 if no data is available
-        EventMessage pop_future_timestream(Entity entity, uint16_t coherency)
+        // Restrict access for future timestreams to only be poppable
+        bool pop_future_timestream(Entity entity, uint16_t coherency, EventMessage& dest)
         {
             if (!m_futureTimestreams)
             {
                 PLEEPLOG_WARN("This timeslice has no future timestream to pop from");
             }
-            return m_futureTimestreams->pop_from_timestream(entity, coherency);
+            return m_futureTimestreams->pop_from_timestream(entity, coherency, dest);
         }
 
     private:

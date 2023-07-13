@@ -113,8 +113,9 @@ namespace net
             if (this->is_connected())
             {
                 // this should proc any jobs to receive with error_code and end the thread
-                m_socket.close();
+                asio::post(m_asioContext, [this]() { m_socket.close(); });
                 // poll a few(?) times to try to clear any jobs (1 for async_read and async_write?)
+                m_asioContext.poll_one();
                 m_asioContext.poll_one();
                 m_asioContext.poll_one();
             }
@@ -282,10 +283,11 @@ namespace net
                         // no body to write, so clear message
                         else
                         {
-                            std::pair<Message<T_Msg>,size_t> popped = m_outgoingMessages.pop_front();
+                            Message<T_Msg> popped;
+                            m_outgoingMessages.pop_front(popped);
 
                             // prime next write
-                            if (popped.second > 0)
+                            if (m_outgoingMessages.count() > 0)
                             {
                                 this->_write_header();
                             }
@@ -314,9 +316,10 @@ namespace net
                     if (!ec)
                     {
                         // body is written, prime for next write
-                        std::pair<Message<T_Msg>,size_t> popped = m_outgoingMessages.pop_front();
+                        Message<T_Msg> popped;
+                        m_outgoingMessages.pop_front(popped);
 
-                        if (popped.second > 0)
+                        if (m_outgoingMessages.count() > 0)
                         {
                             this->_write_header();
                         }

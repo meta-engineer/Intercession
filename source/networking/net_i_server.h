@@ -139,9 +139,10 @@ namespace net
         {
             return !(m_incomingMessages.empty());
         }
-        OwnedMessage<T_Msg> pop_message()
+        // returns false if nothing was available
+        bool pop_message(OwnedMessage<T_Msg>& dest)
         {
-            return m_incomingMessages.pop_front().first;
+            return m_incomingMessages.pop_front(dest);
         }
 
         size_t get_num_connections()

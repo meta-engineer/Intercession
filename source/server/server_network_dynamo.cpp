@@ -82,9 +82,9 @@ namespace pleep
         // Ordering of methods?
         // First: process DIRECT messages from other timeslices
         //_process_timeline_messages();
-        while(m_timelineApi.is_message_available())
+        EventMessage msg;
+        while(m_timelineApi.pop_message(msg))
         {
-            EventMessage msg = m_timelineApi.pop_message();
             // No message handlers whos side effects don't rely on modifying the cosmos
             if (!cosmos) continue;
 
@@ -263,24 +263,22 @@ namespace pleep
 
             for (Entity& entity : availableEntities)
             {
-                EventMessage msg(1);
-                // timeline api will return message with id = 0 if nothing is available
-                while (msg.header.id != 0)
+                EventMessage evnt(1);
+                // timeline api will return false if nothing available at currentCoherency or earlier
+                while (m_timelineApi.pop_future_timestream(entity, currentCoherency, evnt))
                 {
-                    msg = m_timelineApi.pop_future_timestream(entity, currentCoherency);
-
                     // continue to clear out messages if no working cosmos
                     if (!cosmos) continue;
 
                     // Handle timestream messages just as a client would, i think?
-                    switch(msg.header.id)
+                    switch(evnt.header.id)
                     {
                     case events::cosmos::ENTITY_UPDATE:
                     {
                         //PLEEPLOG_TRACE("Received ENTITY_UPDATE message from future");
 
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
-                        msg >> updateInfo;
+                        evnt >> updateInfo;
                         //PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
                         //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
 
@@ -288,7 +286,7 @@ namespace pleep
                         // confirm entity signatures match?
 
                         // read update into Cosmos
-                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
+                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt);
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
@@ -297,7 +295,7 @@ namespace pleep
 
                         // register entity and create components to match signature
                         events::cosmos::ENTITY_CREATED_params createInfo;
-                        msg >> createInfo;
+                        evnt >> createInfo;
                         //PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                         if (cosmos->register_entity(createInfo.entity))
@@ -315,7 +313,7 @@ namespace pleep
 
                         // create any new components, remove any components message does not have
                         events::cosmos::ENTITY_MODIFIED_params modInfo;
-                        msg >> modInfo;
+                        evnt >> modInfo;
                         //PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
 
                         // ensure entity exists
@@ -339,7 +337,7 @@ namespace pleep
                         // call cosmos to delete entity, it will emit event again over broker and cause host decrement
                         // (sender SHOULD have correctly offset causalchainlink already)
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
-                        msg >> removeInfo;
+                        evnt >> removeInfo;
 
                         // use condemn event to avoid double deletion
                         EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
@@ -356,47 +354,45 @@ namespace pleep
                     }
                 }
             }
-
-            //if (msg.header.id == 0) noop;
         }
 
         // Third: handle incoming client messages from network
         //_process_network_messages();
         const size_t maxMessages = static_cast<size_t>(-1);
         size_t messageCount = 0;
-        while ((messageCount++) < maxMessages && m_networkApi.is_message_available())
+        net::OwnedMessage<EventId> remoteMsg;
+        while ((messageCount++) < maxMessages && m_networkApi.pop_message(remoteMsg))
         {
-            net::OwnedMessage<EventId> msg = m_networkApi.pop_message();
             // We could want to respond to a client, so even if we have no working cosmos we need to run handlers (safely)
 
-            switch (msg.msg.header.id)
+            switch (remoteMsg.msg.header.id)
             {
             case events::network::INTERCESSION:
             {
-                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Bouncing intercession update message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Bouncing intercession update message");
                 // just bounce back
-                msg.remote->send(msg.msg);
+                remoteMsg.remote->send(remoteMsg.msg);
             }
             break;
             case events::cosmos::ENTITY_UPDATE:
             {
-                //PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received entity update message");
+                //PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Received entity update message");
 
                 events::cosmos::ENTITY_UPDATE_params updateInfo;
-                msg.msg >> updateInfo;
+                remoteMsg.msg >> updateInfo;
                 // TODO: Check updated entity matches client's assigned entity
 
                 // We should only be receiving upstream components...
-                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg.msg);
+                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, remoteMsg.msg);
             }
             break;
             case events::network::NEW_CLIENT:
             {
                 // this is the first message a client will send us after connection
-                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received new client notice");
+                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Received new client notice");
 
                 events::network::NEW_CLIENT_params clientInfo;
-                msg.msg >> clientInfo;
+                remoteMsg.msg >> clientInfo;
 
                 // TODO: Send Cosmos config
                 // should be stateless and scan current workingCosmos?
@@ -410,13 +406,13 @@ namespace pleep
                 if (!cosmos) break;
                 
                 PLEEPLOG_WARN("New client joined, I should send them a cosmos config!");
-                msg.remote->enable_sending();
+                remoteMsg.remote->enable_sending();
                 /* Message<EventId> configMsg(events::cosmos::CONFIG);
                 events::cosmos::CONFIG_params configInfo;
                 CosmosBuilder scanner;
                 configInfo.config = scanner.scan(cosmos);
                 configMsg << configInfo;
-                msg.remote->send(configMsg); */
+                remoteMsg.remote->send(configMsg); */
 
                 PLEEPLOG_DEBUG("Sending Entities to new client");
                 // Send initialization for all entities that already exist
@@ -426,7 +422,7 @@ namespace pleep
                     events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
                     createMsg << createInfo;
                     //PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
-                    msg.remote->send(createMsg);
+                    remoteMsg.remote->send(createMsg);
                 }
 
                 
@@ -454,7 +450,7 @@ namespace pleep
                         // this could be eschewed if deserialize could auto-add components
         
                         cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpMsg);
-                        PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
+                        PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
 
                         // signal to host to incrememnt host count (like create_entity does locally)
                         EventMessage createMsg(events::cosmos::ENTITY_CREATED);
@@ -487,17 +483,17 @@ namespace pleep
                     // Client may have to do predictive entity creation in the future,
                     // but we'll avoid that here for now because client has to wait anyways
                     clientInfo.entity = create_client_focal_entity(cosmos, m_sharedBroker);
-                    PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(msg.remote->get_id()));
+                    PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
                 }
 
                 // Forward new client message to signal for cosmos to initialize client side entities
                 PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
-                msg.msg.header.coherency = currentCoherency;
-                msg.msg << clientInfo;
-                msg.remote->send(msg.msg);
+                remoteMsg.msg.header.coherency = currentCoherency;
+                remoteMsg.msg << clientInfo;
+                remoteMsg.remote->send(remoteMsg.msg);
 
                 // TODO: we should also keep track of the clientInfo.entity
-                // (store it in msg.remote?)
+                // (store it in remoteMsg.remote?)
                 // when we receive input updates from this client, we should only allow
                 // and/or assume they are for this entity only!
                 
@@ -505,13 +501,13 @@ namespace pleep
             break;
             case events::network::JUMP_REQUEST:
             {
-                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received jump request from a client");
+                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Received jump request from a client");
 
                 // lead local client connection id into message
                 events::network::JUMP_REQUEST_params jumpInfo;
-                msg.msg >> jumpInfo;
-                jumpInfo.requesterConnId = msg.remote->get_id();
-                msg.msg << jumpInfo;
+                remoteMsg.msg >> jumpInfo;
+                jumpInfo.requesterConnId = remoteMsg.remote->get_id();
+                remoteMsg.msg << jumpInfo;
 
                 // send to server based on timesliceDelta
                 int destination = m_timelineApi.get_timeslice_id() + jumpInfo.timesliceDelta;
@@ -525,17 +521,17 @@ namespace pleep
                         0, 0, 0
                     };
                     errorMsg << errorInfo;
-                    msg.remote->send(errorMsg);
+                    remoteMsg.remote->send(errorMsg);
                     break;
                 }
 
                 // good to send now
-                m_timelineApi.send_message(static_cast<TimesliceId>(destination), msg.msg);
+                m_timelineApi.send_message(static_cast<TimesliceId>(destination), remoteMsg.msg);
             }
             break;
             default:
             {
-                PLEEPLOG_DEBUG("[" + std::to_string(msg.remote->get_id()) + "] Received unknown message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Received unknown message");
             }
             break;
             }
