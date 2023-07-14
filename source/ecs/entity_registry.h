@@ -142,13 +142,18 @@ namespace pleep
         }
 
         // Clear signature (if it exists)
-        return m_signatures.erase(entity);
+        const size_t success = m_signatures.erase(entity);
 
         // Entity will be re-added to availability queue once it's host count decrements to 0
-
-        // we can dispatch to our NetworkDynamo to do our decrement
+        // we will dispatch to our NetworkDynamo to decrement OTHER hosts
         //     (event signalled by cosmos after this returns)
-        // our child will signal when they receive the remove signal from timestream
+        // but clients (and servers) will decrement themselves immediately here
+        if (success && m_timesliceId == derive_timeslice_id(entity))
+        {
+            decrement_hosted_entity_count(entity);
+        }
+
+        return success;
     }
 
     inline size_t EntityRegistry::get_entity_count()

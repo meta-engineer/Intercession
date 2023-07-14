@@ -671,7 +671,8 @@ namespace pleep
 
         // entity has left our timeslice so we need to decrement its host's count
         TimesliceId host = derive_timeslice_id(removedEntityParams.entity);
-        m_timelineApi.send_message(host, entityEvent);
+        // Don't send to ourselves, decrement will already have happened
+        if (host != m_timelineApi.get_timeslice_id()) m_timelineApi.send_message(host, entityEvent);
 
         // TODO: check superposition
         if (m_timelineApi.has_past())
