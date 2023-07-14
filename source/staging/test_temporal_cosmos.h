@@ -42,7 +42,7 @@ namespace pleep
         PLEEPLOG_DEBUG("(time)  host TimesliceId: " + std::to_string(derive_timeslice_id(time)));
         PLEEPLOG_DEBUG("(time)         GenesisId: " + std::to_string(derive_genesis_id(time)));
         PLEEPLOG_DEBUG("(time)   CausalChainLink: " + std::to_string(derive_causal_chain_link(time)));
-        PLEEPLOG_DEBUG("(time)    instance count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(time)));
+        PLEEPLOG_DEBUG("(time)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
 
         Entity space = cosmos->create_entity();
         UNREFERENCED_PARAMETER(space);
@@ -50,7 +50,7 @@ namespace pleep
         PLEEPLOG_DEBUG("(space)  host TimesliceId: " + std::to_string(derive_timeslice_id(space)));
         PLEEPLOG_DEBUG("(space)         GenesisId: " + std::to_string(derive_genesis_id(space)));
         PLEEPLOG_DEBUG("(space)   CausalChainLink: " + std::to_string(derive_causal_chain_link(space)));
-        PLEEPLOG_DEBUG("(space)    instance count: " + std::to_string(cosmos->get_hosted_temporal_entity_count(time)));
+        PLEEPLOG_DEBUG("(space)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
 
 
          // ***************************************************************************

@@ -88,7 +88,7 @@ namespace net
                 PLEEPLOG_WARN("Cannot establish new connection with an in-use socket. disconnect() first.");
                 return;
             }
-            
+
             // Attempt to connect
             asio::async_connect(m_socket, endpoints,
                 [this](std::error_code ec, asio::ip::tcp::endpoint endpoint)
@@ -114,10 +114,6 @@ namespace net
             {
                 // this should proc any jobs to receive with error_code and end the thread
                 asio::post(m_asioContext, [this]() { m_socket.close(); });
-                // poll a few(?) times to try to clear any jobs (1 for async_read and async_write?)
-                m_asioContext.poll_one();
-                m_asioContext.poll_one();
-                m_asioContext.poll_one();
             }
         }
 

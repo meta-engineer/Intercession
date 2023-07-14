@@ -76,15 +76,15 @@ namespace pleep
 
         // increase existence count of TemporalEntity that this Entity belongs to
         // throws error if count is currently zero (must be set by create/register)
-        void increment_hosted_temporal_entity_count(Entity entity);
+        void increment_hosted_entity_count(Entity entity);
         // decrease existence count of TemporalEntity that this Entity belongs to
         // throws error if count is currently zero (must be set by create/register)
-        void decrement_hosted_temporal_entity_count(Entity entity);
+        void decrement_hosted_entity_count(Entity entity);
         // Returns total number of entities that share this entity's TemporalEntityId across the timeline
         // returns 0 if entity is not hosted by this timeslice
-        size_t get_hosted_temporal_entity_count(Entity entity);
+        size_t get_hosted_entity_count(Entity entity);
         // Returns total number of TampoeralEntities this cosmos is currently hosting
-        size_t get_num_hosted_temporal_entities();
+        size_t get_num_hosted_entities();
 
         // setup component T to be usable in this cosmos
         // Assign category to the registered type
@@ -289,21 +289,21 @@ namespace pleep
         return m_componentRegistry->find_entity(component);
     }
     
-    inline void Cosmos::increment_hosted_temporal_entity_count(Entity entity)
+    inline void Cosmos::increment_hosted_entity_count(Entity entity)
     {
-        m_entityRegistry->increment_hosted_temporal_entity_count(entity);
+        m_entityRegistry->increment_hosted_entity_count(entity);
     }
-    inline void Cosmos::decrement_hosted_temporal_entity_count(Entity entity)
+    inline void Cosmos::decrement_hosted_entity_count(Entity entity)
     {
-        m_entityRegistry->decrement_hosted_temporal_entity_count(entity);
+        m_entityRegistry->decrement_hosted_entity_count(entity);
     }
-    inline size_t Cosmos::get_hosted_temporal_entity_count(Entity entity)
+    inline size_t Cosmos::get_hosted_entity_count(Entity entity)
     {
-        return m_entityRegistry->get_hosted_temporal_entity_count(entity);
+        return m_entityRegistry->get_hosted_entity_count(entity);
     }
-    inline size_t Cosmos::get_num_hosted_temporal_entities()
+    inline size_t Cosmos::get_num_hosted_entities()
     {
-        return m_entityRegistry->get_num_hosted_temporal_entities();
+        return m_entityRegistry->get_num_hosted_entities();
     }
 
     template<typename T>

@@ -89,7 +89,7 @@ namespace pleep
                 std::string entityCountString = " Total Entity Count: " + std::to_string(m_currentCosmos->get_entity_count());
                 ImGui::Text(entityCountString.c_str());
 
-                std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_temporal_entities());
+                std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_entities());
                 ImGui::Text(hostedCountString.c_str());
 
                 ImGui::Text(("Update count: " + std::to_string(m_currentCosmos->get_coherency())).c_str());

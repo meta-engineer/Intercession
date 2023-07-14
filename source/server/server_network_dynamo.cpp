@@ -104,7 +104,7 @@ namespace pleep
                 }
                 else
                 {
-                    cosmos->increment_hosted_temporal_entity_count(data.entity);
+                    cosmos->increment_hosted_entity_count(data.entity);
                 }
             }
             break;
@@ -120,7 +120,7 @@ namespace pleep
                 }
                 else
                 {
-                    cosmos->decrement_hosted_temporal_entity_count(data.entity);
+                    cosmos->decrement_hosted_entity_count(data.entity);
                 }
             }
             break;

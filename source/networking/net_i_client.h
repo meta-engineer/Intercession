@@ -71,18 +71,27 @@ namespace net
                 m_connection->disconnect();
             }
 
+            // stop the previous run() call
             m_asioContext.stop();
             if (m_contextThread.joinable())
             {
                 m_contextThread.join();
             }
 
-            // remove member reference to connection
+            // re-prime context
+            m_asioContext.restart();
+            // block and run a few(?) times to try to clear any jobs (at least 1 for async_read and async_write?)
+            for (uint8_t i = 0U; i < 10U; i++)
+            {
+                if (m_asioContext.run_one() == 0U) break;
+            }
+            // last run_one failed, so we need to prime context again
+            m_asioContext.restart();
+            
+            // destroy member reference to connection
             m_connection = nullptr;
             // remove all shared queue references to connection to invoke destructor
             m_incomingMessages.clear();
-
-            m_asioContext.restart();
         }
 
         // passthrough connection status

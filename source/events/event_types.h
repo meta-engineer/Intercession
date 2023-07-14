@@ -149,10 +149,16 @@ namespace pleep
             //  what is my client id/server id
             //  What is the address of the other servers (is this required?)
             //  What is the synchronized timepoint (minus my local delay)
-            const EventId INTERCESSION_APP_INFO = __LINE__;
-                struct INTERCESSION_APP_INFO_params
+            const EventId APPlication_INFO = __LINE__;
+                struct APPlication_INFO_params
                 {
                     // pass CosmosBuilder::Config ?
+
+                    //TimesliceId timeslice
+                    // make sure our configs match up
+                    //TimesliceId numTimeslices
+
+                    // use timeline_config?
                 };
 
             // Info about a timestream modification

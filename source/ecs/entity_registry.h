@@ -10,7 +10,7 @@
 
 namespace pleep
 {
-    // Manage TemporalEntity Ids, and Entity Signatures
+    // Manage HostedEntity Ids, and Entity Signatures
     class EntityRegistry
     {
     public:
@@ -23,17 +23,17 @@ namespace pleep
         // total entities in this Cosmos
         size_t get_entity_count();
 
-        // increase existence count of TemporalEntity that this Entity belongs to
+        // increase existence count of HostedEntity that this Entity belongs to
         // throws error if count is currently zero (must be set by create)
-        void increment_hosted_temporal_entity_count(Entity entity);
-        // decrease existence count of TemporalEntity that this Entity belongs to
+        void increment_hosted_entity_count(Entity entity);
+        // decrease existence count of HostedEntity that this Entity belongs to
         // throws error is count is currently zero (counting as failed)
-        void decrement_hosted_temporal_entity_count(Entity entity);
-        // Returns total number of entities that share this entity's TemporalEntityId across the timeline
+        void decrement_hosted_entity_count(Entity entity);
+        // Returns total number of entities that share this entity's HostedEntityId across the timeline
         // returns 0 if entity is not hosted by this tieslice
-        size_t get_hosted_temporal_entity_count(Entity entity);
+        size_t get_hosted_entity_count(Entity entity);
         // Returns total number of TampoeralEntities this cosmos is currently hosting
-        size_t get_num_hosted_temporal_entities();
+        size_t get_num_hosted_entities();
         
         void set_signature(Entity entity, Signature sign);
 
@@ -43,8 +43,8 @@ namespace pleep
 
     private:
         // queue of ALL unused Entity ids
-        // Only contains TemporalEntityIds with TimesliceId = m_timesliceId
-        std::queue<Entity> m_availableTemporalEntityIds{};
+        // Only contains HostedEntityIds with TimesliceId = m_timesliceId
+        std::queue<Entity> m_availableHostedEntityIds{};
 
         // entity signatures for ALL possible entities
         // even those from other host timeslices
@@ -61,8 +61,9 @@ namespace pleep
         // Therefore we need to maintain a list of unused ids to register new entities with
         // AND track their instance count across the timeline
         // unindexed values -> count of 0
-        // Key MUST ONLY be Entities with CausalChainlink Stripped!
-        std::unordered_map<Entity, size_t> m_hostedTemporalEntityCounts;
+        // Entities are created at chainlink 0
+        // HostedEntities keys MUST ONLY be Entities with CausalChainlink Stripped!
+        std::unordered_map<Entity, size_t> m_hostedEntityCounts;
         // NOTE: There may exist multiples of the same link value (because timeslices are async)
         // so count value may not correspond with highest link value
         // TODO: Do we want to be able to detect breaks in the Causal link?
@@ -76,24 +77,24 @@ namespace pleep
         // initialize the queue statically with ALL entities (as non are used yet)
         for (GenesisId g = 0; g < GENESISID_SIZE; g++)
         {
-            m_availableTemporalEntityIds.push(compose_entity(m_timesliceId, g, 0));
+            m_availableHostedEntityIds.push(compose_entity(m_timesliceId, g, 0));
         }
     }
 
     inline Entity EntityRegistry::create_entity(bool isTemporal)
     {
         // assert() entity count doesn't go beyond max
-        size_t localEntityCount = m_hostedTemporalEntityCounts.size();
-        if (localEntityCount > GENESISID_SIZE)
+        size_t localEntityCount = m_hostedEntityCounts.size();
+        if (localEntityCount > GENESISID_SIZE || m_availableHostedEntityIds.empty())
         {
             PLEEPLOG_ERROR("Cannot exceed max entity capacity of: " + std::to_string(GENESISID_SIZE));
             throw std::range_error("EntityRegistry is at entity count " + std::to_string(localEntityCount) + " and cannot create more Entities.");
         }
 
         // use queue to get Entity id
-        Entity ent = m_availableTemporalEntityIds.front();
-        assert(m_hostedTemporalEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedTemporalEntityCounts.end());
-        m_availableTemporalEntityIds.pop();
+        Entity ent = m_availableHostedEntityIds.front();
+        assert(m_hostedEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedEntityCounts.end());
+        m_availableHostedEntityIds.pop();
 
         if (!isTemporal) {
             TimesliceId entHostId = derive_timeslice_id(ent);
@@ -107,7 +108,7 @@ namespace pleep
         // TODO: how do clients signal to their host to validate this Entity? (and override with a proper TimesliceId)
 
         // Add ent to hosted map. Set host count to start at 1
-        m_hostedTemporalEntityCounts[strip_causal_chain_link(ent)] = 1;
+        m_hostedEntityCounts[strip_causal_chain_link(ent)] = 1;
         // for consistency we'll internally use the same increment mechanism 
         //     (even though we know who the host is)
         // so we can dispatch to our NetworkDyanmo to do our child's count increment
@@ -155,47 +156,47 @@ namespace pleep
         return m_signatures.size();
     }
     
-    inline void EntityRegistry::increment_hosted_temporal_entity_count(Entity entity)
+    inline void EntityRegistry::increment_hosted_entity_count(Entity entity)
     {
         CausalChainlink ccl = derive_causal_chain_link(entity);
         UNREFERENCED_PARAMETER(ccl);
-        Entity temporalEntity = strip_causal_chain_link(entity);
-        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(temporalEntity);
-        if (temporalEntityCountsIt == m_hostedTemporalEntityCounts.end())
+        Entity hostedEntity = strip_causal_chain_link(entity);
+        auto entityCountsIt = m_hostedEntityCounts.find(hostedEntity);
+        if (entityCountsIt == m_hostedEntityCounts.end())
         {
             PLEEPLOG_ERROR("Tried to increment the count of a hosted entity which doesn't exist");
             throw std::range_error("EntityRegistry tried to increment the count of a hosted entity which doesn't exist");
         }
         // count of 0 means decrementer failed to clear entry when it reached 0
-        assert(temporalEntityCountsIt->second != 0);
+        assert(entityCountsIt->second != 0);
 
-        temporalEntityCountsIt->second += 1;
-        PLEEPLOG_DEBUG("TemporalEntity " + std::to_string(temporalEntity) + " host count has incremented to " + std::to_string(temporalEntityCountsIt->second) + " from creation of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
+        entityCountsIt->second += 1;
+        PLEEPLOG_DEBUG("HostedEntity " + std::to_string(hostedEntity) + " host count has incremented to " + std::to_string(entityCountsIt->second) + " from creation of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
     }
-    inline void EntityRegistry::decrement_hosted_temporal_entity_count(Entity entity)
+    inline void EntityRegistry::decrement_hosted_entity_count(Entity entity)
     {
         CausalChainlink ccl = derive_causal_chain_link(entity);
         UNREFERENCED_PARAMETER(ccl);
-        Entity temporalEntity = strip_causal_chain_link(entity);
-        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(temporalEntity);
-        if (temporalEntityCountsIt == m_hostedTemporalEntityCounts.end())
+        Entity hostedEntity = strip_causal_chain_link(entity);
+        auto entityCountsIt = m_hostedEntityCounts.find(hostedEntity);
+        if (entityCountsIt == m_hostedEntityCounts.end())
         {
             PLEEPLOG_ERROR("Tried to decrement the count of a hosted entity which doesn't exist");
             throw std::range_error("EntityRegistry tried to decrement the count of a hosted entity which doesn't exist");
         }
         // count of 0 means decrementer failed to clear entry when it reached 0
-        assert(temporalEntityCountsIt->second != 0);
-        temporalEntityCountsIt->second -= 1;
-        PLEEPLOG_DEBUG("TemporalEntity " + std::to_string(temporalEntity) + " host count has decremented to " + std::to_string(temporalEntityCountsIt->second) + " from removal of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
+        assert(entityCountsIt->second != 0);
+        entityCountsIt->second -= 1;
+        PLEEPLOG_DEBUG("HostedEntity " + std::to_string(hostedEntity) + " host count has decremented to " + std::to_string(entityCountsIt->second) + " from removal of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
 
         // ensure all counts of 0 become unlisted and re-added to pool
-        if (temporalEntityCountsIt->second == 0) 
+        if (entityCountsIt->second == 0) 
         {
-            m_hostedTemporalEntityCounts.erase(temporalEntityCountsIt);
-            m_availableTemporalEntityIds.push(temporalEntity);
+            m_hostedEntityCounts.erase(entityCountsIt);
+            m_availableHostedEntityIds.push(hostedEntity);
         }
     }
-    inline size_t EntityRegistry::get_hosted_temporal_entity_count(Entity entity)
+    inline size_t EntityRegistry::get_hosted_entity_count(Entity entity)
     {
         if (entity == NULL_ENTITY)
         {
@@ -204,21 +205,21 @@ namespace pleep
 
         if (derive_timeslice_id(entity) != m_timesliceId)
         {
-            PLEEPLOG_WARN("Tried to get host count of TemporalEntity which is not hosted by this timeslice");
+            PLEEPLOG_WARN("Tried to get host count of HostedEntity which is not hosted by this timeslice");
             return 0;
         }
         
-        auto temporalEntityCountsIt = m_hostedTemporalEntityCounts.find(entity);
-        if (temporalEntityCountsIt == m_hostedTemporalEntityCounts.end())
+        auto entityCountsIt = m_hostedEntityCounts.find(entity);
+        if (entityCountsIt == m_hostedEntityCounts.end())
         {
             return 0;
         }
 
-        return temporalEntityCountsIt->second;
+        return entityCountsIt->second;
     }
-    inline size_t EntityRegistry::get_num_hosted_temporal_entities()
+    inline size_t EntityRegistry::get_num_hosted_entities()
     {
-        return m_hostedTemporalEntityCounts.size();
+        return m_hostedEntityCounts.size();
     }
     
     inline void EntityRegistry::set_signature(Entity entity, Signature sign)

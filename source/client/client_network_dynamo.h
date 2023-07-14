@@ -25,8 +25,6 @@ namespace pleep
         // prepare relays for next frame
         void reset_relays() override;
         
-        // TODO: what entities, if any, would be submitted each frame?
-        // should they be shared in I_NetworkDynamo? or specified for my relays
         void submit(CosmosAccessPacket data) override;
 
         size_t get_num_connections() override;

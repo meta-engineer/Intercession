@@ -93,7 +93,7 @@ namespace pleep
         // make sure relays are still reset after!
         if (m_viewTransform == nullptr || m_viewCamera == nullptr)
         {
-            //PLEEPLOG_WARN("Camera data was not updated this frame, skipping without rendering.");
+            //PLEEPLOG_WARN("No camera data this frame, skipping without rendering.");
             return;
         }
 
