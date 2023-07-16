@@ -177,9 +177,9 @@ namespace pleep
                 m_sharedBroker->send_event(condemnMsg);
             }
             break;
-            case events::network::INTERCESSION:
+            case events::network::SUPERPOSITION:
             {
-                PLEEPLOG_TRACE("Received INTERCESSION message");
+                PLEEPLOG_TRACE("Received SUPERPOSITION message");
             }
             break;
             case events::network::NEW_CLIENT:

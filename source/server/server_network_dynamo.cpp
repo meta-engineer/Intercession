@@ -23,7 +23,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::INTERCESSION, ServerNetworkDynamo::_intercession_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::SUPERPOSITION, ServerNetworkDynamo::_superposition_handler));
 
         PLEEPLOG_TRACE("Done server networking pipeline setup");
     }
@@ -34,7 +34,7 @@ namespace pleep
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
-        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::INTERCESSION, ServerNetworkDynamo::_intercession_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::SUPERPOSITION, ServerNetworkDynamo::_superposition_handler));
     }
     
     void ServerNetworkDynamo::run_relays(double deltaTime) 
@@ -139,51 +139,55 @@ namespace pleep
                 }
             }
             break;
-            case events::network::INTERCESSION:
+            case events::network::SUPERPOSITION:
             {
-                // we are signalled that an intercession has occurred sometime/where
-                events::network::INTERCESSION_params data;
+                // we are signalled that an superposition has occurred sometime/where
+                events::network::SUPERPOSITION_params data;
                 msg >> data;
 
-                CausalChainlink link = derive_causal_chain_link(data.intercessee);
+                CausalChainlink link = derive_causal_chain_link(data.recipient);
                 assert(link > 0);
-                //PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(data.intercessee) + ") cannot have been interceded.");
+                //PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(data.recipient) + ") cannot have been interrupted.");
 
-                TimesliceId host = derive_timeslice_id(data.intercessee);
-                GenesisId genesis = derive_genesis_id(data.intercessee);
+                TimesliceId host = derive_timeslice_id(data.recipient);
+                GenesisId genesis = derive_genesis_id(data.recipient);
 
-                // ASSUME intercession happened in our direct child, therefore
-                // check for entity with 1 less causalchainlink than the reported intercessee
-                Entity presentIntercesee = compose_entity(host, genesis, link - 1);
+                // ASSUME superposition happened in our direct child, therefore
+                // check for entity with 1 less causalchainlink than the reported recipient
+                Entity presentRecipient = compose_entity(host, genesis, link - 1);
 
                 // Put the entity into a superposition
                 // superposition is constrained to physical objects, so if it is not physical
-                //   an unexpected entity has been interceeded
+                //   something has gone wrong
                 try
                 {
-                    TransformComponent& trans = cosmos->get_component<TransformComponent>(presentIntercesee);
+                    TransformComponent& trans = cosmos->get_component<TransformComponent>(presentRecipient);
                     trans.superposition = true;
                 }
                 catch(const std::exception& e)
                 {
                     UNREFERENCED_PARAMETER(e);
                     PLEEPLOG_ERROR(e.what());
-                    PLEEPLOG_ERROR("Could not fetch TransformComponent for interceeded entity " + std::to_string(presentIntercesee) + ". Superpositions can only be applied to physical entities, ignoring this intercession event.");
+                    PLEEPLOG_ERROR("Could not fetch TransformComponent for superposition agent entity " + std::to_string(presentRecipient) + ". Superpositions can only be applied to physical entities, ignoring this superposition event.");
                     break;
                 }
                 
                 // Superposition will stop any further pushes to timestream so we can clear it
                 // TODO: Store timestream for resetting upon a paradox
-                m_timelineApi.clear_past_timestream(data.intercessee);
+                m_timelineApi.clear_past_timestream(data.recipient);
 
-                // TEMP: Resolve superposition by just deleting it?
-                // Signal for intercessee to be cleaned up when Cosmos is safe
-                EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
-                events::cosmos::CONDEMN_ENTITY_params condemnInfo{
-                    presentIntercesee
-                };
-                condemnMsg << condemnInfo;
-                //m_sharedBroker->send_event(condemnMsg);
+                // TEMP: Resolve superposition by just leaving it?
+                
+                // pass uperposition notification up the chain
+                if (m_timelineApi.has_future())
+                {
+                    data.recipient = presentRecipient;
+                    msg << data;
+
+                    // timesliceId decreases into the future
+                    assert(m_timelineApi.get_timeslice_id() > 0);
+                    m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, msg);
+                }
             }
             break;
             case events::network::JUMP_REQUEST:
@@ -366,9 +370,9 @@ namespace pleep
 
             switch (remoteMsg.msg.header.id)
             {
-            case events::network::INTERCESSION:
+            case events::network::SUPERPOSITION:
             {
-                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Bouncing intercession update message");
+                PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Bouncing SUPERPOSITION message");
                 // just bounce back
                 remoteMsg.remote->send(remoteMsg.msg);
             }
@@ -683,19 +687,19 @@ namespace pleep
         }
     }
     
-    void ServerNetworkDynamo::_intercession_handler(EventMessage intercessionEvent)
+    void ServerNetworkDynamo::_superposition_handler(EventMessage superpositionEvent)
     {
-        PLEEPLOG_DEBUG("Handling INTERCESSION event");
+        PLEEPLOG_DEBUG("Handling SUPERPOSITION event");
 
-        events::network::INTERCESSION_params intercessionInfo;
-        intercessionEvent >> intercessionInfo;
-        intercessionEvent << intercessionInfo;
+        events::network::SUPERPOSITION_params superpositionInfo;
+        superpositionEvent >> superpositionInfo;
+        superpositionEvent << superpositionInfo;
 
-        // signal to future timeslice to put intercesee into superposition
+        // signal to future timeslice to put recipient into superposition
         // maybe the future timeslice should clear the timestream to avoid race condition?
         //   this means response time may be delayed by 1 frame? Theoretically more... it is not strictly guarenteed that another timeslice will process a frame before we process another one...
 
-        PLEEPLOG_INFO("Detected interaction event from entity " + std::to_string(intercessionInfo.intercessor) + " to " + std::to_string(intercessionInfo.intercessee));
+        PLEEPLOG_INFO("Detected interaction event from entity " + std::to_string(superpositionInfo.agent) + " to " + std::to_string(superpositionInfo.recipient));
 
         // We also need to be able to detect knock-on interactions an object with a non-zero chainlink might cause after being modified by a chainlink zero entity, before and after superposition resolution
         // how is superposition represented? Static bool array in Cosmos? Maybe enum: normal, superposition, superposition-start
@@ -704,7 +708,7 @@ namespace pleep
         {
             // timesliceId decreases into the future
             assert(m_timelineApi.get_timeslice_id() > 0);
-            m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, intercessionEvent);
+            m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, superpositionEvent);
         }
     }
 }

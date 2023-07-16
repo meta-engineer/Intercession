@@ -44,7 +44,7 @@ namespace pleep
         void _entity_created_handler(EventMessage entityEvent);
         void _entity_modified_handler(EventMessage entityEvent);
         void _entity_removed_handler(EventMessage entityEvent);
-        void _intercession_handler(EventMessage intercessionEvent);
+        void _superposition_handler(EventMessage superpositionEvent);
         
         // Networking relays
 

@@ -180,7 +180,7 @@ namespace pleep
                     CausalChainlink thisLink  = derive_causal_chain_link(thisData.collidee);
                     CausalChainlink otherLink = derive_causal_chain_link(otherData.collidee);
 
-                    //Intercession can only happen if one chainlink is 0 (exclusive)
+                    // Superposition can only happen if one chainlink is 0 (exclusive)
                     //   and other is non-zero and non-null
                     // TODO: also need to check if either entity has a superposition in the future
                     if (thisLink != otherLink
@@ -190,13 +190,13 @@ namespace pleep
                     {
                         // Signal to NetworkDynamo to delete this entity from the future timeslice slice and then clear timestream for this entity
                         // (this should happen propagate up the timeline)
-                        EventMessage IntercessionMessage(events::network::INTERCESSION);
-                        events::network::INTERCESSION_params IntercessionInfo {
+                        EventMessage superpositionMessage(events::network::SUPERPOSITION);
+                        events::network::SUPERPOSITION_params superpositionInfo {
                             thisLink == 0 ?  thisData.collidee : otherData.collidee,
                             thisLink == 0 ? otherData.collidee :  thisData.collidee
                         };
-                        IntercessionMessage << IntercessionInfo;
-                        m_sharedBroker->send_event(IntercessionMessage);
+                        superpositionMessage << superpositionInfo;
+                        m_sharedBroker->send_event(superpositionMessage);
                     }
                 }
             }

@@ -96,7 +96,7 @@ namespace pleep
             
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
-            // (assuming the intercessionAppInfo checks out the component layout should match)
+            // (assuming the APP_INFO checks out the component layout should match)
             // then the sign (Signature: 32 bits),
             // then the entity (Entity: 16 bits)
             // (remember it is a FIFO stack)
@@ -142,7 +142,7 @@ namespace pleep
                     }
                 };
 
-            // Info about the Intercession app configuration specifically:
+            // Info about the app configuration specifically:
             //  Am I a server or a client (or a dispatch)
             //  What is the ID of my cluster/server group?
             //  How many servers are in my cluster?
@@ -158,13 +158,13 @@ namespace pleep
 
             // Info about a timestream modification
             //  ???
-            const EventId INTERCESSION = __LINE__;
-                struct INTERCESSION_params
+            const EventId SUPERPOSITION = __LINE__;
+                struct SUPERPOSITION_params
                 {
                     // time-travelling entity
-                    Entity intercessor;
+                    Entity agent;
                     // Entity who was changed by a time-traveller
-                    Entity intercessee;
+                    Entity recipient;
                 };
                 
             // Servers receive this as a request froma  client to be added to the cosmos

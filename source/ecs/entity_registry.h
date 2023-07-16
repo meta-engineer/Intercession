@@ -67,7 +67,7 @@ namespace pleep
         // NOTE: There may exist multiples of the same link value (because timeslices are async)
         // so count value may not correspond with highest link value
         // TODO: Do we want to be able to detect breaks in the Causal link?
-        // It may be needed to trigger an intercession in some cases
+        // It may be needed to trigger an superposition in some cases
     };
 
     
