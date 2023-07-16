@@ -35,7 +35,7 @@ namespace pleep
     // define collision behaviours, each type must dispatch to a different behaviour component
     enum CollisionResponseType
     {
-        noop,       // (or script trigger only)
+        noop,       // (or behaviors trigger only)
         rigid,      // find & call entity's Rigid Body component
         spring,     // find & call entity's Spring Body component
         force,      // find & call entity's Force Generator component
@@ -63,8 +63,8 @@ namespace pleep
         // This may be best implemented with a table/map between response type pairs and functions
         CollisionResponseType responseType = CollisionResponseType::rigid;
 
-        // if true, in addition to collision responseType, also call on_collision for this entity's script drivetrain
-        bool useScriptResponse = false;
+        // if true, in addition to collision responseType, also call on_collision for this entity's behaviors drivetrain
+        bool useBehaviorsResponse = false;
 
         // Flag for external components to temporarily disable
         bool isActive = true;
@@ -334,7 +334,7 @@ namespace pleep
         std::memcpy(msg.body.data() + i, &(data.isActive), sizeof(bool));
         i += sizeof(bool);
         
-        std::memcpy(msg.body.data() + i, &(data.useScriptResponse), sizeof(bool));
+        std::memcpy(msg.body.data() + i, &(data.useBehaviorsResponse), sizeof(bool));
         i += sizeof(bool);
         
         std::memcpy(msg.body.data() + i, &(data.localTransform), sizeof(TransformComponent));
@@ -363,7 +363,7 @@ namespace pleep
         std::memcpy(&(data.isActive), msg.body.data() + i, sizeof(bool));
         i += sizeof(bool);
         
-        std::memcpy(&(data.useScriptResponse), msg.body.data() + i, sizeof(bool));
+        std::memcpy(&(data.useBehaviorsResponse), msg.body.data() + i, sizeof(bool));
         i += sizeof(bool);
         
         std::memcpy(&(data.localTransform), msg.body.data() + i, sizeof(TransformComponent));
@@ -386,7 +386,7 @@ namespace pleep
     {
         return lhs.responseType == rhs.responseType
             && lhs.isActive == rhs.isActive
-            //&& lhs.useScriptResponse == rhs.useScriptResponse
+            //&& lhs.useBehaviorsResponse == rhs.useBehaviorsResponse
             && lhs.localTransform == rhs.localTransform
             && lhs.inheritOrientation == rhs.inheritOrientation;
     }

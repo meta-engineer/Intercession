@@ -8,7 +8,7 @@
 #include "inputting/input_dynamo.h"
 #include "physics/physics_dynamo.h"
 #include "networking/i_network_dynamo.h"
-#include "scripting/script_dynamo.h"
+#include "behaviors/behaviors_dynamo.h"
 
 namespace pleep
 {
@@ -23,7 +23,7 @@ namespace pleep
         std::shared_ptr<InputDynamo>     inputter  = nullptr;
         std::shared_ptr<I_NetworkDynamo> networker = nullptr;
         std::shared_ptr<PhysicsDynamo>   physicser = nullptr;
-        std::shared_ptr<ScriptDynamo>    scripter  = nullptr;
+        std::shared_ptr<BehaviorsDynamo> behaver  = nullptr;
         std::shared_ptr<RenderDynamo>    renderer  = nullptr;
         //std::shared_ptr<AudioDynamo>     audioer   = nullptr;
     };

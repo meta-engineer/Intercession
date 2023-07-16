@@ -33,10 +33,10 @@ set(COMMON_SOURCE_FILES
 
     source/networking/network_synchro.cpp
 
-    source/scripting/i_script_drivetrain.cpp
-    source/scripting/script_dynamo.cpp
-    source/scripting/script_synchro.cpp
-    source/scripting/script_library.cpp
+    source/behaviors/i_behaviors_drivetrain.cpp
+    source/behaviors/behaviors_dynamo.cpp
+    source/behaviors/behaviors_synchro.cpp
+    source/behaviors/behaviors_library.cpp
 )
 
 set(CLIENT_SOURCE_FILES

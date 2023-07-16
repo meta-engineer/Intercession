@@ -1,30 +1,30 @@
-#ifndef LAKITU_SCRIPTS_H
-#define LAKITU_SCRIPTS_H
+#ifndef LAKITU_BEHAVIORS_H
+#define LAKITU_BEHAVIORS_H
 
 //#include "intercession_pch.h"
 
 #include "logging/pleep_log.h"
-#include "scripting/i_script_drivetrain.h"
-#include "scripting/script_component.h"
+#include "behaviors/i_behaviors_drivetrain.h"
+#include "behaviors/behaviors_component.h"
 #include "physics/transform_component.h"
 #include "inputting/spacial_input_component.h"
 #include "rendering/camera_component.h"
-#include "scripting/biped_component.h"
+#include "behaviors/biped_component.h"
 #include "core/cosmos.h"
 
 namespace pleep
 {
-    // scripts for controling non-physical camera to follow an entity as well
+    // behaviors for controling non-physical camera to follow an entity as well
     // as accepting input to change view of the target entity
-    class LakituScripts : public I_ScriptDrivetrain
+    class LakituBehaviors : public I_BehaviorsDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner) override
+        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
             UNREFERENCED_PARAMETER(deltaTime);
 
             std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
-            if (!cosmos) return;    // how was owner null, but ScriptPacket has a component REFERENCE?
+            if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
 
             // fetch my Transform, SpacialInput, and Camera components
             try
@@ -88,12 +88,12 @@ namespace pleep
                 UNREFERENCED_PARAMETER(err);
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
-                PLEEPLOG_WARN("Could not fetch components (Transform/SpacialInput/Camera) for entity " + std::to_string(entity) + ". This script cannot run without them. Disabling this drivetrain's on_fixed_update script");
-                script.use_fixed_update = false;
+                PLEEPLOG_WARN("Could not fetch components (Transform/SpacialInput/Camera) for entity " + std::to_string(entity) + ". This behaviors cannot run without them. Disabling this drivetrain's on_fixed_update behaviors");
+                behaviors.use_fixed_update = false;
                 return;
             }
         }        
     };
 }
 
-#endif // LAKITU_SCRIPTS_H
+#endif // LAKITU_BEHAVIORS_H

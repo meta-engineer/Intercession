@@ -16,7 +16,7 @@ namespace pleep
     // into specific "schemes" within each relay.
     // Each frame entities with input components will be updated by their
     // respective relay, recieving the translation of the polled raw input
-    // Other Dynamos (ScriptDynamo) can then use the input component as they wish
+    // Other Dynamos (BehaviorsDynamo) can then use the input component as they wish
     class InputDynamo : public A_Dynamo
     {
     public:

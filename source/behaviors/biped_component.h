@@ -6,7 +6,7 @@
 
 namespace pleep
 {
-    // storage component used by biped scripts
+    // storage component used by biped behaviours
     struct BipedComponent
     {
         // this property may have to align with net world forces (gravity/bouyancy/mangnetism?)

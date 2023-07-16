@@ -9,7 +9,7 @@
 #include "staging/cosmos_builder.h"
 #include "logging/pleep_log.h"
 #include "rendering/model_cache.h"
-#include "scripting/script_library.h"
+#include "behaviors/behaviors_library.h"
 
 #include "staging/hard_config_cosmos.h"
 
@@ -37,10 +37,10 @@ namespace pleep
         cosmos->add_component(mainCamera, mainCamera_camera);
 
         cosmos->add_component(mainCamera, SpacialInputComponent{});
-        ScriptComponent camera_scripts;
-        camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::lakitu);
-        camera_scripts.use_fixed_update = true;
-        cosmos->add_component(mainCamera, camera_scripts);
+        BehaviorsComponent camera_behaviors;
+        camera_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::lakitu);
+        camera_behaviors.use_fixed_update = true;
+        cosmos->add_component(mainCamera, camera_behaviors);
 
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker

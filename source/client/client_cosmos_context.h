@@ -9,7 +9,7 @@
 #include "inputting/input_dynamo.h"
 #include "physics/physics_dynamo.h"
 #include "client/client_network_dynamo.h"
-#include "scripting/script_dynamo.h"
+#include "behaviors/behaviors_dynamo.h"
 
 namespace pleep
 {

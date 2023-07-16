@@ -166,6 +166,7 @@ namespace pleep
                 }
                 catch(const std::exception& e)
                 {
+                    UNREFERENCED_PARAMETER(e);
                     PLEEPLOG_ERROR(e.what());
                     PLEEPLOG_ERROR("Could not fetch TransformComponent for interceeded entity " + std::to_string(presentIntercesee) + ". Superpositions can only be applied to physical entities, ignoring this intercession event.");
                     break;

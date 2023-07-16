@@ -30,7 +30,7 @@ namespace pleep
         unsigned int viewHeight = 1024;
         float        viewFov    = 45.0f;
 
-        // ***** control members (used by scripts) *****
+        // ***** control members (used by behaviors) *****
         // target entity
         Entity target = NULL_ENTITY;
         // ranges/distances

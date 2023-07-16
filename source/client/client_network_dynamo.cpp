@@ -275,7 +275,7 @@ namespace pleep
 
     void ClientNetworkDynamo::_jump_request_handler(EventMessage jumpMsg)
     {
-        // some control script has called to request a timeslice jump
+        // some behavior has called to request a timeslice jump
         // forward message on to server, expecting a JUMP_RESPONSE sometime soon
         m_networkApi.send_message(jumpMsg);
     }

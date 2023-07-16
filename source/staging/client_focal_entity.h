@@ -50,7 +50,7 @@ namespace pleep
         //pc_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
         pc_ray.responseType = CollisionResponseType::spring;
         pc_ray.inheritOrientation = false;
-        pc_ray.useScriptResponse = true;
+        pc_ray.useBehaviorsResponse = true;
         cosmos->add_component(pc, pc_ray);
         SpringBodyComponent pc_springBody;
         pc_springBody.influenceOrientation = false;
@@ -65,10 +65,10 @@ namespace pleep
         // receive input on that client, and we will only allow input from that client
         cosmos->add_component(pc, SpacialInputComponent{});
         cosmos->add_component(pc, BipedComponent{});
-        ScriptComponent pc_scripts;
-        pc_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
-        pc_scripts.use_fixed_update = true;
-        cosmos->add_component(pc, pc_scripts);
+        BehaviorsComponent pc_behaviors;
+        pc_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::biped_control);
+        pc_behaviors.use_fixed_update = true;
+        cosmos->add_component(pc, pc_behaviors);
 
         // ***************************************************************************
 

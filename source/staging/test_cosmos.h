@@ -9,7 +9,7 @@
 #include "staging/cosmos_builder.h"
 #include "logging/pleep_log.h"
 #include "rendering/model_cache.h"
-#include "scripting/script_library.h"
+#include "behaviors/behaviors_library.h"
 
 #include "staging/hard_config_cosmos.h"
 
@@ -71,14 +71,14 @@ namespace pleep
         frog_rigidBody.influenceOrientation = false;
         cosmos->add_component(frog, frog_rigidBody);
 
-        // script handle legs collider events (below)
+        // behaviors handle legs collider events (below)
         cosmos->add_component(frog, SpacialInputComponent{});
         cosmos->add_component(frog, BipedComponent{});
-        ScriptComponent frog_scripts;
-        frog_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::biped_control);
-        frog_scripts.use_fixed_update = true;
-        // store script in self
-        cosmos->add_component(frog, frog_scripts);
+        BehaviorsComponent frog_behaviors;
+        frog_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::biped_control);
+        frog_behaviors.use_fixed_update = true;
+        // store behaviors in self
+        cosmos->add_component(frog, frog_behaviors);
 
         // frog "legs"
         RayColliderComponent frog_ray;
@@ -86,7 +86,7 @@ namespace pleep
         frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 500.0f);
         frog_ray.responseType = CollisionResponseType::spring;
         frog_ray.inheritOrientation = false;
-        frog_ray.useScriptResponse = true;
+        frog_ray.useBehaviorsResponse = true;
         cosmos->add_component(frog, frog_ray);
         SpringBodyComponent frog_springBody;
         frog_springBody.influenceOrientation = false;
@@ -332,10 +332,10 @@ namespace pleep
         cosmos->add_component(mainCamera, CameraComponent());
 
         cosmos->add_component(mainCamera, SpacialInputComponent{});
-        ScriptComponent camera_scripts;
-        camera_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::fly_control);
-        camera_scripts.use_fixed_update = true;
-        cosmos->add_component(mainCamera, camera_scripts);
+        BehaviorsComponent camera_behaviors;
+        camera_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::fly_control);
+        camera_behaviors.use_fixed_update = true;
+        cosmos->add_component(mainCamera, camera_behaviors);
 
         // then it needs to be assigned somewhere in render pipeline (view camera, shadow camera, etc)
         // assuming there is only ever 1 main camera we can notify over event broker
@@ -371,10 +371,10 @@ namespace pleep
         light_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(light, light_renderable);
         
-        ScriptComponent light_scripts;
-        light_scripts.drivetrain = ScriptLibrary::fetch_script(ScriptLibrary::ScriptType::oscillator);
-        light_scripts.use_fixed_update = true;
-        cosmos->add_component(light, light_scripts);
+        BehaviorsComponent light_behaviors;
+        light_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::oscillator);
+        light_behaviors.use_fixed_update = true;
+        cosmos->add_component(light, light_behaviors);
         OscillatorComponent light_oscillator;
         cosmos->add_component(light, light_oscillator);
         // ***************************************************************************

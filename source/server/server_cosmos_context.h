@@ -7,7 +7,7 @@
 #include "networking/timeline_api.h"
 #include "physics/physics_dynamo.h"
 #include "server/server_network_dynamo.h"
-#include "scripting/script_dynamo.h"
+#include "behaviors/behaviors_dynamo.h"
 
 namespace pleep
 {

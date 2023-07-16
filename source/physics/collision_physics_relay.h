@@ -8,7 +8,7 @@
 #include "physics/a_physics_relay.h"
 #include "physics/collider_packet.h"
 #include "core/cosmos.h"
-#include "scripting/script_component.h"
+#include "behaviors/behaviors_component.h"
 #include "physics/rigid_body_component.h"
 #include "physics/spring_body_component.h"
 
@@ -69,7 +69,7 @@ namespace pleep
                     //PLEEPLOG_DEBUG("This @: " + std::to_string(thisData.transform.origin.x) + ", " + std::to_string(thisData.transform.origin.y) + ", " + std::to_string(thisData.transform.origin.z));
                     //PLEEPLOG_DEBUG("Other @: " + std::to_string(otherData.transform.origin.x) + ", " + std::to_string(otherData.transform.origin.y) + ", " + std::to_string(otherData.transform.origin.z));
 
-                    // TODO: Check if entities have any script/physics responses BEFORE intersect check and exit early!
+                    // TODO: Check if entities have any behaviors/physics responses BEFORE intersect check and exit early!
 
                     // ***** PHYSICS RESPONSE *****
                     // Forward collision data to be resolved according to the response component
@@ -128,31 +128,31 @@ namespace pleep
                         thisResponse->collision_response(otherResponse, thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                     }
 
-                    // ***** SCRIPT RESPONSE *****
-                    // script method should be called just AFTER the physics response (static/dynamic resolution)
-                    // CAREFUL! ScriptComponent fetch could fail OR script drivetrain could be null
+                    // ***** BEHAVIORS RESPONSE *****
+                    // behaviors method should be called just AFTER the physics response (static/dynamic resolution)
+                    // CAREFUL! BehaviorsComponent fetch could fail OR behaviors drivetrain could be null
                     // TODO: can collision relay track when a collision enter/exit across frames? Which entities collided last frame?
-                    // TODO: is it inefficient to need to search for the script each time?
-                    if (thisData.collider->useScriptResponse == true)
+                    // TODO: is it inefficient to need to search for the behaviors each time?
+                    if (thisData.collider->useBehaviorsResponse == true)
                     {
                         try
                         {
-                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(thisData.collidee);
-                            if (!script.drivetrain)
+                            BehaviorsComponent& behaviors = cosmos->get_component<BehaviorsComponent>(thisData.collidee);
+                            if (!behaviors.drivetrain)
                             {
-                                throw std::runtime_error("Cannot call collision script response for null ScriptDrivetrain");
+                                throw std::runtime_error("Cannot call collision behavior response for null BehaviorsDrivetrain");
                             }
-                            script.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                            behaviors.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(thisData.collidee) + ") could not trigger script response, disabling and skipping");
-                            thisData.collider->useScriptResponse = false;
+                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(thisData.collidee) + ") could not trigger behavior response, disabling and skipping");
+                            thisData.collider->useBehaviorsResponse = false;
                         }
                     }
-                    if (otherData.collider->useScriptResponse == true)
+                    if (otherData.collider->useBehaviorsResponse == true)
                     {
                         try
                         {
@@ -160,19 +160,19 @@ namespace pleep
                             glm::vec3 invCollisionNormal = -collisionNormal;
                             glm::vec3 invCollisionPoint = collisionPoint - (collisionNormal * collisionDepth);
                             
-                            ScriptComponent& script = cosmos->get_component<ScriptComponent>(otherData.collidee);
-                            if (!script.drivetrain)
+                            BehaviorsComponent& behaviors = cosmos->get_component<BehaviorsComponent>(otherData.collidee);
+                            if (!behaviors.drivetrain)
                             {
-                                throw std::runtime_error("Cannot call collision script response for null ScriptDrivetrain");
+                                throw std::runtime_error("Cannot call collision behavior response for null BehaviorsDrivetrain");
                             }
-                            script.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
+                            behaviors.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
                         }
                         catch(const std::exception& err)
                         {
                             UNREFERENCED_PARAMETER(err);
                             //PLEEPLOG_WARN(err.what());
-                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(otherData.collidee) + ") could not trigger script response, disabling and skipping");
-                            otherData.collider->useScriptResponse = false;
+                            PLEEPLOG_WARN("Collidee entity (" + std::to_string(otherData.collidee) + ") could not trigger behavior response, disabling and skipping");
+                            otherData.collider->useBehaviorsResponse = false;
                         }
                     }
 

@@ -28,7 +28,7 @@ namespace pleep
         TimesliceId numTimeslices = 2;
 
         // Cosmos updates per second
-        // simulation includes input polling, parsing incoming network messages, script updates, physics integration.collision
+        // simulation includes input polling, parsing incoming network messages, behavior updates, physics integration.collision
         double simulationHz = 72.0;
         // server updates don't need to happen every frame, client can dead reckon for a few
         // serializing the whole cosmos is costly so do it less frequently

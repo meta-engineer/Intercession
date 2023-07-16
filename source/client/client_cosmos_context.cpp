@@ -17,7 +17,7 @@ namespace pleep
         // construct dynamos
         m_dynamoCluster.inputter  = std::make_shared<InputDynamo>(m_eventBroker, windowApi);
         m_dynamoCluster.networker = std::make_shared<ClientNetworkDynamo>(m_eventBroker);
-        m_dynamoCluster.scripter  = std::make_shared<ScriptDynamo>(m_eventBroker);
+        m_dynamoCluster.behaver   = std::make_shared<BehaviorsDynamo>(m_eventBroker);
         m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
         m_dynamoCluster.renderer  = std::make_shared<RenderDynamo>(m_eventBroker, windowApi);
 
@@ -56,7 +56,7 @@ namespace pleep
         //   know which dynamos to call fixed and which to call on frametime
         m_dynamoCluster.inputter->run_relays(fixedTime);
         m_dynamoCluster.networker->run_relays(fixedTime);
-        m_dynamoCluster.scripter->run_relays(fixedTime);
+        m_dynamoCluster.behaver->run_relays(fixedTime);
         m_dynamoCluster.physicser->run_relays(fixedTime);
     }
     
@@ -125,7 +125,7 @@ namespace pleep
 
             if (ImGui::Button("Jump to past"))
             {
-                // usually this would be invoked from some control script (responding to a keystroke)
+                // usually this would be invoked from some behavior (responding to a keystroke)
                 // which means it must occur via eventBroker
                 EventMessage jumpMessage(events::network::JUMP_REQUEST);
                 Entity me = m_currentCosmos->get_focal_entity();
@@ -167,7 +167,7 @@ namespace pleep
         // flush dynamos of all synchro submissions
         m_dynamoCluster.inputter->reset_relays();
         m_dynamoCluster.networker->reset_relays();
-        m_dynamoCluster.scripter->reset_relays();
+        m_dynamoCluster.behaver->reset_relays();
         m_dynamoCluster.physicser->reset_relays();
         m_dynamoCluster.renderer->reset_relays();   // render dynamo will flush framebuffer
     }

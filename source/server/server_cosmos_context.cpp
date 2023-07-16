@@ -12,7 +12,7 @@ namespace pleep
         
         // construct dynamos
         m_dynamoCluster.networker = std::make_shared<ServerNetworkDynamo>(m_eventBroker, localTimelineApi);
-        m_dynamoCluster.scripter  = std::make_shared<ScriptDynamo>(m_eventBroker);
+        m_dynamoCluster.behaver  = std::make_shared<BehaviorsDynamo>(m_eventBroker);
         m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
         
         // build and populate starting cosmos
@@ -60,7 +60,7 @@ namespace pleep
         // TODO: give each dynamo a run "fixed" & variable method so we don't need to explicitly
         //   know which dynamos to call fixed and which to call on frametime
         m_dynamoCluster.networker->run_relays(fixedTime);
-        m_dynamoCluster.scripter->run_relays(fixedTime);
+        m_dynamoCluster.behaver->run_relays(fixedTime);
         m_dynamoCluster.physicser->run_relays(fixedTime);
     }
     
@@ -73,7 +73,7 @@ namespace pleep
     {
         // flush dynamos of all synchro submissions
         m_dynamoCluster.networker->reset_relays();
-        m_dynamoCluster.scripter->reset_relays();
+        m_dynamoCluster.behaver->reset_relays();
         m_dynamoCluster.physicser->reset_relays();
     }
 

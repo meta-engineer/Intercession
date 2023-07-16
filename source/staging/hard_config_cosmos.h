@@ -29,7 +29,7 @@ namespace pleep
         cosmosConfig.insert_component<RayColliderComponent>();
         cosmosConfig.insert_component<RigidBodyComponent>();
         cosmosConfig.insert_component<SpringBodyComponent>();
-        cosmosConfig.insert_component<ScriptComponent>();
+        cosmosConfig.insert_component<BehaviorsComponent>();
         cosmosConfig.insert_component<OscillatorComponent>();
 
         cosmosConfig.insert_synchro<SpacialInputSynchro>();
@@ -39,7 +39,7 @@ namespace pleep
         cosmosConfig.insert_synchro<BoxColliderSynchro>();
         cosmosConfig.insert_synchro<RayColliderSynchro>();
         cosmosConfig.insert_synchro<NetworkSynchro>();
-        cosmosConfig.insert_synchro<ScriptSynchro>();
+        cosmosConfig.insert_synchro<BehaviorsSynchro>();
         // build cosmos according to config
         //std::shared_ptr<Cosmos> cosmos = cosmos_builder::generate(cosmosConfig, dynamoCluster, eventBroker);
  */
@@ -58,7 +58,7 @@ namespace pleep
         newCosmos->register_component<RayColliderComponent>();
         newCosmos->register_component<RigidBodyComponent>();
         newCosmos->register_component<SpringBodyComponent>();
-        newCosmos->register_component<ScriptComponent>();
+        newCosmos->register_component<BehaviorsComponent>();
         newCosmos->register_component<OscillatorComponent>();
         newCosmos->register_component<BipedComponent>();
 
@@ -69,7 +69,7 @@ namespace pleep
         newCosmos->register_synchro<BoxColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(dynamoCluster.networker);
-        newCosmos->register_synchro<ScriptSynchro>()->attach_dynamo(dynamoCluster.scripter);
+        newCosmos->register_synchro<BehaviorsSynchro>()->attach_dynamo(dynamoCluster.behaver);
 
         return newCosmos;
     }

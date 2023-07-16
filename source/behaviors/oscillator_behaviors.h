@@ -1,23 +1,23 @@
-#ifndef OSCILLATOR_SCRIPTS_H
-#define OSCILLATOR_SCRIPTS_H
+#ifndef OSCILLATOR_BEHAVIORS_H
+#define OSCILLATOR_BEHAVIORS_H
 
 //#include "intercession_pch.h"
 #include "logging/pleep_log.h"
-#include "scripting/i_script_drivetrain.h"
-#include "scripting/script_component.h"
+#include "behaviors/i_behaviors_drivetrain.h"
+#include "behaviors/behaviors_component.h"
 #include "core/cosmos.h"
 #include "physics/transform_component.h"
-#include "scripting/oscillator_component.h"
+#include "behaviors/oscillator_component.h"
 
 namespace pleep
 {
-    class OscillatorScripts : public I_ScriptDrivetrain
+    class OscillatorBehaviors : public I_BehaviorsDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, ScriptComponent& script, Entity entity, std::weak_ptr<Cosmos> owner) override
+        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
             std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
-            if (!cosmos) return;    // how was owner null, but ScriptPacket has a component REFERENCE?
+            if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
 
             // fetch Oscilator and Transform
             try
@@ -43,11 +43,11 @@ namespace pleep
                 UNREFERENCED_PARAMETER(err);
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
-                PLEEPLOG_WARN("Could not fetch components (Transform, and/or Oscillator) for entity " + std::to_string(entity) + ". This script cannot operate on this entity without them. Disabling caller's on_fixed_update script.");
-                script.use_fixed_update = false;
+                PLEEPLOG_WARN("Could not fetch components (Transform, and/or Oscillator) for entity " + std::to_string(entity) + ". This behaviors cannot operate on this entity without them. Disabling caller's on_fixed_update behaviors.");
+                behaviors.use_fixed_update = false;
             }
         }
     };
 }
 
-#endif // OSCILLATOR_SCRIPTS_H
+#endif // OSCILLATOR_BEHAVIORS_H
