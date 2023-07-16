@@ -9,6 +9,7 @@
 #include "physics/physics_component.h"
 #include "behaviors/biped_component.h"
 #include "inputting/spacial_input_component.h"
+#include "staging/test_projectile.h"
 
 namespace pleep
 {
@@ -35,6 +36,7 @@ namespace pleep
             // fetch Physics, Biped, and SpacialInput
             try
             {
+                TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
                 PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
@@ -94,6 +96,17 @@ namespace pleep
                 
                 // clear gounded state until next collision
                 biped.isGrounded = false;
+
+
+                // TEST: pew pew
+                if (input.actions.test(SpacialActions::action0) && input.actionVals.at(SpacialActions::action0))
+                {
+                    PLEEPLOG_DEBUG("action0");
+
+                    // make cube with velocity along aimHeading
+                    create_test_projectile(cosmos, transform.origin+ aimHeading, aimHeading*10.0f);
+                }
+
             }
             catch(const std::exception& err)
             {
@@ -117,7 +130,6 @@ namespace pleep
             // fetch biped component on collider
             try
             {
-                // TODO: store collision meta-data in biped component
                 BipedComponent& biped = callerData.owner.lock()->get_component<BipedComponent>(callerData.collidee);
                 biped.isGrounded = true;
                 biped.groundNormal = collisionNormal;

@@ -36,6 +36,7 @@
 // include Behaviors
 #include "behaviors/behaviors_component.h"
 #include "behaviors/oscillator_component.h"
+#include "behaviors/projectile_component.h"
 #include "behaviors/biped_component.h"
 
 namespace pleep

@@ -255,7 +255,7 @@ namespace pleep
 
     inline void ComponentRegistry::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
     {
-        m_componentArrays[get_component_name(type)]->deserialize_data_for(entity, msg);
+        m_componentArrays.at(get_component_name(type))->deserialize_data_for(entity, msg);
     }
     
     template<typename T>

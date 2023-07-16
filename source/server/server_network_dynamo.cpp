@@ -96,7 +96,7 @@ namespace pleep
                 // NOT to create one ourselves, that will be received over the timeSTREAM
                 events::cosmos::ENTITY_CREATED_params data;
                 msg >> data;
-                //PLEEPLOG_DEBUG("Received ENTITY_CREATED message for Entity " + std::to_string(data.entity));
+                PLEEPLOG_DEBUG("Received ENTITY_CREATED notification for Entity " + std::to_string(data.entity));
                 // double check if we are it's host
                 if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
@@ -112,7 +112,7 @@ namespace pleep
             {
                 events::cosmos::ENTITY_REMOVED_params data;
                 msg >> data;
-                PLEEPLOG_DEBUG("Received ENTITY_REMOVED message for Entity " + std::to_string(data.entity));
+                PLEEPLOG_DEBUG("Received ENTITY_REMOVED notification for Entity " + std::to_string(data.entity));
                 // double check if we are it's host
                 if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
@@ -133,7 +133,7 @@ namespace pleep
 
                 if (targetCoherency != cosmos->get_coherency())
                 {
-                    PLEEPLOG_DEBUG("Detected Coherency Desync! COHERENCY_SYNC message from slice " + std::to_string(data.senderId) + " of " + std::to_string(targetCoherency) + " does not match my coherency " + std::to_string(cosmos->get_coherency()));
+                    PLEEPLOG_DEBUG("Detected Coherency Desync! COHERENCY_SYNC notification from slice " + std::to_string(data.senderId) + " of " + std::to_string(targetCoherency) + " does not match my coherency " + std::to_string(cosmos->get_coherency()));
 
                     cosmos->set_coherency(targetCoherency);
                 }
@@ -311,12 +311,10 @@ namespace pleep
                     break;
                     case events::cosmos::ENTITY_MODIFIED:
                     {
-                        //PLEEPLOG_TRACE("Received ENTITY_MODIFIED message from future");
-
                         // create any new components, remove any components message does not have
                         events::cosmos::ENTITY_MODIFIED_params modInfo;
                         evnt >> modInfo;
-                        //PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
+                        //PLEEPLOG_DEBUG("Modify Entity: " + std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
 
                         // ensure entity exists
                         if (cosmos->entity_exists(modInfo.entity))

@@ -49,8 +49,8 @@ namespace pleep
         // Returns true when entity is valid to use and register components to
         bool register_entity(Entity entity);
 
-        // remove entity & related components, and clear it from any synchros
-        void destroy_entity(Entity entity);
+        // flag entity to be destroyed before next update cycle
+        void condemn_entity(Entity entity);
 
         // forwards to EntityRegistry
         // return number of existing entities in this cosmos of any type
@@ -171,6 +171,10 @@ namespace pleep
         std::vector<std::string> stringify_component_registry();
 
     private:
+        // remove entity & related components, and clear it from any synchros
+        // angerous if references have been submitted to dynamos
+        void destroy_entity(Entity entity);
+
         // event handlers
         void _condemn_entity_handler(EventMessage condemnEvent);
         void _condemn_all_handler(EventMessage condemnEvent);
@@ -235,6 +239,14 @@ namespace pleep
         m_sharedBroker->send_event(newEntityEvent);
 
         return true;
+    }
+
+    inline void Cosmos::condemn_entity(Entity entity)
+    {
+        if (entity == NULL_ENTITY) return;
+
+        PLEEPLOG_TRACE("Entity " + std::to_string(entity) + " was condemned to deletion.");
+        m_condemned.insert(entity);
     }
     
     inline void Cosmos::destroy_entity(Entity entity) 

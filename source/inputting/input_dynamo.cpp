@@ -118,7 +118,7 @@ namespace pleep
 
         if (m_glfwMouseMode == GLFW_CURSOR_DISABLED)
         {
-            // provide mouse as analog input
+            // if focused provide mouse as analog input
             // we'll assign the mouse to be analog 0
             m_inputBuffer.setTwoDimAnalog(
                 0,
@@ -128,7 +128,7 @@ namespace pleep
         }
         else
         {
-            // also provide absolute mouse position
+            // otherwise provide absolute cursor position
             m_inputBuffer.setScreenPosition(x, y);
         }
 
@@ -141,6 +141,12 @@ namespace pleep
         // silence warning while not using
         UNREFERENCED_PARAMETER(w);
 
+        // only provide scroll if mouse is focused
+        if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
+        {
+            return;
+        }
+        
         // we'll assign the scroll wheel to be analog 1
         m_inputBuffer.setTwoDimAnalog(1, dx, dy);
 
@@ -154,6 +160,12 @@ namespace pleep
         // NOTE: mods is bitfield of key mods (shift, control, alt, super, caps, numlock)
         // https://www.glfw.org/docs/3.3/group__mods.html
         UNREFERENCED_PARAMETER(mods);
+
+        // only provide clicks if mouse is focused
+        if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
+        {
+            return;
+        }
 
         // action is one of GLFW_PRESS || GLFW_RELEASE
         // buttons should be in range [0,8]

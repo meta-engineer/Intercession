@@ -107,8 +107,6 @@ namespace pleep
             break;
             case events::cosmos::ENTITY_UPDATE:
             {
-                //PLEEPLOG_TRACE("Received ENTITY_UPDATE message");
-
                 events::cosmos::ENTITY_UPDATE_params updateInfo;
                 msg >> updateInfo;
                 //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
@@ -128,12 +126,10 @@ namespace pleep
             break;
             case events::cosmos::ENTITY_CREATED:
             {
-                PLEEPLOG_TRACE("Received ENTITY_CREATED message");
-
                 // register entity and create components to match signature
                 events::cosmos::ENTITY_CREATED_params createInfo;
                 msg >> createInfo;
-                PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+                PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                 if (cosmos->register_entity(createInfo.entity))
                 {
@@ -146,12 +142,10 @@ namespace pleep
             break;
             case events::cosmos::ENTITY_MODIFIED:
             {
-                PLEEPLOG_TRACE("Received ENTITY_MODIFIED message");
-
                 // create any new components, remove any components message does not have
                 events::cosmos::ENTITY_MODIFIED_params modInfo;
                 msg >> modInfo;
-                PLEEPLOG_DEBUG(std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
+                PLEEPLOG_DEBUG("Modify Entity: " + std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
 
                 // ensure entity exists
                 if (cosmos->entity_exists(modInfo.entity))
@@ -169,11 +163,11 @@ namespace pleep
             break;
             case events::cosmos::ENTITY_REMOVED:
             {
-                PLEEPLOG_TRACE("Received ENTITY_REMOVED message");
-
                 // entity deletion should be idempotent, incase our local simulation also deletes
                 events::cosmos::ENTITY_REMOVED_params removeInfo;
                 msg >> removeInfo;
+                PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
+
                 // use condemn event to avoid double deletion
                 EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
                 events::cosmos::CONDEMN_ENTITY_params condemnInfo{

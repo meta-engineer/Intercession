@@ -5,6 +5,7 @@
 #include "behaviors/fly_control_behaviors.h"
 #include "behaviors/lakitu_behaviors.h"
 #include "behaviors/oscillator_behaviors.h"
+#include "behaviors/projectile_behaviors.h"
 
 namespace pleep
 {
@@ -25,10 +26,14 @@ namespace pleep
             case BehaviorsType::oscillator:
                 newDrivetrain = std::make_shared<OscillatorBehaviors>();
                 break;
-            default:
-                //PLEEPLOG_WARN("Found unknown behaviors enum value: " + std::to_string(static_cast<uint16_t>(sType)));
+            case BehaviorsType::projectile:
+                newDrivetrain = std::make_shared<ProjectileBehaviors>();
                 break;
+            default:
+                PLEEPLOG_WARN("Found unknown behaviors enum value: " + std::to_string(static_cast<uint16_t>(sType)));
+                return nullptr;
         }
+
         newDrivetrain->m_libraryType = sType;
         return newDrivetrain;
     }

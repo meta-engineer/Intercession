@@ -43,6 +43,7 @@ namespace pleep
             lakitu,                 // LakituBehaviors
             biped_control,          // BipedBehaviors
             oscillator,             // OscillatorBehaviors
+            projectile,             // ProjectileBehaviors
             count
         };
 

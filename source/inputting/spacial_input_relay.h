@@ -49,6 +49,7 @@ namespace pleep
             newSpacialInput.set(SpacialActions::rotateYaw, m_sharedBuffer.twoDimAnalog[0][0] != 0.0, m_sharedBuffer.twoDimAnalog[0][0]);
 
             newSpacialInput.set(SpacialActions::action0, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_1], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_1]);
+            newSpacialInput.set(SpacialActions::action1, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_2], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_2]);
 
 
             for (std::vector<SpacialInputPacket>::iterator packet_it = m_inputPackets.begin(); packet_it != m_inputPackets.end(); packet_it++)

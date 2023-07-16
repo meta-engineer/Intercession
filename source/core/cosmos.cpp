@@ -129,8 +129,7 @@ namespace pleep
         events::cosmos::CONDEMN_ENTITY_params condemnInfo;
         condemnEvent >> condemnInfo;
         
-        PLEEPLOG_TRACE("Entity " + std::to_string(condemnInfo.entity) + " was condemned to deletion.");
-        m_condemned.insert(condemnInfo.entity);
+        this->condemn_entity(condemnInfo.entity);
     }
 
     void Cosmos::_condemn_all_handler(EventMessage condemnEvent)
