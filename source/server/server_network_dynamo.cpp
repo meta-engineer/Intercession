@@ -275,28 +275,29 @@ namespace pleep
                     {
                     case events::cosmos::ENTITY_UPDATE:
                     {
-                        //PLEEPLOG_TRACE("Received ENTITY_UPDATE message from future");
-
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
                         evnt >> updateInfo;
-                        //PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
-                        //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
+                        //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
 
-                        // confirm entity exists?
-                        // confirm entity signatures match?
-
-                        // read update into Cosmos
-                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt);
+                        // ensure entity exists
+                        if (cosmos->entity_exists(updateInfo.entity))
+                        {
+                            // read update into Cosmos
+                            // deserialize will only work on subset of signature assigned from ENTITY_MODIFIED
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt);
+                        }
+                        else
+                        {
+                            PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
+                        }
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
                     {
-                        //PLEEPLOG_TRACE("Received ENTITY_CREATED message from future");
-
                         // register entity and create components to match signature
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
-                        //PLEEPLOG_DEBUG(std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+                        PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                         if (cosmos->register_entity(createInfo.entity))
                         {
@@ -332,12 +333,11 @@ namespace pleep
                     break;
                     case events::cosmos::ENTITY_REMOVED:
                     {
-                        PLEEPLOG_TRACE("Received ENTITY_REMOVED message from future");
-
                         // call cosmos to delete entity, it will emit event again over broker and cause host decrement
                         // (sender SHOULD have correctly offset causalchainlink already)
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
+                        PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                         // use condemn event to avoid double deletion
                         EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
@@ -453,6 +453,7 @@ namespace pleep
                         PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
 
                         // signal to host to incrememnt host count (like create_entity does locally)
+                        // (this is in addition to host increment in event handler if we have a past)
                         EventMessage createMsg(events::cosmos::ENTITY_CREATED);
                         events::cosmos::ENTITY_CREATED_params createInfo{
                             jumpInfo.entity,
@@ -539,7 +540,8 @@ namespace pleep
 
         // Fourth: Process all submitted data in relays
 
-        // Fifth: After all ingesting is done, send/broadcast fresh data to clients
+        // Fifth: After all ingesting is done, send/broadcast fresh downstream data to clients
+        // and to timestream (with incremented CaucalChainLink)
         if (cosmos)
         {
             Signature downstreamSign = cosmos->get_category_signature(ComponentCategory::downstream);
@@ -551,32 +553,26 @@ namespace pleep
                     signIt.second & downstreamSign
                 };
                 cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
+
                 updateMsg << updateInfo;
                 m_networkApi.broadcast_message(updateMsg);
-
 
                 // DON'T broadcast superposition entities into the past
                 // TODO: better way to determine superposition without exceptions?
                 try
                 {
-                    bool superposition = cosmos->get_component<TransformComponent>(updateInfo.entity).superposition;
-                    if (superposition) continue;
+                    if (!m_timelineApi.has_past() || cosmos->get_component<TransformComponent>(signIt.first).superposition) continue;
                 }
                 catch(...)
                 {
                     // This entity didn't have a TransformComponent, therefore it cannot be in a superposition
                 }
 
-                // 5b: Broadcast to past timestreams 
-                //     with incremented CausalChainLink
-                if (m_timelineApi.has_past())
-                {
-                    updateMsg >> updateInfo;
-                    increment_causal_chain_link(updateInfo.entity);
-                    updateMsg << updateInfo;
-
-                    m_timelineApi.push_past_timestream(updateInfo.entity, updateMsg);
-                }
+                // progogate same message, but with incremented causalchainlink
+                updateMsg >> updateInfo;
+                increment_causal_chain_link(updateInfo.entity);
+                updateMsg << updateInfo;
+                m_timelineApi.push_past_timestream(updateInfo.entity, updateMsg);
             }
         }
     }

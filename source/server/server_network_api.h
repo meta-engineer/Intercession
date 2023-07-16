@@ -41,10 +41,10 @@ namespace pleep
             // So we have to wait for them to notify us
             // For safety this should be a 1 time notification, once they initalize their type, we respond accordingly and then they cannot change it.
 
-            // send app info to client immediately from here (as an ACK), then client can send NEW_CLIENT msg to normal network message queue
+            // send program info to client immediately from here (as an ACK), then client can send NEW_CLIENT msg to normal network message queue
 
-            EventMessage appMessage(events::network::APP_INFO);
-            events::network::APP_INFO_params appInfo{};
+            EventMessage appMessage(events::network::PROGRAM_INFO);
+            events::network::PROGRAM_INFO_params appInfo{};
             appMessage << appInfo;
             remote->send(appMessage);
             // Don't send any frame updates to this connection until it is initialized

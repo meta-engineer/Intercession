@@ -96,9 +96,9 @@ namespace pleep
             
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
-            //     (assuming the intercessionAppInfo checks out the component layout should match)
-            // the sign (Signature: 32 bits),
-            // then the id (Entity: 16 bits)
+            // (assuming the intercessionAppInfo checks out the component layout should match)
+            // then the sign (Signature: 32 bits),
+            // then the entity (Entity: 16 bits)
             // (remember it is a FIFO stack)
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
@@ -118,22 +118,22 @@ namespace pleep
             // Generic/basic app properties
             // Should probably be only info generic to all potential apps for consistent size
             // different versionMinor should indicate apps are incompatible
-            const EventId APP_INFO = __LINE__;
-                struct APP_INFO_params
+            const EventId PROGRAM_INFO = __LINE__;
+                struct PROGRAM_INFO_params
                 {
                     char name[32]        = BUILD_PROJECT_NAME;
                     uint8_t versionMajor = BUILD_VERSION_MAJOR;
                     uint8_t versionMinor = BUILD_VERSION_MINOR;
                     uint8_t versionPatch = BUILD_VERSION_PATCH;
                     
-                    bool is_compatible(const APP_INFO_params& other)
+                    bool is_compatible(const PROGRAM_INFO_params& other)
                     {
                         return (strcmp(this->name, other.name) == 0
                             && this->versionMajor == other.versionMajor
                             && this->versionMinor == other.versionMinor);
                     }
                     
-                    friend bool operator==(const APP_INFO_params& lhs, const APP_INFO_params& rhs)
+                    friend bool operator==(const PROGRAM_INFO_params& lhs, const PROGRAM_INFO_params& rhs)
                     {
                         return (strcmp(lhs.name, rhs.name) == 0
                             && lhs.versionMajor == rhs.versionMajor
@@ -149,16 +149,11 @@ namespace pleep
             //  what is my client id/server id
             //  What is the address of the other servers (is this required?)
             //  What is the synchronized timepoint (minus my local delay)
-            const EventId APPlication_INFO = __LINE__;
-                struct APPlication_INFO_params
+            const EventId APP_INFO = __LINE__;
+                struct APP_INFO_params
                 {
-                    // pass CosmosBuilder::Config ?
-
-                    //TimesliceId timeslice
-                    // make sure our configs match up
-                    //TimesliceId numTimeslices
-
-                    // use timeline_config?
+                    // pass CosmosBuilder::Config?
+                    // pass timeline_config?
                 };
 
             // Info about a timestream modification

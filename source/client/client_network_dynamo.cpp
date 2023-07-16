@@ -74,14 +74,14 @@ namespace pleep
             
             switch (msg.header.id)
             {
-            case events::network::APP_INFO:
+            case events::network::PROGRAM_INFO:
             {
-                PLEEPLOG_TRACE("Received APP_INFO message");
+                PLEEPLOG_TRACE("Received PROGRAM_INFO message");
                 // this message is received when connection succeeds
 
-                // check app infos match
-                events::network::APP_INFO_params localInfo;
-                events::network::APP_INFO_params remoteInfo;
+                // check program infos match
+                events::network::PROGRAM_INFO_params localInfo;
+                events::network::PROGRAM_INFO_params remoteInfo;
                 msg >> remoteInfo;
 
                 if (!(localInfo == remoteInfo))
@@ -111,14 +111,19 @@ namespace pleep
 
                 events::cosmos::ENTITY_UPDATE_params updateInfo;
                 msg >> updateInfo;
-                //PLEEPLOG_DEBUG(std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
-                //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity));
+                //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
 
-                // confirm entity exists?
-                // confirm entity signatures match?
-
-                // read update into Cosmos
-                cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
+                // ensure entity exists
+                if (cosmos->entity_exists(updateInfo.entity))
+                {
+                    // read update into Cosmos
+                    // deserialize will only work on subset of signature assigned from ENTITY_MODIFIED
+                    cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
+                }
+                else
+                {
+                    PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
+                }
             }
             break;
             case events::cosmos::ENTITY_CREATED:
