@@ -7,6 +7,7 @@ namespace pleep
     // ECS methods are provided inline in cosmos.h
 
     Cosmos::Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex)
+        : m_hostId(localTimesliceIndex)
     {
         m_entityRegistry    = std::make_unique<EntityRegistry>(localTimesliceIndex);
         m_componentRegistry = std::make_unique<ComponentRegistry>();
@@ -14,7 +15,6 @@ namespace pleep
 
         m_sharedBroker = sharedBroker;
         // setup handlers?
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
     }
 
@@ -23,7 +23,6 @@ namespace pleep
         // registry smart pointers cleared
 
         // clear handlers
-        m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ENTITY, Cosmos::_condemn_entity_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
     }
     
@@ -123,14 +122,6 @@ namespace pleep
     {
         return m_componentRegistry->stringify();
     }
-    
-    void Cosmos::_condemn_entity_handler(EventMessage condemnEvent) 
-    {
-        events::cosmos::CONDEMN_ENTITY_params condemnInfo;
-        condemnEvent >> condemnInfo;
-        
-        this->condemn_entity(condemnInfo.entity);
-    }
 
     void Cosmos::_condemn_all_handler(EventMessage condemnEvent)
     {
@@ -141,7 +132,7 @@ namespace pleep
         PLEEPLOG_TRACE("All existing entities condemned to deletion.");
         for (auto kv : get_signatures_ref())
         {
-            m_condemned.insert(kv.first);
+            this->condemn_entity(kv.first, true);
         }
     }
 }

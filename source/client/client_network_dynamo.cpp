@@ -46,6 +46,16 @@ namespace pleep
             // don't return so that we can actively clear out incoming messages
         }
 
+        // set cosmos autonomy based on connection state
+        if (cosmos && get_num_connections() > 0)
+        {
+            cosmos->set_client_lock(true);
+        }
+        else
+        {
+            cosmos->set_client_lock(false);
+        }
+
         // before receiving any entity updates, send our focal entity state
         if (cosmos)
         {
@@ -169,12 +179,7 @@ namespace pleep
                 PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                 // use condemn event to avoid double deletion
-                EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
-                events::cosmos::CONDEMN_ENTITY_params condemnInfo{
-                    removeInfo.entity
-                };
-                condemnMsg << condemnInfo;
-                m_sharedBroker->send_event(condemnMsg);
+                cosmos->condemn_entity(removeInfo.entity, true);
             }
             break;
             case events::network::SUPERPOSITION:

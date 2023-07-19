@@ -36,12 +36,18 @@ namespace pleep
         // context that registers synchros will receive returned synchros and
         // attach dynamos/config as necessary
 
+
+        // If we are not a timeslice host (aka a client) we have to ignore
+        // generic calls for entity creation/deletion and wait for our server to send it to us
+        // Specific local entities created on client side only (camera) can be forced to be created/deleted
+        void set_client_lock(bool state);
+
         // ***** ECS methods *****
 
         // create & register empty entity hosted by us
-        // If we are not a timeslice host (client) we have to create a temporary entity
-        // with a null TimesliceId and signal to our current connected host to create a valid version to overwrite it
-        Entity create_entity(bool isTemporal = true);
+        // isTemporal: sets entity chainlink to be null, and it won't participate in any time travel/superpositions
+        // overrideClientLock: ignore clientLock effect for server calls/client only calls
+        Entity create_entity(bool isTemporal = true, bool overrideClientLock = false);
 
         // create empty entity & register it as the given value
         // Check Entity should be from another host?
@@ -50,7 +56,8 @@ namespace pleep
         bool register_entity(Entity entity);
 
         // flag entity to be destroyed before next update cycle
-        void condemn_entity(Entity entity);
+        // overrideClientLock: ignore clientLock effect for server calls/client only calls
+        void condemn_entity(Entity entity, bool overrideClientLock = false);
 
         // forwards to EntityRegistry
         // return number of existing entities in this cosmos of any type
@@ -176,7 +183,6 @@ namespace pleep
         void destroy_entity(Entity entity);
 
         // event handlers
-        void _condemn_entity_handler(EventMessage condemnEvent);
         void _condemn_all_handler(EventMessage condemnEvent);
 
         // use ECS (Entity, Component, Synchro) pattern to optimize update calls
@@ -196,6 +202,13 @@ namespace pleep
         // (not necessarily the number of update() calls, because simulation/render updates are not in lockstep)
         uint16_t m_stateCoherency = 0;
 
+        // some behavior changes depending on if this Cosmos is part of a client
+        // or if we are operating on entities which we also host
+        // (clients have NULL_TIMESLICEID)
+        TimesliceId m_hostId = NULL_TIMESLICEID;
+        // this effect can be toggled (whether we are connected to a server or not)
+        bool m_clientLock = false;
+
         // Set containing entities who were requested to be deleted.
         // They will be deleted directly before next update,
         // so all component references should be cleared by then
@@ -206,9 +219,23 @@ namespace pleep
     // ***** ECS methods *****
     // templates need to be accessable to all translation units that use Cosmos
     // (non-template entity methods also provided as inline for organization)
-    
-    inline Entity Cosmos::create_entity(bool isTemporal) 
+
+    inline void Cosmos::set_client_lock(bool state)
     {
+        m_clientLock = state;
+    }
+    
+    inline Entity Cosmos::create_entity(bool isTemporal, bool overrideClientLock) 
+    {
+        // do not allow clients to create any entities
+        // (they can still register)
+        if (m_clientLock
+            && !overrideClientLock
+            && m_hostId == NULL_TIMESLICEID)
+        {
+            return NULL_ENTITY;
+        }
+
         Entity entity = m_entityRegistry->create_entity(isTemporal);
 
         // broadcast that new entity exists
@@ -241,14 +268,25 @@ namespace pleep
         return true;
     }
 
-    inline void Cosmos::condemn_entity(Entity entity)
+    inline void Cosmos::condemn_entity(Entity entity, bool overrideClientLock)
     {
         if (entity == NULL_ENTITY) return;
+        // only allow clients to delete:
+        //   server entities if override is true
+        //   client entities
+        if (m_clientLock
+            && !overrideClientLock
+            && m_hostId == NULL_TIMESLICEID
+            && derive_timeslice_id(entity) != NULL_TIMESLICEID)
+        {
+            return;
+        }
 
         PLEEPLOG_TRACE("Entity " + std::to_string(entity) + " was condemned to deletion.");
         m_condemned.insert(entity);
     }
     
+    // private:
     inline void Cosmos::destroy_entity(Entity entity) 
     {
         if (entity == NULL_ENTITY) return;
@@ -265,6 +303,15 @@ namespace pleep
 
         // clear focal entity if we just deleted it
         if (entity == m_focalEntity) set_focal_entity(NULL_ENTITY);
+
+        // Entity will be re-added to availability queue once it's host count decrements to 0
+        // we will message to our NetworkDynamo to decrement OTHER hosts
+        //     (event signalled by cosmos after this returns)
+        // but clients (and servers) will decrement themselves immediately here
+        if (m_hostId == derive_timeslice_id(entity))
+        {
+            decrement_hosted_entity_count(entity);
+        }
 
         // broadcast entity no longer exists
         EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED, m_stateCoherency);
@@ -332,6 +379,8 @@ namespace pleep
     template<typename T>
     void Cosmos::add_component(Entity entity, T component) 
     {
+        if (entity == NULL_ENTITY) return;
+
         m_componentRegistry->add_component<T>(entity, component);
 
         // flip signature bit for this component
@@ -351,6 +400,8 @@ namespace pleep
 
     inline void Cosmos::add_component(Entity entity, ComponentType componentId)
     {
+        if (entity == NULL_ENTITY) return;
+
         m_componentRegistry->add_component(entity, componentId);
 
         // flip signature bit for this component
@@ -371,6 +422,8 @@ namespace pleep
     template<typename T>
     void Cosmos::remove_component(Entity entity) 
     {
+        if (entity == NULL_ENTITY) return;
+
         m_componentRegistry->remove_component<T>(entity);
         
         // flip signature bit for this component
@@ -390,6 +443,8 @@ namespace pleep
     
     inline void Cosmos::remove_component(Entity entity, ComponentType componentId)
     {
+        if (entity == NULL_ENTITY) return;
+
         m_componentRegistry->remove_component(entity, componentId);
         
         // flip signature bit for this component

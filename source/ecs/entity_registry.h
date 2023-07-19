@@ -14,6 +14,8 @@ namespace pleep
     class EntityRegistry
     {
     public:
+        // Known timesliceId to compose Entity values with
+        // Clients will have NULL_TIMESLICEID
         EntityRegistry(const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
 
         Entity create_entity(bool isTemporal = true);
@@ -51,11 +53,6 @@ namespace pleep
         // unlisted entry implies empty signature
         std::unordered_map<Entity, Signature> m_signatures;
 
-        // Known timesliceId to compose Entity values with,
-        // and check if we are a server (timeslice host) 
-        //     or a client (timeslice guest). Clients will have NULL_TIMESLICEID
-        const TimesliceId m_timesliceId = NULL_TIMESLICEID;
-
         // If we are a timeslice host we arbitrate the registrations of TimesliceId's and
         // CausalChainLinks for entities which originate from our timeslice (we "host" them)
         // Therefore we need to maintain a list of unused ids to register new entities with
@@ -72,12 +69,11 @@ namespace pleep
 
     
     inline EntityRegistry::EntityRegistry(const TimesliceId localTimesliceIndex)
-        : m_timesliceId(localTimesliceIndex) // clients will have NULL_TIMESLICEID
     {
         // initialize the queue statically with ALL entities (as non are used yet)
         for (GenesisId g = 0; g < GENESISID_SIZE; g++)
         {
-            m_availableHostedEntityIds.push(compose_entity(m_timesliceId, g, 0));
+            m_availableHostedEntityIds.push(compose_entity(localTimesliceIndex, g, 0));
         }
     }
 
@@ -119,11 +115,6 @@ namespace pleep
 
     inline bool EntityRegistry::register_entity(Entity entity)
     {
-        if (derive_timeslice_id(entity) == m_timesliceId)
-        {
-            PLEEPLOG_WARN("Registering an Entity " + std::to_string(entity) + " with our host id. Is this intended?");
-        }
-
         // If non empty signature already exists for this entity then something has gone wrong
         assert(m_signatures.find(entity) == m_signatures.end());
 
@@ -143,15 +134,6 @@ namespace pleep
 
         // Clear signature (if it exists)
         const size_t success = m_signatures.erase(entity);
-
-        // Entity will be re-added to availability queue once it's host count decrements to 0
-        // we will dispatch to our NetworkDynamo to decrement OTHER hosts
-        //     (event signalled by cosmos after this returns)
-        // but clients (and servers) will decrement themselves immediately here
-        if (success && m_timesliceId == derive_timeslice_id(entity))
-        {
-            decrement_hosted_entity_count(entity);
-        }
 
         return success;
     }
@@ -208,12 +190,6 @@ namespace pleep
             return 0;
         }
 
-        if (derive_timeslice_id(entity) != m_timesliceId)
-        {
-            PLEEPLOG_WARN("Tried to get host count of HostedEntity which is not hosted by this timeslice");
-            return 0;
-        }
-        
         auto entityCountsIt = m_hostedEntityCounts.find(entity);
         if (entityCountsIt == m_hostedEntityCounts.end())
         {

@@ -246,7 +246,11 @@ namespace pleep
                 // another timeslice has called for us to destroy an entity
                 // this is likely after a successfull timeslice jump
                 // forward it to our cosmos
-                m_sharedBroker->send_event(msg);
+                
+                events::cosmos::CONDEMN_ENTITY_params condemnInfo;
+                msg >> condemnInfo;
+
+                cosmos->condemn_entity(condemnInfo.entity);
             }
             break;
             default:
@@ -343,12 +347,7 @@ namespace pleep
                         PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                         // use condemn event to avoid double deletion
-                        EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
-                        events::cosmos::CONDEMN_ENTITY_params condemnInfo{
-                            removeInfo.entity
-                        };
-                        condemnMsg << condemnInfo;
-                        m_sharedBroker->send_event(condemnMsg);
+                        cosmos->condemn_entity(removeInfo.entity);
                     }
                     break;
                     default:
