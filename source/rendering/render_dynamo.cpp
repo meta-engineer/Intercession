@@ -67,16 +67,21 @@ namespace pleep
     
     void RenderDynamo::submit(CameraPacket data) 
     {
+        // store CameraPacket for Uniform Buffer (every submittion overrides)
+        // the ECS references are volatile so our pointers shouldn't persist past the frame time
+        m_viewTransform = &(data.transform);
+        m_viewCamera    = &(data.camera);
+
+        // GL functions don't like height and width of 0
+        if (m_viewCamera->viewWidth == 0 || m_viewCamera->viewHeight == 0)
+        {
+            return;
+        }
         // again, i don't know if this is the best solution but,
         // ecs references are volatile so its probably necessary.
         m_forwardPass->submit(data);
         m_screenPass->submit(data);
         m_bloomPass->submit(data);
-
-        // store CameraPacket for Uniform Buffer (every submittion overrides)
-        // the ECS references are volatile so our pointers shouldn't persist past the frame time
-        m_viewTransform = &(data.transform);
-        m_viewCamera    = &(data.camera);
     }
 
     
@@ -91,7 +96,9 @@ namespace pleep
 
         // if there is no camera data then... exit early
         // make sure relays are still reset after!
-        if (m_viewTransform == nullptr || m_viewCamera == nullptr)
+        if (m_viewTransform == nullptr || m_viewCamera == nullptr
+            || m_viewportDims[2] == 0 || m_viewportDims[3] == 0
+            || m_viewCamera->viewWidth == 0 || m_viewCamera->viewHeight == 0)
         {
             //PLEEPLOG_WARN("No camera data this frame, skipping without rendering.");
             return;

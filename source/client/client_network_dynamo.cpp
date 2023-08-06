@@ -46,16 +46,6 @@ namespace pleep
             // don't return so that we can actively clear out incoming messages
         }
 
-        // set cosmos autonomy based on connection state
-        if (cosmos && get_num_connections() > 0)
-        {
-            cosmos->set_client_lock(true);
-        }
-        else
-        {
-            cosmos->set_client_lock(false);
-        }
-
         // before receiving any entity updates, send our focal entity state
         if (cosmos)
         {
@@ -65,7 +55,8 @@ namespace pleep
                 EventMessage focalUpdate(events::cosmos::ENTITY_UPDATE);
                 events::cosmos::ENTITY_UPDATE_params focalInfo = {
                     focalEntity, 
-                    cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream)
+                    cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream),
+                    true
                 };
                 cosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
                 focalUpdate << focalInfo;
@@ -125,8 +116,7 @@ namespace pleep
                 if (cosmos->entity_exists(updateInfo.entity))
                 {
                     // read update into Cosmos
-                    // deserialize will only work on subset of signature assigned from ENTITY_MODIFIED
-                    cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg);
+                    cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, msg);
                 }
                 else
                 {
@@ -150,27 +140,6 @@ namespace pleep
                 }
             }
             break;
-            case events::cosmos::ENTITY_MODIFIED:
-            {
-                // create any new components, remove any components message does not have
-                events::cosmos::ENTITY_MODIFIED_params modInfo;
-                msg >> modInfo;
-                PLEEPLOG_DEBUG("Modify Entity: " + std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
-
-                // ensure entity exists
-                if (cosmos->entity_exists(modInfo.entity))
-                {
-                    Signature entitySign = cosmos->get_entity_signature(modInfo.entity);
-
-                    for (ComponentType c = 0; c < modInfo.sign.size(); c++)
-                    {
-                        if (modInfo.sign.test(c) && !entitySign.test(c)) cosmos->add_component(modInfo.entity, c);
-
-                        if (!modInfo.sign.test(c) && entitySign.test(c)) cosmos->remove_component(modInfo.entity, c);
-                    }
-                }
-            }
-            break;
             case events::cosmos::ENTITY_REMOVED:
             {
                 // entity deletion should be idempotent, incase our local simulation also deletes
@@ -179,7 +148,7 @@ namespace pleep
                 PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                 // use condemn event to avoid double deletion
-                cosmos->condemn_entity(removeInfo.entity, true);
+                cosmos->condemn_entity(removeInfo.entity);
             }
             break;
             case events::network::SUPERPOSITION:

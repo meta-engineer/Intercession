@@ -12,13 +12,14 @@ namespace pleep
     // returns single entity launched from origin in direction
     inline Entity create_test_projectile(
         std::shared_ptr<Cosmos> cosmos,
+        Entity shooter,
         glm::vec3 origin,
         glm::vec3 direction
     )
     {
         assert(cosmos);
 
-        Entity thrown = cosmos->create_entity();
+        Entity thrown = cosmos->create_entity(true, shooter);
         TransformComponent thrown_transform(origin);
         thrown_transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
         cosmos->add_component(thrown, thrown_transform);

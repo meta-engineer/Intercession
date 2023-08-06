@@ -55,16 +55,6 @@ namespace pleep
         // cross-concerning events that exist within the virtual verse
         // maybe the cosmos should have it's own seperate broker which can be erased when context changes cosmos
         namespace cosmos {
-            // notify that an entity SIGNATURE has been modified locally
-            // and those changes should be propagated to other servers/clients
-            // Does not include the content/members of those components
-            const EventId ENTITY_MODIFIED = __LINE__;
-                struct ENTITY_MODIFIED_params
-                {
-                    Entity entity = NULL_ENTITY;
-                    Signature sign;
-                };
-            
             // Indicates that the cosmos has added a new entity
             // (ambiguous whether WE created it, or we registered it from another host)
             // Entity will exist when this is signalled
@@ -97,13 +87,13 @@ namespace pleep
             // entity update will be a dynamically packed series of components:
             // Each consecutive component represented in the entity's signature.
             // (assuming the APP_INFO checks out the component layout should match)
-            // then the sign (Signature: 32 bits),
-            // then the entity (Entity: 16 bits)
-            // (remember it is a FIFO stack)
+            // THEN the following params struct (remember it is a FIFO stack)
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
                     Entity entity = NULL_ENTITY;
                     Signature sign;
+                    // indicates if components omitted from sign are NOT implied as removed
+                    bool subset = false;
                 };
 
             // Request for the whole cosmos to be remade

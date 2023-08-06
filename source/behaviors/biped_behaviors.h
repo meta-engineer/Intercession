@@ -89,9 +89,9 @@ namespace pleep
                     && input.actions.test(SpacialActions::moveVertical)
                     && input.actionVals.at(SpacialActions::moveVertical) > 0)
                 {
+                    biped.jumpCooldownRemaining = biped.jumpCooldownTime;
                     // f = m*a
                     physics.acceleration += -1.0f * biped.supportAxis * biped.jumpForce / physics.mass;
-                    biped.jumpCooldownRemaining = biped.jumpCooldownTime;
                 }
                 
                 // clear gounded state until next collision
@@ -99,12 +99,14 @@ namespace pleep
 
 
                 // TEST: pew pew
-                if (input.actions.test(SpacialActions::action0) && input.actionVals.at(SpacialActions::action0))
+                if (biped.shootCooldownRemaining > 0) biped.shootCooldownRemaining -= deltaTime;
+                if (biped.shootCooldownRemaining <= 0
+                    && input.actions.test(SpacialActions::action0)
+                    && input.actionVals.at(SpacialActions::action0))
                 {
-                    PLEEPLOG_DEBUG("action0");
-
+                    biped.shootCooldownRemaining = biped.shootCooldownTime;
                     // make cube with velocity along aimHeading
-                    create_test_projectile(cosmos, transform.origin+ aimHeading, aimHeading*10.0f);
+                    create_test_projectile(cosmos, entity, transform.origin+ aimHeading, aimHeading*biped.shootForce);
                 }
 
             }

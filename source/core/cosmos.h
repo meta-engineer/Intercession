@@ -36,18 +36,14 @@ namespace pleep
         // context that registers synchros will receive returned synchros and
         // attach dynamos/config as necessary
 
-
-        // If we are not a timeslice host (aka a client) we have to ignore
-        // generic calls for entity creation/deletion and wait for our server to send it to us
-        // Specific local entities created on client side only (camera) can be forced to be created/deleted
-        void set_client_lock(bool state);
-
         // ***** ECS methods *****
 
         // create & register empty entity hosted by us
         // isTemporal: sets entity chainlink to be null, and it won't participate in any time travel/superpositions
-        // overrideClientLock: ignore clientLock effect for server calls/client only calls
-        Entity create_entity(bool isTemporal = true, bool overrideClientLock = false);
+        // source: can specify an entity creation was triggered by.
+        //   Used to avoid duplicate creations by clients or child servers
+        //   NULL_ENTITY always allows creation
+        Entity create_entity(bool isTemporal = true, Entity source = NULL_ENTITY);
 
         // create empty entity & register it as the given value
         // Check Entity should be from another host?
@@ -56,8 +52,10 @@ namespace pleep
         bool register_entity(Entity entity);
 
         // flag entity to be destroyed before next update cycle
-        // overrideClientLock: ignore clientLock effect for server calls/client only calls
-        void condemn_entity(Entity entity, bool overrideClientLock = false);
+        // source: can specify an entity deletion was triggered by.
+        //   Used to avoid duplicate deletions by clients or child servers
+        //   NULL_ENTITY always allows deletion
+        void condemn_entity(Entity entity, Entity source = NULL_ENTITY);
 
         // forwards to EntityRegistry
         // return number of existing entities in this cosmos of any type
@@ -150,7 +148,7 @@ namespace pleep
         // Components in sign but missing from entity signature will THROW range_error
         //   add_component() must be called before deserialising data to that component
         // !!! msg must NOT include header params (entity id and signature)
-        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
+        void deserialize_entity_components(Entity entity, Signature sign, bool subset, EventMessage& msg);
 
         // Unpack a component (specified by type) from message and update entity with its new values
         // Use if you want to manually unpack each component and validate them before writing
@@ -206,8 +204,6 @@ namespace pleep
         // or if we are operating on entities which we also host
         // (clients have NULL_TIMESLICEID)
         TimesliceId m_hostId = NULL_TIMESLICEID;
-        // this effect can be toggled (whether we are connected to a server or not)
-        bool m_clientLock = false;
 
         // Set containing entities who were requested to be deleted.
         // They will be deleted directly before next update,
@@ -219,19 +215,14 @@ namespace pleep
     // ***** ECS methods *****
     // templates need to be accessable to all translation units that use Cosmos
     // (non-template entity methods also provided as inline for organization)
-
-    inline void Cosmos::set_client_lock(bool state)
-    {
-        m_clientLock = state;
-    }
     
-    inline Entity Cosmos::create_entity(bool isTemporal, bool overrideClientLock) 
+    inline Entity Cosmos::create_entity(bool isTemporal, Entity source) 
     {
-        // do not allow clients to create any entities
-        // (they can still register)
-        if (m_clientLock
-            && !overrideClientLock
-            && m_hostId == NULL_TIMESLICEID)
+        // do not allow clients/servers to create any entities from external sources
+        // (external source should register them via network dynamo instead)
+        if (source != NULL_ENTITY &&
+            (m_hostId == NULL_TIMESLICEID && derive_timeslice_id(source) != NULL_TIMESLICEID 
+            || m_hostId != NULL_TIMESLICEID && derive_causal_chain_link(source) != 0))
         {
             return NULL_ENTITY;
         }
@@ -268,16 +259,15 @@ namespace pleep
         return true;
     }
 
-    inline void Cosmos::condemn_entity(Entity entity, bool overrideClientLock)
+    inline void Cosmos::condemn_entity(Entity entity, Entity source)
     {
         if (entity == NULL_ENTITY) return;
-        // only allow clients to delete:
-        //   server entities if override is true
-        //   client entities
-        if (m_clientLock
-            && !overrideClientLock
-            && m_hostId == NULL_TIMESLICEID
-            && derive_timeslice_id(entity) != NULL_TIMESLICEID)
+
+        // do not allow clients/servers to delete any entities from external sources
+        // (external source should condemn them via network dynamo instead)
+        if (source != NULL_ENTITY &&
+            (m_hostId == NULL_TIMESLICEID && derive_timeslice_id(source) != NULL_TIMESLICEID 
+            || m_hostId != NULL_TIMESLICEID && derive_causal_chain_link(source) != 0))
         {
             return;
         }
@@ -388,14 +378,6 @@ namespace pleep
         sign.set(m_componentRegistry->get_component_type<T>(), true);
         m_entityRegistry->set_signature(entity, sign);
         m_synchroRegistry->change_entity_signature(entity, sign);
-
-        // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
-        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
-            entity, sign
-        };
-        modEntityEvent << modEntityParams;
-        m_sharedBroker->send_event(modEntityEvent);
     }
 
     inline void Cosmos::add_component(Entity entity, ComponentType componentId)
@@ -409,14 +391,6 @@ namespace pleep
         sign.set(componentId, true);
         m_entityRegistry->set_signature(entity, sign);
         m_synchroRegistry->change_entity_signature(entity, sign);
-        
-        // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
-        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
-            entity, sign
-        };
-        modEntityEvent << modEntityParams;
-        m_sharedBroker->send_event(modEntityEvent);
     }
     
     template<typename T>
@@ -431,14 +405,6 @@ namespace pleep
         sign.set(m_componentRegistry->get_component_type<T>(), false);
         m_entityRegistry->set_signature(entity, sign);
         m_synchroRegistry->change_entity_signature(entity, sign);
-        
-        // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
-        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
-            entity, sign
-        };
-        modEntityEvent << modEntityParams;
-        m_sharedBroker->send_event(modEntityEvent);
     }
     
     inline void Cosmos::remove_component(Entity entity, ComponentType componentId)
@@ -452,14 +418,6 @@ namespace pleep
         sign.set(componentId, false);
         m_entityRegistry->set_signature(entity, sign);
         m_synchroRegistry->change_entity_signature(entity, sign);
-        
-        // signal entity has been modified
-        EventMessage modEntityEvent(events::cosmos::ENTITY_MODIFIED, m_stateCoherency);
-        events::cosmos::ENTITY_MODIFIED_params modEntityParams {
-            entity, sign
-        };
-        modEntityEvent << modEntityParams;
-        m_sharedBroker->send_event(modEntityEvent);
     }
     
     template<typename T>

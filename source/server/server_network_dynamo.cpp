@@ -21,7 +21,6 @@ namespace pleep
 
         // setup handlers
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::network::SUPERPOSITION, ServerNetworkDynamo::_superposition_handler));
 
@@ -32,7 +31,6 @@ namespace pleep
     {
         // clear handlers
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
-        m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_MODIFIED, ServerNetworkDynamo::_entity_modified_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::SUPERPOSITION, ServerNetworkDynamo::_superposition_handler));
     }
@@ -292,8 +290,7 @@ namespace pleep
                         if (cosmos->entity_exists(updateInfo.entity))
                         {
                             // read update into Cosmos
-                            // deserialize will only work on subset of signature assigned from ENTITY_MODIFIED
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt);
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, evnt);
                         }
                         else
                         {
@@ -313,27 +310,6 @@ namespace pleep
                             for (ComponentType c = 0; c < createInfo.sign.size(); c++)
                             {
                                 if (createInfo.sign.test(c)) cosmos->add_component(createInfo.entity, c);
-                            }
-                        }
-                    }
-                    break;
-                    case events::cosmos::ENTITY_MODIFIED:
-                    {
-                        // create any new components, remove any components message does not have
-                        events::cosmos::ENTITY_MODIFIED_params modInfo;
-                        evnt >> modInfo;
-                        //PLEEPLOG_DEBUG("Modify Entity: " + std::to_string(modInfo.entity) + " | " + modInfo.sign.to_string());
-
-                        // ensure entity exists
-                        if (cosmos->entity_exists(modInfo.entity))
-                        {
-                            Signature entitySign = cosmos->get_entity_signature(modInfo.entity);
-
-                            for (ComponentType c = 0; c < modInfo.sign.size(); c++)
-                            {
-                                if (modInfo.sign.test(c) && !entitySign.test(c)) cosmos->add_component(modInfo.entity, c);
-
-                                if (!modInfo.sign.test(c) && entitySign.test(c)) cosmos->remove_component(modInfo.entity, c);
                             }
                         }
                     }
@@ -385,7 +361,7 @@ namespace pleep
                 // TODO: Check updated entity matches client's assigned entity
 
                 // We should only be receiving upstream components...
-                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, remoteMsg.msg);
+                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, true, remoteMsg.msg);
             }
             break;
             case events::network::NEW_CLIENT:
@@ -440,18 +416,8 @@ namespace pleep
                     if (cosmos->register_entity(jumpInfo.entity))
                     {
                         clientInfo.entity = jumpInfo.entity;
-                        
-                        // manually add components
-                        Signature entitySign = cosmos->get_entity_signature(jumpInfo.entity);
-                        for (ComponentType c = 0; c < jumpInfo.sign.size(); c++)
-                        {
-                            if (jumpInfo.sign.test(c) && !entitySign.test(c)) cosmos->add_component(jumpInfo.entity, c);
-
-                            if (!jumpInfo.sign.test(c) && entitySign.test(c)) cosmos->remove_component(jumpInfo.entity, c);
-                        }
-                        // this could be eschewed if deserialize could auto-add components
         
-                        cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpMsg);
+                        cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, false, jumpMsg);
                         PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
 
                         // signal to host to incrememnt host count (like create_entity does locally)
@@ -488,6 +454,18 @@ namespace pleep
                     clientInfo.entity = create_client_focal_entity(cosmos, m_sharedBroker);
                     PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
                 }
+
+                // send client upstream signture update for its focal entity
+                EventMessage updateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
+                events::cosmos::ENTITY_UPDATE_params updateInfo = {
+                    clientInfo.entity,
+                    cosmos->get_entity_signature(clientInfo.entity) & cosmos->get_category_signature(ComponentCategory::upstream),
+                    true
+                };
+                cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
+
+                updateMsg << updateInfo;
+                remoteMsg.remote->send(updateMsg);
 
                 // Forward new client message to signal for cosmos to initialize client side entities
                 PLEEPLOG_DEBUG("Sending new client acknowledgement to new client");
@@ -542,23 +520,27 @@ namespace pleep
 
         // Fourth: Process all submitted data in relays
 
-        // Fifth: After all ingesting is done, send/broadcast fresh downstream data to clients
-        // and to timestream (with incremented CaucalChainLink)
         if (cosmos)
         {
+            // Fifth: After all ingesting is done, send/broadcast fresh downstream data to clients
             Signature downstreamSign = cosmos->get_category_signature(ComponentCategory::downstream);
             for (auto signIt : cosmos->get_signatures_ref())
             {
                 EventMessage updateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
                 events::cosmos::ENTITY_UPDATE_params updateInfo = {
                     signIt.first,
-                    signIt.second & downstreamSign
+                    signIt.second & downstreamSign,
+                    true
                 };
                 cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
 
                 updateMsg << updateInfo;
                 m_networkApi.broadcast_message(updateMsg);
+            }
 
+            // and push to timestream (with incremented CausalChainLink, and full signature)
+            for (auto signIt : cosmos->get_signatures_ref())
+            {
                 // DON'T broadcast superposition entities into the past
                 // TODO: better way to determine superposition without exceptions?
                 try
@@ -570,8 +552,14 @@ namespace pleep
                     // This entity didn't have a TransformComponent, therefore it cannot be in a superposition
                 }
 
-                // progogate same message, but with incremented causalchainlink
-                updateMsg >> updateInfo;
+                EventMessage updateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
+                events::cosmos::ENTITY_UPDATE_params updateInfo = {
+                    signIt.first,
+                    signIt.second,
+                    false
+                };
+                cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
+                
                 increment_causal_chain_link(updateInfo.entity);
                 updateMsg << updateInfo;
                 m_timelineApi.push_past_timestream(updateInfo.entity, updateMsg);
@@ -608,7 +596,6 @@ namespace pleep
     void ServerNetworkDynamo::_entity_created_handler(EventMessage entityEvent)
     {   
         // Broadcast creation event to clients, the run_relays update will populate it
-        // WARN: when entity is created it has no components, so it cannot be updated until ENTITY_MODIFIED events
         m_networkApi.broadcast_message(entityEvent);
 
         events::cosmos::ENTITY_CREATED_params newEntityParams;
@@ -633,27 +620,6 @@ namespace pleep
             // signal for host to increment now that entity is in the past
             TimesliceId host = derive_timeslice_id(propogateNewEntityParams.entity);
             m_timelineApi.send_message(host, entityEvent);
-        }
-    }
-    
-    void ServerNetworkDynamo::_entity_modified_handler(EventMessage entityEvent)
-    {
-        //PLEEPLOG_DEBUG("Handling ENTITY_MODIFIED event");
-        
-        m_networkApi.broadcast_message(entityEvent);
-
-        // entity signature has been modified
-        events::cosmos::ENTITY_MODIFIED_params modEntityParams;
-        entityEvent >> modEntityParams;
-        
-        // TODO: check superposition
-        if (m_timelineApi.has_past())
-        {
-            events::cosmos::ENTITY_MODIFIED_params propogateModEntityParams = modEntityParams;
-            increment_causal_chain_link(propogateModEntityParams.entity);
-            entityEvent << propogateModEntityParams;
-
-            m_timelineApi.push_past_timestream(propogateModEntityParams.entity, entityEvent);
         }
     }
     

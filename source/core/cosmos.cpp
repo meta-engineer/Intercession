@@ -61,10 +61,28 @@ namespace pleep
         m_componentRegistry->serialize_entity_components(entity, sign, msg);
     }
 
-    void Cosmos::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
+    void Cosmos::deserialize_entity_components(Entity entity, Signature sign, bool subset, EventMessage& msg)
     {
+        if (!entity_exists(entity))
+        {
+            // hmmm?
+            return;
+        }
+
         Signature entitySign = this->get_entity_signature(entity);
-        // get components ONLY in sign
+
+        // add any components in sign and missing from entitySign
+        // if subset is FALSE, remove any components in entitySign and not in sign
+        for (ComponentType c = 0; c < sign.size(); c++)
+        {
+            if (sign.test(c) && !entitySign.test(c)) add_component(entity, c);
+
+            if (!sign.test(c) && entitySign.test(c) && !subset) remove_component(entity, c);
+        }
+
+        // confirm signature matching succeeded
+        entitySign = this->get_entity_signature(entity);
+        // find components ONLY in sign
         if (((entitySign ^ sign) & sign).any())
         {
             PLEEPLOG_ERROR("Requested deserialized signature (" + sign.to_string() + ") which is a superset of entity (" + std::to_string(entity) + ") signature (" + entitySign.to_string() + ")");
@@ -132,7 +150,7 @@ namespace pleep
         PLEEPLOG_TRACE("All existing entities condemned to deletion.");
         for (auto kv : get_signatures_ref())
         {
-            this->condemn_entity(kv.first, true);
+            this->condemn_entity(kv.first);
         }
     }
 }

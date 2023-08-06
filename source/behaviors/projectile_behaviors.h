@@ -28,7 +28,7 @@ namespace pleep
 
                 if (proj.currLifetime > proj.maxLifetime)
                 {
-                    cosmos->condemn_entity(entity);
+                    cosmos->condemn_entity(entity, entity);
                 }
             }
             catch(const std::exception& err)

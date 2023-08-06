@@ -170,6 +170,8 @@ namespace pleep
     
     void RenderSynchro::_resize_main_camera(int width, int height) 
     {
+        if (m_mainCamera == NULL_ENTITY) return;
+
         PLEEPLOG_TRACE("Overwriting registered camera with dimensions (" + std::to_string(width) + ", " + std::to_string(height) + ")");
 
         std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
@@ -182,9 +184,18 @@ namespace pleep
         }
 
         // camera components must be registered and this entity must have a camera component
-        CameraComponent& mainCamInfo = cosmos->get_component<CameraComponent>(m_mainCamera);
-        mainCamInfo.viewWidth = width;
-        mainCamInfo.viewHeight = height;
+        try
+        {
+            CameraComponent& mainCamInfo = cosmos->get_component<CameraComponent>(m_mainCamera);
+            mainCamInfo.viewWidth = width;
+            mainCamInfo.viewHeight = height;
+        }
+        catch(const std::exception& e)
+        {
+            UNREFERENCED_PARAMETER(e);
+            PLEEPLOG_WARN("Tried to set dimensions of main camera entity which has no CameraComponent, ignoring...");
+            return;
+        }
 
         // on next camera submit these dimensions will be checked and render relays will resize themselves accordingly
     }
