@@ -23,7 +23,7 @@ namespace pleep
     {
     public:
         // build empty ecs
-        Cosmos(EventBroker* sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
+        Cosmos(std::shared_ptr<EventBroker> sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
         ~Cosmos();
 
         // call all synchros to invoke entity updates
@@ -189,7 +189,7 @@ namespace pleep
         std::unique_ptr<SynchroRegistry>   m_synchroRegistry;
 
         // for emitting events::cosmos
-        EventBroker* m_sharedBroker = nullptr;
+        std::shared_ptr<EventBroker> m_sharedBroker = nullptr;
 
         // Barycenter of the cosmos, stored centrally for dynamos to coordinate
         Entity m_focalEntity = NULL_ENTITY;

@@ -9,7 +9,7 @@ namespace pleep
     class A_Dynamo
     {
     protected:
-        A_Dynamo(EventBroker* sharedBroker)
+        A_Dynamo(std::shared_ptr<EventBroker> sharedBroker)
             : m_sharedBroker(sharedBroker)
         {
             // no guarentees sharedBroker isn't null
@@ -25,14 +25,14 @@ namespace pleep
         virtual void reset_relays() = 0;
 
         // synchros get broker reference from respective dynamo
-        EventBroker* get_shared_broker()
+        std::shared_ptr<EventBroker> get_shared_broker()
         {
             return m_sharedBroker;
         }
 
     protected:
         // all dynamos receive broker from context on construction
-        EventBroker* m_sharedBroker = nullptr;
+        std::shared_ptr<EventBroker> m_sharedBroker = nullptr;
     };
 }
 

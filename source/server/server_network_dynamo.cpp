@@ -7,7 +7,7 @@
 
 namespace pleep
 {
-    ServerNetworkDynamo::ServerNetworkDynamo(EventBroker* sharedBroker, TimelineApi localTimelineApi)
+    ServerNetworkDynamo::ServerNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker, TimelineApi localTimelineApi)
         : I_NetworkDynamo(sharedBroker)
         , m_timelineApi(localTimelineApi)
         , m_networkApi(m_timelineApi.get_port())

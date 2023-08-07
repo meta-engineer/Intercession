@@ -123,7 +123,7 @@ namespace pleep
                 return true;
             }
 
-            friend std::shared_ptr<Cosmos> generate(cosmos_builder::Config& config, DynamoCluster& callerDynamos, EventBroker* callerBroker);
+            friend std::shared_ptr<Cosmos> generate(cosmos_builder::Config& config, DynamoCluster& callerDynamos, std::shared_ptr<EventBroker> callerBroker);
 
         protected:
             // Registered Components (in order of registry)
@@ -206,7 +206,7 @@ namespace pleep
         std::shared_ptr<Cosmos> generate(
             cosmos_builder::Config& config,
             DynamoCluster& callerDynamos,
-            EventBroker* callerBroker = nullptr
+            std::shared_ptr<EventBroker> callerBroker = nullptr
         );
 
         // Can we retroactively generate a config from an existing cosmos?

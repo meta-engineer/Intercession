@@ -2,7 +2,7 @@
 
 namespace pleep
 {
-    BehaviorsDynamo::BehaviorsDynamo(EventBroker* sharedBroker) 
+    BehaviorsDynamo::BehaviorsDynamo(std::shared_ptr<EventBroker> sharedBroker) 
         : A_Dynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Start behaviors pipeline setup");

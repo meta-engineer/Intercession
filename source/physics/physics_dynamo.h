@@ -18,7 +18,7 @@ namespace pleep
     class PhysicsDynamo : public A_Dynamo
     {
     public:
-        PhysicsDynamo(EventBroker* sharedBroker);
+        PhysicsDynamo(std::shared_ptr<EventBroker> sharedBroker);
         ~PhysicsDynamo();
 
         // pass in all physics information

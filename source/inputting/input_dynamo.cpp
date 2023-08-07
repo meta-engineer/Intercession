@@ -5,7 +5,7 @@
 
 namespace pleep
 {
-    InputDynamo::InputDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi) 
+    InputDynamo::InputDynamo(std::shared_ptr<EventBroker> sharedBroker, GLFWwindow* windowApi) 
         : A_Dynamo(sharedBroker)
         , m_windowApi(windowApi)
         , m_spacialInputRelay(m_inputBuffer)

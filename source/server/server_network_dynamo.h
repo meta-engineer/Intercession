@@ -23,7 +23,7 @@ namespace pleep
     class ServerNetworkDynamo : public I_NetworkDynamo
     {
     public:
-        ServerNetworkDynamo(EventBroker* sharedBroker, TimelineApi localTimelineApi);
+        ServerNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker, TimelineApi localTimelineApi);
         ~ServerNetworkDynamo();
 
         // process network packet queues

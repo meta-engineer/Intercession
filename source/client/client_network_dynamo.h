@@ -16,7 +16,7 @@ namespace pleep
     {
     public:
         // Broker stored by I_NetworkDynamo -> A_Dynamo as m_sharedBroker
-        ClientNetworkDynamo(EventBroker* sharedBroker);
+        ClientNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker);
         ~ClientNetworkDynamo();
 
         // process network packet queues

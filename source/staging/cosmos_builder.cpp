@@ -5,7 +5,7 @@ namespace pleep
     std::shared_ptr<Cosmos> cosmos_builder::generate(
         cosmos_builder::Config& config,
         DynamoCluster& callerDynamos,
-        EventBroker* callerBroker
+        std::shared_ptr<EventBroker> callerBroker
     )
     {
         static std::unordered_map<const char*, std::function<void(std::shared_ptr<Cosmos>, DynamoCluster&)>> componentRegisters;

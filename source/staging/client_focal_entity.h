@@ -12,7 +12,7 @@ namespace pleep
     // client is signalled to use this entity as its main entity;
     inline Entity create_client_focal_entity(
         std::shared_ptr<Cosmos> cosmos,
-        EventBroker* eventBroker
+        std::shared_ptr<EventBroker> eventBroker
     )
     {
         // we have to implicitly know what components are registered

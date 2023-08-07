@@ -8,7 +8,7 @@
 
 namespace pleep
 {
-    ClientNetworkDynamo::ClientNetworkDynamo(EventBroker* sharedBroker) 
+    ClientNetworkDynamo::ClientNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker) 
         : I_NetworkDynamo(sharedBroker)
     {
         PLEEPLOG_TRACE("Start client networking pipeline setup");

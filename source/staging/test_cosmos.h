@@ -16,7 +16,7 @@
 namespace pleep
 {
     inline std::shared_ptr<Cosmos> build_test_cosmos(
-        EventBroker* eventBroker, 
+        std::shared_ptr<EventBroker> eventBroker, 
         DynamoCluster& dynamoCluster
     )
     {

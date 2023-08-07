@@ -14,7 +14,7 @@ namespace pleep
         // Dynamo should provide shared broker for physics events to trigger callbacks
         // subclasses should be: using A_PhysicsRelay::A_PhysicsRelay;
         // virtual relay methods keep this abstract even without a protected constructor
-        A_PhysicsRelay(EventBroker* sharedBroker)
+        A_PhysicsRelay(std::shared_ptr<EventBroker> sharedBroker)
             : m_sharedBroker(sharedBroker)
         {
         }
@@ -29,7 +29,7 @@ namespace pleep
 
     protected:
         // broker given to us by Dynamo
-        EventBroker* m_sharedBroker = nullptr;
+        std::shared_ptr<EventBroker> m_sharedBroker = nullptr;
     };
 }
 

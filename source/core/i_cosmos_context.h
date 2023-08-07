@@ -66,7 +66,7 @@ namespace pleep
         // subclasses should create this as they see fit
         std::shared_ptr<Cosmos> m_currentCosmos = nullptr;
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos
-        EventBroker* m_eventBroker;
+        std::shared_ptr<EventBroker> m_eventBroker;
         // Subclasses should instantiate whichever dynamos as they see fit
         // Our cosmos shares these dynamos with their synchros
         DynamoCluster m_dynamoCluster;

@@ -14,7 +14,7 @@ namespace pleep
     class BehaviorsDynamo : public A_Dynamo
     {
     public:
-        BehaviorsDynamo(EventBroker* sharedBroker);
+        BehaviorsDynamo(std::shared_ptr<EventBroker> sharedBroker);
         ~BehaviorsDynamo();
 
         void submit(BehaviorsPacket data);

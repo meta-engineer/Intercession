@@ -11,7 +11,7 @@
 namespace pleep
 {
     inline std::shared_ptr<Cosmos> construct_hard_config_cosmos(
-        EventBroker* eventBroker,
+        std::shared_ptr<EventBroker> eventBroker,
         DynamoCluster& dynamoCluster
     )
     {

@@ -19,7 +19,7 @@ namespace pleep
     // - camera
     inline void create_client_local_entities(
         std::shared_ptr<Cosmos> cosmos,
-        EventBroker* eventBroker
+        std::shared_ptr<EventBroker> eventBroker
     )
     {
         // ***************************************************************************

@@ -21,7 +21,7 @@ namespace pleep
     {
     public:
         // takes over window user pointer and binds callbacks
-        InputDynamo(EventBroker* sharedBroker, GLFWwindow* windowApi);
+        InputDynamo(std::shared_ptr<EventBroker> sharedBroker, GLFWwindow* windowApi);
         ~InputDynamo();
 
         void submit(SpacialInputPacket data);

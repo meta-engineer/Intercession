@@ -7,16 +7,13 @@ namespace pleep
     I_CosmosContext::I_CosmosContext()
     {
         // build event listener
-        m_eventBroker = new EventBroker();
+        m_eventBroker = std::make_shared<EventBroker>();
         // setup context's "fallback" listeners
         m_eventBroker->add_listener(METHOD_LISTENER(events::window::QUIT, I_CosmosContext::_quit_handler));
     }
     
     I_CosmosContext::~I_CosmosContext()
     {
-        PLEEPLOG_WARN("Deleting event broker!");
-        // Careful, dynamos will be deleted after this, so if they try to reference event broker, they will segfault. This should be put in a shared pointer and declared after dynamos
-        delete m_eventBroker;
     }
     
     void I_CosmosContext::run()

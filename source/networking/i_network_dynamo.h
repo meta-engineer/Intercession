@@ -27,7 +27,7 @@ namespace pleep
     {
     protected:
         // passthrough to A_Dynamo (can't call A_Dynamo's constructor directly from 2 layers deep)
-        I_NetworkDynamo(EventBroker* sharedBroker) 
+        I_NetworkDynamo(std::shared_ptr<EventBroker> sharedBroker) 
             : A_Dynamo(sharedBroker)
         {}
 
