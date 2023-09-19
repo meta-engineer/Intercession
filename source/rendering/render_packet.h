@@ -17,7 +17,7 @@ namespace pleep
         TransformComponent& transform;
         RenderableComponent& renderable;
         // instancing info?
-        // model-wide temporary options? pallete swap? outlines?
+        // scene-wide temporary options? pallete swap? outlines?
     };
 }
 

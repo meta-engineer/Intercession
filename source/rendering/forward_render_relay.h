@@ -243,8 +243,8 @@ namespace pleep
                 }
                 m_sm.deactivate();
 
-                // TEMP: apply normalVisualizer if entity is in superposition, in lieu of a special shader uniform
-                if (data.transform.superposition)
+                // TEMP: apply normalVisualizer if entity is in debug highlight, in lieu of a special shader uniform
+                if (data.renderable.highlight)
                 {
                     m_normalVisualizerSm.activate();
                     m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());

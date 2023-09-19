@@ -174,7 +174,8 @@ namespace pleep
         return msg;
     }
 
-    // cyclical comparator
+    // cyclical comparator for coherency "time"stamps, aka:
+    // compare_coherency, coherency_compare, coherency_less_than
     inline bool coherency_greater_or_equal(uint16_t a, uint16_t b)
     {
         // if exactly 127 apart, the actual greter number will be greater

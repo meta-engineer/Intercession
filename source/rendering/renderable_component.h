@@ -32,12 +32,17 @@ namespace pleep
         std::vector<std::shared_ptr<const Material>> materials;
         
         // Additional rendering options. should this be part of a material component?
+
         // TODO: how is this texture managed? init to id = 0?
         //Texture environmentCubemap;
+
         //bool shadowCaster;
         //bool shadowReceiver;
 
         // specify shaders/relays?
+
+        // used for debugging right now
+        bool highlight = false;
     };
 
     // Member pointers makes ModelComponent not sharable, so we must override Message serialization

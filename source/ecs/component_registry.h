@@ -52,6 +52,10 @@ namespace pleep
         // remove component of given ID
         // THROWS runtime_error if componentId does not exist
         void remove_component(Entity entity, ComponentType componentId);
+
+        // safely determines if entity has component of type
+        // will return false if component is not registered OR if entity doesn't possess it
+        bool has_component(Entity entity, ComponentType componentId);
         
         // get reference to specific component of given type for entity
         // THROWS if component does not exist or component type has not yet been registered
@@ -193,6 +197,16 @@ namespace pleep
     inline void ComponentRegistry::remove_component(Entity entity, ComponentType componentId)
     {
         m_componentArrays[get_component_name(componentId)]->clear_data_for(entity);
+    }
+
+    
+    inline bool ComponentRegistry::has_component(Entity entity, ComponentType componentId)
+    {
+        if (m_componentNames.find(componentId) != m_componentNames.end())
+        {
+            return m_componentArrays[get_component_name(componentId)]->has_data_for(entity);
+        }
+        return false;
     }
     
     template<typename T>

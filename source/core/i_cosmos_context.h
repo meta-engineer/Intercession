@@ -71,7 +71,7 @@ namespace pleep
         // Our cosmos shares these dynamos with their synchros
         DynamoCluster m_dynamoCluster;
 
-        bool m_running = false;
+        bool m_isRunning = false;
         // runtime calibrations
         // Fixed timestep for input processing. Default 60hz?
         std::chrono::duration<double> m_fixedTimeStep = 

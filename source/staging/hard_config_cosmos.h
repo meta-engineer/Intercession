@@ -62,6 +62,7 @@ namespace pleep
         newCosmos->register_component<OscillatorComponent>();
         newCosmos->register_component<ProjectileComponent>();
         newCosmos->register_component<BipedComponent>();
+        newCosmos->register_component<SpacetimeComponent>();
 
         newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputter);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);

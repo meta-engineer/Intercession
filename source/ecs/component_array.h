@@ -32,6 +32,9 @@ namespace pleep
         
         // safely remove all data for given entity
         void clear_data_for(Entity entity) override;
+
+        // safely check if there is any data for given entity
+        bool has_data_for(Entity entity) override;
         
         // Push component data into msg
         // does nothing if component does not exist
@@ -45,7 +48,7 @@ namespace pleep
         // does NOT return "not found", THROWS if no component exists
         T& get_data_for(Entity entity);
 
-        // find first entity with T equal to component
+        // linearly find first entity with T equal to component
         // operator == must be defined for T
         Entity find_entity_for(T component);
 
@@ -136,6 +139,16 @@ namespace pleep
         }
         
         this->remove_data_for(entity);
+    }
+    
+    template<typename T>
+    bool ComponentArray<T>::has_data_for(Entity entity)
+    {
+        if (m_mapEntityToIndex.find(entity) == m_mapEntityToIndex.end())
+        {
+            return false;
+        }
+        return true;
     }
     
     template<typename T>

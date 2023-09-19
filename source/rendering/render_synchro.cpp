@@ -9,6 +9,7 @@
 #include "rendering/camera_component.h"
 #include "rendering/renderable_component.h"
 #include "rendering/render_packet.h"
+#include "networking/spacetime_component.h"
 
 namespace pleep
 {
@@ -59,6 +60,19 @@ namespace pleep
             
             // catch null supermesh and don't even bother dynamo with it
             if (renderable.meshData == nullptr) continue;
+
+            // Update renderable members based on other components...
+
+            // DEBUG: set highlight based on timestream state
+            if (cosmos->has_component<SpacetimeComponent>(entity) &&
+                cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::detached)
+            {
+                renderable.highlight = true;
+            }
+            else
+            {
+                renderable.highlight = false;
+            }
 
             m_attachedRenderDynamo->submit(RenderPacket{ transform, renderable });
         }

@@ -100,6 +100,24 @@ namespace pleep
             // (removing all entities, components, and syncrhos)
             // not be guarenteed to happen immediately, but before next frame
             //const EventId RESET = __LINE__;
+
+            // signals an entity in the "body" of a timestream has been unexpectedly changed
+            //   (by a time-traveller)
+            const EventId TIMESTREAM_INTERCEPTION = __LINE__;
+                struct TIMESTREAM_INTERCEPTION_params {
+                    // time-travelling entity
+                    Entity agent;
+                    // Entity who was changed by a time-traveller
+                    Entity recipient;
+                };
+
+            // signals an object has caused a paradox?
+            // manual rewriting of timestream for entity?
+            // and/or new entities generated due to the intercession?
+            const EventId TIMESTREAM_INTERCESSION = __LINE__;
+                struct TIMESTREAM_INTERCESSION_params {
+                    ///...
+                };
         }
 
         // events used as network messages sent over net::Connection
@@ -144,17 +162,6 @@ namespace pleep
                 {
                     // pass CosmosBuilder::Config?
                     // pass timeline_config?
-                };
-
-            // Info about a timestream modification
-            //  ???
-            const EventId SUPERPOSITION = __LINE__;
-                struct SUPERPOSITION_params
-                {
-                    // time-travelling entity
-                    Entity agent;
-                    // Entity who was changed by a time-traveller
-                    Entity recipient;
                 };
                 
             // Servers receive this as a request froma  client to be added to the cosmos

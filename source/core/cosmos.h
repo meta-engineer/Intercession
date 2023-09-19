@@ -113,6 +113,13 @@ namespace pleep
         // remove component of id from entity, and update all synchros
         void remove_component(Entity entity, ComponentType componentId);
 
+        // safely determine if entity has component of type T
+        template<typename T>
+        bool has_component(Entity entity);
+        
+        // safely determine if entity has component with id
+        bool has_component(Entity entity, ComponentType componentId);
+
         // find component T of entity
         template<typename T>
         T& get_component(Entity entity);
@@ -192,6 +199,7 @@ namespace pleep
         std::shared_ptr<EventBroker> m_sharedBroker = nullptr;
 
         // Barycenter of the cosmos, stored centrally for dynamos to coordinate
+        // used by client for network to send updates, camera targetting, and input synchro dispatching
         Entity m_focalEntity = NULL_ENTITY;
 
         // rolling counter of Cosmos state updates
@@ -418,6 +426,21 @@ namespace pleep
         sign.set(componentId, false);
         m_entityRegistry->set_signature(entity, sign);
         m_synchroRegistry->change_entity_signature(entity, sign);
+    }
+
+    template<typename T>
+    bool Cosmos::has_component(Entity entity)
+    {
+        if (entity == NULL_ENTITY) return false;
+
+        return m_componentRegistry->has_component(entity, m_componentRegistry->get_component_type<T>());
+    }
+    
+    inline bool Cosmos::has_component(Entity entity, ComponentType componentId)
+    {
+        if (entity == NULL_ENTITY) return false;
+
+        return m_componentRegistry->has_component(entity, componentId);
     }
     
     template<typename T>

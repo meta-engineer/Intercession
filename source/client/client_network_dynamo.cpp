@@ -151,11 +151,6 @@ namespace pleep
                 cosmos->condemn_entity(removeInfo.entity);
             }
             break;
-            case events::network::SUPERPOSITION:
-            {
-                PLEEPLOG_TRACE("Received SUPERPOSITION message");
-            }
-            break;
             case events::network::NEW_CLIENT:
             {
                 PLEEPLOG_TRACE("Received NEW_CLIENT message");

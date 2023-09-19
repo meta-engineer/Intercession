@@ -18,7 +18,7 @@ namespace pleep
     
     void I_CosmosContext::run()
     {
-        m_running = true;
+        m_isRunning = true;
 
         // main game loop
         PLEEPLOG_TRACE("Starting \"frame loop\"");
@@ -28,7 +28,7 @@ namespace pleep
 
         try
         {
-            while (m_running)
+            while (m_isRunning)
             {
                 // ***** Init Frame *****
                 // smarter way to get dt? duration.count() is in seconds?
@@ -79,7 +79,7 @@ namespace pleep
     
     void I_CosmosContext::stop()
     {
-        m_running = false;
+        m_isRunning = false;
     }
     
     void I_CosmosContext::_quit_handler(EventMessage quitEvent)
