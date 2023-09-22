@@ -142,7 +142,7 @@ namespace pleep
             case events::cosmos::TIMESTREAM_INTERCEPTION:
             {
                 // we are signalled that an interception has occurred sometime/where from another timeslice
-                // if we have a future version of that entity, then set it to be detached (aka "superposition")
+                // if we have a future version of that entity, then set it to be "superposition"
                 events::cosmos::TIMESTREAM_INTERCEPTION_params data;
                 msg >> data;
 
@@ -167,7 +167,7 @@ namespace pleep
                 }
 
                 
-                // Put the entity into a superposition (detached)
+                // Put the entity into a superposition
                 // if recipient has no spacetime component, add one
                 if (!cosmos->has_component<SpacetimeComponent>(presentRecipient))
                 {
@@ -176,10 +176,10 @@ namespace pleep
                 }
                 
                 SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(presentRecipient);
-                oldSpacetime.timestreamState = TimestreamState::detached;
+                oldSpacetime.timestreamState = TimestreamState::superposition;
                 oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
-                // Detached state will stop any further pushes to timestream so we dont need to clear it
+                // Forked state will stop further reading from timestream so we dont need to clear it
                 //m_timelineApi.clear_past_timestream(data.recipient);
                 // TODO: Store timestream at this moment or at moment of resolution for restoring upon a paradox resolution?
 
@@ -284,9 +284,9 @@ namespace pleep
                     // continue to clear out messages if no working cosmos
                     if (!cosmos) continue;
 
-                    // if entity's timstream state is not body then ignore future timestream
+                    // if entity's timstream state is forked then ignore future timestream
                     if (cosmos->has_component<SpacetimeComponent>(entity) &&
-                        cosmos->get_component<SpacetimeComponent>(entity).timestreamState != TimestreamState::body)
+                        cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::forked)
                     {
                         continue;
                     }
@@ -531,47 +531,37 @@ namespace pleep
         // Fifth: After all ingesting is done, send/broadcast fresh downstream data to clients & children
         if (cosmos)
         {
-            // push to clients only downstream component signature
-            Signature downstreamSign = cosmos->get_category_signature(ComponentCategory::downstream);
             for (auto signIt : cosmos->get_signatures_ref())
             {
-                EventMessage updateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
-                events::cosmos::ENTITY_UPDATE_params updateInfo = {
+                // push to clients 
+                Signature downstreamSign = cosmos->get_category_signature(ComponentCategory::downstream);
+                EventMessage clientUpdateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
+                events::cosmos::ENTITY_UPDATE_params clientUpdateInfo = {
                     signIt.first,
-                    signIt.second & downstreamSign,
+                    signIt.second & downstreamSign, // only downstream components
                     true
                 };
-                cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
+                cosmos->serialize_entity_components(clientUpdateInfo.entity, clientUpdateInfo.sign, clientUpdateMsg);
 
-                updateMsg << updateInfo;
-                m_networkApi.broadcast_message(updateMsg);
-            }
+                clientUpdateMsg << clientUpdateInfo;
+                m_networkApi.broadcast_message(clientUpdateMsg);
 
-            // and push to child timestream with incremented CausalChainLink and full component signature
-            if (m_timelineApi.has_past())
-            {
-                for (auto signIt : cosmos->get_signatures_ref())
-                {
-                    // DON'T broadcast if in detached timestream state
-                    if (cosmos->has_component<SpacetimeComponent>(signIt.first)
-                        && cosmos->get_component<SpacetimeComponent>(signIt.first).timestreamState == TimestreamState::detached)
-                    {
-                        continue;
-                    }
-                    // If entity didn't have a SpacetimeComponent treat it as "body" state and propagate
 
-                    EventMessage updateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
-                    events::cosmos::ENTITY_UPDATE_params updateInfo = {
-                        signIt.first,
-                        signIt.second,
-                        false
-                    };
-                    cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
-                    
-                    increment_causal_chain_link(updateInfo.entity);
-                    updateMsg << updateInfo;
-                    m_timelineApi.push_past_timestream(updateInfo.entity, updateMsg);
-                }
+                // and push to child timestream (except if there is not past to push to)
+                if (!m_timelineApi.has_past()) continue;
+
+                EventMessage childUpdateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
+                events::cosmos::ENTITY_UPDATE_params childUpdateInfo = {
+                    signIt.first,
+                    signIt.second,  // full signature of components
+                    false
+                };
+                cosmos->serialize_entity_components(childUpdateInfo.entity, childUpdateInfo.sign, childUpdateMsg);
+                
+                // increment chain link (increase) when moving into the past
+                increment_causal_chain_link(childUpdateInfo.entity);
+                childUpdateMsg << childUpdateInfo;
+                m_timelineApi.push_past_timestream(childUpdateInfo.entity, childUpdateMsg);
             }
         }
     }
@@ -672,7 +662,7 @@ namespace pleep
 
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
 
-        // Put the entity into a head timestream state (stop receiving from future)
+        // Put the entity into a forked timestream state (stop receiving from future)
         // if recipient has no spacetime component, add one
         if (!cosmos->has_component<SpacetimeComponent>(interceptionInfo.recipient))
         {
@@ -681,11 +671,11 @@ namespace pleep
         }
         
         SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(interceptionInfo.recipient);
-        oldSpacetime.timestreamState = TimestreamState::head;
+        oldSpacetime.timestreamState = TimestreamState::forked;
         oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
-        // Signal to future timeslice to put recipient into superposition (aka "detached" timestream state)
-        // Timestream head state should restrict reading from the timestream from our side
+        // Signal to future timeslice to put recipient into superposition timestream state
+        // Timestream forked state should restrict reading from the timestream from our side
 
         PLEEPLOG_INFO("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
 

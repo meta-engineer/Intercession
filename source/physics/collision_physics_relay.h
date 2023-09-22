@@ -11,6 +11,7 @@
 #include "behaviors/behaviors_component.h"
 #include "physics/rigid_body_component.h"
 #include "physics/spring_body_component.h"
+#include "spacetime/spacetime_component.h"
 
 namespace pleep
 {
@@ -180,21 +181,27 @@ namespace pleep
                     CausalChainlink thisLink  = derive_causal_chain_link(thisData.collidee);
                     CausalChainlink otherLink = derive_causal_chain_link(otherData.collidee);
 
-                    // Interception can only happen if one chainlink is 0 (exclusive)
-                    //   and other is non-zero and non-null
-                    // TODO: also need to check if either entity has a superposition in the future (in a "head" state)
-                    if (thisLink != otherLink
-                        && (thisLink == 0 || otherLink == 0)
-                        && thisLink != NULL_CAUSALCHAINLINK
-                        && otherLink != NULL_CAUSALCHAINLINK)
+                    // check timestream state descrepancy
+                    TimestreamState thisState = cosmos->has_component<SpacetimeComponent>(thisData.collidee) ? cosmos->get_component<SpacetimeComponent>(thisData.collidee).timestreamState : TimestreamState::merged;
+                    TimestreamState otherState = cosmos->has_component<SpacetimeComponent>(otherData.collidee) ? cosmos->get_component<SpacetimeComponent>(otherData.collidee).timestreamState : TimestreamState::merged;
+
+                    // Interception can only happen if
+                    //      neither entity has null chainlink
+                    //   AND either:
+                    //          one entity has chainlink 0 (only one)
+                    //       OR one entity is in a "forked" state (only one)
+                    if (thisLink != NULL_CAUSALCHAINLINK && otherLink != NULL_CAUSALCHAINLINK &&
+                        (((thisLink == 0) ^ (otherLink == 0)) || ((thisState == TimestreamState::forked) ^ (otherState == TimestreamState::forked))))
                     {
-                        // Signal to NetworkDynamo to delete this entity from the future timeslice slice and then clear timestream for this entity
-                        // (this should happen propagate up the timeline)
+                        // Signal to NetworkDynamo put this entity's future into superposition
+                        // (and propagate up the timeline from there)
                         EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
+                        // select the 0 link or forked state entity as the "agent"
                         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo {
-                            thisLink == 0 ?  thisData.collidee : otherData.collidee,
-                            thisLink == 0 ? otherData.collidee :  thisData.collidee
+                            thisLink == 0 || thisState == TimestreamState::forked ?  thisData.collidee : otherData.collidee
                         };
+                        // and opposite as "recipient"
+                        interceptionInfo.recipient = (interceptionInfo.agent == thisData.collidee ? otherData.collidee : thisData.collidee);
                         interceptionMessage << interceptionInfo;
                         m_sharedBroker->send_event(interceptionMessage);
                     }

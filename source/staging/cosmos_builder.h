@@ -32,7 +32,7 @@
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
 #include "core/meta_component.h"
-#include "networking/spacetime_component.h"
+#include "spacetime/spacetime_component.h"
 
 // include Behaviors
 #include "behaviors/behaviors_component.h"

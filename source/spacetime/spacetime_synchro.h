@@ -1,5 +1,5 @@
-#ifndef NETWORK_SYNCHRO_H
-#define NETWORK_SYNCHRO_H
+#ifndef SPACETIME_SYNCHRO_H
+#define SPACETIME_SYNCHRO_H
 
 //#include "intercession_pch.h"
 #include <memory>
@@ -9,7 +9,7 @@
 
 namespace pleep
 {
-    class NetworkSynchro : public I_Synchro
+    class SpacetimeSynchro : public I_Synchro
     {
     public:
         // explicitly inherit constructors
@@ -31,4 +31,4 @@ namespace pleep
     };
 }
 
-#endif // NETWORK_SYNCHRO_H
+#endif // SPACETIME_SYNCHRO_H

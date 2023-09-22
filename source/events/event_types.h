@@ -101,7 +101,7 @@ namespace pleep
             // not be guarenteed to happen immediately, but before next frame
             //const EventId RESET = __LINE__;
 
-            // signals an entity in the "body" of a timestream has been unexpectedly changed
+            // signals an entity which was "merged" with the timestream has been "forked"
             //   (by a time-traveller)
             const EventId TIMESTREAM_INTERCEPTION = __LINE__;
                 struct TIMESTREAM_INTERCEPTION_params {

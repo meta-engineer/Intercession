@@ -9,7 +9,7 @@
 #include "rendering/camera_component.h"
 #include "rendering/renderable_component.h"
 #include "rendering/render_packet.h"
-#include "networking/spacetime_component.h"
+#include "spacetime/spacetime_component.h"
 
 namespace pleep
 {
@@ -65,7 +65,7 @@ namespace pleep
 
             // DEBUG: set highlight based on timestream state
             if (cosmos->has_component<SpacetimeComponent>(entity) &&
-                cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::detached)
+                cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::superposition)
             {
                 renderable.highlight = true;
             }

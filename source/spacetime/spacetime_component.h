@@ -15,15 +15,12 @@ namespace pleep
     // could this be represended by a 2 bit bitset?
     enum TimestreamState
     {
-        body,       // Receiving from future, and propogating into past.
-                    //   this is the normal, default state
-                    //   also used for entities which have no future (user controlled)
-        head,       // Only propagating into the past.
-                    //   indicates this entity is detached in the future
-        //tail,     // Only receiving from future.
-                    //   use detached instead
-        detached,   // Not linked to past or future timestreams.
-                    //   aka "superposition", this entity's past is being modified
+        merged,         // Propogating state into past, and receiving new state from future
+                        //   (whether or not there is any state being sent to it, like user entities)
+        forked,         // Only propagating into the past, not receiving new state from future
+                        //   indicates this entity is diverged from its future and needs to be resolved
+        superposition,  // This entity is being resolved in a parallel cosmos in the past
+                        //   its +1 causalchainlink entity should be in a forked state
     };
 
     // describes the state of the object related to time-travel
@@ -31,12 +28,11 @@ namespace pleep
     // this is used during timestream interception and intercession events
     struct SpacetimeComponent
     {
-        TimestreamState timestreamState = TimestreamState::body;
+        TimestreamState timestreamState = TimestreamState::merged;
 
         // "time"stamp for when the timestream_state was last changed
         // used to trigger timestream interception resolutions
         uint16_t timestreamStateCoherency = 0;
-
     };
 }
 
