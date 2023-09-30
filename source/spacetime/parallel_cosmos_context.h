@@ -6,14 +6,13 @@
 
 namespace pleep
 {
-    // async cosmos to run alternate/parallel timeline until a target coherency timepoint
+    // async, headless cosmos to run alternate/parallel timeline until a target coherency timepoint
     // and can then be extracted for entity data
     class ParallelCosmosContext : public I_CosmosContext
     {
     public:
         // initialize with empty cosmos
         ParallelCosmosContext();
-        ~ParallelCosmosContext();
 
         // inject a message into the internal EventBroker of this cosmos
         void injectMessage(EventMessage msg);

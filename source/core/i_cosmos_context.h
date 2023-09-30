@@ -20,6 +20,8 @@
 
 namespace pleep
 {
+    const uint16_t FRAMERATE = 72;
+
     // Abstract base class that:
     // maintains a current interactive "world" aka cosmos and attaches dynamos to it
     // manages loading cosmoses and handling transitioning between different ones
@@ -73,9 +75,9 @@ namespace pleep
 
         bool m_isRunning = false;
         // runtime calibrations
-        // Fixed timestep for input processing. Default 60hz?
+        // Fixed timestep for input processing
         std::chrono::duration<double> m_fixedTimeStep = 
-            std::chrono::duration<double>(1.0/72.0);
+            std::chrono::duration<double>(1.0/FRAMERATE);
         // mechanism for tracking how many fixed timesteps to process
         std::chrono::duration<double> m_timeRemaining = 
             std::chrono::duration<double>(0.0);

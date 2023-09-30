@@ -114,8 +114,4 @@ namespace pleep
         m_dynamoCluster.behaver->reset_relays();
         m_dynamoCluster.physicser->reset_relays();
     }
-    
-    void ParallelCosmosContext::_entity_created_handler(EventMessage entityEvent) 
-    {
-    }
 }

@@ -124,6 +124,16 @@ namespace pleep
                 }
             }
             break;
+            case  events::cosmos::ENTITY_UPDATE:
+            {
+                // NOT a notification, this is a direct state override called by another server
+                // for safety we should only allow these on an entity in superposition
+                // (to at least guarentee it was a previously expected update)
+
+
+                // removing superposition should re-enable past-ward propagation
+
+            }
             case events::network::COHERENCY_SYNC:
             {
                 events::network::COHERENCY_SYNC_params data;
@@ -179,9 +189,11 @@ namespace pleep
                 oldSpacetime.timestreamState = TimestreamState::superposition;
                 oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
-                // Forked state will stop further reading from timestream so we dont need to clear it
-                //m_timelineApi.clear_past_timestream(data.recipient);
-                // TODO: Store timestream at this moment or at moment of resolution for restoring upon a paradox resolution?
+                
+                // Forked state in past will stop further reading from timestream 
+                // BUT we want to clear past timestream so that it is ready once resolution happens
+                m_timelineApi.clear_past_timestream(presentRecipient);
+                // entity should no longer propogate until superposition is resolved
 
 
                 // pass interception notification up the chain
@@ -547,8 +559,13 @@ namespace pleep
                 m_networkApi.broadcast_message(clientUpdateMsg);
 
 
-                // and push to child timestream (except if there is not past to push to)
-                if (!m_timelineApi.has_past()) continue;
+                // and push to child timestream (except if there is not past to push to,
+                //   OR if this is entity is in superposition)
+                if (!m_timelineApi.has_past() || 
+                    (cosmos->has_component<SpacetimeComponent>(signIt.first) && cosmos->get_component<SpacetimeComponent>(signIt.first).timestreamState == TimestreamState::superposition)) 
+                {
+                    continue;
+                }
 
                 EventMessage childUpdateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
                 events::cosmos::ENTITY_UPDATE_params childUpdateInfo = {
@@ -564,6 +581,14 @@ namespace pleep
                 m_timelineApi.push_past_timestream(childUpdateInfo.entity, childUpdateMsg);
             }
         }
+
+        // Sixth: run superposition relay
+        if (cosmos)
+        {
+            m_superpositionRelay.engage(deltaTime, cosmos->get_coherency());
+            // does engage automatically send updates to the future if thread is ready?
+            // or should we not pass TimelineAPI out to relays?
+        }
     }
     
     void ServerNetworkDynamo::reset_relays() 
@@ -572,6 +597,7 @@ namespace pleep
         m_workingCosmos.reset();
 
         // clear relay working cosmos and leftover submittions
+        m_superpositionRelay.clear();
     }
 
     void ServerNetworkDynamo::submit(CosmosAccessPacket data) 
@@ -580,6 +606,11 @@ namespace pleep
         m_workingCosmos = data.owner;
 
         // pass working cosmos to relays
+    }
+
+    void ServerNetworkDynamo::submit(SpacetimePacket data)
+    {
+        m_superpositionRelay.submit(data);
     }
     
     TimesliceId ServerNetworkDynamo::get_timeslice_id()
@@ -659,6 +690,13 @@ namespace pleep
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
         interceptionEvent << interceptionInfo;
+
+        CausalChainlink link = derive_causal_chain_link(interceptionInfo.recipient);
+        if (link <= 0)
+        {
+            PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(interceptionInfo.recipient) + ") cannot have been interrupted. Ignoring...");
+            return;
+        }
 
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
 

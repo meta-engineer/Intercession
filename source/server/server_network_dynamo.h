@@ -7,6 +7,7 @@
 #include "networking/i_network_dynamo.h"
 #include "server/server_network_api.h"
 #include "networking/timeline_api.h"
+#include "spacetime/superposition_relay.h"
 
 namespace pleep
 {
@@ -32,8 +33,10 @@ namespace pleep
         // prepare relays for next frame
         void reset_relays() override;
 
-        // Cosmos should be used to fetch all temporal entities?
+        // Cosmos should be used to fetch all entities to broadcast?
         void submit(CosmosAccessPacket data) override;
+
+        void submit(SpacetimePacket data) override;
 
         TimesliceId get_timeslice_id() override;
 
@@ -46,6 +49,7 @@ namespace pleep
         void _timestream_interception_handler(EventMessage interceptionEvent);
         
         // Networking relays
+        SuperpositionRelay m_superpositionRelay;
 
         // TimelineApi (generated for us by AppGateway) to communicate with other servers
         TimelineApi m_timelineApi;

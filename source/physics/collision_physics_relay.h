@@ -187,21 +187,25 @@ namespace pleep
 
                     // Interception can only happen if
                     //      neither entity has null chainlink
-                    //   AND either:
-                    //          one entity has chainlink 0 (only one)
-                    //       OR one entity is in a "forked" state (only one)
-                    if (thisLink != NULL_CAUSALCHAINLINK && otherLink != NULL_CAUSALCHAINLINK &&
-                        (((thisLink == 0) ^ (otherLink == 0)) || ((thisState == TimestreamState::forked) ^ (otherState == TimestreamState::forked))))
+                    //  AND either
+                    //      one entity has chainlink 0 AND the other is not chainlink 0
+                    //  OR
+                    //      neither entity is chainlink 0 and one entity has a "forked" state AND the other is not forked
+                    if ((thisLink  != NULL_CAUSALCHAINLINK) && (otherLink != NULL_CAUSALCHAINLINK) &&
+                        (((thisLink==0) ^ (otherLink==0))
+                         ||
+                         (thisLink!=0 && otherLink!=0 && ((thisState==TimestreamState::forked) ^ (otherState==TimestreamState::forked)))
+                        )
+                       )
                     {
                         // Signal to NetworkDynamo put this entity's future into superposition
                         // (and propagate up the timeline from there)
                         EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
                         // select the 0 link or forked state entity as the "agent"
                         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo {
-                            thisLink == 0 || thisState == TimestreamState::forked ?  thisData.collidee : otherData.collidee
+                            thisLink==0 || otherLink!=0 && thisState==TimestreamState::forked ? thisData.collidee :  otherData.collidee
                         };
-                        // and opposite as "recipient"
-                        interceptionInfo.recipient = (interceptionInfo.agent == thisData.collidee ? otherData.collidee : thisData.collidee);
+                        interceptionInfo.recipient = interceptionInfo.agent == thisData.collidee ? otherData.collidee : thisData.collidee;
                         interceptionMessage << interceptionInfo;
                         m_sharedBroker->send_event(interceptionMessage);
                     }

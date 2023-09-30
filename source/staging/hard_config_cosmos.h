@@ -72,6 +72,7 @@ namespace pleep
         newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(dynamoCluster.networker);
         newCosmos->register_synchro<BehaviorsSynchro>()->attach_dynamo(dynamoCluster.behaver);
+        newCosmos->register_synchro<SpacetimeSynchro>()->attach_dynamo(dynamoCluster.networker);
 
         return newCosmos;
     }
