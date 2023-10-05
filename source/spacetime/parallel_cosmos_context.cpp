@@ -77,10 +77,28 @@ namespace pleep
         }
     }
     
+    void ParallelCosmosContext::copyCosmos(const std::shared_ptr<Cosmos> cosmos)
+    {
+        // TODO
+        return;
+    }
+    
     void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
     {
         // needs a lock?
         m_coherencyTarget = coherency;
+    }
+    
+    bool ParallelCosmosContext::has_update_available()
+    {
+        // TODO
+        return false;
+    }
+    
+    EventMessage ParallelCosmosContext::pop_update()
+    {
+        // TODO
+        return EventMessage{};
     }
     
     void ParallelCosmosContext::_prime_frame() 

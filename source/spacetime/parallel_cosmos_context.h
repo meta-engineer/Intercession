@@ -18,7 +18,7 @@ namespace pleep
         void injectMessage(EventMessage msg);
 
         // receive a Cosmos pointer to deep copy for our parallel simulation
-        void copyCosmos(std::shared_ptr<Cosmos> cosmos);
+        void copyCosmos(const std::shared_ptr<Cosmos> cosmos);
 
         // timepoint to stop simulating after reaching
         // should be called before run
@@ -26,6 +26,12 @@ namespace pleep
 
         // call I_CosmosContext::run() asynchronously until coherency target
         //   automatically stops the context and the call exits
+
+        // returns true if a simulation has finished and there are cosmos updates available to pop
+        bool has_update_available();
+
+        // pops a serialized entity update for an entity who was in a superposition
+        EventMessage pop_update();
 
     protected:
         void _prime_frame() override;

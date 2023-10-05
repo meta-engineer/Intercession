@@ -51,33 +51,44 @@ namespace pleep
             // store coherency for next frame
             m_lastCoherency = coherency;
 
-            // check if parallelContext is done and send entity resolutions to future
-            // dynamo must pass us access to timelineApi?
+            // Check if parallelContext IS done (reached coherency target) AND has data available
+            //   check which entities were forked, set them as merged to clear superposition
+            //   and send as entity resolutions to future.
+            //   (dynamo must pass us access to timelineApi to do this?)
+            if (!m_parallelContext.is_running() && m_parallelContext.has_update_available())
+            {
+
+            }
 
             
-            // if not done update with:
-            //   increased coherency target to keep synced with future in realtime
-            //   upstream components from future timestream (how to fetch these?)
+            // A: if parallel IS NOT done
+            //   then update simulation:
+            if (m_parallelContext.is_running())
+            {
+                // A.1: increase coherency target to keep synced with future timeslice
+                //   current + 1 (next frame) + timeslice_offset + timestream latency (1?)
 
+                // A.2: push new upstream components from future timestream (how to fetch these?)
 
-            // start new simulation if needed
-            if (!m_resolutionNeeded) return;
+                // A.3: for any newly forked entities (including the initial set) send an interception event to future to refresh their superposition state
 
-            // copy current cosmos into parallel
+            }
+            // B: if parallel IS done AND it has no data to distribute AND new resolution is needed
+            //   then start new simulation:
+            else if (!m_parallelContext.is_running() && !m_parallelContext.has_update_available() && m_resolutionNeeded)
+            {
+                // B.1: copy current cosmos into parallel
 
-            // store which entities are being resolved in parallel (for access above)
+                // B.2: set coherency target for parallel: 
+                //   current + 1 (next frame) + timeslice_offset + timestream latency (1?)
 
-            // set coherency target for parallel? current + timeslice_offset + latency?
+                // B.3: start parallel cosmos running on new thread
 
-
-            // start parallel cosmos running on new thread
-
-            // set our version of those entities back to merged (delete spacetime),
-            //   so they won't trigger another resolution
-            //   (assuming the parallel context will finish correctly)
-            // this will enable it to receive timestream updates again, 
-            //   once future entity is resolved and starts propagating again
-            
+                // B.4: set our local entities back to merged 
+                //   (delete their spacetime component? would need access to cosmos)
+                //cosmos->remove_component<SpacetimeComponent>(entity);
+            }
+            // C: Otherwise, no entities are ready for resolution so just continue until next frame
         }
 
         void clear()

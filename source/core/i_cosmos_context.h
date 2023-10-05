@@ -44,6 +44,8 @@ namespace pleep
         void run();
         // stop main loop, Context should handle an Event which calls this
         void stop();
+        // check run state (for when run is called on a different thread)
+        bool is_running() const;
 
     protected:
         // Runtime pipeline:

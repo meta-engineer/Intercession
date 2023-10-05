@@ -73,6 +73,7 @@ namespace pleep
             // TODO: store exception or some other error state for AppGateway to read after thread finishes
         }
         
+        m_isRunning = false;
         PLEEPLOG_TRACE("Exiting \"frame loop\"");
         // any non-destructor cleanup?
     }
@@ -80,6 +81,11 @@ namespace pleep
     void I_CosmosContext::stop()
     {
         m_isRunning = false;
+    }
+    
+    bool I_CosmosContext::is_running() const
+    {
+        return m_isRunning;
     }
     
     void I_CosmosContext::_quit_handler(EventMessage quitEvent)
