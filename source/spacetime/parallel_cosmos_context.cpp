@@ -21,102 +21,91 @@ namespace pleep
 
         // event handlers
 
+        // TODO: Listen for interception events, and store forked entities for retreival
     }
     
-    void ParallelCosmosContext::injectMessage(EventMessage msg) 
-    {
-        if (m_isRunning)
-        {
-            PLEEPLOG_WARN("Parallel Context cannot accept injected events while running, received: " + std::to_string(msg.header.id));
-            return;
-        }
-
-        // mimic event broker handlers
-        switch(msg.header.id)
-        {
-        case events::cosmos::ENTITY_CREATED:
-        {
-            events::cosmos::ENTITY_CREATED_params createInfo;
-            msg >> createInfo;
-
-            // parent context injected a new entity, lets create it
-            PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
-
-            if (m_currentCosmos->register_entity(createInfo.entity))
-            {
-                for (ComponentType c = 0; c < createInfo.sign.size(); c++)
-                {
-                    if (createInfo.sign.test(c)) m_currentCosmos->add_component(createInfo.entity, c);
-                }
-            }
-        }
-        break;
-        case events::cosmos::ENTITY_UPDATE:
-        { 
-            events::cosmos::ENTITY_UPDATE_params updateInfo;
-            msg >> updateInfo;
-
-            // parent context updated an entity, lets apply it
-            
-            // ensure entity exists
-            if (m_currentCosmos->entity_exists(updateInfo.entity))
-            {
-                // read update into Cosmos
-                m_currentCosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, msg);
-            }
-            else
-            {
-                PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
-            }
-        }
-        break;
-        default:
-        {
-            PLEEPLOG_WARN("Parallel context has no handler for injected message of type: " + std::to_string(msg.header.id));
-        }
-        }
-    }
-    
-    void ParallelCosmosContext::copyCosmos(const std::shared_ptr<Cosmos> cosmos)
+    void ParallelCosmosContext::copy_cosmos(const std::shared_ptr<Cosmos> cosmos)
     {
         // TODO
         return;
     }
     
+    void ParallelCosmosContext::copy_timestreams(const std::shared_ptr<EntityTimestreamMap> timestreams)
+    {
+        // TODO
+        return;
+    }
+
+    void ParallelCosmosContext::close()
+    {
+        // ensure thread has also joined?
+        // TODO
+        return;
+    }
+
+    bool ParallelCosmosContext::cosmos_exists()
+    {
+        // TODO
+        // move this into I_CosmosContext???
+        return false;
+    }
+
+    void ParallelCosmosContext::start()
+    {
+        // TODO
+        // move this into I_CosmosContext???
+        return;
+    }
+
+    void ParallelCosmosContext::join()
+    {
+        stop();
+        // TODO
+        return;
+    }
+
     void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
     {
         // needs a lock?
         m_coherencyTarget = coherency;
     }
-    
-    bool ParallelCosmosContext::has_update_available()
+
+    uint16_t ParallelCosmosContext::get_current_coherency()
+    {
+        // be sure to expect a return of 0 in leiu of checking is_running()
+        return (m_currentCosmos && !this->is_running()) ? m_currentCosmos->get_coherency() : 0;
+    }
+
+    const std::vector<Entity> ParallelCosmosContext::get_forked_entities()
     {
         // TODO
-        return false;
+        return std::vector<Entity>{};
     }
-    
-    EventMessage ParallelCosmosContext::pop_update()
+
+    EventMessage ParallelCosmosContext::extract_entity(Entity e)
     {
         // TODO
         return EventMessage{};
     }
-    
+
+
+
     void ParallelCosmosContext::_prime_frame() 
-    {
-        if (m_currentCosmos) m_currentCosmos->update();
-    }
-    
-    void ParallelCosmosContext::_on_fixed(double fixedTime) 
     {
         // check if we reached our target before running next step
         if (m_currentCosmos && m_currentCosmos->get_coherency() >= m_coherencyTarget)
         {
             // fake finishing this frame
-            m_timeRemaining = std::chrono::duration<double>(0);
+            m_timeRemaining = std::chrono::duration<double>(-2147483647);
             // don't run next frame
             this->stop();
         }
 
+        if (m_currentCosmos) m_currentCosmos->update();
+    }
+    
+    void ParallelCosmosContext::_on_fixed(double fixedTime) 
+    {
         m_dynamoCluster.behaver->run_relays(fixedTime);
         m_dynamoCluster.physicser->run_relays(fixedTime);
     }

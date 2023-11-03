@@ -11,8 +11,7 @@ namespace pleep
     // SpacetimeComponents should be removed rather than just setting to
     //   default values to improve this efficiency
 
-    // indication of how the entity uses the timestream
-    // could this be represended by a 2 bit bitset?
+    // indication of how the entity interacts with the timestream
     enum TimestreamState
     {
         merged,         // Propogating state into past, and receiving new state from future
@@ -30,7 +29,7 @@ namespace pleep
     {
         TimestreamState timestreamState = TimestreamState::merged;
 
-        // "time"stamp for when the timestream_state was last changed
+        // "time"stamp for when the timestreamState was last changed
         // used to trigger timestream interception resolutions
         uint16_t timestreamStateCoherency = 0;
     };

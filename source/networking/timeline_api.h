@@ -13,13 +13,14 @@
 #include "networking/timeline_config.h"
 #include "networking/entity_timestream_map.h"
 #include "events/event_types.h"
+#include "spacetime/parallel_cosmos_context.h"
 
 namespace pleep
 {
     // Provide all "calibratable" parameters for a single thread (and defaults)
     // Should also have a validator function to check values
     // Provide communication channels/addresses to access other timeslices
-    // specifies EventMessage as transferable datatype
+    // only uses EventMessage as transferable datatype
     class TimelineApi
     {
     public:
@@ -32,162 +33,83 @@ namespace pleep
         TimelineApi(TimelineConfig cfg, TimesliceId id, 
                     std::shared_ptr<Multiplex> sharedMultiplex, 
                     std::shared_ptr<EntityTimestreamMap> pastTimestreams = nullptr,
-                    std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr)
-            : m_multiplex(sharedMultiplex)
-            , m_pastTimestreams(pastTimestreams)
-            , m_futureTimestreams(futureTimestreams)
-        {
-            if (m_multiplex->find(id) == m_multiplex->end())
-            {
-                std::string errMsg = ("TimelineApi was constructed with an id (" + std::to_string(id) + ") which does not exist in the provided Multiplex");
-                PLEEPLOG_ERROR(errMsg);
-                throw std::range_error(errMsg);
-            }
-
-            // indexes into sharedMultiplex
-            m_timesliceId = id;
-
-            // store whole cfg, or just copy individual members?
-            m_delayToNextTimeslice = cfg.timesliceDelay;
-            m_simulationHz = cfg.simulationHz;
-
-            // offset port in series by unique timeslice id
-            m_port = cfg.presentPort + m_timesliceId;
-        }
+                    std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr);
 
         // get the unique timesliceId registered for this TimelineApi instance
-        TimesliceId get_timeslice_id()
-        {
-            return m_timesliceId;
-        }
-
+        TimesliceId get_timeslice_id();
         // get total number of timeslices in the local network (ids SHOULD start from 0)
-        size_t get_num_timeslices()
-        {
-            return m_multiplex->size();
-        }
-
-        uint16_t get_port()
-        {
-            return m_port;
-        }
-
-        int get_timeslice_delay()
-        {
-            return m_delayToNextTimeslice;
-        }
-
-        double get_simulation_hz()
-        {
-            return m_simulationHz;
-        }
+        size_t get_num_timeslices();
+        uint16_t get_port();
+        uint16_t get_timeslice_delay();
+        uint16_t get_simulation_hz();
 
         // ***** Accessors for multiplex *****
 
         // Restrict access to outgoing queues to only be sendable
-        bool send_message(TimesliceId id, EventMessage& data)
-        {
-            // sending to my own id is ok, because we can re-use the same logic on receiving
-            if (id == m_timesliceId)
-            {
-                PLEEPLOG_WARN("Trying to send data to my own id (" + std::to_string(id) + "). Is this intended?");
-            }
-
-            auto outgoingQueueIt = m_multiplex->find(id);
-            if (outgoingQueueIt == m_multiplex->end())
-            {
-                PLEEPLOG_WARN("Trying to send data to non-existent id (" + std::to_string(id) + "). Only " + std::to_string(get_num_timeslices()) + " total ids exist.");
-                return false;
-            }
-            
-            outgoingQueueIt->second.push_back(data);
-            return true;
-        }
-
+        bool send_message(TimesliceId id, EventMessage& data);
         // check to prevent popping empty deque
-        bool is_message_available()
-        {
-            return !(m_multiplex->at(m_timesliceId).empty());
-        }
+        bool is_message_available();
         // Restrict access to incoming queue to only be poppable
         // returns false if nothing was available at time of call
-        bool pop_message(EventMessage& dest)
-        {
-            // MUST ONLY POP FROM m_timesliceId
-            return m_multiplex->at(m_timesliceId).pop_front(dest);
-        }
+        bool pop_message(EventMessage& dest);
 
         // ***** Accessors for Timestreams *****
 
         // detect if I have parent/child timeslices
         // ids may not necessarily be in order or strictly less than the config size
-        bool has_future()
-        {
-            return m_futureTimestreams != nullptr;
-        }
-        bool has_past()
-        {
-            return m_pastTimestreams != nullptr;
-        }
+        bool has_future();
+        bool has_past();
 
         // because event type is ambiguous, caller must specify entity regardless
         // data should have coherency set, but is not strictly enforced
-        void push_past_timestream(Entity entity, Message<EventId>& data)
-        {
-            if (!m_pastTimestreams)
-            {
-                PLEEPLOG_WARN("This timeslice has no past timestream to push to");
-                return;
-            }
-            m_pastTimestreams->push_to_timestream(entity, data);
-        }
-
+        void push_past_timestream(Entity entity, Message<EventId>& data);
         // Removes all data in the past timestream for this data
         // This will stop the past timeslice from receiving any more updates immediately
-        void clear_past_timestream(Entity entity)
-        {
-            if (!m_pastTimestreams)
-            {
-                PLEEPLOG_WARN("This timeslice has no past timestream to clear");
-                return;
-            }
-            m_pastTimestreams->clear(entity);
-        }
-
+        void clear_past_timestream(Entity entity);
         // give potenial Entities to pop from
-        std::vector<Entity> get_entities_with_future_streams()
-        {
-            if (!m_futureTimestreams)
-            {
-                PLEEPLOG_WARN("This timeslice has no future timestream at all!");
-                return std::vector<Entity>{};
-            }
-
-            return m_futureTimestreams->get_entities_with_streams();
-        }
-
+        std::vector<Entity> get_entities_with_future_streams();
         // Restrict access for future timestreams to only be poppable
-        bool pop_future_timestream(Entity entity, uint16_t coherency, EventMessage& dest)
-        {
-            if (!m_futureTimestreams)
-            {
-                PLEEPLOG_WARN("This timeslice has no future timestream to pop from");
-            }
-            return m_futureTimestreams->pop_from_timestream(entity, coherency, dest);
-        }
+        bool pop_future_timestream(Entity entity, uint16_t coherency, EventMessage& dest);
+
+        // ***** Parallel Context Access *****
+
+        // deep copy cosmos, deep copy future timstream
+        // set coherency target to be: current + 1 + delay to next (in frames)
+        void future_parallel_init_and_start(std::shared_ptr<Cosmos> src);
+        // parallel simulation is finished
+        bool future_parallel_is_closed();
+
+        // signal simulation has been resolved and finished
+        void past_parallel_close();
+        // parallel simulation is finished
+        bool past_parallel_is_closed();
+        // sets parallel simulation target coherency.
+        // must be greater than current or sets to current and stops
+        // if simulation has reached target and stopped, restarts it
+        void past_parallel_set_target_coherency(uint16_t newTarget);
+        uint16_t past_parallel_get_current_coherency();
+        // return copy of forked entity list
+        const std::vector<Entity> past_parallel_get_forked_entities();
+        // Produce an Entity update message for the given Entity
+        EventMessage past_parallel_extract_entity(Entity e);
 
     private:
         TimesliceId m_timesliceId;   // Store for Entity composition
-        int m_delayToNextTimeslice;  // SECONDS
-        double m_simulationHz;
+        uint16_t m_delayToNextTimeslice;  // Coherency "units"/frames
+        uint16_t m_simulationHz;
         
         // Direct message multiplex shared with all other timeslices
         std::shared_ptr<Multiplex> m_multiplex;
 
         // timestream queues shared with timeslices ahead and behind in the timeline
-        // future-most timeslice will have no future, past-most timelisce will have no past
+        // future-most timeslice will have no future, past-most timelice will have no past
         std::shared_ptr<EntityTimestreamMap> m_futureTimestreams;
         std::shared_ptr<EntityTimestreamMap> m_pastTimestreams;
+
+        // ParallelContext we setup for future
+        std::shared_ptr<ParallelCosmosContext> m_futureParallelContext;
+        // ParallelContext setup by past for us
+        std::shared_ptr<ParallelCosmosContext> m_pastParallelContext;
 
         uint16_t m_port;
     };

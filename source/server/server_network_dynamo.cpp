@@ -138,8 +138,7 @@ namespace pleep
             {
                 events::network::COHERENCY_SYNC_params data;
                 msg >> data;
-                uint16_t targetCoherency = msg.header.coherency -
-                    static_cast<uint16_t>(m_timelineApi.get_timeslice_delay() * m_timelineApi.get_simulation_hz());
+                uint16_t targetCoherency = msg.header.coherency - static_cast<uint16_t>(m_timelineApi.get_timeslice_delay());
 
                 if (targetCoherency != cosmos->get_coherency())
                 {
@@ -585,9 +584,8 @@ namespace pleep
         // Sixth: run superposition relay
         if (cosmos)
         {
-            m_superpositionRelay.engage(deltaTime, cosmos->get_coherency());
-            // does engage automatically send updates to the future if thread is ready?
-            // or should we not pass TimelineAPI out to relays?
+            // let relay lease our cosmos and timeline api
+            m_superpositionRelay.engage(deltaTime, m_workingCosmos, &m_timelineApi);
         }
     }
     

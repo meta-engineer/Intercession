@@ -32,6 +32,7 @@ set(COMMON_SOURCE_FILES
     source/physics/spring_body_component.cpp
 
     source/networking/network_synchro.cpp
+    source/networking/timeline_api.cpp
 
     source/spacetime/spacetime_synchro.cpp
     source/spacetime/parallel_cosmos_context.cpp
