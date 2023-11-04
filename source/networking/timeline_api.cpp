@@ -5,10 +5,14 @@ namespace pleep
     TimelineApi::TimelineApi(TimelineConfig cfg, TimesliceId id, 
             std::shared_ptr<Multiplex> sharedMultiplex, 
             std::shared_ptr<EntityTimestreamMap> pastTimestreams,
-            std::shared_ptr<EntityTimestreamMap> futureTimestreams)
-            : m_multiplex(sharedMultiplex)
-            , m_pastTimestreams(pastTimestreams)
-            , m_futureTimestreams(futureTimestreams)
+            std::shared_ptr<EntityTimestreamMap> futureTimestreams,
+            std::shared_ptr<ParallelCosmosContext> pastParallelContext,
+            std::shared_ptr<ParallelCosmosContext> futureParallelContext)
+        : m_multiplex(sharedMultiplex)
+        , m_pastTimestreams(pastTimestreams)
+        , m_futureTimestreams(futureTimestreams)
+        , m_pastParallelContext(pastParallelContext)
+        , m_futureParallelContext(futureParallelContext)
     {
         if (m_multiplex->find(id) == m_multiplex->end())
         {
@@ -16,6 +20,10 @@ namespace pleep
             PLEEPLOG_ERROR(errMsg);
             throw std::range_error(errMsg);
         }
+
+        // need to have both resources for past or future
+        assert((m_pastTimestreams != nullptr)   == (m_pastParallelContext != nullptr));
+        assert((m_futureTimestreams != nullptr) == (m_futureParallelContext != nullptr));
 
         // indexes into sharedMultiplex
         m_timesliceId = id;
@@ -58,10 +66,12 @@ namespace pleep
     bool TimelineApi::send_message(TimesliceId id, EventMessage& data)
     {
         // sending to my own id is ok, because we can re-use the same logic on receiving
+        /*
         if (id == m_timesliceId)
         {
             PLEEPLOG_WARN("Trying to send data to my own id (" + std::to_string(id) + "). Is this intended?");
         }
+        */
 
         auto outgoingQueueIt = m_multiplex->find(id);
         if (outgoingQueueIt == m_multiplex->end())
@@ -140,10 +150,11 @@ namespace pleep
 
     void TimelineApi::future_parallel_init_and_start(std::shared_ptr<Cosmos> src)
     {
+        if (m_futureParallelContext == nullptr) return;
         // if thread is already running then return?
         if (!future_parallel_is_closed()) return;
 
-        PLEEPLOG_INFO("Starting parallel simulation");
+        PLEEPLOG_INFO("Starting parallel simulation from coherency: " + std::to_string(src->get_coherency()) + " with coherency target: " + std::to_string(src->get_coherency() + 1 + m_delayToNextTimeslice));
 
         // - deep copy src into parallel
         m_futureParallelContext->copy_cosmos(src);
@@ -157,34 +168,40 @@ namespace pleep
 
     bool TimelineApi::future_parallel_is_closed()
     {
-        // not only should thread be joined, but also cosmos should be closed
-        return !m_futureParallelContext->cosmos_exists();
+        // null -> false, because we don't want to try to start it up
+        if (m_futureParallelContext == nullptr) return false;
+        // context should NOT be running AND should NOT be joinable (we join after closing)
+        return !m_futureParallelContext->is_running() && !m_futureParallelContext->joinable();
     }
 
     void TimelineApi::past_parallel_close()
     {
-        // wait for thread to join
+        if (m_pastParallelContext == nullptr) return;
+        m_pastParallelContext->stop();
+        // wait for thread to complete
         m_pastParallelContext->join();
-        
-        // then close cosmos & timestreams
-        m_pastParallelContext->close();
     }
 
     bool TimelineApi::past_parallel_is_closed()
     {
-        // not only should thread be joined, but also cosmos should be closed
-        return !m_pastParallelContext->cosmos_exists();
+        // null -> true, because we don't want to try to extract anything
+        if (m_pastParallelContext == nullptr) return true;
+        // context should NOT be running AND should NOT be joinable (we join after closing)
+        return !m_pastParallelContext->is_running() && !m_pastParallelContext->joinable();
     }
 
     void TimelineApi::past_parallel_set_target_coherency(uint16_t newTarget)
     {
+        if (m_pastParallelContext == nullptr) return;
         m_pastParallelContext->set_coherency_target(newTarget);
         // also restart thread if it had stopped
+        // start() has no effect if already running
         m_pastParallelContext->start();
     }
 
     uint16_t TimelineApi::past_parallel_get_current_coherency()
     {
+        if (m_pastParallelContext == nullptr) return 0;
         // should return 0 if simulation is still running?
         if (m_pastParallelContext->is_running()) return 0;
         return m_pastParallelContext->get_current_coherency();
@@ -192,13 +209,15 @@ namespace pleep
 
     const std::vector<Entity> TimelineApi::past_parallel_get_forked_entities()
     {
+        if (m_pastParallelContext == nullptr) return std::vector<Entity>{};
         // must be maintained ordered by occurance, consistent between calls
         return m_pastParallelContext->get_forked_entities();
     }
 
-    EventMessage TimelineApi::past_parallel_extract_entity(Entity e)
+    bool TimelineApi::past_parallel_extract_entity(Entity e, EventMessage& dst)
     {
+        if (m_pastParallelContext == nullptr) return false;
         // serialize into message to transfar to local cosmos
-        return m_pastParallelContext->extract_entity(e);
+        return m_pastParallelContext->extract_entity(e, dst);
     }
 }

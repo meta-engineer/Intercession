@@ -18,6 +18,9 @@ namespace pleep
     
     void I_CosmosContext::run()
     {
+        // incase another thread is already running (make this atomic?)
+        if (m_isRunning) return;
+
         m_isRunning = true;
 
         // main game loop
@@ -28,7 +31,7 @@ namespace pleep
 
         try
         {
-            while (m_isRunning)
+            while (!m_stopSignal)
             {
                 // ***** Init Frame *****
                 // smarter way to get dt? duration.count() is in seconds?
@@ -40,15 +43,18 @@ namespace pleep
                 this->_prime_frame();
 
                 // ***** Run fixed timestep(s) *****
-                size_t stepsTaken = 0;
                 m_timeRemaining += deltaTime;
-                while (m_timeRemaining >= m_fixedTimeStep && stepsTaken <= m_maxSteps)
+                if (m_timeRemaining >= m_fixedTimeStep)
                 {
                     m_timeRemaining -= m_fixedTimeStep;
-                    stepsTaken++;
-
                     this->_on_fixed(m_fixedTimeStep.count());
+                    // only increment coherency when simulation steps forward
+                    
                     if (m_currentCosmos) m_currentCosmos->increment_coherency();
+                }
+                if (m_timeRemaining >= m_fixedTimeStep * 2.0)
+                {
+                    PLEEPLOG_WARN("Frame loop falling behind by " + std::to_string(m_timeRemaining.count() / m_fixedTimeStep.count()) + " frames.");
                 }
 
                 // ***** Run "frame time" timestep *****
@@ -72,20 +78,52 @@ namespace pleep
 
             // TODO: store exception or some other error state for AppGateway to read after thread finishes
         }
-        
+
         m_isRunning = false;
+        m_stopSignal = false;
         PLEEPLOG_TRACE("Exiting \"frame loop\"");
         // any non-destructor cleanup?
     }
     
     void I_CosmosContext::stop()
     {
-        m_isRunning = false;
+        if (m_isRunning) m_stopSignal = true;
     }
     
     bool I_CosmosContext::is_running() const
     {
         return m_isRunning;
+    }
+    
+    void I_CosmosContext::start()
+    {
+        if (m_cosmosThread.joinable()) return;
+        
+        m_cosmosThread = std::thread(&I_CosmosContext::run, this);
+        
+        std::ostringstream thrdId; thrdId << m_cosmosThread.get_id();
+        PLEEPLOG_INFO("Constructed thread id " + thrdId.str());
+    }
+
+    bool I_CosmosContext::join()
+    {
+        std::ostringstream threadId; threadId << m_cosmosThread.get_id();
+        if (m_cosmosThread.joinable())
+        {
+            m_cosmosThread.join();
+            PLEEPLOG_INFO("Thread " + threadId.str() + " joined.");
+            return true;
+        }
+        else
+        {
+            PLEEPLOG_WARN("Thread " + threadId.str() + " was not joinable, skipping...");
+            return false;
+        }
+    }
+
+    bool I_CosmosContext::joinable()
+    {
+        return m_cosmosThread.joinable();
     }
     
     void I_CosmosContext::_quit_handler(EventMessage quitEvent)

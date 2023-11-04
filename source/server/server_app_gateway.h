@@ -22,12 +22,8 @@ namespace pleep
     private:
         // Contexts representing each timeslice in this simulation
         std::vector<std::unique_ptr<I_CosmosContext>> m_contexts;
-        // external threads for each context
-        std::vector<std::thread> m_contextThreads;
 
         // should I remember timelineApis/conduits for use after construction?
-
-        void _join_all_context_threads();
     };
 }
 

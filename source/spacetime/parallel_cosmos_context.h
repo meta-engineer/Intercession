@@ -7,11 +7,6 @@
 
 namespace pleep
 {
-    //      Cosmos exists?  YES         NO
-    // Thread running?
-    //      YES         in_progress    ????
-    //      NO            joined     finished
-
     // async, headless cosmos to run alternate/parallel timeline until a target coherency timepoint
     // and can then be extracted for entity data
     // shared between past & future timeslices to setup, run, and extract updates from cosmos
@@ -20,24 +15,13 @@ namespace pleep
     public:
         // initialize with empty cosmos
         ParallelCosmosContext();
+        ~ParallelCosmosContext();
 
         // receive a Cosmos pointer to deep copy for our parallel simulation
         void copy_cosmos(const std::shared_ptr<Cosmos> cosmos);
 
         // receive a Timestream pointer to deep copy for our parallel simulation
         void copy_timestreams(const std::shared_ptr<EntityTimestreamMap> timestreams);
-
-        // remove cosmos and timestreams
-        void close();
-
-        // indicates if this context has an initialized cosmos
-        bool cosmos_exists();
-
-        // calls I_CosmosContext::run() on a new thread (if not already running)
-        void start();
-
-        // calls stop() and waits for internal thread to join
-        void join();
 
         // timepoint to stop simulating after reaching
         // should be called before run
@@ -51,9 +35,12 @@ namespace pleep
         const std::vector<Entity> get_forked_entities();
 
         // atomic copy entity data into new message
-        EventMessage extract_entity(Entity e);
+        bool extract_entity(Entity e, EventMessage& dst);
 
     protected:
+        // event handlers
+        void _timestream_interception_handler(EventMessage interceptionEvent);
+
         void _prime_frame() override;
         void _on_fixed(double fixedTime) override;
         void _on_frame(double deltaTime) override;
@@ -67,6 +54,9 @@ namespace pleep
         
         // Context owns simulation thread only for running async
         std::thread m_futureParallelThread;
+
+        // track all entities which enter forked state during a parallel simulation
+        std::vector<Entity> m_forkedEntities;
     };
 }
 

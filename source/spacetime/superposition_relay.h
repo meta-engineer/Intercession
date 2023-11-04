@@ -40,7 +40,8 @@ namespace pleep
             // check to trigger resolution
             if (data.spacetime.timestreamStateCoherency + FORKED_THRESHOLD_MAX <= m_lastCoherency)
             {
-                /////////////////////////////////////////////////////m_resolutionNeeded = true;
+                PLEEPLOG_DEBUG("superposition resolution needed this frame");
+                m_resolutionNeeded = true;
             }
         }
 
@@ -62,7 +63,7 @@ namespace pleep
             {
                 localTimelineApi->future_parallel_init_and_start(cosmos);
                 // future_parallel_joined should now return false
-                assert(localTimelineApi->past_parallel_is_closed() == false);
+                assert(localTimelineApi->future_parallel_is_closed() == false);
 
                 // set our local entities back to merged (just delete their spacetime component?)
                 for (Entity e : m_resolutionCandidates)
@@ -79,16 +80,26 @@ namespace pleep
                 !localTimelineApi->past_parallel_is_closed())
             {
                 // fetch forked entity list
-                const std::vector<Entity>& forkedEntities = localTimelineApi->past_parallel_get_forked_entities();
-                // if list has expanded since last fetch then set these into superposition
-                if (forkedEntities.size() > m_lastForkedSize)
+                const std::vector<Entity> forkedEntities = localTimelineApi->past_parallel_get_forked_entities();
+                // this should never happen, but just incase...
+                if (m_forkedCursor > forkedEntities.size()) m_forkedCursor = 0;
+
+                // if list has expanded since last fetch then signal these as in superposition
+                if (forkedEntities.size() > m_forkedCursor)
                 {
-                    for (size_t i = m_lastForkedSize; i < forkedEntities.size(); i++)
+                    // loop through only from last cursor position
+                    for (; m_forkedCursor < forkedEntities.size(); m_forkedCursor++)
                     {
-                        // TODO: send interception event to local cosmos
+                        EventMessage superpositionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
+                        events::cosmos::TIMESTREAM_INTERCEPTION_params superpositionInfo{
+                            NULL_ENTITY,
+                            forkedEntities[m_forkedCursor]
+                        };
+                        superpositionMessage << superpositionInfo;
+                        // send interception event OURSELVES on timeline api
+                        localTimelineApi->send_message(localTimelineApi->get_timeslice_id(), superpositionMessage);
                     }
                 }
-                m_lastForkedSize = forkedEntities.size();
 
 
                 // check if parallel has reached coherency target (also check if simulation has stopped?)
@@ -96,10 +107,15 @@ namespace pleep
                 // if no, then set target coherency to next frame (and restart thread if needed)
                 if (localTimelineApi->past_parallel_get_current_coherency() == cosmos->get_coherency())
                 {
+                    PLEEPLOG_DEBUG("Past parallel synchronized at coherency: " + std::to_string(cosmos->get_coherency()));
                     for (Entity e : forkedEntities)
                     {
                         // extract Entity update for each forked entity
-                        EventMessage entityUpdate = localTimelineApi->past_parallel_extract_entity(e);
+                        EventMessage entityUpdate;
+                        if (!localTimelineApi->past_parallel_extract_entity(e, entityUpdate))
+                        {
+                            continue;
+                        }
                         assert(entityUpdate.header.id == events::cosmos::ENTITY_UPDATE);
                         // send it to our cosmos
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
@@ -109,7 +125,7 @@ namespace pleep
                     // "close" simulation to signal to past that it is overwritable
                     localTimelineApi->past_parallel_close();
                     // forkedEntities will be cleared
-                    m_lastForkedSize = 0;
+                    m_forkedCursor = 0;
                 }
                 else
                 {
@@ -125,6 +141,8 @@ namespace pleep
         {
             m_resolutionCandidates.clear();
             m_resolutionNeeded = false;
+            // keep m_lastCoherency for next frame's submittions
+            // only clear m_forkedCursor when past parallel is closed
         }
 
     protected:
@@ -135,8 +153,9 @@ namespace pleep
 
         // store coherency at previous frame to check submittions for next frame
         uint16_t m_lastCoherency = 0;
-        // compare previous fetch from past parallel to current
-        size_t m_lastForkedSize = 0;
+        
+        // track index in current past parallel's forked list
+        size_t m_forkedCursor = 0;
     };
 }
 

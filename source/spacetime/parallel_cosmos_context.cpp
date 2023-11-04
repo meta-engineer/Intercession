@@ -14,53 +14,34 @@ namespace pleep
         // TEMP: use hard-coded cosmos config
         m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
 
-        // set any specific configs for headless simulation
-        // we want to simulate at same timestep as caller, but not in realtime!
-        // pretend we are always behind in simulation time, and ned to catch up
-        m_timeRemaining = std::chrono::duration<double>(2147483647);
-
         // event handlers
 
-        // TODO: Listen for interception events, and store forked entities for retreival
+        // Listen for interception events, and store forked entities for retreival
+        m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
+    }
+
+    ParallelCosmosContext::~ParallelCosmosContext()
+    {
+        m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
     }
     
     void ParallelCosmosContext::copy_cosmos(const std::shared_ptr<Cosmos> cosmos)
     {
-        // TODO
+        // any previous forked entities are invalid
+        m_forkedEntities.clear();
+
+        m_currentCosmos->set_coherency(cosmos->get_coherency());
+        /////////////////////////////////////////////////////////////// TODO
+
+        // set initial forked entities into m_forkedEntities
+
         return;
     }
     
     void ParallelCosmosContext::copy_timestreams(const std::shared_ptr<EntityTimestreamMap> timestreams)
     {
-        // TODO
-        return;
-    }
+        /////////////////////////////////////////////////////////////// TODO
 
-    void ParallelCosmosContext::close()
-    {
-        // ensure thread has also joined?
-        // TODO
-        return;
-    }
-
-    bool ParallelCosmosContext::cosmos_exists()
-    {
-        // TODO
-        // move this into I_CosmosContext???
-        return false;
-    }
-
-    void ParallelCosmosContext::start()
-    {
-        // TODO
-        // move this into I_CosmosContext???
-        return;
-    }
-
-    void ParallelCosmosContext::join()
-    {
-        stop();
-        // TODO
         return;
     }
 
@@ -68,40 +49,55 @@ namespace pleep
     {
         // needs a lock?
         m_coherencyTarget = coherency;
+        // give ample time to reach target without waiting
+        // pretend we are always behind in simulation time, and need to catch up
+        m_timeRemaining = std::chrono::duration<double>(9999.9);
     }
 
     uint16_t ParallelCosmosContext::get_current_coherency()
     {
-        // be sure to expect a return of 0 in leiu of checking is_running()
         return (m_currentCosmos && !this->is_running()) ? m_currentCosmos->get_coherency() : 0;
     }
 
     const std::vector<Entity> ParallelCosmosContext::get_forked_entities()
     {
-        // TODO
-        return std::vector<Entity>{};
+        return m_forkedEntities;
     }
 
-    EventMessage ParallelCosmosContext::extract_entity(Entity e)
+    bool ParallelCosmosContext::extract_entity(Entity e, EventMessage& dst)
     {
-        // TODO
-        return EventMessage{};
+        if (!m_currentCosmos || (m_currentCosmos && !m_currentCosmos->entity_exists(e))) return false;
+
+        m_currentCosmos->serialize_entity_components(e, m_currentCosmos->get_entity_signature(e), dst);
+        return true;
     }
 
+    void ParallelCosmosContext::_timestream_interception_handler(EventMessage interceptionEvent)
+    {
+        events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
+        interceptionEvent >> interceptionInfo;
+        
+        m_forkedEntities.push_back(interceptionInfo.recipient);
+    }
 
 
     void ParallelCosmosContext::_prime_frame() 
     {
+        if (!m_currentCosmos) return;
+
         // check if we reached our target before running next step
-        if (m_currentCosmos && m_currentCosmos->get_coherency() >= m_coherencyTarget)
+        if (m_currentCosmos->get_coherency() >= m_coherencyTarget)
         {
-            // fake finishing this frame
+            PLEEPLOG_DEBUG("Parallel reached coherency target of " + std::to_string(m_coherencyTarget));
+            // don't run this frame
             m_timeRemaining = std::chrono::duration<double>(-2147483647);
             // don't run next frame
             this->stop();
         }
 
-        if (m_currentCosmos) m_currentCosmos->update();
+        ///////////////////// TODO Deserialize upstream components from timestream copy
+
+        m_currentCosmos->update();
     }
     
     void ParallelCosmosContext::_on_fixed(double fixedTime) 

@@ -45,6 +45,7 @@ namespace pleep
 
         while(true)
         {
+            // client can continue using current thread to run()
             m_context->run();
             
             // TODO: handle context closing? check context for some state for next context?

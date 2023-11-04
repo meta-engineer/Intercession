@@ -33,7 +33,9 @@ namespace pleep
         TimelineApi(TimelineConfig cfg, TimesliceId id, 
                     std::shared_ptr<Multiplex> sharedMultiplex, 
                     std::shared_ptr<EntityTimestreamMap> pastTimestreams = nullptr,
-                    std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr);
+                    std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr,
+                    std::shared_ptr<ParallelCosmosContext> pastParallelContext = nullptr,
+                    std::shared_ptr<ParallelCosmosContext> futureParallelContext = nullptr);
 
         // get the unique timesliceId registered for this TimelineApi instance
         TimesliceId get_timeslice_id();
@@ -79,7 +81,7 @@ namespace pleep
         // parallel simulation is finished
         bool future_parallel_is_closed();
 
-        // signal simulation has been resolved and finished
+        // use to end simulation and signal entities have been resolved
         void past_parallel_close();
         // parallel simulation is finished
         bool past_parallel_is_closed();
@@ -91,7 +93,7 @@ namespace pleep
         // return copy of forked entity list
         const std::vector<Entity> past_parallel_get_forked_entities();
         // Produce an Entity update message for the given Entity
-        EventMessage past_parallel_extract_entity(Entity e);
+        bool past_parallel_extract_entity(Entity e, EventMessage& dst);
 
     private:
         TimesliceId m_timesliceId;   // Store for Entity composition

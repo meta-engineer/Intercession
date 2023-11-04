@@ -13,6 +13,7 @@
 #include "imgui_impl_opengl3.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <thread>
 
 #include "core/cosmos.h"
 #include "events/event_broker.h"
@@ -47,6 +48,14 @@ namespace pleep
         // check run state (for when run is called on a different thread)
         bool is_running() const;
 
+        // starts internal thread inside of run()
+        void start();
+        // waits until internal thread finishes, joins, and returns true
+        // if internal thread is not joinable, returns false
+        bool join();
+        // returns if internal thread is joinable
+        bool joinable();
+
     protected:
         // Runtime pipeline:
         // 1. m_currentCosmos updates
@@ -69,13 +78,17 @@ namespace pleep
 
         // subclasses should create this as they see fit
         std::shared_ptr<Cosmos> m_currentCosmos = nullptr;
+        // context owns its own thread to call run() on
+        std::thread m_cosmosThread;
+        bool m_stopSignal = false;
+        bool m_isRunning = false;
+
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos
         std::shared_ptr<EventBroker> m_eventBroker;
         // Subclasses should instantiate whichever dynamos as they see fit
         // Our cosmos shares these dynamos with their synchros
         DynamoCluster m_dynamoCluster;
 
-        bool m_isRunning = false;
         // runtime calibrations
         // Fixed timestep for input processing
         std::chrono::duration<double> m_fixedTimeStep = 
