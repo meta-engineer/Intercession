@@ -49,9 +49,6 @@ namespace pleep
     {
         // needs a lock?
         m_coherencyTarget = coherency;
-        // give ample time to reach target without waiting
-        // pretend we are always behind in simulation time, and need to catch up
-        m_timeRemaining = std::chrono::duration<double>(9999.9);
     }
 
     uint16_t ParallelCosmosContext::get_current_coherency()
@@ -95,7 +92,12 @@ namespace pleep
             this->stop();
         }
 
-        ///////////////////// TODO Deserialize upstream components from timestream copy
+        // artifically give ample time to reach target without waiting
+        // pretend we are always behind in simulation time, and need to catch up
+        m_timeRemaining = m_fixedTimeStep;
+
+        ///////////////////////////////////////////////////////////////// TODO
+        // Deserialize upstream components from timestream copy
 
         m_currentCosmos->update();
     }

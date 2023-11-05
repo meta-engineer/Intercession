@@ -24,6 +24,12 @@ namespace pleep
             std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
             if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
 
+            // precheck for all upstream components
+            if (!cosmos->has_component<SpacialInputComponent>(entity))
+            {
+                return;
+            }
+            
             // fetch my Transform and SpacialInput components
             try
             {

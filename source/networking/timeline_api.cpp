@@ -22,7 +22,7 @@ namespace pleep
         }
 
         // need to have both resources for past or future
-        assert((m_pastTimestreams != nullptr)   == (m_pastParallelContext != nullptr));
+        assert(  (m_pastTimestreams != nullptr) ==   (m_pastParallelContext != nullptr));
         assert((m_futureTimestreams != nullptr) == (m_futureParallelContext != nullptr));
 
         // indexes into sharedMultiplex

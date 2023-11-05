@@ -40,7 +40,6 @@ namespace pleep
             // check to trigger resolution
             if (data.spacetime.timestreamStateCoherency + FORKED_THRESHOLD_MAX <= m_lastCoherency)
             {
-                PLEEPLOG_DEBUG("superposition resolution needed this frame");
                 m_resolutionNeeded = true;
             }
         }
@@ -53,6 +52,8 @@ namespace pleep
 
             // store coherency for next frame
             m_lastCoherency = cosmos->get_coherency();
+
+            if (m_resolutionNeeded) PLEEPLOG_DEBUG("superposition resolution needed this frame");
 
             // A: forked entities need to be sent into FUTURE parallel cosmos
             //      if future parallel context is not ready (still running or still has update data), skip
@@ -122,6 +123,7 @@ namespace pleep
                         entityUpdate >> updateInfo;
                         cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, entityUpdate);
                     }
+                    PLEEPLOG_DEBUG("Extracted " + std::to_string(forkedEntities.size()) + " entities for superposition resolution");
                     // "close" simulation to signal to past that it is overwritable
                     localTimelineApi->past_parallel_close();
                     // forkedEntities will be cleared

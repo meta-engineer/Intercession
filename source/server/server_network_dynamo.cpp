@@ -189,10 +189,10 @@ namespace pleep
                 oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
                 
-                // Forked state in past will stop further reading from timestream 
-                // BUT we want to clear past timestream so that it is ready once resolution happens
-                m_timelineApi.clear_past_timestream(presentRecipient);
-                // entity should no longer propogate until superposition is resolved
+                // We want to clear past timestream of the entity in the past 
+                // so that follows the "new" history of the parallel simulation
+                m_timelineApi.clear_past_timestream(data.recipient);
+                // entity should no longer push to timestream until superposition is resolved
 
 
                 // pass interception notification up the chain
@@ -417,7 +417,10 @@ namespace pleep
                 for (auto signIt : cosmos->get_signatures_ref())
                 {
                     EventMessage createMsg(events::cosmos::ENTITY_CREATED, currentCoherency);
-                    events::cosmos::ENTITY_CREATED_params createInfo = {signIt.first, signIt.second};
+                    events::cosmos::ENTITY_CREATED_params createInfo = {
+                        signIt.first,
+                        signIt.second & cosmos->get_category_signature(ComponentCategory::downstream)
+                    };
                     createMsg << createInfo;
                     //PLEEPLOG_DEBUG("Sending message: " + createMsg.info());
                     remoteMsg.remote->send(createMsg);
@@ -537,19 +540,17 @@ namespace pleep
             }
         }
 
-        // Fourth: Process all submitted data in relays
 
-        // Fifth: After all ingesting is done, send/broadcast fresh downstream data to clients & children
+        // Fourth: After all ingesting is done, send/broadcast fresh downstream data to clients & children
         if (cosmos)
         {
             for (auto signIt : cosmos->get_signatures_ref())
             {
-                // push to clients 
-                Signature downstreamSign = cosmos->get_category_signature(ComponentCategory::downstream);
+                // push to clients
                 EventMessage clientUpdateMsg(events::cosmos::ENTITY_UPDATE, currentCoherency);
                 events::cosmos::ENTITY_UPDATE_params clientUpdateInfo = {
                     signIt.first,
-                    signIt.second & downstreamSign, // only downstream components
+                    signIt.second & cosmos->get_category_signature(ComponentCategory::downstream),
                     true
                 };
                 cosmos->serialize_entity_components(clientUpdateInfo.entity, clientUpdateInfo.sign, clientUpdateMsg);
@@ -581,7 +582,7 @@ namespace pleep
             }
         }
 
-        // Sixth: run superposition relay
+        // Fifth: run superposition relay
         if (cosmos)
         {
             // let relay lease our cosmos and timeline api
