@@ -126,6 +126,21 @@ namespace pleep
         e = compose_entity(timeId, genId, link);
         return true;
     }
+
+    inline bool decrement_causal_chain_link(Entity& e)
+    {
+        TimesliceId timeId = derive_timeslice_id(e);
+        GenesisId genId = derive_genesis_id(e);
+        CausalChainlink link = derive_causal_chain_link(e);
+
+        // link already at 0 cannot be decremented further, we can only leave it as is
+        if (link == 0) return false;
+
+        link--;
+
+        e = compose_entity(timeId, genId, link);
+        return true;
+    }
 }
 
 #endif // ECS_TYPES_H

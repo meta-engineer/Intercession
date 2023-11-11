@@ -2,6 +2,7 @@
 #define PARALLEL_COSMOS_CONTEXT_H
 
 //#include "intercession_pch.h"
+#include <unordered_set>
 #include "core/i_cosmos_context.h"
 #include "networking/entity_timestream_map.h"
 
@@ -18,10 +19,7 @@ namespace pleep
         ~ParallelCosmosContext();
 
         // receive a Cosmos pointer to deep copy for our parallel simulation
-        void copy_cosmos(const std::shared_ptr<Cosmos> cosmos);
-
-        // receive a Timestream pointer to deep copy for our parallel simulation
-        void copy_timestreams(const std::shared_ptr<EntityTimestreamMap> timestreams);
+        void init_cosmos(const std::shared_ptr<Cosmos> sourceCosmos, const std::shared_ptr<EntityTimestreamMap> sourceFutureTimestreams, const std::unordered_set<Entity>& resolutionCandidates, const std::unordered_set<Entity>& nonCandidates);
 
         // timepoint to stop simulating after reaching
         // should be called before run

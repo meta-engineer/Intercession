@@ -23,7 +23,7 @@ namespace pleep
         // registry smart pointers cleared
 
         // clear handlers
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::CONDEMN_ALL, Cosmos::_condemn_all_handler));
     }
     
     void Cosmos::update() 

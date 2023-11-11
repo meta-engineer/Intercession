@@ -26,6 +26,8 @@ namespace pleep
         {
             SpacetimeComponent& spacetime = cosmos->get_component<SpacetimeComponent>(entity);
 
+            // cleanup merged components?
+
             m_attachedNetworkDynamo->submit(SpacetimePacket{ entity, spacetime });
         }
     }

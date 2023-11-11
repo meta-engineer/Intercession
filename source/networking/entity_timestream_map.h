@@ -68,12 +68,18 @@ namespace pleep
         }
 
         // check if timestream exists for an entity, if it is non-empty,
-        // and if the front value has a coherency <= currentCoherency
-        bool is_timestream_empty(Entity entity, uint16_t currentCoherency)
+        // AND if the front value has a coherency <= currentCoherency
+        bool entity_has_data(Entity entity, uint16_t currentCoherency)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
-            return !(is_data_available(entity, currentCoherency));
+            return is_data_available(entity, currentCoherency);
+        }
+
+        // check if entity has an active timestream (empty or not)
+        bool entity_has_timestream(Entity entity)
+        {
+            return m_timestreams.count(entity);
         }
 
         // Return all Entities which exist in the timestream
@@ -110,14 +116,31 @@ namespace pleep
         void clear(Entity entity)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
-            m_timestreams.erase(entity);
+            if (m_timestreams.count(entity)) m_timestreams.at(entity).clear();  // queue.clear()
         }
 
-        // clear ALL timestreams
+        // Clear ALL timestreams
         void clear()
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
-            m_timestreams.clear();
+            for (auto& timestream_it : m_timestreams)
+            {
+                timestream_it.second.clear();   // queue.clear()
+            }
+        }
+
+        // Remove indexed timestream for specified Entity
+        void remove(Entity entity)
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            m_timestreams.erase(entity);
+        }
+
+        // Remove ALL indexed timestreams
+        void remove()
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            m_timestreams.clear();              // unordered_map.clear()
         }
 
     private:

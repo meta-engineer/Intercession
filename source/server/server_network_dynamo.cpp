@@ -188,12 +188,7 @@ namespace pleep
                 oldSpacetime.timestreamState = TimestreamState::superposition;
                 oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
-                
-                // We want to clear past timestream of the entity in the past 
-                // so that follows the "new" history of the parallel simulation
-                m_timelineApi.clear_past_timestream(data.recipient);
                 // entity should no longer push to timestream until superposition is resolved
-
 
                 // pass interception notification up the chain
                 if (m_timelineApi.has_future())
@@ -294,8 +289,8 @@ namespace pleep
                 {
                     // continue to clear out messages if no working cosmos
                     if (!cosmos) continue;
-
-                    // if entity's timstream state is forked then ignore future timestream
+                    
+                    // if entity's timstream state is forked then just continue popping so timestream is at same coherency point
                     if (cosmos->has_component<SpacetimeComponent>(entity) &&
                         cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::forked)
                     {
@@ -703,8 +698,7 @@ namespace pleep
         // if recipient has no spacetime component, add one
         if (!cosmos->has_component<SpacetimeComponent>(interceptionInfo.recipient))
         {
-            SpacetimeComponent newSpacetime;
-            cosmos->add_component<SpacetimeComponent>(interceptionInfo.recipient, newSpacetime);
+            cosmos->add_component<SpacetimeComponent>(interceptionInfo.recipient, SpacetimeComponent{});
         }
         
         SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(interceptionInfo.recipient);

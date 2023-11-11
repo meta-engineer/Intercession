@@ -97,7 +97,9 @@ namespace pleep
     
     void I_CosmosContext::start()
     {
-        if (m_cosmosThread.joinable()) return;
+        if (is_running()) return;
+        // thread is not running, but may not have joined
+        join();
         
         m_cosmosThread = std::thread(&I_CosmosContext::run, this);
         

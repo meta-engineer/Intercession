@@ -116,14 +116,14 @@ namespace pleep
 
     }
 
-    void TimelineApi::clear_past_timestream(Entity entity)
+    void TimelineApi::clear_future_timestream(Entity entity)
     {
-        if (!m_pastTimestreams)
+        if (!m_futureTimestreams)
         {
-            PLEEPLOG_WARN("This timeslice has no past timestream to clear");
+            PLEEPLOG_WARN("This timeslice has no future timestream to clear");
             return;
         }
-        m_pastTimestreams->clear(entity);
+        m_futureTimestreams->clear(entity);
     }
 
     std::vector<Entity> TimelineApi::get_entities_with_future_streams()
@@ -148,20 +148,20 @@ namespace pleep
 
 
 
-    void TimelineApi::future_parallel_init_and_start(std::shared_ptr<Cosmos> src)
+    void TimelineApi::future_parallel_init_and_start(const std::shared_ptr<Cosmos> sourceCosmos, const std::unordered_set<Entity>& resolutionCandidates, const std::unordered_set<Entity>& nonCandidates)
     {
         if (m_futureParallelContext == nullptr) return;
         // if thread is already running then return?
         if (!future_parallel_is_closed()) return;
 
-        PLEEPLOG_INFO("Starting parallel simulation from coherency: " + std::to_string(src->get_coherency()) + " with coherency target: " + std::to_string(src->get_coherency() + 1 + m_delayToNextTimeslice));
+        PLEEPLOG_TRACE("Copying parallel cosmos");
 
-        // - deep copy src into parallel
-        m_futureParallelContext->copy_cosmos(src);
-        // - deep copy upstream components from timestream
-        m_futureParallelContext->copy_timestreams(m_futureTimestreams);
+        // - deep copy cosmos and timestream into parallel
+        m_futureParallelContext->init_cosmos(sourceCosmos, m_futureTimestreams, resolutionCandidates, nonCandidates);
         // - set coherency target for parallel: current coherency + 1 (next frame) + delay to next timeslice
-        m_futureParallelContext->set_coherency_target(src->get_coherency() + 1 + m_delayToNextTimeslice);
+        m_futureParallelContext->set_coherency_target(sourceCosmos->get_coherency() + 1 + m_delayToNextTimeslice);
+        
+        PLEEPLOG_INFO("Starting parallel cosmos from coherency: " + std::to_string(sourceCosmos->get_coherency()) + " with coherency target: " + std::to_string(sourceCosmos->get_coherency() + 1 + m_delayToNextTimeslice));
         // - start parallel cosmos running on new thread
         m_futureParallelContext->start();
     }
