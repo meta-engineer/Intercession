@@ -2,7 +2,6 @@
 
 // TODO: This is temporary until proper cosmos staging is implemented
 #include "staging/test_cosmos.h"
-#include "staging/test_temporal_cosmos.h"
 #include "staging/client_focal_entity.h"
 #include "staging/client_local_entities.h"
 #include "staging/hard_config_cosmos.h"

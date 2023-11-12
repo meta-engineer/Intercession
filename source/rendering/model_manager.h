@@ -47,14 +47,12 @@ namespace pleep
             // location import was read from
             std::string importSourceFilepath;
 
-            // list of all unique Supermesh names from this import
-            std::vector<std::string> supermeshNames;
-            // each supermeshSubmeshesNames entry corresponds with the supermeshName at the same index
-            // each supermeshSubmeshesNames ENTRY'S entry corresponds with the submesh at the same index
-            std::vector<std::vector<std::string>> supermeshSubmeshesNames;
-            // each supermeshMaterialsNames entry corresponds with the supermeshName at the same index
-            // each supermeshMaterialsNames ENTRY'S entry corresponds with the submesh at the same index
-            std::vector<std::vector<std::string>> supermeshMaterialsNames;
+            // Single unique Supermesh name from this import
+            std::string supermeshName;
+            // each supermeshSubmeshNames entry corresponds with the submesh at the same index
+            std::vector<std::string> supermeshSubmeshNames;
+            // each supermeshMaterialNames entry corresponds with the submesh at the same index
+            std::vector<std::string> supermeshMaterialNames;
 
             // list of all unique material names from this import
             std::vector<std::string> materialNames;
@@ -163,11 +161,11 @@ namespace pleep
         virtual std::shared_ptr<Armature> _build_armature(const aiNode* node, const std::string& armatureName);
         void _extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap);
 
-        // Iterate through root nodes for those in scanned receipt meshes,
+        // Iterate through root node for those in scanned receipt meshes,
         //   emplace as Supermeshes m_supermeshMap named as node name
         // use scanned armatures to set vertex bone weights
         // use scanned materials to set receipt supermeshMaterialsNames
-        void _process_supermeshes(const aiScene* scene, const ImportReceipt& receipt);
+        void _process_supermesh(const aiScene* scene, const ImportReceipt& receipt);
         std::shared_ptr<Supermesh> _build_supermesh(const aiScene* scene, const aiNode* node, const ImportReceipt& receipt);
         virtual std::shared_ptr<Mesh> _build_mesh(const aiMesh* mesh, const ImportReceipt& receipt);
         void _extract_vertices(std::vector<Vertex>& dest, const aiMesh* src);

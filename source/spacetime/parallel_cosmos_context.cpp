@@ -17,7 +17,7 @@ namespace pleep
         // Listen for interception events, and store forked entities for retreival
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
 
-        /// TODO: also handle entity creation/deletion events so that they are extractable into the local cosmos
+        ////////////////////////////// TODO: also handle entity creation/deletion events so that they are extractable into the local cosmos
     }
 
     ParallelCosmosContext::~ParallelCosmosContext()

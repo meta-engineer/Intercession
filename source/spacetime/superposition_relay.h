@@ -81,7 +81,7 @@ namespace pleep
                     cosmos->get_component<SpacetimeComponent>(e).timestreamState = TimestreamState::merged;
                     cosmos->get_component<SpacetimeComponent>(e).timestreamStateCoherency = cosmos->get_coherency();
 
-                    // TODO: leave timestream until resolution, but only playback upstream?
+                    ///// TODO: leave timestream until resolution, but only playback upstream?
                     localTimelineApi->clear_future_timestream(e);
                 }
             }

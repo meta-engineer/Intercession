@@ -62,13 +62,15 @@ namespace pleep
         // check for possible assets and load into receipt
         ImportReceipt scan = this->_scan_scene(scene, filestem);
         scan.importSourceFilepath = filepath;
+        //debug_receipt(scan);
         
         // process materials and armatures first for meshes to reference
         this->_process_materials(scene, scan, directory);
         this->_process_armatures(scene, scan);
-        this->_process_supermeshes(scene, scan);
+        this->_process_supermesh(scene, scan);
         this->_process_animations(scene, scan);
 
+        // return only unique assets
         ImportReceipt receipt = this->_scan_scene(scene, filestem, false);
         receipt.importSourceFilepath = filepath;
         //debug_receipt(receipt);
@@ -289,39 +291,34 @@ namespace pleep
         // scene.h::255 > "There will always be at least the root node if the import was successful"
         assert(scene->mRootNode);
         
-        // Assume supermeshes are children of root node who have >1 meshes
-        // Assume armatures are children of root node who have <1 meshes
-        // TODO: name may be blank? how to give unique name?
+        // Assume only 1 supermesh, the root node
+        std::string supermeshName = scene->mRootNode->mName.C_Str();
+        if (supermeshName.empty())
+        {
+            supermeshName = receipt.importName + "_supermesh";
+        }
+        // check uniqueness
+        if (omitDuplicates && m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
+        {
+            PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists");
+            // we could try to generate a default name here? unless this already is the deafult name
+            return receipt;
+        }
+        receipt.supermeshName = supermeshName;
+
+        // Assume submeshes are children of root node who have >0 meshes
+        // Assume armatures are children of root node who have =0 meshes
         for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
         {
             if (scene->mRootNode->mChildren[i]->mNumMeshes > 0)
             {
-                std::string supermeshName = scene->mRootNode->mChildren[i]->mName.C_Str();
-                if (supermeshName.empty())
-                {
-                    supermeshName = receipt.importName + "_supermesh_" + std::to_string(i);
-                }
-                // check uniqueness
-                if (omitDuplicates && m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
-                {
-                    PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists");
-                    // we could try to generate a default name here? unless this already is the deafult name
-                    continue;
-                }
-                receipt.supermeshNames.push_back(supermeshName);
-
-                // emplace empty submesh names list
-                receipt.supermeshSubmeshesNames.push_back({});
-                // Associate a material with each submesh for this supermesh
-                // emplace empty submesh material names list
-                receipt.supermeshMaterialsNames.push_back({});
                 for (unsigned int m = 0; m < scene->mRootNode->mChildren[i]->mNumMeshes; m++)
                 {
                     aiMesh* submesh = scene->mMeshes[scene->mRootNode->mChildren[i]->mMeshes[m]];
-                    receipt.supermeshSubmeshesNames.back().push_back(submesh->mName.C_Str());
+                    receipt.supermeshSubmeshNames.push_back(submesh->mName.C_Str());
 
                     aiMaterial* material = scene->mMaterials[submesh->mMaterialIndex];
-                    receipt.supermeshMaterialsNames.back().push_back(material->GetName().C_Str());
+                    receipt.supermeshMaterialNames.push_back(material->GetName().C_Str());
                 }
             }
             else
@@ -368,7 +365,7 @@ namespace pleep
 
     std::shared_ptr<Material> ModelManager::_build_material(const aiMaterial *material, const std::string& materialName, const std::string& directory)
     {
-        //PLEEPLOG_DEBUG("Loading material: " + std::string(materialName));
+        //PLEEPLOG_DEBUG("Loading material: " + materialName);
         UNREFERENCED_PARAMETER(materialName);
 
         std::unordered_map<TextureType, Texture> loadedTextures;
@@ -429,7 +426,7 @@ namespace pleep
 
     std::shared_ptr<Armature> ModelManager::_build_armature(const aiNode* node, const std::string& armatureName)
     {
-        //PLEEPLOG_DEBUG("Loading armature: " + std::string(armatureName));
+        //PLEEPLOG_DEBUG("Loading armature: " + armatureName);
         UNREFERENCED_PARAMETER(armatureName);
         std::vector<Bone> armatureBones;
         std::unordered_map<std::string, unsigned int> armatureBoneIdMap;
@@ -470,38 +467,34 @@ namespace pleep
         }
     }
     
-    void ModelManager::_process_supermeshes(const aiScene *scene, const ImportReceipt& receipt)
+    void ModelManager::_process_supermesh(const aiScene *scene, const ImportReceipt& receipt)
     {
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
-        {
-            if (scene->mRootNode->mChildren[i]->mNumMeshes <= 0) continue;
-
-            std::string supermeshName = scene->mRootNode->mChildren[i]->mName.C_Str();
-            if (supermeshName.empty())
-            {
-                supermeshName = receipt.importName + "_supermesh_" + std::to_string(i);
-            }
-            // check if key was validated by scan
-            if (std::find(receipt.supermeshNames.begin(), receipt.supermeshNames.end(), supermeshName) == receipt.supermeshNames.end()) continue;
-
-            m_supermeshMap[supermeshName] = _build_supermesh(scene, scene->mRootNode->mChildren[i], receipt);
-            m_supermeshMap[supermeshName]->m_name = supermeshName;
-            m_supermeshMap[supermeshName]->m_sourceFilepath = receipt.importSourceFilepath;
-        }
+        // any meshes directly in root node?
+        // scan assumes submeshes are only direct children of root node...
+        std::string supermeshName = receipt.supermeshName;
+        //PLEEPLOG_DEBUG("Loading supermesh " + supermeshName);
+        
+        m_supermeshMap[supermeshName] = _build_supermesh(scene, scene->mRootNode, receipt);
+        m_supermeshMap[supermeshName]->m_name = supermeshName;
+        m_supermeshMap[supermeshName]->m_sourceFilepath = receipt.importSourceFilepath;
     }
     
     std::shared_ptr<Supermesh> ModelManager::_build_supermesh(const aiScene* scene, const aiNode* node, const ImportReceipt& receipt) 
     {
         std::shared_ptr<Supermesh> newSupermesh = std::make_shared<Supermesh>();
-
-        for (unsigned int m = 0; m < node->mNumMeshes; m++)
+        
+        // process children
+        for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            aiMesh* submesh = scene->mMeshes[node->mMeshes[m]];
-            newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
-            // apply name outside of _build_mesh for ModelManagerFaux
-            newSupermesh->m_submeshes.back()->m_name = std::string(submesh->mName.C_Str());
-            // I don't know if both levels need to have the source, but might aswell
-            newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
+            for (unsigned int m = 0; m < node->mChildren[i]->mNumMeshes; m++)
+            {
+                aiMesh* submesh = scene->mMeshes[node->mChildren[i]->mMeshes[m]];
+                newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
+                // apply name outside of _build_mesh for ModelManagerFaux
+                newSupermesh->m_submeshes.back()->m_name = std::string(submesh->mName.C_Str());
+                // I don't know if both levels need to have the source, but might aswell
+                newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
+            }
         }
 
         return newSupermesh;
@@ -946,30 +939,18 @@ namespace pleep
     {
         PLEEPLOG_DEBUG("Import receipt: " + receipt.importName);
         PLEEPLOG_DEBUG("from file: " + receipt.importSourceFilepath);
-        PLEEPLOG_DEBUG("Supermesh names:");
-        for (auto name : receipt.supermeshNames)
+        PLEEPLOG_DEBUG("Supermesh name: " + receipt.supermeshName);
+        PLEEPLOG_DEBUG("Supermesh submesh names:");
+        for (auto name : receipt.supermeshSubmeshNames)
         {
             PLEEPLOG_DEBUG("    " + name);
         }
-        PLEEPLOG_DEBUG("Supermesh subMeshes names:");
-        for (int i = 0; i < receipt.supermeshNames.size(); i++)
+        PLEEPLOG_DEBUG("Supermesh Material names:");
+        for (auto name : receipt.supermeshMaterialNames)
         {
-            PLEEPLOG_DEBUG("    " + receipt.supermeshNames[i] + ":");
-            for (auto name : receipt.supermeshSubmeshesNames[i])
-            {
-                PLEEPLOG_DEBUG("        " + name);
-            }
+            PLEEPLOG_DEBUG("    " + name);
         }
-        PLEEPLOG_DEBUG("Supermesh Materials names:");
-        for (int i = 0; i < receipt.supermeshNames.size(); i++)
-        {
-            PLEEPLOG_DEBUG("    " + receipt.supermeshNames[i] + ":");
-            for (auto name : receipt.supermeshMaterialsNames[i])
-            {
-                PLEEPLOG_DEBUG("        " + name);
-            }
-        }
-        PLEEPLOG_DEBUG("Material names:");
+        PLEEPLOG_DEBUG("All Material names:");
         for (auto name : receipt.materialNames)
         {
             PLEEPLOG_DEBUG("    " + name);

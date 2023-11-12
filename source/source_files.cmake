@@ -5,6 +5,7 @@ set(COMMON_SOURCE_FILES
     source/core/cosmos.cpp
 
     source/staging/cosmos_builder.cpp
+    source/staging/iceberg_cosmos.cpp
 
     source/logging/pleep_logger.cpp
 

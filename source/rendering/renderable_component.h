@@ -132,7 +132,7 @@ namespace pleep
                     ModelCache::ImportReceipt supermeshReceipt = ModelCache::import(newSupermeshPath);
 
                     // confirm the msg supermesh name was imported
-                    if (std::find(supermeshReceipt.supermeshNames.begin(), supermeshReceipt.supermeshNames.end(), newSupermeshName) != supermeshReceipt.supermeshNames.end())
+                    if (newSupermeshName == supermeshReceipt.supermeshName)
                     {
                         // try to fetch again
                         libMesh = ModelCache::fetch_supermesh(newSupermeshName);
