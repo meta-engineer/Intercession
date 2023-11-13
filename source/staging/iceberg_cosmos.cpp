@@ -72,7 +72,8 @@ namespace pleep
         gamecube_physics.lockedOrigin = cosmos->get_component<TransformComponent>(gamecube).origin;
         cosmos->add_component(gamecube, gamecube_physics);
         BoxColliderComponent gamecube_box;
-        gamecube_box.localTransform.scale = glm::vec3(10.0f);
+        gamecube_box.localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
+        gamecube_box.localTransform.origin = glm::vec3(0.0f, 3.8f, 0.0f);
         cosmos->add_component(gamecube, gamecube_box);
         cosmos->add_component(gamecube, RigidBodyComponent{});
         // ***************************************************************************

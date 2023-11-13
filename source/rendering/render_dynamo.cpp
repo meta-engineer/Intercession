@@ -59,6 +59,11 @@ namespace pleep
         m_forwardPass->submit(data);
     }
     
+    void RenderDynamo::submit(DebugRenderPacket data)
+    {
+        m_forwardPass->submit(data);
+    }
+    
     void RenderDynamo::submit(LightSourcePacket data) 
     {
         // again, can we implicitly know which relays want this info

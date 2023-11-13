@@ -41,7 +41,7 @@ namespace pleep
 
         // specify shaders/relays?
 
-        // used for debugging right now
+        // used for debugging right now, not serialized/deserialized
         bool highlight = false;
     };
 

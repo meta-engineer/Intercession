@@ -9,6 +9,8 @@
 #include "rendering/camera_component.h"
 #include "rendering/renderable_component.h"
 #include "rendering/render_packet.h"
+#include "rendering/debug_render_packet.h"
+#include "physics/box_collider_component.h"
 #include "spacetime/spacetime_component.h"
 
 namespace pleep
@@ -21,19 +23,19 @@ namespace pleep
 
     void RenderSynchro::update()
     {
+        // servers will not have render dynamos
+        if (m_attachedRenderDynamo == nullptr)
+        {
+            //PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
+            return;
+        }
+
         std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
         // No owner is a fatal error
         if (cosmos == nullptr)
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
             throw std::runtime_error("RenderSynchro started update without owner Cosmos");
-        }
-
-        // no dynamo is a mistake, not necessarily an error
-        if (m_attachedRenderDynamo == nullptr)
-        {
-            //PLEEPLOG_WARN("Synchro update was called without an attached Dynamo");
-            return;
         }
 
         // update view info with registered camera
@@ -75,6 +77,17 @@ namespace pleep
             }
 
             m_attachedRenderDynamo->submit(RenderPacket{ transform, renderable });
+
+            // DEBUG: Look for collider components for debug rendering?
+            // we only need base transform, collider transform, BasicSupermeshType, and maybe Entity for colour seed?
+            if (cosmos->has_component<BoxColliderComponent>(entity))
+            {
+                m_attachedRenderDynamo->submit(DebugRenderPacket{
+                    entity,
+                    cosmos->get_component<BoxColliderComponent>(entity).compose_transform(transform),
+                    ModelManager::BasicSupermeshType::cube
+                });
+            }
         }
 
         // CosmosContext will flush dynamo relays once all synchros are done

@@ -176,6 +176,9 @@ namespace pleep
         void _process_animations(const aiScene* scene, const ImportReceipt& receipt);
         virtual std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation* animation, const std::string& animationName);
 
+        // should be congruent with definition of SphereCollider (approximately)
+        //virtual std::shared_ptr<Supermesh> _build_sphere_supermesh();
+        // should be congruent with definition of BoxCollider
         virtual std::shared_ptr<Supermesh> _build_cube_supermesh();
         virtual std::shared_ptr<Supermesh> _build_quad_supermesh();
         virtual std::shared_ptr<Supermesh> _build_screen_supermesh();

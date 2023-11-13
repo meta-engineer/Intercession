@@ -8,6 +8,7 @@
 #include "rendering/shader_manager.h"
 #include "rendering/render_packet.h"
 #include "rendering/light_source_packet.h"
+#include "rendering/model_cache.h"
 
 namespace pleep
 {
@@ -228,7 +229,8 @@ namespace pleep
                 for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
                 {
                     // if there are no materials... do nothing? get debug material from ModelCache?
-                    if (data.renderable.materials.empty())
+                    // TEMP: "highlight" will make it blackout (no materials)
+                    if (data.renderable.materials.empty() || data.renderable.highlight)
                     {
                         _set_material_textures(m_sm, nullptr);
                     }
@@ -242,18 +244,28 @@ namespace pleep
                     data.renderable.meshData->m_submeshes[i]->invoke_draw(m_sm);
                 }
                 m_sm.deactivate();
+            }
 
-                // TEMP: apply normalVisualizer if entity is in debug highlight, in lieu of a special shader uniform
-                if (data.renderable.highlight)
+            // render debug packets
+            for (std::vector<DebugRenderPacket>::iterator packet_it = m_debugPackets.begin(); packet_it != m_debugPackets.end(); packet_it++)
+            {
+                DebugRenderPacket& data = *packet_it;
+
+                m_normalVisualizerSm.activate();
+                m_normalVisualizerSm.set_mat4("model_to_world", data.transform);
+                
+                //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+
+                std::shared_ptr<const Supermesh> supermesh = ModelCache::fetch_supermesh(data.supermeshType);
+                for (auto submesh : supermesh->m_submeshes)
                 {
-                    m_normalVisualizerSm.activate();
-                    m_normalVisualizerSm.set_mat4("model_to_world", data.transform.get_model_transform());
-                    for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
-                    {
-                        data.renderable.meshData->m_submeshes[i]->invoke_draw(m_normalVisualizerSm);
-                    }
-                    m_normalVisualizerSm.deactivate();
+                    // material?
+
+                    submesh->invoke_draw(m_normalVisualizerSm);
                 }
+                
+                //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+                m_normalVisualizerSm.deactivate();
             }
 
             // clear options
@@ -273,6 +285,11 @@ namespace pleep
             m_modelPackets.push_back(data);
         }
 
+        void submit(DebugRenderPacket data)
+        {
+            m_debugPackets.push_back(data);
+        }
+
         void submit(LightSourcePacket data)
         {
             m_lightSourcePackets.push_back(data);
@@ -281,6 +298,7 @@ namespace pleep
         void clear() override
         {
             m_modelPackets.clear();
+            m_debugPackets.clear();
             m_lightSourcePackets.clear();
         }
         
@@ -307,6 +325,7 @@ namespace pleep
         
         // collect packets during render submitting
         std::vector<RenderPacket> m_modelPackets;
+        std::vector<DebugRenderPacket> m_debugPackets;
         std::vector<LightSourcePacket> m_lightSourcePackets;
 
         void _set_material_textures(ShaderManager& sm, std::shared_ptr<const Material> material)

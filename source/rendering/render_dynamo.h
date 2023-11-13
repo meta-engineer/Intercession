@@ -15,6 +15,7 @@
 #include "core/a_dynamo.h"
 #include "events/event_broker.h"
 #include "rendering/render_packet.h"
+#include "rendering/debug_render_packet.h"
 #include "rendering/light_source_packet.h"
 #include "rendering/camera_packet.h"
 #include "rendering/forward_render_relay.h"
@@ -34,6 +35,8 @@ namespace pleep
         
         // pass in meshes / vertex groups to be rendered
         void submit(RenderPacket data);
+        // pass in generic mesh definition for anonymous rendering
+        void submit(DebugRenderPacket data);
         // pass in light sources
         void submit(LightSourcePacket data);
         // pass in main camera (overrides last submittion)
