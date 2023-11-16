@@ -34,7 +34,7 @@ namespace pleep
         // ***************************************************************************
         Entity nana = cosmos->create_entity();
 
-        cosmos->add_component(nana, TransformComponent(glm::vec3(0.0f, -5.0f, 15.0f)));        cosmos->get_component<TransformComponent>(nana).orientation = glm::normalize(glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+        cosmos->add_component(nana, TransformComponent(glm::vec3(-20.0f, 0.0f, 20.0f)));        cosmos->get_component<TransformComponent>(nana).orientation = glm::normalize(glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         
         RenderableComponent nana_renderable;
         nana_renderable.meshData = ModelCache::fetch_supermesh(nana_import.supermeshName);
@@ -55,7 +55,7 @@ namespace pleep
 
         // ***************************************************************************
         Entity gamecube = cosmos->create_entity();
-        cosmos->add_component(gamecube, TransformComponent(glm::vec3(-18.0f, -8.0f, 0.0f)));
+        cosmos->add_component(gamecube, TransformComponent(glm::vec3(-20.0f, 0.0f, -20.0f)));
 
         RenderableComponent gamecube_renderable;
         gamecube_renderable.meshData = ModelCache::fetch_supermesh(gamecube_import.supermeshName);
@@ -78,10 +78,41 @@ namespace pleep
         cosmos->add_component(gamecube, RigidBodyComponent{});
         // ***************************************************************************
 
+        
+        // ***************************************************************************
+        Entity gamebox = cosmos->create_entity();
+
+        TransformComponent gamebox_transform(glm::vec3(-1.0f, 0.0f, -20.0f));
+        gamebox_transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        cosmos->add_component(gamebox, gamebox_transform);
+
+        RenderableComponent gamebox_renderable;
+        gamebox_renderable.meshData = ModelCache::fetch_supermesh(gamecube_import.supermeshName);
+        // load materials in order of submeshes
+        for (const std::string matName : gamecube_import.supermeshMaterialNames)
+        {
+            gamebox_renderable.materials.push_back(ModelCache::fetch_material(matName));
+        }
+        cosmos->add_component(gamebox, gamebox_renderable);
+
+        PhysicsComponent gamebox_physics;
+        gamebox_physics.mass = 200.0f;
+        cosmos->add_component(gamebox, gamebox_physics);
+        
+        RigidBodyComponent gamebox_rigidbody{};
+        gamebox_rigidbody.dynamicFriction = 0.8f;
+        gamebox_rigidbody.restitution = 0.2f;
+        cosmos->add_component(gamebox, gamebox_rigidbody);
+        
+        BoxColliderComponent gamebox_collider;
+        gamebox_collider.localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
+        cosmos->add_component(gamebox, gamebox_collider);
+        // ***************************************************************************
+
 
         // ***************************************************************************
         Entity crate = cosmos->create_entity();
-        TransformComponent crateTransform(glm::vec3(2.9f, 0.0f, 0.3f));
+        TransformComponent crateTransform(glm::vec3(2.9f, 0.0f, -20.3f));
         cosmos->add_component(crate, crateTransform);
 
         RenderableComponent crate_renderable;
@@ -106,7 +137,7 @@ namespace pleep
         // ***************************************************************************
         Entity block = cosmos->create_entity();
 
-        cosmos->add_component(block, TransformComponent(glm::vec3(2.0f, -1.0f, 0.0f)));
+        cosmos->add_component(block, TransformComponent(glm::vec3(2.0f, -1.0f, -20.0f)));
         cosmos->get_component<TransformComponent>(block).orientation = glm::normalize(glm::angleAxis(glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
 
@@ -134,75 +165,51 @@ namespace pleep
         cosmos->add_component(block, RigidBodyComponent{});
         // ******************************************************************************
 
-        Entity wall1 = cosmos->create_entity();
-        cosmos->add_component(wall1, TransformComponent(glm::vec3(1.5f, 0.5f, -1.5f)));
-        cosmos->get_component<TransformComponent>(wall1).orientation = glm::angleAxis(1.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
-        
-        RenderableComponent wall1_renderable;
-        wall1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        ModelCache::create_material("wall1_mat", std::unordered_map<TextureType, std::string>{
-            {TextureType::diffuse, "resources/wood.png"},
-            {TextureType::specular, "resources/wood.png"},
-            {TextureType::normal, "resources/toy_box_normal.png"},
-            {TextureType::height, "resources/toy_box_disp.png"}
-        });
-        wall1_renderable.materials.push_back(ModelCache::fetch_material("wall1_mat"));
-        cosmos->add_component(wall1, wall1_renderable);
-        
-        Entity wall2 = cosmos->create_entity();
-        cosmos->add_component(wall2, TransformComponent(glm::vec3(-1.0f, 1.0f, -1.0f)));
-        cosmos->get_component<TransformComponent>(wall2).orientation = 
-            glm::normalize(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-            
-        RenderableComponent wall2_renderable;
-        wall2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        ModelCache::create_material("wall2_mat", std::unordered_map<TextureType, std::string>{
-            {TextureType::diffuse, "resources/wood.png"},
-            {TextureType::specular, "resources/wood.png"},
-            {TextureType::normal, "resources/toy_box_normal.png"},
-            {TextureType::height, "resources/spiral_disp.jpg"}
-        });
-        wall2_renderable.materials.push_back(ModelCache::fetch_material("wall2_mat"));
-        cosmos->add_component(wall2, wall2_renderable);
 
         // ***************************************************************************
-        Entity floor = cosmos->create_entity(false);
-        cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor).orientation = 
-            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(20.0f, 20.0f, 0.05f);
-        
-        RenderableComponent floor_renderable;
-        floor_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
-            {TextureType::diffuse, "resources/brickwall.jpg"},
-            {TextureType::specular, "resources/brickwall_specular.jpg"},
-            {TextureType::normal, "resources/brickwall_normal_up.jpg"},
-        });
-        floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
-        cosmos->add_component(floor, floor_renderable);
+        for (int x = -1; x < 2; x++)
+        {
+            for (int z = -1; z < 2; z++)
+            {
+                Entity floor = cosmos->create_entity(false);
+                cosmos->add_component(floor, TransformComponent(glm::vec3(x*20.0f, -2.0f, z*20.0f)));
+                cosmos->get_component<TransformComponent>(floor).orientation = 
+                    glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
+                cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(20.0f, 20.0f, 0.05f);
+                
+                RenderableComponent floor_renderable;
+                floor_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+                ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
+                    {TextureType::diffuse, "resources/brickwall.jpg"},
+                    {TextureType::specular, "resources/brickwall_specular.jpg"},
+                    {TextureType::normal, "resources/brickwall_normal_up.jpg"},
+                });
+                floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+                cosmos->add_component(floor, floor_renderable);
+                
+                PhysicsComponent floor_physics;
+                // TODO: what mass to assign to non-dynamic objects? same as otherwise?
+                // TODO: in general generate mass from known density
+                floor_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+                floor_physics.lockOrigin = true;
+                floor_physics.lockedOrigin = cosmos->get_component<TransformComponent>(floor).origin;
+                floor_physics.lockOrientation = true;
+                floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
+                cosmos->add_component(floor, floor_physics);
+                cosmos->add_component(floor, BoxColliderComponent{});
+                cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
+                cosmos->add_component(floor, RigidBodyComponent{});
+            }
+        }
 
-
-        PhysicsComponent floor_physics;
-        // TODO: what mass to assign to non-dynamic objects? same as otherwise?
-        // TODO: in general generate mass from known density
-        floor_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
-        floor_physics.lockOrigin = true;
-        floor_physics.lockedOrigin = cosmos->get_component<TransformComponent>(floor).origin;
-        floor_physics.lockOrientation = true;
-        floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
-        cosmos->add_component(floor, floor_physics);
-        cosmos->add_component(floor, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
-        cosmos->add_component(floor, RigidBodyComponent{});
         // ***************************************************************************
 
         // ***************************************************************************
         Entity snow = cosmos->create_entity(false);
-        cosmos->add_component(snow, TransformComponent(glm::vec3(15.0f, -2.0f, 0.0f)));
+        cosmos->add_component(snow, TransformComponent(glm::vec3(20.0f, -1.0f, 20.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(10.0f, 10.0f, 0.05f);
+        cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(20.0f, 20.0f, 1.0f);
 
         RenderableComponent snow_renderable;
         snow_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
@@ -216,24 +223,198 @@ namespace pleep
         ModelCache::ImportReceipt snowy = ModelCache::import("./resources/snow_material.obj");
         snow_renderable.materials.push_back(ModelCache::fetch_material("snow_with_height"));
         cosmos->add_component(snow, snow_renderable);
-
-        PhysicsComponent snow_physics;
-        // TODO: what mass to assign to non-dynamic objects?
-        // TODO: in general generate mass from known density
-        snow_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
-        snow_physics.lockOrigin = true;
-        snow_physics.lockedOrigin = cosmos->get_component<TransformComponent>(snow).origin;
-        snow_physics.lockOrientation = true;
-        snow_physics.lockedOrientation = cosmos->get_component<TransformComponent>(snow).orientation;
-        cosmos->add_component(snow, snow_physics);
-        cosmos->add_component(snow, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(snow).localTransform.origin.z = -0.5f;
-        cosmos->add_component(snow, RigidBodyComponent{});
         // ***************************************************************************
+
+        // ******************************************************************************
+        Entity panel1 = cosmos->create_entity();
+        cosmos->add_component(panel1, TransformComponent(glm::vec3(21.0f, 0.5f, 22.0f)));
+        cosmos->get_component<TransformComponent>(panel1).orientation = glm::angleAxis(3.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
+        
+        RenderableComponent panel1_renderable;
+        panel1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        ModelCache::create_material("panel1_mat", std::unordered_map<TextureType, std::string>{
+            {TextureType::diffuse, "resources/wood.png"},
+            {TextureType::specular, "resources/wood.png"},
+            {TextureType::normal, "resources/toy_box_normal.png"},
+            {TextureType::height, "resources/toy_box_disp.png"}
+        });
+        panel1_renderable.materials.push_back(ModelCache::fetch_material("panel1_mat"));
+        cosmos->add_component(panel1, panel1_renderable);
+        
+        Entity panel2 = cosmos->create_entity();
+        cosmos->add_component(panel2, TransformComponent(glm::vec3(19.0f, 1.0f, 22.0f)));
+        cosmos->get_component<TransformComponent>(panel2).orientation = 
+            glm::normalize(glm::angleAxis(2.5f, glm::vec3(0.0f, 1.0f, 0.0f)));
+        
+        RenderableComponent panel2_renderable;
+        panel2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        ModelCache::create_material("panel2_mat", std::unordered_map<TextureType, std::string>{
+            {TextureType::diffuse, "resources/wood.png"},
+            {TextureType::specular, "resources/wood.png"},
+            {TextureType::normal, "resources/toy_box_normal.png"},
+            {TextureType::height, "resources/spiral_disp.jpg"}
+        });
+        panel2_renderable.materials.push_back(ModelCache::fetch_material("panel2_mat"));
+        cosmos->add_component(panel2, panel2_renderable);
+        // ******************************************************************************
+
+
+        // ******************************************************************************
+        Entity ramp1 = cosmos->create_entity(false);
+        cosmos->add_component(ramp1, TransformComponent(glm::vec3(20.0f, -1.0f, 3.0f)));
+        cosmos->get_component<TransformComponent>(ramp1).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+        cosmos->get_component<TransformComponent>(ramp1).scale = glm::vec3(10.0f, 0.5f, 2.0f);
+
+        RenderableComponent ramp1_renderable;
+        ramp1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp1_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(ramp1, ramp1_renderable);
+
+        PhysicsComponent ramp1_physics;
+        ramp1_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        ramp1_physics.lockOrigin = true;
+        ramp1_physics.lockedOrigin = cosmos->get_component<TransformComponent>(ramp1).origin;
+        ramp1_physics.lockOrientation = true;
+        ramp1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp1).orientation;
+        cosmos->add_component(ramp1, ramp1_physics);
+        cosmos->add_component(ramp1, BoxColliderComponent{});
+        cosmos->add_component(ramp1, RigidBodyComponent{});
+        
+        Entity ramp2 = cosmos->create_entity(false);
+        cosmos->add_component(ramp2, TransformComponent(glm::vec3(20.0f, 0.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(ramp2).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+        cosmos->get_component<TransformComponent>(ramp2).scale = glm::vec3(10.0f, 0.5f, 2.0f);
+
+        RenderableComponent ramp2_renderable;
+        ramp2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp2_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(ramp2, ramp2_renderable);
+
+        PhysicsComponent ramp2_physics;
+        ramp2_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        ramp2_physics.lockOrigin = true;
+        ramp2_physics.lockedOrigin = cosmos->get_component<TransformComponent>(ramp2).origin;
+        ramp2_physics.lockOrientation = true;
+        ramp2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp2).orientation;
+        cosmos->add_component(ramp2, ramp2_physics);
+        cosmos->add_component(ramp2, BoxColliderComponent{});
+        cosmos->add_component(ramp2, RigidBodyComponent{});
+        
+        Entity ramp3 = cosmos->create_entity(false);
+        cosmos->add_component(ramp3, TransformComponent(glm::vec3(20.0f, 1.0f, -3.0f)));
+        cosmos->get_component<TransformComponent>(ramp3).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(75.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+        cosmos->get_component<TransformComponent>(ramp3).scale = glm::vec3(10.0f, 0.5f, 2.0f);
+
+        RenderableComponent ramp3_renderable;
+        ramp3_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp3_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(ramp3, ramp3_renderable);
+
+        PhysicsComponent ramp3_physics;
+        ramp3_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        ramp3_physics.lockOrigin = true;
+        ramp3_physics.lockedOrigin = cosmos->get_component<TransformComponent>(ramp3).origin;
+        ramp3_physics.lockOrientation = true;
+        ramp3_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp3).orientation;
+        cosmos->add_component(ramp3, ramp3_physics);
+        cosmos->add_component(ramp3, BoxColliderComponent{});
+        cosmos->add_component(ramp3, RigidBodyComponent{});
+        // ******************************************************************************
+
+        
+        // ******************************************************************************
+        Entity teeter = cosmos->create_entity();
+        cosmos->add_component(teeter, TransformComponent(glm::vec3(20.0f, 0.0f, -20.0f)));
+        cosmos->get_component<TransformComponent>(teeter).scale = glm::vec3(10.0f, 0.5f, 5.0f);
+
+        RenderableComponent teeter_renderable;
+        teeter_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        teeter_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(teeter, teeter_renderable);
+
+        PhysicsComponent teeter_physics;
+        teeter_physics.mass = 300.0f;
+        teeter_physics.lockOrigin = true;
+        teeter_physics.lockedOrigin = cosmos->get_component<TransformComponent>(teeter).origin;
+        cosmos->add_component(teeter, teeter_physics);
+        cosmos->add_component(teeter, BoxColliderComponent{});
+        cosmos->add_component(teeter, RigidBodyComponent{});
+        // ******************************************************************************
+
+
+        // ***************************************************************************
+        Entity wall1 = cosmos->create_entity(false);
+        cosmos->add_component(wall1, TransformComponent(glm::vec3(30.0f, 8.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(wall1).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(wall1).scale = glm::vec3(60.0f, 20.0f, 1.0f);
+
+        RenderableComponent wall1_renderable;
+        wall1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        wall1_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
+        cosmos->add_component(wall1, wall1_renderable);
+
+        PhysicsComponent wall1_physics;
+        wall1_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        wall1_physics.lockOrigin = true;
+        wall1_physics.lockedOrigin = cosmos->get_component<TransformComponent>(wall1).origin;
+        wall1_physics.lockOrientation = true;
+        wall1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall1).orientation;
+        cosmos->add_component(wall1, wall1_physics);
+        cosmos->add_component(wall1, BoxColliderComponent{});
+        cosmos->get_component<BoxColliderComponent>(wall1).localTransform.origin.z = -0.499f;
+        cosmos->add_component(wall1, RigidBodyComponent{});
+
+        Entity wall2 = cosmos->create_entity(false);
+        cosmos->add_component(wall2, TransformComponent(glm::vec3(0.0f, 8.0f, -30.0f)));
+        cosmos->get_component<TransformComponent>(wall2).scale = glm::vec3(60.0f, 20.0f, 1.0f);
+
+        RenderableComponent wall2_renderable;
+        wall2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        wall2_renderable.materials.push_back(ModelCache::fetch_material(gamecube_import.supermeshMaterialNames.front()));
+        cosmos->add_component(wall2, wall2_renderable);
+
+        PhysicsComponent wall2_physics;
+        wall2_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        wall2_physics.lockOrigin = true;
+        wall2_physics.lockedOrigin = cosmos->get_component<TransformComponent>(wall2).origin;
+        wall2_physics.lockOrientation = true;
+        wall2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall2).orientation;
+        cosmos->add_component(wall2, wall2_physics);
+        cosmos->add_component(wall2, BoxColliderComponent{});
+        cosmos->get_component<BoxColliderComponent>(wall2).localTransform.origin.z = -0.499f;
+        cosmos->add_component(wall2, RigidBodyComponent{});
+
+        Entity wall3 = cosmos->create_entity(false);
+        cosmos->add_component(wall3, TransformComponent(glm::vec3(-30.0f, 8.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(wall3).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(wall3).scale = glm::vec3(60.0f, 20.0f, 1.0f);
+
+        RenderableComponent wall3_renderable;
+        wall3_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        wall3_renderable.materials.push_back(ModelCache::fetch_material(nana_import.supermeshMaterialNames.front()));
+        cosmos->add_component(wall3, wall3_renderable);
+
+        PhysicsComponent wall3_physics;
+        wall3_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        wall3_physics.lockOrigin = true;
+        wall3_physics.lockedOrigin = cosmos->get_component<TransformComponent>(wall3).origin;
+        wall3_physics.lockOrientation = true;
+        wall3_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall3).orientation;
+        cosmos->add_component(wall3, wall3_physics);
+        cosmos->add_component(wall3, BoxColliderComponent{});
+        cosmos->get_component<BoxColliderComponent>(wall3).localTransform.origin.z = -0.499f;
+        cosmos->add_component(wall3, RigidBodyComponent{});
+        // ***************************************************************************
+
 
         // ***************************************************************************
         Entity light = cosmos->create_entity();
-        cosmos->add_component(light, TransformComponent(glm::vec3(0.0f, 1.0f, 1.0f)));
+        cosmos->add_component(light, TransformComponent(glm::vec3(20.0f, 1.0f, 20.0f)));
         cosmos->get_component<TransformComponent>(light).scale = glm::vec3(0.2f);
         // remember this is relative to exposure
         cosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
@@ -256,6 +437,24 @@ namespace pleep
         cosmos->add_component(light, light_behaviors);
         OscillatorComponent light_oscillator;
         cosmos->add_component(light, light_oscillator);
+        // ***************************************************************************
+
+
+        // ***************************************************************************
+        Entity spot = cosmos->create_entity();
+        cosmos->add_component(spot, TransformComponent(glm::vec3(0.0f, 4.0f, -20.0f)));
+        cosmos->get_component<TransformComponent>(spot).scale = glm::vec3(0.2f);
+        cosmos->get_component<TransformComponent>(spot).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        // remember this is relative to exposure
+        cosmos->add_component(spot, LightSourceComponent(glm::vec3(2.0f, 3.0f, 6.0f)));
+        cosmos->get_component<LightSourceComponent>(spot).type = LightSourceType::spot;
+        cosmos->get_component<LightSourceComponent>(spot).attributes = glm::vec2{0.90f, 0.70f};
+
+        RenderableComponent spot_renderable;
+        spot_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        spot_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
+        cosmos->add_component(spot, spot_renderable);
         // ***************************************************************************
 
         // RenderRelays should deal with each render phase

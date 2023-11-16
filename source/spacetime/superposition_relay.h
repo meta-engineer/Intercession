@@ -59,8 +59,6 @@ namespace pleep
             // store coherency for next frame
             m_lastCoherency = cosmos->get_coherency();
 
-            if (m_resolutionNeeded) PLEEPLOG_DEBUG("superposition resolution needed this frame");
-
             // A: forked entities need to be sent into FUTURE parallel cosmos
             //      if future parallel context is not ready (still running or still has update data), skip
             //      else track candidates and when time threshold passes setup & start future cosmos
@@ -138,8 +136,11 @@ namespace pleep
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
                         entityUpdate >> updateInfo;
                         // decrement chainlink to update entity's future self
-                        bool decrementSuccess = decrement_causal_chain_link(updateInfo.entity);
-                        assert(decrementSuccess);
+                        if (!decrement_causal_chain_link(updateInfo.entity))
+                        {
+                            PLEEPLOG_ERROR("Forked entity could not have chainlink decremented. How did it get forked to begin with if it doesn't have a future?");
+                            assert(false);
+                        }
 
                         // send it to our cosmos
                         cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, entityUpdate);

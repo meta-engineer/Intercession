@@ -175,11 +175,8 @@ namespace pleep
         }
 
         // Assume new msg data is for type T
-        T newData;
-        msg >> newData;
-
-        // overwrite entity's data with message data
-        m_array[m_mapEntityToIndex[entity]] = newData;
+        // write directly into component array via operator>> override
+        msg >> m_array[m_mapEntityToIndex[entity]];
     }
     
     template<typename T>

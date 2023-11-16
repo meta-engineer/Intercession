@@ -176,6 +176,7 @@ namespace pleep
                             continue;
                         
                         lightUni = "rLights[" + std::to_string(m_numRayLights) + "]";
+                        m_sm.set_vec3(lightUni + ".direction", data.transform.get_heading());
                         m_numRayLights++;
                         break;
                     case (LightSourceType::point):
@@ -191,6 +192,7 @@ namespace pleep
 
                         lightUni = "sLights[" + std::to_string(m_numSpotLights) + "]";
                         m_numSpotLights++;
+                        m_sm.set_vec3(lightUni + ".direction", data.transform.get_heading());
                         m_sm.set_float(lightUni + ".innerCos", data.light.attributes.x);
                         m_sm.set_float(lightUni + ".outerCos", data.light.attributes.y);
                         break;
