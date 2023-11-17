@@ -256,6 +256,10 @@ const float FR_Compliment  =  1.0 - (2.0 * FR_Coefficient);
 *do imp. euler with dt = dt*FR_Compliment*
 *do imp. euler with dt = dt*FR_Coefficient (again)*
 
+Character controller setup:
+Torso Hurtbox and leg springs
+https://www.youtube.com/watch?v=qdskE8PJy6Q
+
 
 ## Animation
 GODLIKE Gdc talk

@@ -47,6 +47,12 @@ namespace pleep
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
+
+                // spring force to keep upright & facing forwards
+                // move aim heading closer to last known velocity (forward)
+                // move aim perpendicular closer to support axis (upward)
+
+
                 // generate aim "heading" from aimOrientation and support vector
                 // movement axes while airborn may depend on camera gimbal axis?
                 const glm::mat3 aimRotation = glm::toMat4(biped.aimOrientation);
@@ -88,16 +94,43 @@ namespace pleep
                 physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
 
 
+                // crouching
+                if (input.actions.test(SpacialActions::moveVertical) &&
+                    input.actionVals.at(SpacialActions::moveVertical) < 0 &&
+                    biped.jumpCooldownRemaining <= 0)   // can't crouch while jump is on cd
+                {
+                    // Move legs restLength to top
+                    if (cosmos->has_component<SpringBodyComponent>(entity))
+                    {
+                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.6f;
+                    }
+                }
+
                 // jumping
-                if (biped.jumpCooldownRemaining > 0) biped.jumpCooldownRemaining -= deltaTime;
-                if (biped.jumpCooldownRemaining <= 0
-                    && biped.isGrounded
-                    && input.actions.test(SpacialActions::moveVertical)
-                    && input.actionVals.at(SpacialActions::moveVertical) > 0)
+                if (biped.jumpCooldownRemaining > 0) {
+                    biped.jumpCooldownRemaining -= deltaTime;
+                    // re-enable legs once cooldown elapses
+                    if (biped.jumpCooldownRemaining <= 0 &&
+                        cosmos->has_component<RayColliderComponent>(entity))
+                    {   
+                        // fetch this default from somewhere?
+                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.3f;
+                        cosmos->get_component<SpringBodyComponent>(entity).damping = 400.0f;
+                    }
+                }
+                if (biped.jumpCooldownRemaining <= 0 &&
+                    biped.isGrounded &&
+                    input.actions.test(SpacialActions::moveVertical) &&
+                    input.actionVals.at(SpacialActions::moveVertical) > 0)
                 {
                     biped.jumpCooldownRemaining = biped.jumpCooldownTime;
-                    // f = m*a
-                    physics.acceleration += -1.0f * biped.supportAxis * biped.jumpForce / physics.mass;
+
+                    // Move legs restLength to bottom
+                    if (cosmos->has_component<SpringBodyComponent>(entity))
+                    {
+                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.0f;
+                        cosmos->get_component<SpringBodyComponent>(entity).damping = 0.0f;
+                    }
                 }
                 
                 // clear gounded state until next collision

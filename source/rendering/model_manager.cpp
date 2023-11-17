@@ -31,6 +31,11 @@ namespace pleep
             this->m_supermeshMap[filepath] = this->_build_icosahedron_supermesh();
             return ImportReceipt{filepath, filepath, {filepath}};
         }
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::vector))
+        {
+            this->m_supermeshMap[filepath] = this->_build_vector_supermesh();
+            return ImportReceipt{filepath, filepath, {filepath}};
+        }
 
         // TODO: Unit testing lmao
         const size_t delimiterIndex = filepath.find_last_of("/\\");
@@ -888,6 +893,53 @@ namespace pleep
         );
     }
     
+    std::shared_ptr<Supermesh> ModelManager::_build_vector_supermesh()
+    {
+        // generate pyramid mesh data
+        std::vector<Vertex>       vertices;
+        std::vector<unsigned int> indices;
+        
+        // NOTE: tangent should be calculated based on normal and uv (texture coords)
+        const float VECTOR_VERTICES[] = {
+            // coordinates          // normal              // texture coords    // tangent
+             0.0f, 0.0f, 1.0f,       0.0f, 0.0f, 1.0f,      0.0f, 0.0f,          1.0f, 0.0f, 0.0f,   // point
+
+             0.1f, -0.1f, 0.0f,      1.0f, -1.0f, 0.0f,     1.0f, 0.0f,          0.0f, 0.0f, -1.0f,
+             0.1f,  0.1f, 0.0f,      1.0f,  1.0f, 0.0f,     1.0f, 1.0f,          0.0f, 0.0f, -1.0f,
+            -0.1f, -0.1f, 0.0f,     -1.0f, -1.0f, 0.0f,     1.0f, 1.0f,          0.0f, 0.0f, -1.0f,
+            -0.1f,  0.1f, 0.0f,     -1.0f,  1.0f, 0.0f,     0.0f, 1.0f,          0.0f, 0.0f, -1.0f  // base
+        };
+        // hardcode 3+3+2+3
+        for (unsigned int i = 0; i < sizeof(VECTOR_VERTICES) / sizeof(float) / 11; i++)
+        {
+            vertices.push_back( Vertex{
+                glm::vec3(VECTOR_VERTICES[i * 11 + 0], VECTOR_VERTICES[i * 11 + 1], VECTOR_VERTICES[i * 11 + 2]), 
+                glm::vec3(VECTOR_VERTICES[i * 11 + 3], VECTOR_VERTICES[i * 11 + 4], VECTOR_VERTICES[i * 11 + 5]), 
+                glm::vec2(VECTOR_VERTICES[i * 11 + 6], VECTOR_VERTICES[i * 11 + 7]), 
+                glm::vec3(VECTOR_VERTICES[i * 11 + 8], VECTOR_VERTICES[i * 11 + 9], VECTOR_VERTICES[i * 11 +10])
+            } );
+
+            // Don't forget Bones!
+            vertices.back().set_bone_data_to_default();
+        }
+
+        unsigned int VECTOR_INDICES[] = {
+            0,1,2,
+            0,2,4,
+            0,4,3,
+            0,3,1
+        };
+        for (unsigned int i = 0; i < sizeof(VECTOR_INDICES) / sizeof(unsigned int); i++)
+        {
+            indices.push_back(VECTOR_INDICES[i]);
+        }
+
+        return std::make_shared<Supermesh>(
+            ENUM_TO_STR(BasicSupermeshType::vector),
+            ENUM_TO_STR(BasicSupermeshType::vector),
+            std::make_shared<Mesh>(vertices, indices)
+        );
+    }
 
     void ModelManager::debug_scene(const aiScene *scene)
     {

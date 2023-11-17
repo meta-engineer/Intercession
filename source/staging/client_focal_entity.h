@@ -21,7 +21,7 @@ namespace pleep
 
         // ***************************************************************************
         Entity pc = cosmos->create_entity();
-        TransformComponent pc_transform(glm::vec3(3.0f, 3.0f, -2.5f));
+        TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;
@@ -41,22 +41,20 @@ namespace pleep
         cosmos->add_component(pc, pc_physics);
         cosmos->add_component(pc, BoxColliderComponent{});
 
-        RigidBodyComponent pc_rigidBody;
-        pc_rigidBody.influenceOrientation = false;
-        cosmos->add_component(pc, pc_rigidBody);
+        cosmos->add_component(pc, RigidBodyComponent{});
 
         RayColliderComponent pc_ray;
-        pc_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        //pc_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
+        pc_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));   // this should be along biped "support" axis
+        pc_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 1.5f);
         pc_ray.responseType = CollisionResponseType::spring;
         pc_ray.inheritOrientation = false;
-        pc_ray.useBehaviorsResponse = true;
+        pc_ray.useBehaviorsResponse = true;     // to set grounded state for on_fixed behaviour
         cosmos->add_component(pc, pc_ray);
         SpringBodyComponent pc_springBody;
         pc_springBody.influenceOrientation = false;
-        pc_springBody.stiffness = 10000.0f;
-        pc_springBody.damping = 100.0f;
-        pc_springBody.restLength = 0.1f; // therefore ride height of 0.9
+        pc_springBody.stiffness = 3000.0f;
+        pc_springBody.damping = 400.0f;
+        pc_springBody.restLength = 0.3f;
         pc_springBody.staticFriction = 0.0f;
         pc_springBody.dynamicFriction = 0.0f;
         cosmos->add_component(pc, pc_springBody);

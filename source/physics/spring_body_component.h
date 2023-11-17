@@ -14,10 +14,11 @@ namespace pleep
         static const uint32_t dataSize = sizeof(float) * 5 
             + sizeof(bool);
 
-        // maximum length of the spring is defined by the entity's associated collider
-        // rest length is distance from surface along penetration normal
-        // any distance > 0 will have a "pulling" force
+        // This entity's associated collider defines the maximum length of the spring
+        // the rest length is the proportion along that spring from the origin that the spring
+        //   pushes/pulls towards, value will be clamped to [0,1] 
         float restLength = 0.1f;
+
         float stiffness  = 100.0f;
         float damping    = 10.0f;
         // proportion of energy *lost* through friction

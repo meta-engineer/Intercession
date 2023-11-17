@@ -11,6 +11,7 @@
 #include "rendering/render_packet.h"
 #include "rendering/debug_render_packet.h"
 #include "physics/box_collider_component.h"
+#include "physics/ray_collider_component.h"
 #include "spacetime/spacetime_component.h"
 
 namespace pleep
@@ -61,7 +62,8 @@ namespace pleep
             RenderableComponent& renderable = cosmos->get_component<RenderableComponent>(entity);
             
             // catch null supermesh and don't even bother dynamo with it
-            if (renderable.meshData == nullptr) continue;
+            // except if render colliders is true
+            //if (renderable.meshData == nullptr) continue;
 
             // Update renderable members based on other components...
 
@@ -80,12 +82,22 @@ namespace pleep
 
             // DEBUG: Look for collider components for debug rendering?
             // we only need base transform, collider transform, BasicSupermeshType, and maybe Entity for colour seed?
-            if (cosmos->has_component<BoxColliderComponent>(entity))
+            if (cosmos->has_component<BoxColliderComponent>(entity) &&
+                cosmos->get_component<BoxColliderComponent>(entity).isActive == true)
             {
                 m_attachedRenderDynamo->submit(DebugRenderPacket{
                     entity,
                     cosmos->get_component<BoxColliderComponent>(entity).compose_transform(transform),
                     ModelManager::BasicSupermeshType::cube
+                });
+            }
+            if (cosmos->has_component<RayColliderComponent>(entity) &&
+                cosmos->get_component<RayColliderComponent>(entity).isActive == true)
+            {
+                m_attachedRenderDynamo->submit(DebugRenderPacket{
+                    entity,
+                    cosmos->get_component<RayColliderComponent>(entity).compose_transform(transform),
+                    ModelManager::BasicSupermeshType::vector
                 });
             }
         }

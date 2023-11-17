@@ -89,6 +89,8 @@ namespace pleep
             icosahedron,
             // geodesic sphere with 1m diameter
             //sphere,
+            // "arrow" pointing along unit vector (0,0,1)
+            vector
         };
         // Need a matching string value to use m_supermeshMap
         // use <> characters because they are illegal for filesnames and wont cause collisions
@@ -105,6 +107,8 @@ namespace pleep
                     return "<pleep_screen>";
                 case (BasicSupermeshType::icosahedron):
                     return "<pleep_icosahedron>";
+                case (BasicSupermeshType::vector):
+                    return "<pleep_vector>";
                 default:
                     return "";
             }
@@ -183,6 +187,7 @@ namespace pleep
         virtual std::shared_ptr<Supermesh> _build_quad_supermesh();
         virtual std::shared_ptr<Supermesh> _build_screen_supermesh();
         virtual std::shared_ptr<Supermesh> _build_icosahedron_supermesh();
+        virtual std::shared_ptr<Supermesh> _build_vector_supermesh();
     };
 }
 

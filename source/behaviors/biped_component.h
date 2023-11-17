@@ -27,7 +27,7 @@ namespace pleep
         glm::vec3 groundVelocity = glm::vec3(0.0f);
 
         // to avoid doubling inputs if client updates lag, these actions have to be robust to bad input
-        double jumpCooldownTime = 1.0; // if fixed update is 60hz, this means 60 frames
+        double jumpCooldownTime = 0.3; // if fixed update is 60hz, this means 60 frames
         double jumpCooldownRemaining = 0.0;
         float jumpForce = 20000.0f;
 

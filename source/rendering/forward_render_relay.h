@@ -217,7 +217,7 @@ namespace pleep
             m_sm.set_int("numPointLights", static_cast<int>(m_numPointLights));
             m_sm.set_int("numSpotLights", static_cast<int>(m_numSpotLights));
             m_sm.deactivate();
-
+/* 
             // Render through all meshes
             for (std::vector<RenderPacket>::iterator packet_it = m_modelPackets.begin(); packet_it != m_modelPackets.end(); packet_it++)
             {
@@ -247,27 +247,27 @@ namespace pleep
                 }
                 m_sm.deactivate();
             }
-
+ */
             // render debug packets
             for (std::vector<DebugRenderPacket>::iterator packet_it = m_debugPackets.begin(); packet_it != m_debugPackets.end(); packet_it++)
             {
                 DebugRenderPacket& data = *packet_it;
 
-                m_normalVisualizerSm.activate();
-                m_normalVisualizerSm.set_mat4("model_to_world", data.transform);
+                m_sm.activate();
+                m_sm.set_mat4("model_to_world", data.transform);
                 
-                //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+                glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
 
                 std::shared_ptr<const Supermesh> supermesh = ModelCache::fetch_supermesh(data.supermeshType);
                 for (auto submesh : supermesh->m_submeshes)
                 {
                     // material?
 
-                    submesh->invoke_draw(m_normalVisualizerSm);
+                    submesh->invoke_draw(m_sm);
                 }
                 
-                //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
-                m_normalVisualizerSm.deactivate();
+                glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+                m_sm.deactivate();
             }
 
             // clear options
