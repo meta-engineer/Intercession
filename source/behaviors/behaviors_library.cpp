@@ -4,6 +4,7 @@
 #include "behaviors/biped_behaviors.h"
 #include "behaviors/fly_control_behaviors.h"
 #include "behaviors/lakitu_behaviors.h"
+#include "behaviors/osrs_camera_behaviors.h"
 #include "behaviors/oscillator_behaviors.h"
 #include "behaviors/projectile_behaviors.h"
 
@@ -19,6 +20,9 @@ namespace pleep
                 break;
             case BehaviorsType::lakitu:
                 newDrivetrain = std::make_shared<LakituBehaviors>();
+                break;
+            case BehaviorsType::osrs_camera:
+                newDrivetrain = std::make_shared<OsrsCameraBehaviors>();
                 break;
             case BehaviorsType::biped_control:
                 newDrivetrain = std::make_shared<BipedBehaviors>();

@@ -38,7 +38,7 @@ namespace pleep
 
         cosmos->add_component(mainCamera, SpacialInputComponent{});
         BehaviorsComponent camera_behaviors;
-        camera_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::lakitu);
+        camera_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::osrs_camera);
         camera_behaviors.use_fixed_update = true;
         cosmos->add_component(mainCamera, camera_behaviors);
 

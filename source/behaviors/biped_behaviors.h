@@ -47,19 +47,13 @@ namespace pleep
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
-
-                // spring force to keep upright & facing forwards
-                // move aim heading closer to last known velocity (forward)
-                // move aim perpendicular closer to support axis (upward)
-
-
                 // generate aim "heading" from aimOrientation and support vector
                 // movement axes while airborn may depend on camera gimbal axis?
                 const glm::mat3 aimRotation = glm::toMat4(biped.aimOrientation);
                 const glm::vec3 aimHeading = glm::normalize(aimRotation * glm::vec3(0.0f, 0.0f, 1.0f));
                 const glm::vec3 aimTangent = glm::normalize(glm::cross(aimHeading, biped.supportAxis));
                 const glm::vec3 aimProjection = glm::normalize(glm::cross(biped.supportAxis, aimTangent));
-                // derive ground velocity perpendicular to support axis
+                // derive velocity perpendicular to support axis
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
                 const float rot    = 0.10f * (float)deltaTime;
@@ -87,52 +81,67 @@ namespace pleep
                 
                 if (targetInputVector != glm::vec3(0.0f))
                     targetInputVector = glm::normalize(targetInputVector);
-                glm::vec3 targetGroundVelocity = targetInputVector * biped.groundMaxSpeed;
-                
-                const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
 
-                physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
+                // if grounded accelerate from current velocity towards target
+                if (biped.isGrounded)
+                {
+                    glm::vec3 targetGroundVelocity = targetInputVector * biped.groundTargetSpeed;
+                    const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
+
+                    physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
+                }
+                // if not grounded just accelerate
+                // also prevent accelerating beyond air max
+                else
+                {
+                    glm::vec3 airAcceleration = targetInputVector * biped.airAcceleration;
+                    
+                    // TODO: remove component of airAcceleration beyond airMaxSpeed
+
+                    physics.acceleration += airAcceleration;
+                }
 
 
-                // crouching
-                if (input.actions.test(SpacialActions::moveVertical) &&
-                    input.actionVals.at(SpacialActions::moveVertical) < 0 &&
-                    biped.jumpCooldownRemaining <= 0)   // can't crouch while jump is on cd
+                // TODO: make a proper state machine to manage these conditions and component changes
+
+                // while jump is off CD
+                if (biped.jumpCooldownRemaining <= 0)
                 {
                     // Move legs restLength to top
                     if (cosmos->has_component<SpringBodyComponent>(entity))
                     {
-                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.6f;
-                    }
-                }
-
-                // jumping
-                if (biped.jumpCooldownRemaining > 0) {
-                    biped.jumpCooldownRemaining -= deltaTime;
-                    // re-enable legs once cooldown elapses
-                    if (biped.jumpCooldownRemaining <= 0 &&
-                        cosmos->has_component<RayColliderComponent>(entity))
-                    {   
-                        // fetch this default from somewhere?
-                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.3f;
                         cosmos->get_component<SpringBodyComponent>(entity).damping = 400.0f;
-                    }
-                }
-                if (biped.jumpCooldownRemaining <= 0 &&
-                    biped.isGrounded &&
-                    input.actions.test(SpacialActions::moveVertical) &&
-                    input.actionVals.at(SpacialActions::moveVertical) > 0)
-                {
-                    biped.jumpCooldownRemaining = biped.jumpCooldownTime;
 
-                    // Move legs restLength to bottom
-                    if (cosmos->has_component<SpringBodyComponent>(entity))
-                    {
-                        cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.0f;
-                        cosmos->get_component<SpringBodyComponent>(entity).damping = 0.0f;
+                        // try jumping
+                        if (biped.isGrounded &&
+                            input.actions.test(SpacialActions::moveVertical) &&
+                            input.actionVals.at(SpacialActions::moveVertical) > 0)
+                        {
+                            biped.jumpCooldownRemaining = biped.jumpCooldownTime;
+
+                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.0f;
+                            cosmos->get_component<SpringBodyComponent>(entity).damping = 0.0f;
+                        }
+                        // try crouching
+                        else if (input.actions.test(SpacialActions::moveVertical) &&
+                            input.actionVals.at(SpacialActions::moveVertical) < 0)
+                        {
+                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.6f;
+                        }
+                        // otherwise standing
+                        else
+                        {
+                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.3f;
+                        }
                     }
                 }
-                
+                // jump is on CD (during jump)
+                else
+                {
+                    biped.jumpCooldownRemaining -= deltaTime;
+                }
+
+
                 // clear gounded state until next collision
                 biped.isGrounded = false;
 

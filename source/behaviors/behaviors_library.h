@@ -41,6 +41,7 @@ namespace pleep
             none,
             fly_control,            // FlyControlBehaviors
             lakitu,                 // LakituBehaviors
+            osrs_camera,            // OsrsCameraBehaviours
             biped_control,          // BipedBehaviors
             oscillator,             // OscillatorBehaviors
             projectile,             // ProjectileBehaviors

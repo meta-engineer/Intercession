@@ -29,18 +29,17 @@ namespace pleep
         // to avoid doubling inputs if client updates lag, these actions have to be robust to bad input
         double jumpCooldownTime = 0.3; // if fixed update is 60hz, this means 60 frames
         double jumpCooldownRemaining = 0.0;
-        float jumpForce = 20000.0f;
 
         double shootCooldownTime = 1.0;
         double shootCooldownRemaining = 0.0;
         float shootForce = 20.0f;
 
         // units roughly equate to meters and seconds
-        float groundAcceleration    = 20.0f;
+        float groundAcceleration    = 10.0f;
         //float groundDeceleration    = 40.0f; // is this additive or replacing normal acceleration?
-        float groundMaxSpeed        = 8.0f;  // non-controller forces can accelerate faster
+        float groundTargetSpeed        = 8.0f;  // non-controller forces can accelerate faster
 
-        float airAcceleration       = 1.0f;
+        float airAcceleration       = 4.0f;
         //float airDeceleration       = 1.0f;
         float airMaxSpeed           = 4.0f;
     };

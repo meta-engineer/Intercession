@@ -29,7 +29,7 @@ namespace pleep
                 
                 ////////////////////////////////////////////////////////////////
                 // SHHH... temporary global gravity                           //
-                data.physics.acceleration += glm::vec3(0.0f, -9.8f, 0.0f);    //
+                data.physics.acceleration += glm::vec3(0.0f, -10.0f, 0.0f);    //
                 ////////////////////////////////////////////////////////////////
 
                 // Apply locking constraints

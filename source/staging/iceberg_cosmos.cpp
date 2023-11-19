@@ -336,7 +336,7 @@ namespace pleep
         cosmos->add_component(teeter, teeter_renderable);
 
         PhysicsComponent teeter_physics;
-        teeter_physics.mass = 300.0f;
+        teeter_physics.mass = 3000.0f;
         teeter_physics.lockOrigin = true;
         teeter_physics.lockedOrigin = cosmos->get_component<TransformComponent>(teeter).origin;
         cosmos->add_component(teeter, teeter_physics);
