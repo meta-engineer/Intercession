@@ -191,7 +191,7 @@ namespace pleep
             {
                 // avoid clipping along any perpendicular edges
                 const glm::vec3 clipperEdgeTangent = glm::cross(axis, clipper[(i+1) % clipper.size()] - clipper[i]);
-                if (clipperEdgeTangent == glm::vec3(0.0f))
+                if (glm::length2(clipperEdgeTangent) == 0.0f)
                 {
                     continue;
                 }

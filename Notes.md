@@ -262,6 +262,9 @@ https://www.youtube.com/watch?v=qdskE8PJy6Q
 
 
 ## Animation
+Procedural animation ODEs
+https://www.youtube.com/watch?v=KPoeNZZ6H4s
+
 GODLIKE Gdc talk
 https://www.youtube.com/watch?v=LNidsMesxSE
 

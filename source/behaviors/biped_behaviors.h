@@ -56,6 +56,7 @@ namespace pleep
                 // derive velocity perpendicular to support axis
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
+                /*
                 const float rot    = 0.10f * (float)deltaTime;
                 const float aspect = 1.2f;
                 // set new aim vectors
@@ -67,6 +68,7 @@ namespace pleep
                 {
                     biped.aimOrientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), biped.supportAxis) * biped.aimOrientation;
                 }
+                */
 
                 glm::vec3 targetInputVector(0.0f);
                 // omit up/down from accelerations
@@ -79,7 +81,7 @@ namespace pleep
                     targetInputVector -= aimTangent * static_cast<float>(input.actionVals.at(SpacialActions::moveHorizontal));
                 }
                 
-                if (targetInputVector != glm::vec3(0.0f))
+                if (glm::length2(targetInputVector) != 0.0f)
                     targetInputVector = glm::normalize(targetInputVector);
 
                 // if grounded accelerate from current velocity towards target

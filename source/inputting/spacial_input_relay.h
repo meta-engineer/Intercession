@@ -47,9 +47,14 @@ namespace pleep
             
             newSpacialInput.set(SpacialActions::rotatePitch, m_sharedBuffer.twoDimAnalog[0][1] != 0.0, m_sharedBuffer.twoDimAnalog[0][1]);
             newSpacialInput.set(SpacialActions::rotateYaw, m_sharedBuffer.twoDimAnalog[0][0] != 0.0, m_sharedBuffer.twoDimAnalog[0][0]);
+            // use mouse wheel Y as roll?
+            newSpacialInput.set(SpacialActions::rotateRoll, m_sharedBuffer.twoDimAnalog[1][1] != 0.0, m_sharedBuffer.twoDimAnalog[1][1]);
 
             newSpacialInput.set(SpacialActions::action0, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_1], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_1]);
             newSpacialInput.set(SpacialActions::action1, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_2], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_2]);
+            newSpacialInput.set(SpacialActions::action2, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_3], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_3]);
+            newSpacialInput.set(SpacialActions::action3, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_4], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_4]);
+            newSpacialInput.set(SpacialActions::action4, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_5], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_5]);
 
 
             for (std::vector<SpacialInputPacket>::iterator packet_it = m_inputPackets.begin(); packet_it != m_inputPackets.end(); packet_it++)

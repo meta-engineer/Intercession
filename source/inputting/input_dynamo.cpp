@@ -116,21 +116,15 @@ namespace pleep
         static double lastX = -1;
         static double lastY = -1;
 
-        if (m_glfwMouseMode == GLFW_CURSOR_DISABLED)
-        {
-            // if focused provide mouse as analog input
-            // we'll assign the mouse to be analog 0
-            m_inputBuffer.setTwoDimAnalog(
-                0,
-                lastX == -1.0 ? 0.0 : (x - lastX),
-                lastY == -1.0 ? 0.0 : (y - lastY)
-            );
-        }
-        else
-        {
-            // otherwise provide absolute cursor position
-            m_inputBuffer.setScreenPosition(x, y);
-        }
+        // provide mouse as analog input
+        // (we'll assign the mouse to be analog 0)
+        m_inputBuffer.setTwoDimAnalog(
+            0,
+            lastX == -1.0 ? 0.0 : (x - lastX),
+            lastY == -1.0 ? 0.0 : (y - lastY)
+        );
+        // as well as absolute position (vector from center of frame?)
+        m_inputBuffer.setScreenPosition(x, y);
 
         lastX = x;
         lastY = y;
@@ -141,12 +135,6 @@ namespace pleep
         // silence warning while not using
         UNREFERENCED_PARAMETER(w);
 
-        // only provide scroll if mouse is focused
-        if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
-        {
-            return;
-        }
-        
         // we'll assign the scroll wheel to be analog 1
         m_inputBuffer.setTwoDimAnalog(1, dx, dy);
 
@@ -160,12 +148,6 @@ namespace pleep
         // NOTE: mods is bitfield of key mods (shift, control, alt, super, caps, numlock)
         // https://www.glfw.org/docs/3.3/group__mods.html
         UNREFERENCED_PARAMETER(mods);
-
-        // only provide clicks if mouse is focused
-        if (m_glfwMouseMode != GLFW_CURSOR_DISABLED)
-        {
-            return;
-        }
 
         // action is one of GLFW_PRESS || GLFW_RELEASE
         // buttons should be in range [0,8]
@@ -195,11 +177,13 @@ namespace pleep
         m_inputBuffer.convertMods(mods);
 
         // ****** HARDCODED SHORTCUTS ******
+        /* 
         if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
         {
             m_glfwMouseMode = m_glfwMouseMode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
             glfwSetInputMode(m_windowApi, GLFW_CURSOR, m_glfwMouseMode);
         }
+         */
     }
     
     void InputDynamo::_window_should_close_callback(GLFWwindow* w) 

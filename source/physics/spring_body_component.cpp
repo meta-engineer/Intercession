@@ -76,6 +76,7 @@ namespace pleep
         // STEP 2.2: center of mass
         // TODO: for a compound collider this will be more involved
         //   for now take origin of collider
+        // TODO: Angular velocity will also have to be applied to this CoM?
         const glm::vec3 thisCenterOfMass = thisModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
         const glm::vec3 otherCenterOfMass = otherModel * glm::vec4(0.0f,0.0f,0.0f, 1.0f);
         

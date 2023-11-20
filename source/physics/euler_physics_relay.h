@@ -57,13 +57,17 @@ namespace pleep
                 }
 
                 // half-step
-                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                // calculate angular speed
-                if (data.physics.angularVelocity != glm::vec3(0.0f))
                 {
+                    // apply linear velocity
+                    data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
+                    // apply angular velocity
+                    // calculate angular speed early
                     float angularSpeed = glm::length(data.physics.angularVelocity);
-                    glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
-                    data.transform.orientation = quatVelocity * data.transform.orientation;
+                    if (angularSpeed != 0.0f)
+                    {
+                        glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                        data.transform.orientation = quatVelocity * data.transform.orientation;
+                    }
                 }
 
                 // apply acceleration
@@ -71,12 +75,14 @@ namespace pleep
                 data.physics.angularVelocity += data.physics.angularAcceleration * (float)deltaTime;
 
                 // finish half-step
-                data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
-                if (data.physics.angularVelocity != glm::vec3(0.0f))
                 {
+                    data.transform.origin += data.physics.velocity * (float)(deltaTime / 2.0f);
                     float angularSpeed = glm::length(data.physics.angularVelocity);
-                    glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
-                    data.transform.orientation = quatVelocity * data.transform.orientation;
+                    if (angularSpeed != 0.0f)
+                    {
+                        glm::quat quatVelocity = glm::angleAxis(angularSpeed * (float)(deltaTime / 2.0f), data.physics.angularVelocity / angularSpeed);
+                        data.transform.orientation = quatVelocity * data.transform.orientation;
+                    }
                 }
 
                 // leave acceleration values as-is for next (potential) engage() call?
@@ -87,7 +93,6 @@ namespace pleep
                 // Per-step drag
                 data.physics.velocity        *= 1.0f - data.physics.linearDrag * deltaTime;
                 data.physics.angularVelocity *= 1.0f - data.physics.angularDrag * deltaTime;
-
             }
         }
         
