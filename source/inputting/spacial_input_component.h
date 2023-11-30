@@ -24,6 +24,11 @@ namespace pleep
         rotateYaw,
         rotateRoll, // + is cw
 
+        // cast a ray out from entity
+        raycastX,
+        raycastY,
+        raycastZ,
+
         // generic
         // bit represets active or not
         // value of 1.0 means edge, value of 0.0 means sustained

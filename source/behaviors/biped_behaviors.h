@@ -42,7 +42,7 @@ namespace pleep
             // fetch Physics, Biped, and SpacialInput
             try
             {
-                TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+                //TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
                 PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
@@ -147,7 +147,7 @@ namespace pleep
                 // clear gounded state until next collision
                 biped.isGrounded = false;
 
-
+/* 
                 // TEST: pew pew
                 if (biped.shootCooldownRemaining > 0) biped.shootCooldownRemaining -= deltaTime;
                 if (biped.shootCooldownRemaining <= 0
@@ -158,7 +158,7 @@ namespace pleep
                     // make cube with velocity along aimHeading
                     create_test_projectile(cosmos, entity, transform.origin+ aimHeading, aimHeading*biped.shootForce);
                 }
-
+ */
             }
             catch(const std::exception& err)
             {

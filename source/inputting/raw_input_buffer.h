@@ -18,12 +18,9 @@ namespace pleep
 
     struct RawInputBuffer
     {
-        static const size_t numTwoDimAnalogs = 2;
+        static const size_t numTwoDimAnalogs = 3;
         // really an array of vec2
         double twoDimAnalog[numTwoDimAnalogs][2];
-
-        // negative values imply null
-        double screenPosition[2] = { -1.0, -1.0 };
 
         // values less than 256 are ascii equivalent
         // values over 256 are non printable keys as defined by glfw
@@ -49,12 +46,6 @@ namespace pleep
             twoDimAnalog[index][1] = y;
         }
 
-        inline void setScreenPosition(double x, double y)
-        {
-            screenPosition[0] = x;
-            screenPosition[1] = y;
-        }
-
         // automatically set digitalEdge
         inline void setDigital(size_t val, bool state)
         {
@@ -75,14 +66,14 @@ namespace pleep
         }
 
         // clear values which should be reset even if they don't receive a callback
+        // use max as NULL (hopefully no mouse/controller can create this)
         inline void flush()
         {
             for (int i = 0; i < numTwoDimAnalogs; i++)
             {
-                twoDimAnalog[i][0] = 0.0f;
-                twoDimAnalog[i][1] = 0.0f;
+                twoDimAnalog[i][0] = std::numeric_limits<double>::max();
+                twoDimAnalog[i][1] = std::numeric_limits<double>::max();
             }
-            screenPosition[0] = -1; screenPosition[1] = -1;
             digitalEdge.reset();
         }
         

@@ -38,6 +38,9 @@ namespace pleep
         // spring joint variables
         // gimbal meta-data
         // margins/limits
+
+        // screen position (in NDS [-1,1])
+        glm::vec2 cursor{0.0f, 0.0f};
     };
 
     // Helper function for camera use

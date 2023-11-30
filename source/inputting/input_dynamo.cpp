@@ -116,18 +116,25 @@ namespace pleep
         static double lastX = -1;
         static double lastY = -1;
 
-        // provide mouse as analog input
-        // (we'll assign the mouse to be analog 0)
+        // provide mouse DELTA as analog input (analog 0)
         m_inputBuffer.setTwoDimAnalog(
             0,
             lastX == -1.0 ? 0.0 : (x - lastX),
             lastY == -1.0 ? 0.0 : (y - lastY)
         );
-        // as well as absolute position (vector from center of frame?)
-        m_inputBuffer.setScreenPosition(x, y);
-
         lastX = x;
         lastY = y;
+
+        // provide mouse ABSOLUTE as analog input (analog 1)
+        //   (as vector from center of frame, normalized forom [-1,1][-1,1])
+        int currentWidth;
+        int currentHeight;
+        glfwGetWindowSize(w, &currentWidth, &currentHeight);
+        m_inputBuffer.setTwoDimAnalog(
+            1,
+            static_cast<float>(x-currentWidth/2) / static_cast<float>(currentWidth/2),
+            static_cast<float>(y-currentHeight/2) / static_cast<float>(currentHeight/2)
+        );
     }
     
     void InputDynamo::_mouse_scroll_callback(GLFWwindow* w, double dx, double dy) 
@@ -135,8 +142,8 @@ namespace pleep
         // silence warning while not using
         UNREFERENCED_PARAMETER(w);
 
-        // we'll assign the scroll wheel to be analog 1
-        m_inputBuffer.setTwoDimAnalog(1, dx, dy);
+        // we'll assign the scroll wheel to be analog 2
+        m_inputBuffer.setTwoDimAnalog(2, dx, dy);
 
         //PLEEPLOG_TRACE("Mouse scroll callback. Scrolled (" + std::to_string(dx) + ", " + std::to_string(dy) + ")");
     }

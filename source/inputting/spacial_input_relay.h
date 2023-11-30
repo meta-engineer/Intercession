@@ -45,10 +45,28 @@ namespace pleep
                      + (m_sharedBuffer.digitalState[GLFW_KEY_C] ? -1.0 : 0.0);
             newSpacialInput.set(SpacialActions::moveVertical, v!=0.0 ? true : false, v);
             
-            newSpacialInput.set(SpacialActions::rotatePitch, m_sharedBuffer.twoDimAnalog[0][1] != 0.0, m_sharedBuffer.twoDimAnalog[0][1]);
-            newSpacialInput.set(SpacialActions::rotateYaw, m_sharedBuffer.twoDimAnalog[0][0] != 0.0, m_sharedBuffer.twoDimAnalog[0][0]);
+            newSpacialInput.set(SpacialActions::rotatePitch, 
+                m_sharedBuffer.twoDimAnalog[0][1] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.twoDimAnalog[0][1]
+            );
+            newSpacialInput.set(SpacialActions::rotateYaw, 
+                m_sharedBuffer.twoDimAnalog[0][0] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.twoDimAnalog[0][0]
+            );
             // use mouse wheel Y as roll?
-            newSpacialInput.set(SpacialActions::rotateRoll, m_sharedBuffer.twoDimAnalog[1][1] != 0.0, m_sharedBuffer.twoDimAnalog[1][1]);
+            newSpacialInput.set(SpacialActions::rotateRoll, 
+                m_sharedBuffer.twoDimAnalog[2][1] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.twoDimAnalog[2][1]
+            );
+
+            newSpacialInput.set(SpacialActions::raycastX,
+                m_sharedBuffer.twoDimAnalog[1][0] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.twoDimAnalog[1][0]
+            );
+            newSpacialInput.set(SpacialActions::raycastY,
+                m_sharedBuffer.twoDimAnalog[1][1] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.twoDimAnalog[1][1]
+            );
 
             newSpacialInput.set(SpacialActions::action0, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_1], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_1]);
             newSpacialInput.set(SpacialActions::action1, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_2], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_2]);

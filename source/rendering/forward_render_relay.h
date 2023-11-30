@@ -149,7 +149,7 @@ namespace pleep
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             // culling (with correct index orientation)
-            glEnable(GL_CULL_FACE);
+            //glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
             // wireframe
             //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
