@@ -143,7 +143,7 @@ namespace pleep
                             {
                                 throw std::runtime_error("Cannot call collision behavior response for null BehaviorsDrivetrain");
                             }
-                            behaviors.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint);
+                            behaviors.drivetrain->on_collision(thisData, otherData, collisionNormal, collisionDepth, collisionPoint, m_sharedBroker);
                         }
                         catch(const std::exception& err)
                         {
@@ -166,7 +166,7 @@ namespace pleep
                             {
                                 throw std::runtime_error("Cannot call collision behavior response for null BehaviorsDrivetrain");
                             }
-                            behaviors.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint);
+                            behaviors.drivetrain->on_collision(otherData, thisData, invCollisionNormal, collisionDepth, invCollisionPoint, m_sharedBroker);
                         }
                         catch(const std::exception& err)
                         {

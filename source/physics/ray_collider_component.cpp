@@ -52,17 +52,31 @@ namespace pleep
         glm::mat4 otherLocalTransform  = otherBox->compose_transform(otherTransform);
         glm::mat3 otherNormalTransform = glm::transpose(glm::inverse(glm::mat3(otherLocalTransform)));
 
-        std::array<glm::vec3, 3> axes;
+        std::array<glm::vec3, 6> axes;
+        // TODO: determine which axes are actually needed
+        // cube faces axes
         axes[0] = otherNormalTransform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
         axes[1] = otherNormalTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
         axes[2] = otherNormalTransform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+
+        // calculate vector from ray origin to box origin
+        glm::vec3 rayToBox = otherTransform.origin - thisTransform.origin;
+        // calulate ray vector
+        const glm::vec3 rayOrigin = thisLocalTransform * glm::vec4(0,0,0, 1.0f);
+        const glm::vec3 rayEnd    = thisLocalTransform * glm::vec4(0,0,1, 1.0f);
+        axes[3] = rayEnd - rayOrigin;
+
+        // calculate normal to ray (perpendicular to box)
+        axes[4] = glm::cross(axes[3], rayToBox);
+        // calculate normal to ray (towards box)
+        axes[5] = glm::cross(axes[4], axes[3]);
         
         // Maintain data from positive collision tests
         glm::vec3 minPenetrateNormal(0.0f);   // vector of collision force? world-space
         float minPenetrateDepth = INFINITY;   // depth along best normal?
         float maxRayParametricValue = 0.0f;   // in lieu of contact manifold
 
-        for (int a = 0; a < 3; a++)
+        for (int a = 0; a < axes.size(); a++)
         {
             axes[a] = glm::normalize(axes[a]);
             
@@ -156,6 +170,7 @@ namespace pleep
         }
 
         // remember closest parametric value this physics step to avoid double collision
+        // TODO: this is order dependant, so not always correct
         if (maxRayParametricValue >= this->minParametricValue)
         {
             return false;
@@ -166,9 +181,6 @@ namespace pleep
         //return this->solve_parametric(rayParametricValue);
 
         // inline solve parametric equation
-        // recalculate ray points
-        glm::vec3 rayOrigin = thisLocalTransform * glm::vec4(0,0,0, 1.0f);
-        glm::vec3 rayEnd    = thisLocalTransform * glm::vec4(0,0,1, 1.0f);
         collisionPoint = rayOrigin + maxRayParametricValue * (rayEnd-rayOrigin);
 
         //PLEEPLOG_DEBUG("Ray Collision Point: " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z));

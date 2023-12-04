@@ -18,12 +18,17 @@ namespace pleep
         // window config
         // set mouse capture mode
         glfwSetInputMode(m_windowApi, GLFW_CURSOR, m_glfwMouseMode);
+
+        // event handlers
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::window::VIRTUAL_ODM_GEAR_INPUT, InputDynamo::_virtual_odm_gear_handler));
         
         PLEEPLOG_TRACE("Done input pipeline setup");
     }
     
     InputDynamo::~InputDynamo() 
     {
+        // clear event handlers
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::window::VIRTUAL_ODM_GEAR_INPUT, InputDynamo::_virtual_odm_gear_handler));
     }
     
     void InputDynamo::submit(SpacialInputPacket data) 
@@ -32,7 +37,7 @@ namespace pleep
         m_spacialInputRelay.submit(data);
     }
     
-    void InputDynamo::run_relays(double deltaTime) 
+    void InputDynamo::run_relays(double deltaTime)
     {
         // this will call all registered callbacks
         glfwPollEvents();
@@ -40,6 +45,11 @@ namespace pleep
 
         // engage relays with polled input
         m_spacialInputRelay.engage(deltaTime);
+
+        
+        // after all relays have used the buffer, prep it for next frame
+        // (or any virtual devices that will happen this frame)
+        m_inputBuffer.flush();
 
         // check for any interactions with window frame (not captured specifically by callbacks)
         // glfwWindowShouldClose will be set after glfwPollEvents
@@ -53,9 +63,6 @@ namespace pleep
     void InputDynamo::reset_relays() 
     {
         m_spacialInputRelay.clear();
-        
-        // prepare buffer for next frame
-        m_inputBuffer.flush();
     }
     
     void InputDynamo::_set_my_window_callbacks() 
@@ -220,5 +227,26 @@ namespace pleep
         resizeEvent << resizeParams;
 
         m_sharedBroker->send_event(resizeEvent);
+    }
+    
+    void InputDynamo::_odm_gear_move_callback(GLFWwindow* w, double x, double y, double z)
+    {
+        UNREFERENCED_PARAMETER(w);
+
+        m_inputBuffer.threeDimAnalog[0][0] = x;
+        m_inputBuffer.threeDimAnalog[0][1] = y;
+        m_inputBuffer.threeDimAnalog[0][2] = z;
+
+        // also use some digital event to get edge information?
+        // or just check for numeric_max as null value
+    }
+
+    
+    void InputDynamo::_virtual_odm_gear_handler(EventMessage odmEvent)
+    {
+        events::window::VIRTUAL_ODM_GEAR_INPUT_params odmInfo;
+        odmEvent >> odmInfo;
+
+        _odm_gear_move_callback(m_windowApi, odmInfo.x, odmInfo.y, odmInfo.z);
     }
 }

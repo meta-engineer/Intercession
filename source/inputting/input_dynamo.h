@@ -41,6 +41,11 @@ namespace pleep
         void _key_callback(GLFWwindow* w, int key, int scancode, int action, int mods);
         void _window_should_close_callback(GLFWwindow* w);
         void _window_size_callback(GLFWwindow* w, int width, int height);
+        // callback for "virtual" input device which has world-space 3d coordinate
+        void _odm_gear_move_callback(GLFWwindow* w, double x, double y, double z);
+        
+        // translates message into input callback
+        void _virtual_odm_gear_handler(EventMessage odmEvent);
         
         // receive events from windowing api
         // NpcDynamo will mirror the InputDynamo, but use internal logic instead of a window

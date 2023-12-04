@@ -68,6 +68,20 @@ namespace pleep
                 m_sharedBuffer.twoDimAnalog[1][1]
             );
 
+            newSpacialInput.set(SpacialActions::targetX,
+                m_sharedBuffer.threeDimAnalog[0][0] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.threeDimAnalog[0][0]
+            );
+            newSpacialInput.set(SpacialActions::targetY,
+                m_sharedBuffer.threeDimAnalog[0][1] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.threeDimAnalog[0][1]
+            );
+            newSpacialInput.set(SpacialActions::targetZ,
+                m_sharedBuffer.threeDimAnalog[0][2] != std::numeric_limits<double>::max(), 
+                m_sharedBuffer.threeDimAnalog[0][2]
+            );
+
+
             newSpacialInput.set(SpacialActions::action0, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_1], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_1]);
             newSpacialInput.set(SpacialActions::action1, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_2], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_2]);
             newSpacialInput.set(SpacialActions::action2, m_sharedBuffer.digitalState[GLFW_MOUSE_BUTTON_3], m_sharedBuffer.digitalEdge[GLFW_MOUSE_BUTTON_3]);

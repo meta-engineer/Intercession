@@ -205,7 +205,7 @@ namespace pleep
         // ***************************************************************************
 
         // ***************************************************************************
-        Entity snow = cosmos->create_entity(false);
+        Entity snow = cosmos->create_entity(false); // # 14
         cosmos->add_component(snow, TransformComponent(glm::vec3(20.0f, -1.0f, 20.0f)));
         cosmos->get_component<TransformComponent>(snow).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));

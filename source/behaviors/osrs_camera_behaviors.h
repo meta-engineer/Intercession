@@ -47,8 +47,8 @@ namespace pleep
                 }
 
                 // set raycast when right mouse button
-                if (input.actions.test(SpacialActions::action1) &&
-                    input.actionVals.at(SpacialActions::action1))   // only proc on edge (press)
+                if (input.actions.test(SpacialActions::action1))
+                    //&& input.actionVals.at(SpacialActions::action1))   // only proc on edge (press)
                 {
                     //PLEEPLOG_DEBUG("mouse at " + std::to_string(camera.cursor.x) + ", " + std::to_string(camera.cursor.y));
 
@@ -107,7 +107,7 @@ namespace pleep
                 {
                     camera.range -= (float)input.actionVals.at(SpacialActions::rotateRoll);
                     // std::clamp
-                    camera.range = std::max(std::min(camera.range, 20.0f), 5.0f);
+                    camera.range = std::max(std::min(camera.range, 50.0f), 5.0f);
                 }
 
                 
@@ -150,7 +150,7 @@ namespace pleep
             }
         }
         
-        void on_collision(ColliderPacket callerData, ColliderPacket collidedData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint) override
+        void on_collision(ColliderPacket callerData, ColliderPacket collidedData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint, std::shared_ptr<EventBroker> sharedBroker) override
         {
             // "mouse raycast" ray collider will call here as caller
             // which means collision metadata is relative to the hit object
@@ -162,14 +162,36 @@ namespace pleep
             // fetch biped component on collider
             try
             {
-                PLEEPLOG_DEBUG("Mouse collision with entity " + std::to_string(collidedData.collidee) + " at " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z) + " with normal " + std::to_string(collisionNormal.x) + ", " + std::to_string(collisionNormal.y) + ", " + std::to_string(collisionNormal.z));
+                //PLEEPLOG_DEBUG("Mouse collision with entity " + std::to_string(collidedData.collidee) + " at " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z) + " with normal " + std::to_string(collisionNormal.x) + ", " + std::to_string(collisionNormal.y) + ", " + std::to_string(collisionNormal.z));
 
-                //std::shared_ptr<Cosmos> cosmos = callerData.owner.lock();
+                std::shared_ptr<Cosmos> cosmos = callerData.owner.lock();
                 //RayColliderComponent& ray = cosmos->get_component<RayColliderComponent>(callerData.collidee);
-                //CameraComponent& camera = cosmos->get_component<CameraComponent>(callerData.collidee);
+                CameraComponent& camera = cosmos->get_component<CameraComponent>(callerData.collidee);
+
+                // need to make collision available as a position for the target entity
+                // we need to write it into the entities' SpacialInputComponent
+                // which is then carried upstream to the server next frame
+                // BUT input dynamo will overritw input components so it needs to be written to the raw input buffer
+                // BUT BUT the raw input buffer is cleared at the end of the frame...
+
+                if (cosmos->has_component<SpacialInputComponent>(camera.target))
+                {
+                    // 3D analog input event? received by input dynamo?
+                    EventMessage odmEvent(events::window::VIRTUAL_ODM_GEAR_INPUT);
+                    events::window::VIRTUAL_ODM_GEAR_INPUT_params odmInfo{ 
+                        collisionPoint.x,
+                        collisionPoint.y,
+                        collisionPoint.z
+                    };
+                    odmEvent << odmInfo;
+
+                    // broker acces passed from collision physics relay
+                    sharedBroker->send_event(odmEvent);
+                }
 
                 UNREFERENCED_PARAMETER(collisionPoint);
                 UNREFERENCED_PARAMETER(collisionDepth);
+                UNREFERENCED_PARAMETER(collisionNormal);
                 UNREFERENCED_PARAMETER(collidedData);
             }
             catch (const std::runtime_error& err)

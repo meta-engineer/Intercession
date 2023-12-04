@@ -42,7 +42,7 @@ namespace pleep
             // fetch Physics, Biped, and SpacialInput
             try
             {
-                //TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
+                TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
                 PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
@@ -56,38 +56,38 @@ namespace pleep
                 // derive velocity perpendicular to support axis
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
-                /*
-                const float rot    = 0.10f * (float)deltaTime;
-                const float aspect = 1.2f;
-                // set new aim vectors
-                if (input.actions.test(SpacialActions::rotatePitch))
-                {
-                    biped.aimOrientation = glm::angleAxis(rot * (float)input.actionVals.at(SpacialActions::rotatePitch), aimTangent) * biped.aimOrientation;
-                }
-                if (input.actions.test(SpacialActions::rotateYaw))
-                {
-                    biped.aimOrientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), biped.supportAxis) * biped.aimOrientation;
-                }
-                */
 
-                glm::vec3 targetInputVector(0.0f);
-                // omit up/down from accelerations
-                if (input.actions.test(SpacialActions::moveParallel))
+
+                // if targetCoord is valid and cooldown < 0 then set cooldown
+                // while cooldown > 0, accelerate towards target
+                // decrement cooldown
+                // if cooldown < 0 set targetCoord invalid
+
+                // if no input, default target to current position
+                glm::vec3 targetCoord = transform.origin;
+
+                if (input.actions.test(SpacialActions::targetX))
                 {
-                    targetInputVector += aimProjection * static_cast<float>(input.actionVals.at(SpacialActions::moveParallel));
+                    targetCoord = {
+                        static_cast<float>(input.actionVals.at(SpacialActions::targetX)),
+                        static_cast<float>(input.actionVals.at(SpacialActions::targetY)),
+                        static_cast<float>(input.actionVals.at(SpacialActions::targetZ))
+                    };
                 }
-                if (input.actions.test(SpacialActions::moveHorizontal))
+
+                glm::vec3 targetVector = targetCoord - transform.origin;
+                if (glm::length2(targetVector) != 0.0f)
                 {
-                    targetInputVector -= aimTangent * static_cast<float>(input.actionVals.at(SpacialActions::moveHorizontal));
+                    glm::vec3 targetCross = glm::cross(biped.supportAxis, targetVector);
+                    targetVector = glm::cross(targetCross, biped.supportAxis);
+                    targetVector = glm::normalize(targetVector);
                 }
-                
-                if (glm::length2(targetInputVector) != 0.0f)
-                    targetInputVector = glm::normalize(targetInputVector);
+
 
                 // if grounded accelerate from current velocity towards target
                 if (biped.isGrounded)
                 {
-                    glm::vec3 targetGroundVelocity = targetInputVector * biped.groundTargetSpeed;
+                    glm::vec3 targetGroundVelocity = targetVector * biped.groundTargetSpeed;
                     const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
 
                     physics.acceleration += deltaGroundVelocity * biped.groundAcceleration;
@@ -96,7 +96,7 @@ namespace pleep
                 // also prevent accelerating beyond air max
                 else
                 {
-                    glm::vec3 airAcceleration = targetInputVector * biped.airAcceleration;
+                    glm::vec3 airAcceleration = targetVector * biped.airAcceleration;
                     
                     // TODO: remove component of airAcceleration beyond airMaxSpeed
 
@@ -170,7 +170,7 @@ namespace pleep
             }
         }
 
-        void on_collision(ColliderPacket callerData, ColliderPacket collidedData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint) override
+        void on_collision(ColliderPacket callerData, ColliderPacket collidedData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint, std::shared_ptr<EventBroker> sharedBroker) override
         {
             // "legs" ray collider will call here as caller
             // which means collision metadata is relative to the "ground"
@@ -189,6 +189,7 @@ namespace pleep
                 UNREFERENCED_PARAMETER(collisionPoint);
                 UNREFERENCED_PARAMETER(collisionDepth);
                 UNREFERENCED_PARAMETER(collidedData);
+                UNREFERENCED_PARAMETER(sharedBroker);
             }
             catch (const std::runtime_error& err)
             {

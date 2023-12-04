@@ -49,7 +49,7 @@ namespace pleep
         RayColliderComponent camera_ray;
         camera_ray.responseType = CollisionResponseType::noop;
         camera_ray.useBehaviorsResponse = true;
-        camera_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 40.0f);
+        camera_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 100.0f);
         cosmos->add_component(mainCamera, camera_ray);
 
         // empty renderable to render collider

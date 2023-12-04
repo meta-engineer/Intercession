@@ -9,6 +9,7 @@
 
 #include "physics/collider_packet.h"
 #include "behaviors/behaviors_library.h"
+#include "events/event_broker.h"
 
 namespace pleep
 {
@@ -39,7 +40,7 @@ namespace pleep
         // we'll copy parameters just incase
         // collision metadata is relative to collidee
         // NOTE: both colliders will have their on_collision behaviors invoked independantly
-        virtual void on_collision(ColliderPacket colliderData, ColliderPacket collideeData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint);
+        virtual void on_collision(ColliderPacket colliderData, ColliderPacket collideeData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint, std::shared_ptr<EventBroker> sharedBroker);
 
         // TODO: how do we detect/track the "start" and "end" of a collision? should collision relay dispatch?
         virtual void on_collision_enter();

@@ -41,6 +41,14 @@ namespace pleep
                     int width = 0;
                     int height = 0;
                 };
+            // "virtual" input device which can use 3D coordinates
+            const EventId VIRTUAL_ODM_GEAR_INPUT = __LINE__;
+                struct VIRTUAL_ODM_GEAR_INPUT_params
+                {
+                    double x = 0.0;
+                    double y = 0.0;
+                    double z = 0.0;
+                };
         }
 
         // events pertaining to the rendering system

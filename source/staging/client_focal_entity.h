@@ -54,7 +54,7 @@ namespace pleep
         cosmos->add_component(pc, pc_ray);
         SpringBodyComponent pc_springBody;
         pc_springBody.influenceOrientation = false;
-        pc_springBody.stiffness = 3000.0f;
+        pc_springBody.stiffness = 2500.0f;
         pc_springBody.damping = 400.0f;
         pc_springBody.restLength = 0.3f;
         pc_springBody.staticFriction = 0.0f;

@@ -22,6 +22,10 @@ namespace pleep
         // really an array of vec2
         double twoDimAnalog[numTwoDimAnalogs][2];
 
+        // used to transfer world-space information from client to server
+        static const size_t numThreeDimAnalogs = 1;
+        double threeDimAnalog[numThreeDimAnalogs][3];
+
         // values less than 256 are ascii equivalent
         // values over 256 are non printable keys as defined by glfw
         // https://www.glfw.org/docs/3.3/group__kdeys.html
@@ -73,6 +77,11 @@ namespace pleep
             {
                 twoDimAnalog[i][0] = std::numeric_limits<double>::max();
                 twoDimAnalog[i][1] = std::numeric_limits<double>::max();
+            }
+            for (int i = 0; i < numThreeDimAnalogs; i++)
+            {
+                threeDimAnalog[i][0] = std::numeric_limits<double>::max();
+                threeDimAnalog[i][1] = std::numeric_limits<double>::max();
             }
             digitalEdge.reset();
         }

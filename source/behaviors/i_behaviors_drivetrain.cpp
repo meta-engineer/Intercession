@@ -28,13 +28,14 @@ namespace pleep
         behaviors.use_frame_update = false;
     }
 
-    void I_BehaviorsDrivetrain::on_collision(ColliderPacket colliderData, ColliderPacket collideeData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint)
+    void I_BehaviorsDrivetrain::on_collision(ColliderPacket colliderData, ColliderPacket collideeData, glm::vec3 collisionNormal, float collisionDepth, glm::vec3 collisionPoint, std::shared_ptr<EventBroker> sharedBroker)
     {
         UNREFERENCED_PARAMETER(colliderData);
         UNREFERENCED_PARAMETER(collideeData);
         UNREFERENCED_PARAMETER(collisionNormal);
         UNREFERENCED_PARAMETER(collisionDepth);
         UNREFERENCED_PARAMETER(collisionPoint);
+        UNREFERENCED_PARAMETER(sharedBroker);
         PLEEPLOG_WARN("Drivetrain has no implementation for called behaviors. Disabling...");
         colliderData.collider->useBehaviorsResponse = false;
     }

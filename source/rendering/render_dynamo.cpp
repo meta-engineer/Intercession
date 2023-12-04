@@ -39,6 +39,9 @@ namespace pleep
     RenderDynamo::~RenderDynamo() 
     {
         // I do not own my api references or event broker
+        
+        // unsubscribe to events
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::window::RESIZE, RenderDynamo::_resize_handler));
 
         // relays will free framebuffers, textures and renderbuffers
         

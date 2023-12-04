@@ -29,6 +29,11 @@ namespace pleep
         raycastY,
         raycastZ,
 
+        // specify a world-space coordinate to target
+        targetX,
+        targetY,
+        targetZ,
+
         // generic
         // bit represets active or not
         // value of 1.0 means edge, value of 0.0 means sustained
