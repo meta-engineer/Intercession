@@ -47,6 +47,8 @@ namespace pleep
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
+                const glm::vec3 heading = transform.get_heading();
+
                 // generate aim "heading" from aimOrientation and support vector
                 // movement axes while airborn may depend on camera gimbal axis?
                 const glm::mat3 aimRotation = glm::toMat4(biped.aimOrientation);
@@ -57,12 +59,42 @@ namespace pleep
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
 
+                // apply angular acceleration from current orientation towards aimOrientation
+                
+                float springStiffness = 100.0f;
+                float springDamping = 10.0f;
+                const float headingDot = glm::dot(heading, aimHeading);
+                // if dot is very large we want to weaken springforce
+                // if dot is very negative we want to strengthen springforce
+                springStiffness *= (1.0f - headingDot) * 2.0f;
 
+                // how to get quat difference from orientation to aimOrientation??
+                glm::quat quatdiff = biped.aimOrientation * glm::inverse(transform.orientation);
+                glm::vec3 diffAxis = glm::vec3(quatdiff.x, quatdiff.y, quatdiff.z);
+                if (glm::length2(diffAxis) != 0.0f)
+                {
+                    physics.angularAcceleration += glm::normalize(diffAxis) * quatdiff.w * springStiffness;
+                }
+                // & dampen
+                //physics.angularVelocity *= 0.5f;
+                physics.angularAcceleration -= physics.angularVelocity * springDamping;
+
+                // don't turn if just sliding slowly (and avoid NaN)
+                if (glm::length2(planarVelocity) > 0.1f)
+                {
+                    // convert planar velocity to quat
+                    float planarAngle = glm::acos(glm::dot(glm::normalize(planarVelocity), glm::vec3(0,0,1)));
+                    if (planarVelocity.x > 0) planarAngle *= -1.0f;
+                    // save valid planar velocity as aim direction
+                    biped.aimOrientation = glm::angleAxis(planarAngle, biped.supportAxis);
+                }
+
+
+                // Move towards mouse target:
                 // if targetCoord is valid and cooldown < 0 then set cooldown
                 // while cooldown > 0, accelerate towards target
                 // decrement cooldown
                 // if cooldown < 0 set targetCoord invalid
-
                 // if no input, default target to current position
                 glm::vec3 targetCoord = transform.origin;
 
@@ -81,6 +113,12 @@ namespace pleep
                     glm::vec3 targetCross = glm::cross(biped.supportAxis, targetVector);
                     targetVector = glm::cross(targetCross, biped.supportAxis);
                     targetVector = glm::normalize(targetVector);
+                }
+
+                // if aim is > 90 degrees away from direction, then slow movement
+                if (glm::dot(targetVector, aimHeading) < 0.5f)
+                {
+                    targetVector *= 0.1f;
                 }
 
 

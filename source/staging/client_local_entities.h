@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <memory>
+#include <queue>
 
 #include "events/event_broker.h"
 #include "core/dynamo_cluster.h"
@@ -29,7 +30,7 @@ namespace pleep
         // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity(false);
-        cosmos->add_component(mainCamera, TransformComponent{});
+        cosmos->add_component(mainCamera, TransformComponent{glm::vec3(0.0f, 10.0f, 10.0f)});
         PhysicsComponent mainCamera_physics;
         mainCamera_physics.isAsleep = true;
         cosmos->add_component(mainCamera, mainCamera_physics);
@@ -66,6 +67,61 @@ namespace pleep
         cameraEvent << cameraParams;
         eventBroker->send_event(cameraEvent);
         // ***************************************************************************
+    }
+
+    inline void cache_client_local_entities(
+        std::queue<EventMessage>& jumpCache,
+        std::shared_ptr<Cosmos> cosmos,
+        std::shared_ptr<EventBroker> eventBroker
+    )
+    {
+        for (std::pair<const Entity, Signature> e : cosmos->get_signatures_ref())
+        {
+            if (derive_timeslice_id(e.first) == NULL_TIMESLICEID) // clients should have NULL ID
+            {
+                jumpCache.push(EventMessage(events::cosmos::ENTITY_UPDATE));
+                cosmos->serialize_entity_components(e.first, e.second, jumpCache.back());
+                
+                // entity value is not transferable so flag as NULL_ENTITY
+                events::cosmos::ENTITY_UPDATE_params entityInfo{
+                    NULL_ENTITY, e.second, false
+                };
+                jumpCache.back() << entityInfo;
+            }
+        }
+    }
+
+    inline void uncache_client_local_entities(
+        std::queue<EventMessage>& jumpCache,
+        std::shared_ptr<Cosmos> cosmos,
+        std::shared_ptr<EventBroker> eventBroker
+    )
+    {
+        while (!jumpCache.empty())
+        {
+            EventMessage entityMsg = jumpCache.front();
+            jumpCache.pop();
+            events::cosmos::ENTITY_UPDATE_params entityInfo;
+            entityMsg >> entityInfo;
+            
+            // create entity
+            const Entity reload = cosmos->create_entity(false);
+            cosmos->deserialize_entity_components(reload, entityInfo.sign, entityInfo.subset, entityMsg);
+
+
+            // special cases:
+
+            // camera (assume there will only ever be one???)
+            if (cosmos->has_component<CameraComponent>(reload))
+            {
+                EventMessage cameraEvent(events::rendering::SET_MAIN_CAMERA);
+                events::rendering::SET_MAIN_CAMERA_params cameraParams {
+                    reload
+                };
+                cameraEvent << cameraParams;
+                eventBroker->send_event(cameraEvent);
+            }
+        }
     }
 }
 

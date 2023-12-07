@@ -37,7 +37,7 @@ namespace pleep
         PhysicsComponent pc_physics;
         //pc_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);
         //pc_physics.angularVelocity = glm::vec3(0.1f, 0.1f, 0.2f);
-        pc_physics.lockOrientation = true;
+        //pc_physics.lockOrientation = true;
         pc_physics.lockedOrientation = pc_transform.orientation;
         pc_physics.mass = 40.0f;
         cosmos->add_component(pc, pc_physics);

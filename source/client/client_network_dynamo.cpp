@@ -166,7 +166,15 @@ namespace pleep
                 // only entities which the server doesn't need for simulation
                 // will broadcast SET_MAIN_CAMERA
                 // will check for cosmos' focal entity
-                create_client_local_entities(cosmos, m_sharedBroker);
+                // Also needs to use local entity cache
+                if (m_jumpCache.empty())
+                {
+                    create_client_local_entities(cosmos, m_sharedBroker);
+                }
+                else
+                {
+                    uncache_client_local_entities(m_jumpCache, cosmos, m_sharedBroker);
+                }
 
                 // sync coherency
                 cosmos->set_coherency(msg.header.coherency);
@@ -189,6 +197,9 @@ namespace pleep
                 if (jumpInfo.port == 0) break;
                 
                 PLEEPLOG_TRACE("Received JUMP_RESPONSE message, i can connect to: " + std::to_string(jumpInfo.port) + " with trasfer code: " + std::to_string(jumpInfo.transferCode));
+
+                // save local entities into cache to be restored upon next connection
+                cache_client_local_entities(m_jumpCache, cosmos, m_sharedBroker);
 
                 // signal to clear the cosmos and prep for data from the new connection
                 EventMessage condemnMsg(events::cosmos::CONDEMN_ALL);

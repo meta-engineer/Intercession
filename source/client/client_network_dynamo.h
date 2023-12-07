@@ -45,6 +45,8 @@ namespace pleep
 
         // code for validating timeslice jumps
         uint32_t m_transferCode = 0;
+        // local (client-side) entities to carry over between jumps
+        std::queue<EventMessage> m_jumpCache;
     };
 }
 

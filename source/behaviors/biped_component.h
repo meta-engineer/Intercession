@@ -37,7 +37,7 @@ namespace pleep
         // units roughly equate to meters and seconds
         float groundAcceleration    = 10.0f;
         //float groundDeceleration    = 40.0f; // is this additive or replacing normal acceleration?
-        float groundTargetSpeed        = 8.0f;  // non-controller forces can accelerate faster
+        float groundTargetSpeed     = 8.0f;  // non-controller forces can accelerate faster
 
         float airAcceleration       = 4.0f;
         //float airDeceleration       = 1.0f;
