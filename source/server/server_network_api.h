@@ -24,7 +24,7 @@ namespace pleep
         bool on_remote_connect(std::shared_ptr<net::Connection<EventId>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
-            PLEEPLOG_DEBUG("[----] Checking new connection: " + remote->get_endpoint().address().to_string() + ":" + std::to_string(remote->get_endpoint().port()));
+            PLEEPLOG_INFO("[----] Checking new connection: " + remote->get_endpoint().address().to_string() + ":" + std::to_string(remote->get_endpoint().port()));
 
             // check against some banned ips?
             //return false;
@@ -35,7 +35,7 @@ namespace pleep
         void on_remote_validated(std::shared_ptr<net::Connection<EventId>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
-            PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Checking validated connection");
+            PLEEPLOG_INFO("[" + std::to_string(remote->get_id()) + "] Checking validated connection");
 
             // New Connection Could be BRAND-new client, or could be a client transferring from another timeslice
             // So we have to wait for them to notify us
@@ -54,7 +54,7 @@ namespace pleep
         void on_remote_disconnect(std::shared_ptr<net::Connection<EventId>> remote) override
         {
             UNREFERENCED_PARAMETER(remote);
-            PLEEPLOG_DEBUG("[" + std::to_string(remote->get_id()) + "] Disconnected connection");
+            PLEEPLOG_INFO("[" + std::to_string(remote->get_id()) + "] Disconnected connection");
 
             // TODO: signal "player exit" event for dynamo on queue
             // TODO: Check if remote shared_pointer beyond this method if we pass it to network dynamo

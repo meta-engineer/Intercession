@@ -76,6 +76,8 @@ namespace pleep
 
         // deep copy cosmos, deep copy future timstream
         // set coherency target to be: current + 1 + delay to next (in frames)
+        // resolutionCandidates: Entities which are forked and should be extracted in future
+        // nonCandidates: Entities which are forked, but did not meet other resolution criteria so they should be considered as TimestreamState::merged
         void future_parallel_init_and_start(
             const std::shared_ptr<Cosmos> sourceCosmos,
             const std::unordered_set<Entity>& resolutionCandidates,

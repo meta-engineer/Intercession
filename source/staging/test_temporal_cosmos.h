@@ -38,19 +38,19 @@ namespace pleep
 
         Entity time = cosmos->create_entity();
         UNREFERENCED_PARAMETER(time);
-        PLEEPLOG_DEBUG("(time)            Entity: " + std::to_string(time));
-        PLEEPLOG_DEBUG("(time)  host TimesliceId: " + std::to_string(derive_timeslice_id(time)));
-        PLEEPLOG_DEBUG("(time)         GenesisId: " + std::to_string(derive_genesis_id(time)));
-        PLEEPLOG_DEBUG("(time)   CausalChainLink: " + std::to_string(derive_causal_chain_link(time)));
-        PLEEPLOG_DEBUG("(time)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
+        PLEEPLOG_INFO("(time)            Entity: " + std::to_string(time));
+        PLEEPLOG_INFO("(time)  host TimesliceId: " + std::to_string(derive_timeslice_id(time)));
+        PLEEPLOG_INFO("(time)         GenesisId: " + std::to_string(derive_genesis_id(time)));
+        PLEEPLOG_INFO("(time)   CausalChainLink: " + std::to_string(derive_causal_chain_link(time)));
+        PLEEPLOG_INFO("(time)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
 
         Entity space = cosmos->create_entity();
         UNREFERENCED_PARAMETER(space);
-        PLEEPLOG_DEBUG("(space)            Entity: " + std::to_string(space));
-        PLEEPLOG_DEBUG("(space)  host TimesliceId: " + std::to_string(derive_timeslice_id(space)));
-        PLEEPLOG_DEBUG("(space)         GenesisId: " + std::to_string(derive_genesis_id(space)));
-        PLEEPLOG_DEBUG("(space)   CausalChainLink: " + std::to_string(derive_causal_chain_link(space)));
-        PLEEPLOG_DEBUG("(space)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
+        PLEEPLOG_INFO("(space)            Entity: " + std::to_string(space));
+        PLEEPLOG_INFO("(space)  host TimesliceId: " + std::to_string(derive_timeslice_id(space)));
+        PLEEPLOG_INFO("(space)         GenesisId: " + std::to_string(derive_genesis_id(space)));
+        PLEEPLOG_INFO("(space)   CausalChainLink: " + std::to_string(derive_causal_chain_link(space)));
+        PLEEPLOG_INFO("(space)    instance count: " + std::to_string(cosmos->get_hosted_entity_count(time)));
 
 
          // ***************************************************************************

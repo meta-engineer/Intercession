@@ -691,8 +691,21 @@ namespace pleep
             PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(interceptionInfo.recipient) + ") cannot have been interrupted. Ignoring...");
             return;
         }
+        
+        PLEEPLOG_TRACE("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
 
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+
+        // check for upstream components to determine if this is a pc/animate entity
+        Signature recipSign = cosmos->get_entity_signature(interceptionInfo.recipient);
+        if ((recipSign & cosmos->get_category_signature(ComponentCategory::upstream)).any())
+        {
+            // recipient has upstream components
+            PLEEPLOG_DEBUG("PC INTERCEPTION DETECTED!");
+
+            // pc must be discluded from parallel simulation
+            // its deletion must be carried forward to next timeslice (parallel cosmos must support DELETE events)
+        }
 
         // Put the entity into a forked timestream state (stop receiving from future)
         // if recipient has no spacetime component, add one
@@ -707,8 +720,6 @@ namespace pleep
 
         // Signal to future timeslice to put recipient into superposition timestream state
         // Timestream forked state should restrict reading from the timestream from our side
-
-        PLEEPLOG_INFO("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
 
         // We also need to be able to detect knock-on interactions an object with a non-zero chainlink might cause after being modified by a chainlink zero entity, before and after superposition resolution
 
