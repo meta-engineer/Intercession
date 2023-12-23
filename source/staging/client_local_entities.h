@@ -30,7 +30,11 @@ namespace pleep
         // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity(false);
-        cosmos->add_component(mainCamera, TransformComponent{glm::vec3(0.0f, 10.0f, 10.0f)});
+
+        TransformComponent mainCamera_transform{};
+        //mainCamera_transform.orientation = glm::angleAxis(glm::pi<float>(), glm::vec3(0.0f,1.0f,-0.3f));
+        cosmos->add_component(mainCamera, mainCamera_transform);
+
         PhysicsComponent mainCamera_physics;
         mainCamera_physics.isAsleep = true;
         cosmos->add_component(mainCamera, mainCamera_physics);

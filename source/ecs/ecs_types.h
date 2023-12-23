@@ -116,10 +116,10 @@ namespace pleep
 
         link++;
         // Cannot increment causal link above max, undefined behaviour
-        if (link >= CAUSALCHAINLINK_SIZE)
+        if (link >= NULL_CAUSALCHAINLINK)
         {
             // if CausalChainLink is at max, this is a non-temporal entity, leave it as is
-            //PLEEPLOG_ERROR("Cannot increment causal chainlink of entity " + std::to_string(e) + " above maximum value " + std::to_string(CAUSALCHAINLINK_SIZE));
+            //PLEEPLOG_ERROR("Cannot increment causal chainlink of entity " + std::to_string(e) + " above maximum value " + std::to_string(NULL_CAUSALCHAINLINK));
             return false;
         }
 
@@ -133,8 +133,10 @@ namespace pleep
         GenesisId genId = derive_genesis_id(e);
         CausalChainlink link = derive_causal_chain_link(e);
 
-        // link already at 0 cannot be decremented further, we can only leave it as is
-        if (link == 0) return false;
+        // link already NULL are noon-temporal and can be ignored, we can only leave it as is
+        if (link >= NULL_CAUSALCHAINLINK) return false;
+        // logically incoherent to decrement a chain link already at 0, callers should be pre-checking for this
+        if (link == 0) throw std::range_error("Called decrement on entity " + std::to_string(e) + " whose chainlink value is at minimum (0).");
 
         link--;
 

@@ -167,6 +167,11 @@ namespace pleep
 
 
         // ***************************************************************************
+        ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
+            {TextureType::diffuse, "resources/moon_diffuse.png"},
+            {TextureType::specular, "resources/moon_diffuse.png"},
+            {TextureType::normal, "resources/moon_normal.png"},
+        });
         for (int x = -1; x < 2; x++)
         {
             for (int z = -1; z < 2; z++)
@@ -179,11 +184,6 @@ namespace pleep
                 
                 RenderableComponent floor_renderable;
                 floor_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-                ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
-                    {TextureType::diffuse, "resources/brickwall.jpg"},
-                    {TextureType::specular, "resources/brickwall_specular.jpg"},
-                    {TextureType::normal, "resources/brickwall_normal_up.jpg"},
-                });
                 floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
                 cosmos->add_component(floor, floor_renderable);
                 
@@ -268,7 +268,7 @@ namespace pleep
 
         RenderableComponent ramp1_renderable;
         ramp1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        ramp1_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        ramp1_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp1, ramp1_renderable);
 
         PhysicsComponent ramp1_physics;
@@ -289,7 +289,7 @@ namespace pleep
 
         RenderableComponent ramp2_renderable;
         ramp2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        ramp2_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        ramp2_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp2, ramp2_renderable);
 
         PhysicsComponent ramp2_physics;
@@ -310,7 +310,7 @@ namespace pleep
 
         RenderableComponent ramp3_renderable;
         ramp3_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        ramp3_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        ramp3_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp3, ramp3_renderable);
 
         PhysicsComponent ramp3_physics;
@@ -332,7 +332,7 @@ namespace pleep
 
         RenderableComponent teeter_renderable;
         teeter_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        teeter_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        teeter_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(teeter, teeter_renderable);
 
         PhysicsComponent teeter_physics;
