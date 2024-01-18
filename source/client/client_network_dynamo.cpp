@@ -38,10 +38,11 @@ namespace pleep
 
         if (!m_networkApi.is_ready()) return;
 
-        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.expired() ? nullptr : m_workingCosmos.lock();
-
-        if (!cosmos)
+        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+        // how was owner null, but BehaviorsPacket has a component REFERENCE?
+        if (m_workingCosmos.expired())
         {
+            cosmos = nullptr;
             //PLEEPLOG_WARN("Relays cannot do any meaningful work with a null Cosmos");
             // don't return so that we can actively clear out incoming messages
         }

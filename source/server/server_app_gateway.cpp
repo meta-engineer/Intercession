@@ -1,6 +1,7 @@
 #include "server_app_gateway.h"
 
 #include "networking/timeline_api.h"
+#include "spacetime/parallel_cosmos_context.h"
 #include "events/event_types.h"
 
 namespace pleep
@@ -22,9 +23,12 @@ namespace pleep
         // maintain a pair of future & past timestream maps
         std::shared_ptr<EntityTimestreamMap> pastTimestreams = nullptr;
         std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr;
-        // same with parallel contexts
-        std::shared_ptr<ParallelCosmosContext> pastParallelContext = nullptr;
-        std::shared_ptr<ParallelCosmosContext> futureParallelContext = nullptr;
+        // single shared parallel context
+        // has access to timeslices via sharedMultiplex, and its own parallel timestream
+        // NULL_TIMESLICEID is for clients, parallel must take on the id of whoever it is parallel to.
+        std::shared_ptr<ParallelCosmosContext> parallelContext = std::make_shared<ParallelCosmosContext>(
+            TimelineApi(cfg, NULL_TIMESLICEID, sharedMultiplex, nullptr, std::make_shared<EntityTimestreamMap>(), nullptr)
+        );
 
         // construct timeslices in reverse order so that origin/present (0) is created LAST
         //     remember TimesliceId is uint32, use underflow to stop loop
@@ -32,17 +36,14 @@ namespace pleep
         {
             // swap future with past, construct new future
             pastTimestreams = futureTimestreams;
-            pastParallelContext = futureParallelContext;
             if (i == 0)
             {
                 // timeslice 0 will have no future
                 futureTimestreams = nullptr;
-                futureParallelContext = nullptr;
             }
             else
             {
                 futureTimestreams = std::make_shared<EntityTimestreamMap>();
-                futureParallelContext = std::make_shared<ParallelCosmosContext>();
             }
 
             PLEEPLOG_TRACE("Start constructing server context TimesliceId #" + std::to_string(i));
@@ -50,7 +51,7 @@ namespace pleep
             // Inside each context the TimelineConfig information will only be accessible 
             //   through the TimelineApi (to branch based on specific timesliceId)
             std::unique_ptr<I_CosmosContext> ctx = std::make_unique<ServerCosmosContext>(
-                TimelineApi(cfg, i, sharedMultiplex, pastTimestreams, futureTimestreams, pastParallelContext, futureParallelContext)
+                TimelineApi(cfg, i, sharedMultiplex, pastTimestreams, futureTimestreams, parallelContext)
             );
             
             PLEEPLOG_TRACE("Done constructing server context TimesliceId #" + std::to_string(i));

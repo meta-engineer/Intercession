@@ -10,9 +10,9 @@ namespace pleep
 {
     void BoxColliderSynchro::update() 
     {
-        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (cosmos == nullptr)
+        if (m_ownerCosmos.expired())
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
             throw std::runtime_error("BoxColliderSynchro started update without owner Cosmos");

@@ -16,11 +16,21 @@ namespace pleep
     {
         merged,         // Propogating state into past, and receiving new state from future
                         //   (whether or not there is any state being sent to it, like user entities)
+        forking,        // Considered as forked for propogation, but awaiting timeout before
+                        //   becoming fully "forked" and available for resolution
         forked,         // Only propagating into the past, not receiving new state from future
                         //   indicates this entity is diverged from its future and needs to be resolved
         superposition,  // This entity is being resolved in a parallel cosmos in the past
                         //   its +1 causalchainlink entity should be in a forked state
+        ghost,          // Exists vestigially from an intercession, must not be simulated, only 
+                        //   played back, and can only be tangable to the intercesee
     };
+
+    // convenience function for capturing multiple stages of forking
+    inline bool is_divergent(TimestreamState state)
+    {
+        return state == TimestreamState::forking || state == TimestreamState::forked;
+    }
 
     // describes the state of the object related to time-travel
     // having no spacetime component implies default behaviour and state

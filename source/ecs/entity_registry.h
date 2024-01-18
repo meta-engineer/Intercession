@@ -18,7 +18,7 @@ namespace pleep
         // Clients will have NULL_TIMESLICEID
         EntityRegistry(const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
 
-        Entity create_entity(bool isTemporal = true);
+        Entity create_entity(const CausalChainlink link);
         bool register_entity(Entity entity);
         size_t destroy_entity(Entity entity);
 
@@ -77,7 +77,7 @@ namespace pleep
         }
     }
 
-    inline Entity EntityRegistry::create_entity(bool isTemporal)
+    inline Entity EntityRegistry::create_entity(const CausalChainlink link)
     {
         // assert() entity count doesn't go beyond max
         size_t localEntityCount = m_hostedEntityCounts.size();
@@ -92,11 +92,10 @@ namespace pleep
         assert(m_hostedEntityCounts.find(strip_causal_chain_link(ent)) == m_hostedEntityCounts.end());
         m_availableHostedEntityIds.pop();
 
-        if (!isTemporal) {
-            TimesliceId entHostId = derive_timeslice_id(ent);
-            GenesisId entGenesisId = derive_genesis_id(ent);
-            ent = compose_entity(entHostId, entGenesisId, NULL_CAUSALCHAINLINK);
-        }
+        // use link parameter
+        TimesliceId entHostId = derive_timeslice_id(ent);
+        GenesisId entGenesisId = derive_genesis_id(ent);
+        ent = compose_entity(entHostId, entGenesisId, link);
 
         // add empty signature
         this->set_signature(ent, Signature{});

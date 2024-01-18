@@ -44,8 +44,8 @@ namespace pleep
 
     private:
         // event handlers
-        void _entity_created_handler(EventMessage entityEvent);
-        void _entity_removed_handler(EventMessage entityEvent);
+        void _entity_created_handler(EventMessage creationEvent);
+        void _entity_removed_handler(EventMessage removalEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
         
         // Networking relays

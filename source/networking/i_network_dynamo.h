@@ -37,7 +37,8 @@ namespace pleep
         virtual void submit(CosmosAccessPacket data) = 0;
         
         // (Servers only) receive all entities in non merged timestream state
-        virtual void submit(SpacetimePacket data){
+        virtual void submit(SpacetimePacket data)
+        {
             UNREFERENCED_PARAMETER(data);
         };
         

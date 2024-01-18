@@ -35,6 +35,7 @@ namespace pleep
         // outside events from window api
         namespace window {
             const EventId QUIT = __LINE__;
+                // no QUIT_params needed
             const EventId RESIZE = __LINE__;
                 struct RESIZE_params
                 {
@@ -49,7 +50,7 @@ namespace pleep
                     double y = 0.0;
                     double z = 0.0;
                 };
-        }
+        } // namespace window
 
         // events pertaining to the rendering system
         namespace rendering {
@@ -58,7 +59,7 @@ namespace pleep
                 {
                     Entity cameraEntity = NULL_ENTITY;
                 };
-        }
+        } // namespace rendering
 
         // cross-concerning events that exist within the virtual verse
         // maybe the cosmos should have it's own seperate broker which can be erased when context changes cosmos
@@ -126,7 +127,7 @@ namespace pleep
                 struct TIMESTREAM_INTERCESSION_params {
                     ///...
                 };
-        }
+        } // namespace cosmos
 
         // events used as network messages sent over net::Connection
         // may be forwarded to be sent over local EventBroker
@@ -229,7 +230,37 @@ namespace pleep
                     // they must already know the address
                     uint16_t port = 0;
                 };
-        }
+            // meta-data about a jump event used by parallel cosmos timestreams
+            const EventId JUMP_RECEIPT = __LINE__;
+                struct JUMP_RECEIPT_params
+                {
+                    // coherency id jump was completed on? Creation/Deletion event should be same frame
+
+                    // was this event a jump-to or jump-from?
+
+                    // or a no-jump event? aka a jump occured here in a different worldline
+                };
+        } // namespace network
+
+        // events used for managing/communicating parallel cosmos state
+        namespace parallel
+        {
+            // parallel wants to start cycle from recipients timeslice
+            // and is requesting initialization
+            const EventId INIT = __LINE__;
+                struct INIT_params
+                {
+                    TimesliceId sourceTimeslice;
+                };
+                // no INIT_params needed
+            // simulation has finished and reached target coherency point
+            const EventId FINISHED = __LINE__;
+                struct FINISHED_params
+                {
+                    TimesliceId destinationTimeslice;
+                    // use coherency from message header
+                };
+        } // namespace parallel
     }
 }
 

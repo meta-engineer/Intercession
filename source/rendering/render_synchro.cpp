@@ -31,9 +31,9 @@ namespace pleep
             return;
         }
 
-        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
         // No owner is a fatal error
-        if (cosmos == nullptr)
+        if (m_ownerCosmos.expired())
         {
             PLEEPLOG_ERROR("Synchro has no owner Cosmos");
             throw std::runtime_error("RenderSynchro started update without owner Cosmos");
@@ -108,8 +108,9 @@ namespace pleep
     
     Signature RenderSynchro::derive_signature() 
     {
-        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.expired() ? nullptr : m_ownerCosmos.lock();
-        if (cosmos == nullptr)
+        std::shared_ptr<Cosmos> cosmos = m_ownerCosmos.lock();
+        // No owner is a fatal error
+        if (m_ownerCosmos.expired())
         {
             PLEEPLOG_ERROR("Cannot derive signature for null Cosmos");
             throw std::runtime_error("RenderSynchro started signature derivation without owner Cosmos");

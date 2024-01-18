@@ -13,10 +13,17 @@
 #include "networking/timeline_config.h"
 #include "networking/entity_timestream_map.h"
 #include "events/event_types.h"
-#include "spacetime/parallel_cosmos_context.h"
+#include "core/cosmos.h"
 
 namespace pleep
 {
+
+    // We need a pointer to the parallel context
+    // but the parallel context needs to have its own TimelineApi
+    // so a foreward declaration is unfortunate, but needed
+    class ParallelCosmosContext;
+
+
     // Provide all "calibratable" parameters for a single thread (and defaults)
     // Should also have a validator function to check values
     // Provide communication channels/addresses to access other timeslices
@@ -34,8 +41,7 @@ namespace pleep
                     std::shared_ptr<Multiplex> sharedMultiplex, 
                     std::shared_ptr<EntityTimestreamMap> pastTimestreams = nullptr,
                     std::shared_ptr<EntityTimestreamMap> futureTimestreams = nullptr,
-                    std::shared_ptr<ParallelCosmosContext> pastParallelContext = nullptr,
-                    std::shared_ptr<ParallelCosmosContext> futureParallelContext = nullptr);
+                    std::shared_ptr<ParallelCosmosContext> parallelContext = nullptr);
 
         // get the unique timesliceId registered for this TimelineApi instance
         TimesliceId get_timeslice_id();
@@ -71,36 +77,32 @@ namespace pleep
         std::vector<Entity> get_entities_with_future_streams();
         // Restrict access for future timestreams to only be poppable
         bool pop_future_timestream(Entity entity, uint16_t coherency, EventMessage& dest);
+        // link sourceTimestreams to our held futureTimestreams
+        void link_future_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams);
+        // unlink held future timestream
+        void unlink_future_timestreams();
 
-        // ***** Parallel Context Access *****
+        // ***** Accessors for Parallel Context *****
 
-        // deep copy cosmos, deep copy future timstream
-        // set coherency target to be: current + 1 + delay to next (in frames)
-        // resolutionCandidates: Entities which are forked and should be extracted in future
-        // nonCandidates: Entities which are forked, but did not meet other resolution criteria so they should be considered as TimestreamState::merged
-        void future_parallel_init_and_start(
-            const std::shared_ptr<Cosmos> sourceCosmos,
-            const std::unordered_set<Entity>& resolutionCandidates,
-            const std::unordered_set<Entity>& nonCandidates
-        );
-        // parallel simulation is finished
-        bool future_parallel_is_closed();
-
-        // use to end simulation and signal entities have been resolved
-        void past_parallel_close();
-        // parallel simulation is finished
-        bool past_parallel_is_closed();
+        // notify parallel that forked entities are available to be resolved
+        void parallel_notify_divergence();
+        // deep copy cosmos, deep copy & link parallel to m_futureTimestreams
+        void parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos);
         // sets parallel simulation target coherency.
         // must be greater than current or sets to current and stops
         // if simulation has reached target and stopped, restarts it
-        void past_parallel_set_target_coherency(uint16_t newTarget);
-        uint16_t past_parallel_get_current_coherency();
-        // return copy of forked entity list
-        const std::vector<Entity> past_parallel_get_forked_entities();
-        // Produce an Entity update message for the given Entity
-        bool past_parallel_extract_entity(Entity e, EventMessage& dst);
+        // ideally set coherency target to be: current + 1 + delay to next (in frames)
+        void parallel_start(uint16_t newTarget);
+        // return the timeslice that parallel is currently simulating
+        // returns NULL_TIMESLICEID if not running
+        TimesliceId parallel_get_timeslice();
+        // copy resolved entities from parallel into destination cosmos
+        // (assumes extraction must involve decrementing)
+        // if parallel is running, stops it and waits for it to finish
+        bool parallel_extract(std::shared_ptr<Cosmos> dstCosmos);
 
     private:
+        // data extracted from config, should not change after construction
         TimesliceId m_timesliceId;   // Store for Entity composition
         uint16_t m_delayToNextTimeslice;  // Coherency "units"/frames
         uint16_t m_simulationHz;
@@ -113,10 +115,8 @@ namespace pleep
         std::shared_ptr<EntityTimestreamMap> m_futureTimestreams;
         std::shared_ptr<EntityTimestreamMap> m_pastTimestreams;
 
-        // ParallelContext we setup for future
-        std::shared_ptr<ParallelCosmosContext> m_futureParallelContext;
-        // ParallelContext setup by past for us
-        std::shared_ptr<ParallelCosmosContext> m_pastParallelContext;
+        // Access to shared ParallelContext
+        std::shared_ptr<ParallelCosmosContext> m_sharedParallel;
 
         uint16_t m_port;
     };

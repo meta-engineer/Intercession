@@ -5,6 +5,7 @@
 //#include <deque>
 #include <unordered_map>
 #include <mutex>
+#include <memory>
 
 #include "networking/ts_queue.h"
 #include "networking/net_message.h"
@@ -42,14 +43,66 @@ namespace pleep
     class EntityTimestreamMap
     {
     public:
-        EntityTimestreamMap() = default;
-        ~EntityTimestreamMap() = default;
-
         // Timestream could be it's own class to manage Message ordering
         // do we need use of deque iterators? or do we need threadsafe?
         // we could provide specific extra threadsafe operations like searches to maintain threadsafety
         // Hard-code message type to use EventId (to avoid template cascading)
         using Timestream = TsQueue<Message<EventId>>;
+
+        EntityTimestreamMap() = default;
+
+        // deadlock-avoiding copy between timestreams
+        static void link_timestreams(std::shared_ptr<EntityTimestreamMap> source,
+                                     std::shared_ptr<EntityTimestreamMap> destination)
+        {
+            if (source == nullptr || destination == nullptr)
+            {
+                PLEEPLOG_WARN("Called link_timestreams on null timestream map pointers?!");
+                return;
+            }
+
+            // necessary?
+            PLEEPLOG_DEBUG("unlink source timestream");
+            EntityTimestreamMap::unlink_timestreams(source);
+            PLEEPLOG_DEBUG("unlink destination timestream");
+            EntityTimestreamMap::unlink_timestreams(destination);
+            destination->clear();
+
+            static std::mutex deadlockMux;
+            // since only 1 thread can have this lock...
+            const std::lock_guard<std::mutex> lk(deadlockMux);
+            // only 1 thread should ever be trying to hold BOTH locks at once
+            const std::lock_guard<std::mutex> sk(source->m_mapMux);
+            const std::lock_guard<std::mutex> dk(destination->m_mapMux);
+
+            PLEEPLOG_DEBUG("squired both locks");
+            // copy all current contents
+            /// TODO: TsQueue can be copied?
+            PLEEPLOG_DEBUG("copy timestream data");
+            //destination->m_timestreams = source->m_timestreams;
+
+            PLEEPLOG_DEBUG("set link pointers");
+            // link source parallel
+            source->m_linkedTimestreamMap = destination;
+            // link destination parallel (for unlinking)
+            destination->m_linkedTimestreamMap = source;
+        }
+
+        // deadlock avoiding assignment for both timestreams
+        static void unlink_timestreams(std::shared_ptr<EntityTimestreamMap> toUnlink)
+        {
+            if (toUnlink->m_linkedTimestreamMap == nullptr) return;
+
+            {
+                const std::lock_guard<std::mutex> lk(toUnlink->m_linkedTimestreamMap->m_mapMux);
+                toUnlink->m_linkedTimestreamMap->m_linkedTimestreamMap = nullptr;
+            }
+
+            {
+                const std::lock_guard<std::mutex> lk(toUnlink->m_mapMux);
+                toUnlink->m_linkedTimestreamMap = nullptr;
+            }
+        }
 
         // Wrap message Queue methods to maintain timestamp ordering.
 
@@ -65,6 +118,13 @@ namespace pleep
 
             // operator[] emplaces with default constructor for TsQueue
             m_timestreams[entity].push_back(msg);
+
+            // if a parallel timestream is registered then push to it
+            if (m_linkedTimestreamMap)
+            {
+                // dont recurse, do it directly
+                m_linkedTimestreamMap->m_timestreams[entity].push_back(msg);
+            }
         }
 
         // check if timestream exists for an entity, if it is non-empty,
@@ -159,6 +219,9 @@ namespace pleep
         std::unordered_map<Entity, Timestream> m_timestreams;
 
         std::mutex m_mapMux;
+
+        // parallel timestream map to duplicate pushed messages into
+        std::shared_ptr<EntityTimestreamMap> m_linkedTimestreamMap;
     };
 }
 

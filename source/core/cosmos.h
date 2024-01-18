@@ -175,6 +175,8 @@ namespace pleep
         // Jump discontinuously to a new coherency point
         // make sure you know what you're doing with this!
         void set_coherency(uint16_t gotoCoherency);
+
+        TimesliceId get_host_id();
         
         // Ordered vector of all synchro typeid names
         std::vector<std::string> stringify_synchro_registry();
@@ -235,7 +237,13 @@ namespace pleep
             return NULL_ENTITY;
         }
 
-        Entity entity = m_entityRegistry->create_entity(isTemporal);
+        // starting link value depends on parameters
+        /// NOTE: this means nonTemporal entities can only create nonTemporal entities
+        CausalChainlink link = !isTemporal ? NULL_CAUSALCHAINLINK :
+                                source == NULL_ENTITY ? 0 :
+                                derive_causal_chain_link(source);
+
+        Entity entity = m_entityRegistry->create_entity(link);
 
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);

@@ -24,8 +24,9 @@ namespace pleep
         {
             UNREFERENCED_PARAMETER(deltaTime);
 
-            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
-            if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            std::shared_ptr<Cosmos> cosmos = owner.lock();
+            // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            assert(!owner.expired());
 
             // fetch my Transform, SpacialInput, and Camera components
             try
@@ -165,6 +166,8 @@ namespace pleep
                 //PLEEPLOG_DEBUG("Mouse collision with entity " + std::to_string(collidedData.collidee) + " at " + std::to_string(collisionPoint.x) + ", " + std::to_string(collisionPoint.y) + ", " + std::to_string(collisionPoint.z) + " with normal " + std::to_string(collisionNormal.x) + ", " + std::to_string(collisionNormal.y) + ", " + std::to_string(collisionNormal.z));
 
                 std::shared_ptr<Cosmos> cosmos = callerData.owner.lock();
+                if (callerData.owner.expired()) return;
+
                 //RayColliderComponent& ray = cosmos->get_component<RayColliderComponent>(callerData.collidee);
                 CameraComponent& camera = cosmos->get_component<CameraComponent>(callerData.collidee);
 

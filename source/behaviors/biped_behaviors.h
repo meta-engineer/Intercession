@@ -30,8 +30,9 @@ namespace pleep
             // if behaviors components could store multiple I_BehaviorsDrivetrains then we could run as many as needed
             // and if commonly used behaviors could be shared through smart pointers, it could be more memory conservative and use one object for all (like relays)
 
-            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
-            if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            std::shared_ptr<Cosmos> cosmos = owner.lock();
+            // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            assert(!owner.expired());
             
             // precheck for all upstream components
             if (!cosmos->has_component<SpacialInputComponent>(entity))

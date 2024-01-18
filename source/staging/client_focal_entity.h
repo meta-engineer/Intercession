@@ -20,18 +20,15 @@ namespace pleep
         UNREFERENCED_PARAMETER(eventBroker);
 
         // ***************************************************************************
+        ModelCache::ImportReceipt kirby_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - Ball Kirby Trophy\\Ball Kirby\\ballkirby.obj");
+
         Entity pc = cosmos->create_entity();
         TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;
         pc_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        ModelCache::create_material("pc_mat", std::unordered_map<TextureType, std::string>{
-            {TextureType::diffuse, "resources/container.jpg"},
-            {TextureType::specular, "resources/snow-packed12-Specular.png"},
-            {TextureType::normal, "resources/snow-packed12-Normal-ogl.png"}
-        });
-        pc_renderable.materials.push_back(ModelCache::fetch_material("pc_mat"));
+        pc_renderable.materials.push_back(ModelCache::fetch_material("mesh0011mat"));
         cosmos->add_component(pc, pc_renderable);
 
         PhysicsComponent pc_physics;

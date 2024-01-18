@@ -65,7 +65,7 @@ namespace pleep
     {
         if (!entity_exists(entity))
         {
-            // hmmm?
+            PLEEPLOG_WARN("Tried to deserialize entity " + std::to_string(entity) + " which does not exist?");
             return;
         }
 
@@ -128,6 +128,11 @@ namespace pleep
     void Cosmos::set_coherency(uint16_t gotoCoherency)
     {
         m_stateCoherency = gotoCoherency;
+    }
+
+    TimesliceId Cosmos::get_host_id()
+    {
+        return m_hostId;
     }
 
     

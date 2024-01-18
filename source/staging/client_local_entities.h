@@ -23,16 +23,12 @@ namespace pleep
         std::shared_ptr<EventBroker> eventBroker
     )
     {
-        // TODO: camera is reset every time jump and will not retain the same view...
-        //  1. add camera data into server transfer... but server doesn't really care about camera
-        //  2. find some place to store client side data between jumps, can save main camera before jump, and restore it here (instead of creating new one?)
-
         // ***************************************************************************
         // Scene needs to create an entity with camera component
         Entity mainCamera = cosmos->create_entity(false);
 
         TransformComponent mainCamera_transform{};
-        //mainCamera_transform.orientation = glm::angleAxis(glm::pi<float>(), glm::vec3(0.0f,1.0f,-0.3f));
+        mainCamera_transform.orientation = glm::angleAxis(glm::pi<float>(), glm::normalize(glm::vec3(0.0f,1.0f,-0.3f)));
         cosmos->add_component(mainCamera, mainCamera_transform);
 
         PhysicsComponent mainCamera_physics;

@@ -265,6 +265,38 @@ namespace pleep
                 cosmos->condemn_entity(condemnInfo.entity);
             }
             break;
+            case events::parallel::INIT:
+            {
+                PLEEPLOG_DEBUG("Received init request from parallel context");
+                // parallel is ready to start and has requested we init it
+                m_timelineApi.parallel_load_and_link(cosmos);
+                // now that parallel is initialized, the timeslice to our immediate future will start it on next cycle (using its own coherency as the target)
+            }
+            break;
+            case events::parallel::FINISHED:
+            {
+                PLEEPLOG_DEBUG("Received finished notification from parallel context at coherency " + std::to_string(msg.header.coherency) + " on my coherency " + std::to_string(cosmos->get_coherency()));
+
+                // check if coherency matches
+                if (msg.header.coherency == cosmos->get_coherency())
+                {
+                    // sync sucessful
+                    m_timelineApi.parallel_extract(cosmos);
+                }
+                else if (msg.header.coherency < cosmos->get_coherency())
+                {
+                    // my coherency is ahead of parallel
+                    // try to get it to match next frame
+                    m_timelineApi.parallel_start(cosmos->get_coherency() + 1U);
+                }
+                else
+                {
+                    // my coherency is behind parallel
+                    // uhh... we can't store messages for next frame...
+                    PLEEPLOG_ERROR("Parallel finished ahead of local cosmos... IDK what to do... Ignoring...");
+                }
+            }
+            break;
             default:
             {
                 PLEEPLOG_DEBUG("Received unknown message id " + std::to_string(msg.header.id));
@@ -272,7 +304,7 @@ namespace pleep
             }
         }
 
-        // Second: handle incoming timestream messages from other timeslices
+        // Second: handle incoming timestream messages from future timeslice
         // This should get our cosmos as close as possible to realtime
         //_process_timestream_messages();
         if (m_timelineApi.has_future())
@@ -292,7 +324,7 @@ namespace pleep
                     
                     // if entity's timstream state is forked then just continue popping so timestream is at same coherency point
                     if (cosmos->has_component<SpacetimeComponent>(entity) &&
-                        cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::forked)
+                        is_divergent(cosmos->get_component<SpacetimeComponent>(entity).timestreamState))
                     {
                         continue;
                     }
@@ -559,6 +591,8 @@ namespace pleep
                 if (!m_timelineApi.has_past() || 
                     (cosmos->has_component<SpacetimeComponent>(signIt.first) && cosmos->get_component<SpacetimeComponent>(signIt.first).timestreamState == TimestreamState::superposition)) 
                 {
+                    /// TODO: superposition entities need to keep pushing to parallel timestream??
+                    /// So add an extra parameter to push_past_timestreams for ONLY parallel
                     continue;
                 }
 
@@ -617,13 +651,13 @@ namespace pleep
         return m_networkApi.get_num_connections();
     }
     
-    void ServerNetworkDynamo::_entity_created_handler(EventMessage entityEvent)
+    void ServerNetworkDynamo::_entity_created_handler(EventMessage creationEvent)
     {   
         // Broadcast creation event to clients, the run_relays update will populate it
-        m_networkApi.broadcast_message(entityEvent);
+        m_networkApi.broadcast_message(creationEvent);
 
         events::cosmos::ENTITY_CREATED_params newEntityParams;
-        entityEvent >> newEntityParams;
+        creationEvent >> newEntityParams;
         
         //PLEEPLOG_DEBUG("Handling ENTITY_CREATED event for entity " + std::to_string(newEntityParams.entity));
 
@@ -637,41 +671,41 @@ namespace pleep
         {
             events::cosmos::ENTITY_CREATED_params propogateNewEntityParams = newEntityParams;
             increment_causal_chain_link(propogateNewEntityParams.entity);
-            entityEvent << propogateNewEntityParams;
+            creationEvent << propogateNewEntityParams;
 
-            m_timelineApi.push_past_timestream(propogateNewEntityParams.entity, entityEvent);
+            m_timelineApi.push_past_timestream(propogateNewEntityParams.entity, creationEvent);
 
             // signal for host to increment now that entity is in the past
             TimesliceId host = derive_timeslice_id(propogateNewEntityParams.entity);
-            m_timelineApi.send_message(host, entityEvent);
+            m_timelineApi.send_message(host, creationEvent);
         }
     }
     
-    void ServerNetworkDynamo::_entity_removed_handler(EventMessage entityEvent)
+    void ServerNetworkDynamo::_entity_removed_handler(EventMessage removalEvent)
     {
         //PLEEPLOG_DEBUG("Handling ENTITY_REMOVED event");
         // REMEMBER: this is called AFTER the entity was destroyed so you can't lookup any of its data
 
-        m_networkApi.broadcast_message(entityEvent);
+        m_networkApi.broadcast_message(removalEvent);
 
         events::cosmos::ENTITY_REMOVED_params removedEntityParams;
-        entityEvent >> removedEntityParams;
-        entityEvent << removedEntityParams; // re-fill message for forwarding
+        removalEvent >> removedEntityParams;
+        removalEvent << removedEntityParams; // re-fill message for forwarding
 
         // entity has left our timeslice so we need to decrement its host's count
         TimesliceId host = derive_timeslice_id(removedEntityParams.entity);
         // Don't send to ourselves, decrement will already have happened
-        if (host != m_timelineApi.get_timeslice_id()) m_timelineApi.send_message(host, entityEvent);
+        if (host != m_timelineApi.get_timeslice_id()) m_timelineApi.send_message(host, removalEvent);
 
         // propagate further down the timeline
         if (m_timelineApi.has_past())
         {
             events::cosmos::ENTITY_REMOVED_params propogateRemovedEntityParams;
-            entityEvent >> propogateRemovedEntityParams;
+            removalEvent >> propogateRemovedEntityParams;
             increment_causal_chain_link(propogateRemovedEntityParams.entity);
-            entityEvent << propogateRemovedEntityParams;
+            removalEvent << propogateRemovedEntityParams;
 
-            m_timelineApi.push_past_timestream(propogateRemovedEntityParams.entity, entityEvent);
+            m_timelineApi.push_past_timestream(propogateRemovedEntityParams.entity, removalEvent);
 
             // once child receives the above event, it will signal another decrement
         }
@@ -695,6 +729,7 @@ namespace pleep
         PLEEPLOG_TRACE("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
 
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+        if (m_workingCosmos.expired()) return;
 
         // check for upstream components to determine if this is a pc/animate entity
         Signature recipSign = cosmos->get_entity_signature(interceptionInfo.recipient);
@@ -707,7 +742,7 @@ namespace pleep
             // its deletion must be carried forward to next timeslice (parallel cosmos must support DELETE events)
         }
 
-        // Put the entity into a forked timestream state (stop receiving from future)
+        // Put the entity into a forking timestream state (stop receiving from future)
         // if recipient has no spacetime component, add one
         if (!cosmos->has_component<SpacetimeComponent>(interceptionInfo.recipient))
         {
@@ -715,7 +750,7 @@ namespace pleep
         }
         
         SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(interceptionInfo.recipient);
-        oldSpacetime.timestreamState = TimestreamState::forked;
+        oldSpacetime.timestreamState = TimestreamState::forking;
         oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
 
         // Signal to future timeslice to put recipient into superposition timestream state

@@ -16,8 +16,9 @@ namespace pleep
     public:
         void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner) override
         {
-            std::shared_ptr<Cosmos> cosmos = owner.expired() ? nullptr : owner.lock();
-            if (!cosmos) return;    // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            std::shared_ptr<Cosmos> cosmos = owner.lock();
+            // how was owner null, but BehaviorsPacket has a component REFERENCE?
+            assert(!owner.expired());
 
             // fetch Projectile
             try

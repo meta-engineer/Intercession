@@ -41,7 +41,8 @@ namespace pleep
                     assert(otherPacket_it != thisPacket_it);
                     ColliderPacket& otherData = *otherPacket_it;
 
-                    std::shared_ptr<Cosmos> cosmos = thisData.owner.expired() ? nullptr : thisData.owner.lock();
+                    std::shared_ptr<Cosmos> cosmos = thisData.owner.lock();
+                    assert(!thisData.owner.expired());
                     assert(cosmos == otherData.owner.lock());
 
                     // check other collider type (for removing double-dispatch later)
@@ -194,7 +195,7 @@ namespace pleep
                     if ((thisLink  != NULL_CAUSALCHAINLINK) && (otherLink != NULL_CAUSALCHAINLINK) &&
                         (((thisLink==0) ^ (otherLink==0))
                          ||
-                         (thisLink!=0 && otherLink!=0 && ((thisState==TimestreamState::forked) ^ (otherState==TimestreamState::forked)))
+                         (thisLink!=0 && otherLink!=0 && (is_divergent(thisState) ^ is_divergent(otherState)))
                         )
                        )
                     {
@@ -203,7 +204,7 @@ namespace pleep
                         EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
                         // select the 0 link or forked state entity as the "agent"
                         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo {
-                            thisLink==0 || otherLink!=0 && thisState==TimestreamState::forked ? thisData.collidee :  otherData.collidee
+                            thisLink==0 || otherLink!=0 && thisState==TimestreamState::forking ? thisData.collidee :  otherData.collidee
                         };
                         interceptionInfo.recipient = interceptionInfo.agent == thisData.collidee ? otherData.collidee : thisData.collidee;
                         interceptionMessage << interceptionInfo;

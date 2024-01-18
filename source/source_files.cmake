@@ -6,6 +6,7 @@ set(COMMON_SOURCE_FILES
 
     source/staging/cosmos_builder.cpp
     source/staging/iceberg_cosmos.cpp
+    source/staging/moon_cosmos.cpp
 
     source/logging/pleep_logger.cpp
 
@@ -37,6 +38,7 @@ set(COMMON_SOURCE_FILES
 
     source/spacetime/spacetime_synchro.cpp
     source/spacetime/parallel_cosmos_context.cpp
+    source/spacetime/parallel_network_dynamo.cpp
 
     source/behaviors/i_behaviors_drivetrain.cpp
     source/behaviors/behaviors_dynamo.cpp
