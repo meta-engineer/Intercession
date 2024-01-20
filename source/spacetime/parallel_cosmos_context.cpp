@@ -133,7 +133,10 @@ namespace pleep
             if (sourceCosmos->has_component<SpacetimeComponent>(signMapIt.first)
                 && is_divergent(sourceCosmos->get_component<SpacetimeComponent>(signMapIt.first).timestreamState))
             {
-                sourceCosmos->remove_component<SpacetimeComponent>(signMapIt.first);
+                SpacetimeComponent& st = sourceCosmos->get_component<SpacetimeComponent>(signMapIt.first);
+                st.timestreamState = TimestreamState::merged;
+                st.timestreamStateCoherency = m_currentCosmos->get_coherency();
+
                 sourceFutureTimestreams->clear(signMapIt.first);
             }
         }
@@ -190,6 +193,7 @@ namespace pleep
             EventMessage extraction(events::cosmos::ENTITY_UPDATE);
             
             Entity localEntity = signMapIt.first;
+            assert(derive_causal_chain_link(localEntity) != 0);
             if (!decrement_causal_chain_link(localEntity))
             {
                 // ignore non-temporal entities
@@ -199,7 +203,7 @@ namespace pleep
 
             // extract if entity is forked OR is NULLTIMESLICEID
             // if it is NULL_TIMESLICEID then create new id
-            if (derive_timeslice_id(signMapIt.first) == NULL_TIMESLICEID)
+            if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
             {
                 /// TODO: created entities to be extracted to destination (with new id)
                 /// use parallel entity as source for local entity
@@ -218,7 +222,9 @@ namespace pleep
             if (dstCosmos->get_host_id() == 0U &&
                 dstCosmos->has_component<SpacetimeComponent>(localEntity))
             {
-                dstCosmos->remove_component<SpacetimeComponent>(localEntity);
+                SpacetimeComponent& st = dstCosmos->get_component<SpacetimeComponent>(localEntity);
+                st.timestreamState = TimestreamState::merged;
+                st.timestreamStateCoherency = dstCosmos->get_coherency();
             }
         }
 

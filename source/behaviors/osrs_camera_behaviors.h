@@ -108,7 +108,7 @@ namespace pleep
                 {
                     camera.range -= (float)input.actionVals.at(SpacialActions::rotateRoll);
                     // std::clamp
-                    camera.range = std::max(std::min(camera.range, 50.0f), 5.0f);
+                    camera.range = std::max(std::min(camera.range, 50.0f), 2.0f);
                 }
 
                 

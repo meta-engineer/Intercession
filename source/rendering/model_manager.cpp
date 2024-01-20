@@ -306,10 +306,18 @@ namespace pleep
         if (omitDuplicates && m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
         {
             PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists");
-            // we could try to generate a default name here? unless this already is the deafult name
-            return receipt;
+            // we could try to generate a default name here? unless this already is the default name
         }
-        receipt.supermeshName = supermeshName;
+        else // omitBuplicates == false
+        {
+            receipt.supermeshName = supermeshName;
+        }
+
+        // with no supermesh, no need to get supermeshSubmeshes, supermeshMaterials, or armatures
+        if (receipt.supermeshName.empty())
+        {
+            return receipt;
+        } 
 
         // Assume submeshes are children of root node who have >0 meshes
         // Assume armatures are children of root node who have =0 meshes
@@ -474,6 +482,8 @@ namespace pleep
     
     void ModelManager::_process_supermesh(const aiScene *scene, const ImportReceipt& receipt)
     {
+        if (receipt.supermeshName.empty()) return;
+
         // any meshes directly in root node?
         // scan assumes submeshes are only direct children of root node...
         std::string supermeshName = receipt.supermeshName;
@@ -539,18 +549,22 @@ namespace pleep
             }
 
             // testure coordinates
-            if (src->mTextureCoords[0])
+            if (src->HasTextureCoords(0))
             {
                 // Assuming we only use 1 set of texture coords (up to 8)
                 vertex.texCoord.x = src->mTextureCoords[0][i].x;
                 vertex.texCoord.y = src->mTextureCoords[0][i].y;
 
-                // tangent to face
-                vertex.tangent = assimp_converters::convert_vec3(src->mTangents[i]);
             }
             else
             {
                 vertex.texCoord = glm::vec2(0.0f, 0.0f);
+            }
+
+            if (src->HasTangentsAndBitangents())
+            {
+                // tangent to face
+                vertex.tangent = assimp_converters::convert_vec3(src->mTangents[i]);
             }
 
             // setup bone data as default (all disabled)

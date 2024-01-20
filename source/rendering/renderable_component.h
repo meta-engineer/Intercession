@@ -41,6 +41,9 @@ namespace pleep
 
         // specify shaders/relays?
 
+        // Adjust mesh in local space
+        TransformComponent localTransform;
+
         // used for debugging right now, not serialized/deserialized
         bool highlight = false;
     };
@@ -53,9 +56,10 @@ namespace pleep
         // REMEMBER this is a STACK so reverse the order!!!
 
         // stack mat data first
-        // TODO: What if material has no sourceFilepath? (created manually)
+        /// TODO: What if material has no sourceFilepath? (created manually)
         size_t numMats = data.materials.size();
-        for (size_t m = 0; m < numMats; m++)
+        // (remember this must be in reverse order as well)
+        for (size_t m = numMats - 1; m < numMats; m--)
         {
             // push texture map for material
             for (auto texturesIt = data.materials[m]->m_textures.begin(); texturesIt != data.materials[m]->m_textures.end(); texturesIt++)
@@ -91,11 +95,20 @@ namespace pleep
         // then push "number" of supermeshes
         msg << numMeshes;
 
+        // last push extra data
+        // transform
+        msg << data.localTransform;
+
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, RenderableComponent& data)
     {
+        // First pop extra data
+        // transform
+        msg >> data.localTransform;
+
+
         // Stream out SuperMesh
         size_t numMeshes = 0;
         msg >> numMeshes;

@@ -10,6 +10,9 @@
 #include "rendering/light_source_packet.h"
 #include "rendering/model_cache.h"
 
+#define RENDER_COLLIDERS
+#define RENDER_MESHES
+
 namespace pleep
 {
     class ForwardRenderRelay : public A_RenderRelay
@@ -217,7 +220,7 @@ namespace pleep
             m_sm.set_int("numPointLights", static_cast<int>(m_numPointLights));
             m_sm.set_int("numSpotLights", static_cast<int>(m_numSpotLights));
             m_sm.deactivate();
-/* 
+#ifdef RENDER_MESHES
             // Render through all meshes
             for (std::vector<RenderPacket>::iterator packet_it = m_modelPackets.begin(); packet_it != m_modelPackets.end(); packet_it++)
             {
@@ -227,7 +230,7 @@ namespace pleep
                 if (data.renderable.meshData == nullptr) continue;
 
                 m_sm.activate();
-                m_sm.set_mat4("model_to_world", data.transform.get_model_transform());
+                m_sm.set_mat4("model_to_world", data.transform.get_model_transform() * data.renderable.localTransform.get_model_transform());
                 for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
                 {
                     // if there are no materials... do nothing? get debug material from ModelCache?
@@ -247,7 +250,8 @@ namespace pleep
                 }
                 m_sm.deactivate();
             }
- */
+#endif // RENDER_MESHES
+#ifdef RENDER_COLLIDERS
             // render debug packets
             for (std::vector<DebugRenderPacket>::iterator packet_it = m_debugPackets.begin(); packet_it != m_debugPackets.end(); packet_it++)
             {
@@ -262,6 +266,7 @@ namespace pleep
                 for (auto submesh : supermesh->m_submeshes)
                 {
                     // material?
+                    _set_material_textures(m_sm, nullptr);
 
                     submesh->invoke_draw(m_sm);
                 }
@@ -269,7 +274,7 @@ namespace pleep
                 glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
                 m_sm.deactivate();
             }
-
+#endif // RENDER_COLLIDERS
             // clear options
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_BLEND);

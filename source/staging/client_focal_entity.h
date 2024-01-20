@@ -20,15 +20,21 @@ namespace pleep
         UNREFERENCED_PARAMETER(eventBroker);
 
         // ***************************************************************************
-        ModelCache::ImportReceipt kirby_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - Ball Kirby Trophy\\Ball Kirby\\ballkirby.obj");
+        ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Olimar.obj");
+
+        //ModelManager::debug_receipt(olimar_import);
 
         Entity pc = cosmos->create_entity();
         TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;
-        pc_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        pc_renderable.materials.push_back(ModelCache::fetch_material("mesh0011mat"));
+        //pc_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        pc_renderable.meshData = ModelCache::fetch_supermesh(olimar_import.supermeshName);
+        for (auto matname : olimar_import.supermeshMaterialNames)
+            pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
+        pc_renderable.localTransform.origin.y = -0.5f;
+        pc_renderable.localTransform.scale = { 0.15f, 0.15f, 0.15f };
         cosmos->add_component(pc, pc_renderable);
 
         PhysicsComponent pc_physics;

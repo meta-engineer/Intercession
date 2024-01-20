@@ -22,7 +22,7 @@ namespace pleep
         Entity gamebox = cosmos->create_entity();
 
         TransformComponent gamebox_transform(glm::vec3(-1.0f, 0.0f, -10.0f));
-        gamebox_transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        gamebox_transform.scale = {2.0f, 2.0f, 2.0f};
         cosmos->add_component(gamebox, gamebox_transform);
 
         RenderableComponent gamebox_renderable;
@@ -32,6 +32,8 @@ namespace pleep
         {
             gamebox_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
+        gamebox_renderable.localTransform.origin.y = -0.375f;
+        gamebox_renderable.localTransform.scale = { 0.1f, 0.1f, 0.1f};
         cosmos->add_component(gamebox, gamebox_renderable);
 
         PhysicsComponent gamebox_physics;
@@ -39,16 +41,14 @@ namespace pleep
         cosmos->add_component(gamebox, gamebox_physics);
         
         RigidBodyComponent gamebox_rigidbody{};
-        gamebox_rigidbody.dynamicFriction = 0.8f;
+        gamebox_rigidbody.dynamicFriction = 0.5f;
         gamebox_rigidbody.restitution = 0.2f;
         cosmos->add_component(gamebox, gamebox_rigidbody);
         
         BoxColliderComponent gamebox_collider;
-        gamebox_collider.localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
+        gamebox_collider.localTransform.scale = glm::vec3(1.0f, 0.75f, 1.0f);
         cosmos->add_component(gamebox, gamebox_collider);
         // ***************************************************************************
-
-
 
         // ***************************************************************************
         ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
@@ -93,7 +93,7 @@ namespace pleep
         });
 
         Entity spot = cosmos->create_entity();
-        cosmos->add_component(spot, TransformComponent(glm::vec3(0.0f, 4.0f, 0.0f)));
+        cosmos->add_component(spot, TransformComponent(glm::vec3(-15.0f, 4.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(spot).scale = glm::vec3(0.2f);
         cosmos->get_component<TransformComponent>(spot).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -108,7 +108,18 @@ namespace pleep
         cosmos->add_component(spot, spot_renderable);
         // ***************************************************************************
 
+        // ***************************************************************************
+        Entity point = cosmos->create_entity();
+        cosmos->add_component(point, TransformComponent(glm::vec3(15.0f, 2.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(point).scale = glm::vec3(0.2f);
+        // remember this is relative to exposure
+        cosmos->add_component(point, LightSourceComponent(glm::vec3(6.0f, 3.0f, 1.0f)));
 
+        RenderableComponent point_renderable;
+        point_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        point_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
+        cosmos->add_component(point, point_renderable);
+        // ***************************************************************************
 
         return cosmos;
     }
