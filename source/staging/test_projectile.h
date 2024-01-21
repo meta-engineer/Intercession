@@ -29,7 +29,7 @@ namespace pleep
         if (ModelCache::fetch_material("thrown_mat") == nullptr)
         {
             ModelCache::create_material("thrown_mat", std::unordered_map<TextureType, std::string>{
-                {TextureType::diffuse, "resources/awesomeface.png"},
+                {TextureType::diffuse, "resources/snow-packed12-Base_Color.png"},
                 {TextureType::specular, "resources/snow-packed12-Specular.png"},
                 {TextureType::normal, "resources/snow-packed12-Normal-ogl.png"}
             });

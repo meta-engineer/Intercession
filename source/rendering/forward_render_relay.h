@@ -11,7 +11,7 @@
 #include "rendering/model_cache.h"
 
 #define RENDER_COLLIDERS
-#define RENDER_MESHES
+//#define RENDER_MESHES
 
 namespace pleep
 {

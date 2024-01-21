@@ -167,6 +167,7 @@ namespace pleep
         const std::lock_guard<std::mutex> lk(m_accessMux);
 
         // ensure cosmos exists!?
+        assert(m_currentCosmos != nullptr);
         if (m_currentCosmos == nullptr)
         {
             PLEEPLOG_WARN("Called extract while Cosmos does not exist?! Something went wrong!");
@@ -174,6 +175,7 @@ namespace pleep
         }
 
         // ensure cosmos is stopped (it should already be)
+        assert(!is_running());
         if (is_running())
         {
             PLEEPLOG_WARN("Called extract while Cosmos is still running");
@@ -181,6 +183,7 @@ namespace pleep
         }
 
         // coherency values must be same or syncronization has messed up
+        assert(m_currentCosmos->get_coherency() == dstCosmos->get_coherency());
         if (m_currentCosmos->get_coherency() != dstCosmos->get_coherency())
         {
             PLEEPLOG_ERROR("Called extract while Cosmos' are not synced, something went wrong. Ignoring...");
