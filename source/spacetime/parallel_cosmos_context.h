@@ -40,17 +40,17 @@ namespace pleep
         //   timeslice can respond when its cosmos state is stable
         void request_resolution(TimesliceId requesterId);
 
-        // receive a Cosmos pointer to deep copy for our parallel simulation
-        // Don't copy entities with chainlink 0 because they won't exist in the future
-        // returns false if cosmos already exists/running and cannot be overwritten
-        bool load_and_link(const std::shared_ptr<Cosmos> sourceCosmos, 
-                           const std::shared_ptr<EntityTimestreamMap> sourceFutureTimestreams);
-
         // timepoint to stop simulating after reaching (should be called before run/start)
         void set_coherency_target(uint16_t coherency);
 
         // return currently simulation timeslice (in the recent future of this timeslice)
         TimesliceId get_current_timeslice();
+
+        // receive a Cosmos pointer to deep copy for our parallel simulation
+        // Don't copy entities with chainlink 0 because they won't exist in the future
+        // returns false if cosmos already exists/running and cannot be overwritten
+        bool load_and_link(const std::shared_ptr<Cosmos> sourceCosmos, 
+                           const std::shared_ptr<EntityTimestreamMap> sourceFutureTimestreams);
 
         // copy forked entities into destination cosmos
         // (decrementing chainlink before deserialization)
@@ -86,6 +86,9 @@ namespace pleep
 
         // remember condemned entities during simulation for "extraction"
         std::unordered_set<Entity> m_condemnedEntities;
+
+        // Store currently unmatched jump receipts in order of sister receipt's coherency
+        //std::map<uint16_t, EventMessage> jumpReceipts;
     };
 }
 

@@ -35,6 +35,10 @@ namespace pleep
         // Pop component data from msg and overwrite;
         // non-strict usage, does nothing if component does not exist
         virtual void deserialize_data_for(Entity entity, EventMessage& msg) = 0;
+
+        // Pop component data from msg and destroy it
+        // non-strict usage, does nothing if component does not exist
+        virtual void discard_data_for(EventMessage& msg) = 0;
     };
 }
 

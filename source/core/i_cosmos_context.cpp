@@ -31,7 +31,7 @@ namespace pleep
 
         try
         {
-            while (!m_stopSignal)
+            while (m_isRunning)
             {
                 // ***** Init Frame *****
                 // smarter way to get dt? duration.count() is in seconds?
@@ -80,14 +80,13 @@ namespace pleep
         }
 
         m_isRunning = false;
-        m_stopSignal = false;
         PLEEPLOG_TRACE("Exiting \"frame loop\"");
         // any non-destructor cleanup?
     }
     
     void I_CosmosContext::stop()
     {
-        if (m_isRunning) m_stopSignal = true;
+        m_isRunning = false;
     }
     
     bool I_CosmosContext::is_running() const

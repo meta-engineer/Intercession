@@ -10,6 +10,7 @@
 #include "ecs/synchro_registry.h"
 #include "events/event_types.h"
 #include "events/event_broker.h"
+#include "spacetime/timestream_state.h"
 
 namespace pleep
 {
@@ -162,6 +163,11 @@ namespace pleep
         // ***See deserialize_entity_components for template
         void deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg);
 
+        // leverage same component dispatching to remove data from a message
+        // Unpack the component from message and just forget it
+        // Use to ignore certain ComponentCategories
+        void discard_single_component(ComponentType type, EventMessage& msg);
+
         // Set shared "special" entity for this cosmos instance
         // returns false if entity does not exist
         bool set_focal_entity(Entity entity);
@@ -177,6 +183,13 @@ namespace pleep
         void set_coherency(uint16_t gotoCoherency);
 
         TimesliceId get_host_id();
+
+        // set state of entity annotated with current coherency
+        // returns false if entity does not exist
+        bool set_timestream_state(Entity entity, TimestreamState newState);
+        // return state and coherency when set was called
+        // returns merged, 0 if entity did not exist
+        std::pair<TimestreamState, uint16_t> get_timestream_state(Entity entity);
         
         // Ordered vector of all synchro typeid names
         std::vector<std::string> stringify_synchro_registry();
@@ -219,6 +232,12 @@ namespace pleep
         // They will be deleted directly before next update,
         // so all component references should be cleared by then
         std::set<Entity> m_condemned;
+
+        // store TimestreamState information locally so it is not propogated into the past
+        // uint16_t is "time"stamp for last update to this entity's state
+        // No entry implies TimestreamState::merged
+        std::unordered_map<Entity, std::pair<TimestreamState, uint16_t>> m_timestreamStates;
+        /// TODO: how do we inform clients of timestream states... if any? Send updates upon parallel extraction?
     };
 
 
@@ -309,6 +328,8 @@ namespace pleep
 
         // clear focal entity if we just deleted it
         if (entity == m_focalEntity) set_focal_entity(NULL_ENTITY);
+        // clear timestream state if it has one
+        m_timestreamStates.erase(entity);
 
         // Entity will be re-added to availability queue once it's host count decrements to 0
         // we will message to our NetworkDynamo to decrement OTHER hosts

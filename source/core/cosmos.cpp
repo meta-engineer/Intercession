@@ -95,6 +95,11 @@ namespace pleep
     {
         m_componentRegistry->deserialize_single_component(entity, type, msg);
     }
+    
+    void Cosmos::discard_single_component(ComponentType type, EventMessage& msg)
+    {
+        m_componentRegistry->discard_single_component(type, msg);
+    }
 
     bool Cosmos::set_focal_entity(Entity entity)
     {
@@ -133,6 +138,22 @@ namespace pleep
     TimesliceId Cosmos::get_host_id()
     {
         return m_hostId;
+    }
+    
+    bool Cosmos::set_timestream_state(Entity entity, TimestreamState newState)
+    {
+        if (!this->entity_exists(entity))
+        {
+            return false;
+        }
+
+        m_timestreamStates[entity] = { newState, m_stateCoherency };
+        return true;
+    }
+
+    std::pair<TimestreamState, uint16_t> Cosmos::get_timestream_state(Entity entity)
+    {
+        return m_timestreamStates[entity];
     }
 
     

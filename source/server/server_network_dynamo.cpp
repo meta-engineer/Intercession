@@ -4,9 +4,16 @@
 #include "ecs/ecs_types.h"
 #include "staging/cosmos_builder.h"
 #include "staging/client_focal_entity.h"
+#include "core/i_cosmos_context.h"
 
 namespace pleep
 {
+    // number of frames a forking state has lasted where it becomes a candidate for resolution
+    constexpr uint16_t FORKING_THRESHOLD = static_cast<uint16_t>(0.5 * pleep::FRAMERATE);
+    // number of frames a forked state has lasted which triggers a resolution
+    constexpr uint16_t FORKED_THRESHOLD = static_cast<uint16_t>(0.5 * pleep::FRAMERATE);
+    // FORKING_THRESHOLD + FORKED_THREASHOLD == total time until an interception triggers resolution
+
     ServerNetworkDynamo::ServerNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker, TimelineApi localTimelineApi)
         : I_NetworkDynamo(sharedBroker)
         , m_timelineApi(localTimelineApi)
@@ -177,18 +184,7 @@ namespace pleep
 
                 
                 // Put the entity into a superposition
-                // if recipient has no spacetime component, add one
-                if (!cosmos->has_component<SpacetimeComponent>(presentRecipient))
-                {
-                    SpacetimeComponent newSpacetime;
-                    cosmos->add_component<SpacetimeComponent>(presentRecipient, newSpacetime);
-                }
-                
-                SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(presentRecipient);
-                oldSpacetime.timestreamState = TimestreamState::superposition;
-                oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
-
-                // entity should no longer push to timestream until superposition is resolved
+                cosmos->set_timestream_state(presentRecipient, TimestreamState::superposition);
 
                 // pass interception notification up the chain
                 if (m_timelineApi.has_future())
@@ -270,7 +266,12 @@ namespace pleep
                 PLEEPLOG_DEBUG("Received init request from parallel context");
                 // parallel is ready to start and has requested we init it
                 m_timelineApi.parallel_load_and_link(cosmos);
-                // now that parallel is initialized, the timeslice to our immediate future will start it on next cycle (using its own coherency as the target)
+
+                // estimate a lower bound of where the next slice could be (to avoid overshooting)
+                m_timelineApi.parallel_retarget(cosmos->get_coherency() + m_timelineApi.get_timeslice_delay() - 1U);
+                m_timelineApi.parallel_start();
+
+                // future server will continue to update target and handle FINISHED...
             }
             break;
             case events::parallel::FINISHED:
@@ -285,15 +286,18 @@ namespace pleep
                 }
                 else if (msg.header.coherency < cosmos->get_coherency())
                 {
-                    // my coherency is ahead of parallel
-                    // try to get it to match next frame
-                    m_timelineApi.parallel_start(cosmos->get_coherency() + 1U);
+                    // my coherency is ahead of parallel:
+                    // restart it and try to get it to match on next frame
+                    m_timelineApi.parallel_retarget(cosmos->get_coherency() + 1U);
+                    m_timelineApi.parallel_start();
                 }
                 else
                 {
-                    // my coherency is behind parallel
+                    // my coherency is behind parallel:
                     // uhh... we can't store messages for next frame...
-                    PLEEPLOG_ERROR("Parallel finished ahead of local cosmos... IDK what to do... Ignoring...");
+                    // try restarting and getting it to send another event?
+                    PLEEPLOG_ERROR("Parallel finished ahead of local cosmos... stalling to next frame...");
+                    m_timelineApi.parallel_start();
                 }
             }
             break;
@@ -322,13 +326,6 @@ namespace pleep
                     // continue to clear out messages if no working cosmos
                     if (!cosmos) continue;
                     
-                    // if entity's timstream state is forked then just continue popping so timestream is at same coherency point
-                    if (cosmos->has_component<SpacetimeComponent>(entity) &&
-                        is_divergent(cosmos->get_component<SpacetimeComponent>(entity).timestreamState))
-                    {
-                        continue;
-                    }
-
                     // Handle timestream messages just as a client would, i think?
                     switch(evnt.header.id)
                     {
@@ -339,14 +336,36 @@ namespace pleep
                         //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
 
                         // ensure entity exists
-                        if (cosmos->entity_exists(updateInfo.entity))
+                        if (!cosmos->entity_exists(updateInfo.entity))
                         {
-                            // read update into Cosmos
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, evnt);
+                            PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
+                            break;
+                        }
+
+                        /// if this is divergent entity, then only read upstream components
+                        if (is_divergent(cosmos->get_timestream_state(entity).first) || TimestreamState::merging == cosmos->get_timestream_state(entity).first)
+                        {
+                            Signature upstreamSign = cosmos->get_category_signature(ComponentCategory::upstream);
+                            
+                            for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
+                            {
+                                if (updateInfo.sign.test(i))
+                                {
+                                    if (upstreamSign.test(i))
+                                    {
+                                        cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
+                                    }
+                                    else
+                                    {
+                                        cosmos->discard_single_component(i, evnt);
+                                    }
+                                }
+                            }
                         }
                         else
                         {
-                            PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
+                            // if non-divergent entity, then read update into Cosmos as normal
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, evnt);
                         }
                     }
                     break;
@@ -381,7 +400,6 @@ namespace pleep
                     default:
                     {
                         // reached end of this entities timestream
-                        continue;
                     }
                     }
                 }
@@ -523,11 +541,10 @@ namespace pleep
                 remoteMsg.msg << clientInfo;
                 remoteMsg.remote->send(remoteMsg.msg);
 
-                // TODO: we should also keep track of the clientInfo.entity
-                // (store it in remoteMsg.remote?)
-                // when we receive input updates from this client, we should only allow
-                // and/or assume they are for this entity only!
-                
+                // we should also keep track of the clientInfo.entity ourselves
+                // when we receive input updates from this client, we can validate the target entity
+                // and ensure they only affect this entity only!
+                m_clientEntities.insert({ clientInfo.entity, remoteMsg.remote->get_id() });
             }
             break;
             case events::network::JUMP_REQUEST:
@@ -586,13 +603,9 @@ namespace pleep
                 m_networkApi.broadcast_message(clientUpdateMsg);
 
 
-                // and push to child timestream (except if there is not past to push to,
-                //   OR if this is entity is in superposition)
-                if (!m_timelineApi.has_past() || 
-                    (cosmos->has_component<SpacetimeComponent>(signIt.first) && cosmos->get_component<SpacetimeComponent>(signIt.first).timestreamState == TimestreamState::superposition)) 
+                // and push to child timestream (except if there is not past to push to)
+                if (!m_timelineApi.has_past())
                 {
-                    /// TODO: superposition entities need to keep pushing to parallel timestream??
-                    /// So add an extra parameter to push_past_timestreams for ONLY parallel
                     continue;
                 }
 
@@ -611,11 +624,35 @@ namespace pleep
             }
         }
 
-        // Fifth: run superposition relay
+        // Fifth: Check and update timestream states, and update parallel cosmos as appropriate
         if (cosmos)
         {
-            // let relay lease our cosmos and timeline api
-            m_superpositionRelay.engage(deltaTime, m_workingCosmos, &m_timelineApi);
+            bool resolutionNeeded = false;
+            for (auto signIt : cosmos->get_signatures_ref())
+            {
+                const std::pair<TimestreamState, uint16_t> state = cosmos->get_timestream_state(signIt.first);
+                // promote forking entities
+                if (state.first == TimestreamState::forking
+                    && state.second + FORKING_THRESHOLD <= cosmos->get_coherency())
+                {
+                    cosmos->set_timestream_state(signIt.first, TimestreamState::forked);
+                }
+
+                if (state.first == TimestreamState::forked
+                    && state.second + FORKED_THRESHOLD <= cosmos->get_coherency())
+                {
+                    PLEEPLOG_DEBUG("Entity " + std::to_string(signIt.first) + " is due for resolution at: " + std::to_string(cosmos->get_coherency()));
+                    resolutionNeeded = true;
+                }
+            }
+            if (resolutionNeeded) m_timelineApi.parallel_notify_divergence();
+
+            /// If parallel is simulating our recent past, we need to continually feed it new target coherencies (m_lastCoherency + 1) until FINISHED event is sent, and it moves onto the next
+            /// We never want to restart the thread, only let FINSIHED handler try to restart.
+            if (m_timelineApi.parallel_get_timeslice() == cosmos->get_host_id() + 1U)
+            {
+                m_timelineApi.parallel_retarget(cosmos->get_coherency() + 1);
+            }
         }
     }
     
@@ -623,9 +660,6 @@ namespace pleep
     {
         // clear our working cosmos
         m_workingCosmos.reset();
-
-        // clear relay working cosmos and leftover submittions
-        m_superpositionRelay.clear();
     }
 
     void ServerNetworkDynamo::submit(CosmosAccessPacket data) 
@@ -634,11 +668,6 @@ namespace pleep
         m_workingCosmos = data.owner;
 
         // pass working cosmos to relays
-    }
-
-    void ServerNetworkDynamo::submit(SpacetimePacket data)
-    {
-        m_superpositionRelay.submit(data);
     }
     
     TimesliceId ServerNetworkDynamo::get_timeslice_id()
@@ -697,6 +726,9 @@ namespace pleep
         // Don't send to ourselves, decrement will already have happened
         if (host != m_timelineApi.get_timeslice_id()) m_timelineApi.send_message(host, removalEvent);
 
+        // if it was a client's focal entity, remove it from client map
+        m_clientEntities.erase(removedEntityParams.entity);
+
         // propagate further down the timeline
         if (m_timelineApi.has_past())
         {
@@ -731,7 +763,7 @@ namespace pleep
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         if (m_workingCosmos.expired()) return;
 
-        // check for upstream components to determine if this is a pc/animate entity
+        // check for upstream components to determine if this is a pc/animate entity?
         Signature recipSign = cosmos->get_entity_signature(interceptionInfo.recipient);
         if ((recipSign & cosmos->get_category_signature(ComponentCategory::upstream)).any())
         {
@@ -743,15 +775,7 @@ namespace pleep
         }
 
         // Put the entity into a forking timestream state (stop receiving from future)
-        // if recipient has no spacetime component, add one
-        if (!cosmos->has_component<SpacetimeComponent>(interceptionInfo.recipient))
-        {
-            cosmos->add_component<SpacetimeComponent>(interceptionInfo.recipient, SpacetimeComponent{});
-        }
-        
-        SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(interceptionInfo.recipient);
-        oldSpacetime.timestreamState = TimestreamState::forking;
-        oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
+        cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forking);
 
         // Signal to future timeslice to put recipient into superposition timestream state
         // Timestream forked state should restrict reading from the timestream from our side

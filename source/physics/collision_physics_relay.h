@@ -11,7 +11,6 @@
 #include "behaviors/behaviors_component.h"
 #include "physics/rigid_body_component.h"
 #include "physics/spring_body_component.h"
-#include "spacetime/spacetime_component.h"
 
 namespace pleep
 {
@@ -183,8 +182,8 @@ namespace pleep
                     CausalChainlink otherLink = derive_causal_chain_link(otherData.collidee);
 
                     // check timestream state descrepancy
-                    TimestreamState thisState = cosmos->has_component<SpacetimeComponent>(thisData.collidee) ? cosmos->get_component<SpacetimeComponent>(thisData.collidee).timestreamState : TimestreamState::merged;
-                    TimestreamState otherState = cosmos->has_component<SpacetimeComponent>(otherData.collidee) ? cosmos->get_component<SpacetimeComponent>(otherData.collidee).timestreamState : TimestreamState::merged;
+                    const TimestreamState thisState = cosmos->get_timestream_state(thisData.collidee).first;
+                    const TimestreamState otherState = cosmos->get_timestream_state(otherData.collidee).first;
 
                     // Interception can only happen if
                     //      neither entity has null chainlink
@@ -204,7 +203,7 @@ namespace pleep
                         EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
                         // select the 0 link or forked state entity as the "agent"
                         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo {
-                            thisLink==0 || otherLink!=0 && thisState==TimestreamState::forking ? thisData.collidee :  otherData.collidee
+                            thisLink==0 || otherLink!=0 && is_divergent(thisState) ? thisData.collidee :  otherData.collidee
                         };
                         interceptionInfo.recipient = interceptionInfo.agent == thisData.collidee ? otherData.collidee : thisData.collidee;
                         interceptionMessage << interceptionInfo;

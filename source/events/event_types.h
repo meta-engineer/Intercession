@@ -234,11 +234,18 @@ namespace pleep
             const EventId JUMP_RECEIPT = __LINE__;
                 struct JUMP_RECEIPT_params
                 {
-                    // coherency id jump was completed on? Creation/Deletion event should be same frame
+                    // was this event a departure or an arrival?
+                    bool isDeparture;
 
-                    // was this event a jump-to or jump-from?
+                    // use message header coherency is when this event occurred
+                    // coherency point when this event's sister occurred in the other timeslice
+                    uint16_t otherCoherency;
 
-                    // or a no-jump event? aka a jump occured here in a different worldline
+                    // Entity who is jumping
+                    Entity entity;
+
+                    // unique identifier for matching departure&arrival pairs
+                    std::chrono::system_clock::time_point tripId;
                 };
         } // namespace network
 
@@ -252,7 +259,6 @@ namespace pleep
                 {
                     TimesliceId sourceTimeslice;
                 };
-                // no INIT_params needed
             // simulation has finished and reached target coherency point
             const EventId FINISHED = __LINE__;
                 struct FINISHED_params

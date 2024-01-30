@@ -74,12 +74,21 @@ namespace pleep
             // only 1 thread should ever be trying to hold BOTH locks at once
             const std::lock_guard<std::mutex> sk(source->m_mapMux);
             const std::lock_guard<std::mutex> dk(destination->m_mapMux);
-
             PLEEPLOG_DEBUG("squired both locks");
-            // copy all current contents
-            /// TODO: TsQueue can be copied?
+
+
+
+
+
             PLEEPLOG_DEBUG("copy timestream data");
+            /// TODO: copy all current contents
+            /// TsQueue can be copied?
             //destination->m_timestreams = source->m_timestreams;
+
+
+
+
+
 
             PLEEPLOG_DEBUG("set link pointers");
             // link source parallel

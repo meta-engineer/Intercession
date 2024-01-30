@@ -85,6 +85,10 @@ namespace pleep
         // get that array to unpack next data in msg, and copy it into entity's data
         void deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg);
 
+        // index component array using name,
+        // get that array to unpack next data in msg, and destroy it!
+        void discard_single_component(ComponentType type, EventMessage& msg);
+
         // Return list of component typeid names
         // MUST be ordered by ComponentType
         std::vector<std::string> stringify();
@@ -270,6 +274,11 @@ namespace pleep
     inline void ComponentRegistry::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
     {
         m_componentArrays.at(get_component_name(type))->deserialize_data_for(entity, msg);
+    }
+    
+    inline void ComponentRegistry::discard_single_component(ComponentType type, EventMessage& msg)
+    {
+        m_componentArrays.at(get_component_name(type))->discard_data_for(msg);
     }
     
     template<typename T>

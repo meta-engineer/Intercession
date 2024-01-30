@@ -101,9 +101,9 @@ namespace pleep
             //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            ImGui::Text("NetworkDynamo%sconnected to timeslice %d",
-                 m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ",
-                 m_dynamoCluster.networker->get_timeslice_id());
+            ImGui::Text("NetworkDynamo%sconnected",
+                 m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
+            /// TODO: how to determine what timeslice we are connected to since client has id NULL_TIMESLICEID for logistics purposes?
 
             // Buttons return true when clicked (most widgets return true when edited/activated)
             if (ImGui::Button("Reconnect"))

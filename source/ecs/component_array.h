@@ -44,6 +44,10 @@ namespace pleep
         // non-strict usage, does nothing if component does not exist
         void deserialize_data_for(Entity entity, EventMessage& msg) override;
 
+        // Pop component data from msg and destroy it
+        // non-strict usage, does nothing if component does not exist
+        void discard_data_for(EventMessage& msg) override;
+
         // return reference to component for this entity
         // does NOT return "not found", THROWS if no component exists
         T& get_data_for(Entity entity);
@@ -177,6 +181,15 @@ namespace pleep
         // Assume new msg data is for type T
         // write directly into component array via operator>> override
         msg >> m_array[m_mapEntityToIndex[entity]];
+    }
+    
+    template<typename T>
+    void ComponentArray<T>::discard_data_for(EventMessage& msg)
+    {
+        T dumper;
+        msg >> dumper;
+        // cast it into the fire! ...get it?
+        static_cast<void>(dumper);
     }
     
     template<typename T>

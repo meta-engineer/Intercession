@@ -62,7 +62,6 @@ namespace pleep
         newCosmos->register_component<OscillatorComponent>();
         newCosmos->register_component<ProjectileComponent>();
         newCosmos->register_component<BipedComponent>();
-        newCosmos->register_component<SpacetimeComponent>();
 
         newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputter);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);
@@ -72,7 +71,6 @@ namespace pleep
         newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(dynamoCluster.networker);
         newCosmos->register_synchro<BehaviorsSynchro>()->attach_dynamo(dynamoCluster.behaver);
-        newCosmos->register_synchro<SpacetimeSynchro>()->attach_dynamo(dynamoCluster.networker);
 
         return newCosmos;
     }

@@ -7,7 +7,6 @@
 #include "networking/i_network_dynamo.h"
 #include "server/server_network_api.h"
 #include "networking/timeline_api.h"
-#include "spacetime/superposition_relay.h"
 
 namespace pleep
 {
@@ -36,8 +35,6 @@ namespace pleep
         // Cosmos should be used to fetch all entities to broadcast?
         void submit(CosmosAccessPacket data) override;
 
-        void submit(SpacetimePacket data) override;
-
         TimesliceId get_timeslice_id() override;
 
         size_t get_num_connections() override;
@@ -47,9 +44,6 @@ namespace pleep
         void _entity_created_handler(EventMessage creationEvent);
         void _entity_removed_handler(EventMessage removalEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
-        
-        // Networking relays
-        SuperpositionRelay m_superpositionRelay;
 
         // TimelineApi (generated for us by AppGateway) to communicate with other servers
         TimelineApi m_timelineApi;
@@ -61,6 +55,10 @@ namespace pleep
 
         // Save serialized entities waiting for their clients to connect
         std::unordered_map<uint32_t, EventMessage> m_transferCache;
+
+        // map of currently existing client focal entities (NOT necessarily our hosted entities)
+        // uint32_t is connection id value, used to search for Connection object
+        std::unordered_map<Entity, uint32_t> m_clientEntities;
     };
 }
 

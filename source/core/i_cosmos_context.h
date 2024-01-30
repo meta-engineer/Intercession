@@ -80,7 +80,6 @@ namespace pleep
         std::shared_ptr<Cosmos> m_currentCosmos = nullptr;
         // context owns its own thread to call run() on
         std::thread m_cosmosThread;
-        bool m_stopSignal = false;
         bool m_isRunning = false;
 
         // shared event distributor (pub/sub) to be used by context (me), my dynamos, and synchros that attach to those dynamos

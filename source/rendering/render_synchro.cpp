@@ -12,7 +12,6 @@
 #include "rendering/debug_render_packet.h"
 #include "physics/box_collider_component.h"
 #include "physics/ray_collider_component.h"
-#include "spacetime/spacetime_component.h"
 
 namespace pleep
 {
@@ -68,8 +67,8 @@ namespace pleep
             // Update renderable members based on other components...
 
             // DEBUG: set highlight based on timestream state
-            if (cosmos->has_component<SpacetimeComponent>(entity) &&
-                cosmos->get_component<SpacetimeComponent>(entity).timestreamState == TimestreamState::superposition)
+            // (clients currently don't get timestreamstate updates)
+            if (cosmos->get_timestream_state(entity).first == TimestreamState::superposition)
             {
                 renderable.highlight = true;
             }

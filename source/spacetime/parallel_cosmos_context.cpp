@@ -52,6 +52,20 @@ namespace pleep
         }
     }
     
+    void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
+    {
+        const std::lock_guard<std::mutex> lk(m_accessMux);
+        
+        m_coherencyTarget = coherency;
+    }
+    
+    TimesliceId ParallelCosmosContext::get_current_timeslice()
+    {
+        const std::lock_guard<std::mutex> lk(m_accessMux);
+
+        return m_currentTimeslice;
+    }
+    
     bool ParallelCosmosContext::load_and_link(const std::shared_ptr<Cosmos> sourceCosmos, const std::shared_ptr<EntityTimestreamMap> sourceFutureTimestreams)
     {
         PLEEPLOG_DEBUG("Loading parallel from timeslice " + std::to_string(sourceCosmos->get_host_id()));
@@ -75,7 +89,7 @@ namespace pleep
         PLEEPLOG_DEBUG("Setting cosmos to start at coherency " + std::to_string(m_currentCosmos->get_coherency()));
 
         PLEEPLOG_DEBUG("Copying over timestreams");
-        // build new timestreams
+        // mirror and link timestreams together to maintain sync after load
         m_timelineApi.link_future_timestreams(sourceFutureTimestreams);
 
 
@@ -89,7 +103,7 @@ namespace pleep
         // - for any forking entities, use their timestream states instead?
         //      - Can we run out of timestream, can it not be available after a recent interception?
         //      - maybe... just use them as-is, but don't extract them, so they stay the same, but affect the simulation correctly 
-        // - remove SpacetimeComponent of all entities which aren't forked
+        // - remove timestreamstate of all entities which aren't forked
 
         PLEEPLOG_DEBUG("Copying over entities");
 
@@ -100,7 +114,7 @@ namespace pleep
             // omit anything that doesn't exist in the future at all (time travellers)
             if (!sourceFutureTimestreams->entity_has_timestream(signMapIt.first))
             {
-                PLEEPLOG_DEBUG("Skipping entity " + std::to_string(signMapIt.first)+ " because it has no future");
+                PLEEPLOG_DEBUG("Skipping entity " + std::to_string(signMapIt.first) + " because it has no future");
                 continue;
             }
 
@@ -126,18 +140,14 @@ namespace pleep
             );
             assert(m_currentCosmos->entity_exists(signMapIt.first));
 
-            // after initing parallel cosmos all entity timestream state should be re-merged in local
+            // after transferring components timestream state should be transferred as well
+            // meaning setting forked entities in parallel, and re-merging them in source
             // (as we are about to resolve them)
-            // (decided to also do this for things forkING)
-            // AND we should clear their timestreams in source
-            if (sourceCosmos->has_component<SpacetimeComponent>(signMapIt.first)
-                && is_divergent(sourceCosmos->get_component<SpacetimeComponent>(signMapIt.first).timestreamState))
+            // should this be forkING entities as well? kinda defeats the point of having another state
+            if (sourceCosmos->get_timestream_state(signMapIt.first).first == TimestreamState::forked)
             {
-                SpacetimeComponent& st = sourceCosmos->get_component<SpacetimeComponent>(signMapIt.first);
-                st.timestreamState = TimestreamState::merged;
-                st.timestreamStateCoherency = m_currentCosmos->get_coherency();
-
-                sourceFutureTimestreams->clear(signMapIt.first);
+                m_currentCosmos->set_timestream_state(signMapIt.first, TimestreamState::forked);
+                sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merging);
             }
         }
 
@@ -145,21 +155,7 @@ namespace pleep
         
         return true;
     }
-
-    void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
-    {
-        const std::lock_guard<std::mutex> lk(m_accessMux);
-        
-        m_coherencyTarget = coherency;
-    }
-    
-    TimesliceId ParallelCosmosContext::get_current_timeslice()
-    {
-        const std::lock_guard<std::mutex> lk(m_accessMux);
-
-        return m_currentTimeslice;
-    }
-    
+ 
     bool ParallelCosmosContext::extract_entity_updates(std::shared_ptr<Cosmos> dstCosmos)
     {
         PLEEPLOG_DEBUG("Extracting parallel to timeslice " + std::to_string(dstCosmos->get_host_id()));
@@ -204,30 +200,37 @@ namespace pleep
                 continue;
             }
 
-            // extract if entity is forked OR is NULLTIMESLICEID
-            // if it is NULL_TIMESLICEID then create new id
+            // create any new entities (with NULL_TIMESLICEID)
+            // and extract any entity local entities which have diverged during simulation
             if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
             {
                 /// TODO: created entities to be extracted to destination (with new id)
                 /// use parallel entity as source for local entity
                 continue;
             }
-            else if (m_currentCosmos->has_component<SpacetimeComponent>(signMapIt.first))
+            else if (is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
             {
-                /// local but forked entities to be extracted to destination (including forked state)
                 m_currentCosmos->serialize_entity_components(signMapIt.first, signMapIt.second, extraction);
 
                 // entity should already exist
+                if (!dstCosmos->entity_exists(localEntity))
+                {
+                    PLEEPLOG_ERROR("Non-null-host entity " + std::to_string(localEntity) + " from past does not already exist in future.");
+                }
+                assert(dstCosmos->entity_exists(localEntity));
+
+                /// parallel forked entities to be extracted to destination
                 dstCosmos->deserialize_entity_components(localEntity, signMapIt.second, false, extraction);
+                
+                // carry over their forked state to ensure copying to next parallel
+                dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
             }
 
-            // if this is timeslice 0 then clear all forked entity states NOW (usually happens during next init, but timeslice 0 will deflect init call)
-            if (dstCosmos->get_host_id() == 0U &&
-                dstCosmos->has_component<SpacetimeComponent>(localEntity))
+            // if this is timeslice 0 then clear all forked entity states NOW
+            // (this usually happens during state transfer in next init, but timeslice 0 will deflect init call)
+            if (dstCosmos->get_host_id() == 0U)
             {
-                SpacetimeComponent& st = dstCosmos->get_component<SpacetimeComponent>(localEntity);
-                st.timestreamState = TimestreamState::merged;
-                st.timestreamStateCoherency = dstCosmos->get_coherency();
+                dstCosmos->set_timestream_state(localEntity, TimestreamState::merged);
             }
         }
 
@@ -275,7 +278,9 @@ namespace pleep
 
         /// TODO: Entities created partway through a simulation won't properly propogate into the past
         /// We may have to keep a parallel past timestream, and splice it into local past timestream when extracting...
-        /// Then the previous timeslice will have a "seamless" timestream
+        ///   then the previous timeslice will have a "seamless" timestream
+        /// ALSO promote "merging" entities in the past to "merged" once the timestream is spliced
+        ///   the forked set in parallel cosmos is a superset of the merging set in the past, so we could send event to past to update all to promote to merged...
 
         return true;
     }

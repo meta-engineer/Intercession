@@ -109,16 +109,6 @@ namespace pleep
         m_pastTimestreams->push_to_timestream(entity, data);
     }
 
-    void TimelineApi::clear_future_timestream(Entity entity)
-    {
-        if (!m_futureTimestreams)
-        {
-            PLEEPLOG_WARN("This timeslice has no future timestream to clear");
-            return;
-        }
-        m_futureTimestreams->clear(entity);
-    }
-
     std::vector<Entity> TimelineApi::get_entities_with_future_streams()
     {
         if (!m_futureTimestreams)
@@ -170,16 +160,21 @@ namespace pleep
         }
     }
 
-    void TimelineApi::parallel_start(uint16_t newTarget)
+    void TimelineApi::parallel_retarget(uint16_t newTarget)
     {
         if (m_sharedParallel == nullptr) return;
         PLEEPLOG_DEBUG("Updating parallel coherency target to " + std::to_string(newTarget));
         m_sharedParallel->set_coherency_target(newTarget);
+    }
 
-        // also restart thread if it had stopped
+    void TimelineApi::parallel_start()
+    {
+        if (m_sharedParallel == nullptr) return;
+
+        // try restart thread only if it had stopped
         if (!m_sharedParallel->is_running())
         {
-            PLEEPLOG_DEBUG("Restarting parallel to new target");
+            PLEEPLOG_DEBUG("Restarting parallel...");
             // start() is idempotent if already running
             m_sharedParallel->start();
         }

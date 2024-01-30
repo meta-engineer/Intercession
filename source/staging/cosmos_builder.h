@@ -20,7 +20,6 @@
 #include "physics/ray_collider_synchro.h"
 #include "networking/network_synchro.h"
 #include "behaviors/behaviors_synchro.h"
-#include "spacetime/spacetime_synchro.h"
 
 // include Components
 #include "physics/transform_component.h"
@@ -33,7 +32,6 @@
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
 #include "core/meta_component.h"
-#include "spacetime/spacetime_component.h"
 
 // include Behaviors
 #include "behaviors/behaviors_component.h"

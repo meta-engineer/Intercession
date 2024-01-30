@@ -71,8 +71,6 @@ namespace pleep
         // because event type is ambiguous, caller must specify entity regardless
         // data should have coherency set, but is not strictly enforced
         void push_past_timestream(Entity entity, Message<EventId>& data);
-        // Removes all data in the future timestream for this data, BUT keeps its timestream indexed
-        void clear_future_timestream(Entity entity);
         // give potenial Entities to pop from
         std::vector<Entity> get_entities_with_future_streams();
         // Restrict access for future timestreams to only be poppable
@@ -89,10 +87,11 @@ namespace pleep
         // deep copy cosmos, deep copy & link parallel to m_futureTimestreams
         void parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos);
         // sets parallel simulation target coherency.
-        // must be greater than current or sets to current and stops
+        // must be greater than current or sets to current
+        void parallel_retarget(uint16_t newTarget);
         // if simulation has reached target and stopped, restarts it
         // ideally set coherency target to be: current + 1 + delay to next (in frames)
-        void parallel_start(uint16_t newTarget);
+        void parallel_start();
         // return the timeslice that parallel is currently simulating
         // returns NULL_TIMESLICEID if not running
         TimesliceId parallel_get_timeslice();

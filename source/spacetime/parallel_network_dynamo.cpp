@@ -32,7 +32,86 @@ namespace pleep
     {
         UNREFERENCED_PARAMETER(deltaTime);
         
-        /// TODO: read from timestream
+        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+        if (m_workingCosmos.expired()) cosmos = nullptr;
+        
+        uint16_t currentCoherency = 0;
+        if (cosmos) currentCoherency = cosmos->get_coherency();
+        
+        /// handle incoming timestream messages from linked future timeslice
+        //_process_timestream_messages();
+        if (m_timelineApi.has_future())
+        {
+            std::vector<Entity> availableEntities = m_timelineApi.get_entities_with_future_streams();
+
+            for (Entity& entity : availableEntities)
+            {
+                EventMessage evnt(1);
+                // timeline api will return false if nothing available at currentCoherency or earlier
+                while (m_timelineApi.pop_future_timestream(entity, currentCoherency, evnt))
+                {
+                    // continue to clear out messages if no working cosmos
+                    if (!cosmos) continue;
+
+                    switch(evnt.header.id)
+                    {
+                    case events::cosmos::ENTITY_UPDATE:
+                    {
+                        // ONLY EXTRACT UPSTREAM COMPONENTS!
+                        events::cosmos::ENTITY_UPDATE_params updateInfo;
+                        evnt >> updateInfo;
+
+                        if (!cosmos->entity_exists(updateInfo.entity))
+                        {
+                            break;
+                        }
+
+                        Signature upstreamSign = cosmos->get_category_signature(ComponentCategory::upstream);
+
+                        // extract and dump any components I don't want
+                        // without having to know each one specifically
+                        for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
+                        {
+                            if (updateInfo.sign.test(i))
+                            {
+                                if (upstreamSign.test(i))
+                                {
+                                    cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
+                                }
+                                else
+                                {
+                                    cosmos->discard_single_component(i, evnt);
+                                }
+                            }
+                        }
+
+                    }
+                    break;
+                    case events::cosmos::ENTITY_CREATED:
+                    {
+
+                    }
+                    break;
+                    case events::cosmos::ENTITY_REMOVED:
+                    {
+                        // repeat removal
+                        events::cosmos::ENTITY_REMOVED_params removeInfo;
+                        evnt >> removeInfo;
+                        PLEEPLOG_TRACE("ENTITY_REMOVED WAS MIRRORED IN PARALLEL COSMOS! @#!@#!@#!@#!@#!@#!@#!@#!@#");
+                        PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
+
+                        // use condemn event to avoid double deletion
+                        cosmos->condemn_entity(removeInfo.entity);
+                    }
+                    break;
+                    default:
+                    {
+                        PLEEPLOG_DEBUG("Parallel encountered unknown timestream event: " + std::to_string(evnt.header.id));
+                    }
+                    }
+                }
+            }
+        }
     }
     
     void ParallelNetworkDynamo::reset_relays() 
@@ -56,16 +135,8 @@ namespace pleep
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
 
-        // This is the same as ServerNetworkDynamo
-        // if recipient has no spacetime component, add one
-        if (!cosmos->has_component<SpacetimeComponent>(interceptionInfo.recipient))
-        {
-            cosmos->add_component<SpacetimeComponent>(interceptionInfo.recipient, SpacetimeComponent{});
-        }
-        
-        SpacetimeComponent& oldSpacetime = cosmos->get_component<SpacetimeComponent>(interceptionInfo.recipient);
-        oldSpacetime.timestreamState = TimestreamState::forking;
-        oldSpacetime.timestreamStateCoherency = cosmos->get_coherency();
+        // Promote directly to forked
+        cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forked);
     }
   
     

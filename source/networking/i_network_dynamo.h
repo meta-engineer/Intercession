@@ -4,7 +4,6 @@
 //#include "intercession_pch.h"
 #include "core/a_dynamo.h"
 #include "core/cosmos_access_packet.h"
-#include "spacetime/spacetime_packet.h"
 
 namespace pleep
 {
@@ -35,12 +34,6 @@ namespace pleep
     public:
         // provide access to entire ecs to apply updates to entities only as needed
         virtual void submit(CosmosAccessPacket data) = 0;
-        
-        // (Servers only) receive all entities in non merged timestream state
-        virtual void submit(SpacetimePacket data)
-        {
-            UNREFERENCED_PARAMETER(data);
-        };
         
         // passthrough to timelineApi for servers, always null for clients
         virtual TimesliceId get_timeslice_id()
