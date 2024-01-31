@@ -89,7 +89,19 @@ namespace pleep
                     break;
                     case events::cosmos::ENTITY_CREATED:
                     {
+                        // this could be an entity created after jumping
+                        // same as server?
+                        events::cosmos::ENTITY_CREATED_params createInfo;
+                        evnt >> createInfo;
+                        PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
+                        if (cosmos->register_entity(createInfo.entity))
+                        {
+                            for (ComponentType c = 0; c < createInfo.sign.size(); c++)
+                            {
+                                if (createInfo.sign.test(c)) cosmos->add_component(createInfo.entity, c);
+                            }
+                        }
                     }
                     break;
                     case events::cosmos::ENTITY_REMOVED:
@@ -97,7 +109,6 @@ namespace pleep
                         // repeat removal
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
-                        PLEEPLOG_TRACE("ENTITY_REMOVED WAS MIRRORED IN PARALLEL COSMOS! @#!@#!@#!@#!@#!@#!@#!@#!@#");
                         PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                         // use condemn event to avoid double deletion

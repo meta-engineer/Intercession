@@ -116,16 +116,15 @@ namespace pleep
                     targetVector = glm::normalize(targetVector);
                 }
 
-                // if aim is > 90 degrees away from direction, then slow movement
-                if (glm::dot(targetVector, aimHeading) < 0.5f)
-                {
-                    targetVector *= 0.1f;
-                }
-
-
                 // if grounded accelerate from current velocity towards target
                 if (biped.isGrounded)
                 {
+                    // if aim is > 90 degrees away from direction, then slow movement
+                    if (glm::dot(targetVector, aimHeading) < 0.5f)
+                    {
+                        targetVector *= 0.1f;
+                    }
+
                     glm::vec3 targetGroundVelocity = targetVector * biped.groundTargetSpeed;
                     const glm::vec3 deltaGroundVelocity = targetGroundVelocity - planarVelocity;
 
@@ -137,7 +136,7 @@ namespace pleep
                 {
                     glm::vec3 airAcceleration = targetVector * biped.airAcceleration;
                     
-                    // TODO: remove component of airAcceleration beyond airMaxSpeed
+                    /// TODO: Air movement should only be for changing direction, should not be able to accelerate beyond airMaxSpeed
 
                     physics.acceleration += airAcceleration;
                 }

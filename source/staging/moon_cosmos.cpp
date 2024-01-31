@@ -71,8 +71,8 @@ namespace pleep
         cosmos->add_component(gamebox, gamebox_physics);
         
         RigidBodyComponent gamebox_rigidbody{};
-        gamebox_rigidbody.dynamicFriction = 0.5f;
-        gamebox_rigidbody.restitution = 0.2f;
+        gamebox_rigidbody.dynamicFriction = 0.7f;
+        gamebox_rigidbody.restitution = 0.1f;
         cosmos->add_component(gamebox, gamebox_rigidbody);
         
         BoxColliderComponent gamebox_collider;

@@ -16,8 +16,19 @@ namespace pleep
     {
     public:
         TsQueue() = default;
-        // not safe to have copies
+        // not safe to have copies? m_dequeMux is not copyable
         TsQueue(const TsQueue<T_Element>&) = delete;
+        // Non-const copy constructor???
+        TsQueue(TsQueue<T_Element>& other)
+        {
+            const std::lock_guard<std::mutex> lk(other.m_dequeMux);
+            // dont need our own lock because we are a constructor?
+
+            // are Message<> safe to copy? They are vectors, so probably
+            m_deque = other.m_deque;
+
+            // keep our own mutex and condition variable
+        }
         // I don't know why this was suggested to be virtual
         virtual ~TsQueue() { clear(); }
         

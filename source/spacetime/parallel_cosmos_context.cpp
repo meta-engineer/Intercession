@@ -303,7 +303,7 @@ namespace pleep
         if (!m_currentCosmos) return;
 
         // check if we reached our target before running next step
-        if (m_currentCosmos->get_coherency() >= m_coherencyTarget)
+        if (coherency_greater_or_equal(m_currentCosmos->get_coherency(), m_coherencyTarget))
         {
             PLEEPLOG_DEBUG("Parallel reached coherency target of " + std::to_string(m_currentCosmos->get_coherency()));
 

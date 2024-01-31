@@ -66,7 +66,6 @@ namespace pleep
             EntityTimestreamMap::unlink_timestreams(source);
             PLEEPLOG_DEBUG("unlink destination timestream");
             EntityTimestreamMap::unlink_timestreams(destination);
-            destination->clear();
 
             static std::mutex deadlockMux;
             // since only 1 thread can have this lock...
@@ -76,19 +75,16 @@ namespace pleep
             const std::lock_guard<std::mutex> dk(destination->m_mapMux);
             PLEEPLOG_DEBUG("squired both locks");
 
-
-
-
-
             PLEEPLOG_DEBUG("copy timestream data");
             /// TODO: copy all current contents
-            /// TsQueue can be copied?
-            //destination->m_timestreams = source->m_timestreams;
-
-
-
-
-
+            /// unordered_map copy constructor?
+            // do not use class method to avoid self-deadlock
+            destination->m_timestreams.clear();
+            /// TsQueue can be copied? only by emplacing!
+            for (auto& srcIt : source->m_timestreams)
+            {
+                destination->m_timestreams.emplace(srcIt.first, srcIt.second);
+            }
 
             PLEEPLOG_DEBUG("set link pointers");
             // link source parallel

@@ -105,7 +105,7 @@ namespace pleep
                 // double check if we are it's host
                 if (derive_timeslice_id(data.entity) != m_timelineApi.get_timeslice_id())
                 {
-                    PLEEPLOG_WARN("Received a ENTITY_CREATED signal for an entity we don't host. Is this intentional?");
+                    PLEEPLOG_WARN("Received ENTITY_CREATED signal for an entity we don't host. Is this intentional?");
                 }
                 else
                 {
@@ -279,12 +279,12 @@ namespace pleep
                 PLEEPLOG_DEBUG("Received finished notification from parallel context at coherency " + std::to_string(msg.header.coherency) + " on my coherency " + std::to_string(cosmos->get_coherency()));
 
                 // check if coherency matches
-                if (msg.header.coherency == cosmos->get_coherency())
+                if (cosmos->get_coherency() == msg.header.coherency)
                 {
                     // sync sucessful
                     m_timelineApi.parallel_extract(cosmos);
                 }
-                else if (msg.header.coherency < cosmos->get_coherency())
+                else if (coherency_greater_or_equal(cosmos->get_coherency(), msg.header.coherency))
                 {
                     // my coherency is ahead of parallel:
                     // restart it and try to get it to match on next frame
