@@ -73,8 +73,7 @@ namespace pleep
         catch (const std::exception& expt)
         {
             UNREFERENCED_PARAMETER(expt);
-            PLEEPLOG_ERROR("The following uncaught exception occurred during CosmosContext::run(): ");
-            PLEEPLOG_ERROR(expt.what());
+            PLEEPLOG_ERROR("The following uncaught exception occurred during CosmosContext::run(): " + std::string(expt.what()));
 
             // TODO: store exception or some other error state for AppGateway to read after thread finishes
         }

@@ -21,7 +21,7 @@ namespace pleep
         // Keep frame loop alive until then
 
         // setup any event handlers
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_REQUEST, ClientNetworkDynamo::_jump_request_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ClientNetworkDynamo::_jump_departure_handler));
         
         PLEEPLOG_TRACE("Done client networking pipeline setup");
     }
@@ -29,7 +29,7 @@ namespace pleep
     ClientNetworkDynamo::~ClientNetworkDynamo() 
     {
         // clear event handlers
-        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_REQUEST, ClientNetworkDynamo::_jump_request_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ClientNetworkDynamo::_jump_departure_handler));
     }
 
     void ClientNetworkDynamo::run_relays(double deltaTime) 
@@ -189,28 +189,31 @@ namespace pleep
                 cosmos->set_coherency(msg.header.coherency);
             }
             break;
-            case events::network::JUMP_RESPONSE:
+            case events::network::JUMP_ARRIVAL:
             {
-                events::network::JUMP_RESPONSE_params jumpInfo;
+                events::network::JUMP_ARRIVAL_params jumpInfo;
                 msg >> jumpInfo;
 
                 // check if server has denied our jump request
-                if (jumpInfo.port == 0) break;
+                if (jumpInfo.tripId == 0) break;
                 
-                PLEEPLOG_TRACE("Received JUMP_RESPONSE message, i can connect to: " + std::to_string(jumpInfo.port) + " with trasfer code: " + std::to_string(jumpInfo.transferCode));
+                PLEEPLOG_TRACE("Received JUMP_ARRIVAL message, i can connect to: " + std::to_string(jumpInfo.port) + " with trip id: " + std::to_string(jumpInfo.tripId));
 
                 // save local entities into cache to be restored upon next connection
                 cache_client_local_entities(m_jumpCache, cosmos, m_sharedBroker);
+                // also save jumped/focal entity?
 
                 // signal to clear the cosmos and prep for data from the new connection
                 EventMessage condemnMsg(events::cosmos::CONDEMN_ALL);
                 m_sharedBroker->send_event(condemnMsg);
+                /// TODO: how do we want timeslice transitions to look graphically?
+                /// Any client-side entities we want to keep around while connecting in the background?
 
-                // TODO: I should know the currently connected address from startup
+                /// TODO: I should know the currently connected address from startup?
                 restart_connection("127.0.0.1", jumpInfo.port);
 
                 // save transfer code to use when connection succeeds
-                m_transferCode = jumpInfo.transferCode;
+                m_transferCode = jumpInfo.tripId;
             }
             break;
             default:
@@ -248,10 +251,12 @@ namespace pleep
         m_networkApi.connect(address, port);
     }
 
-    void ClientNetworkDynamo::_jump_request_handler(EventMessage jumpMsg)
+    void ClientNetworkDynamo::_jump_departure_handler(EventMessage jumpMsg)
     {
-        // some behavior has called to request a timeslice jump
-        // forward message on to server, expecting a JUMP_RESPONSE sometime soon
+        /// TODO: Should we let the servers behaviour trigger the request, via our input?
+        ///     Otherwise will we have a duplicate request?
+
+        // forward message on to server, expecting a JUMP_ARRIVAL to be returned to us sometime soon
         m_networkApi.send_message(jumpMsg);
     }
 }

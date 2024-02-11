@@ -182,7 +182,7 @@ namespace pleep
 
                     // Used to notify server that client is transferring from another timeslice
                     // 0 indicates no transfer (brand-new)
-                    // value should be copied from a received JUMP_RESPONSE
+                    // value should be copied from a received JUMP_ARRIVAL
                     uint32_t transferCode = 0;
 
                     // used by server to respond to new client with their assigned focal entity
@@ -200,52 +200,47 @@ namespace pleep
 
             // Request timetravel
             // entity will be serialized into the Message before _params
-            const EventId JUMP_REQUEST = __LINE__;
-                struct JUMP_REQUEST_params
+            const EventId JUMP_DEPARTURE = __LINE__;
+                struct JUMP_DEPARTURE_params
                 {
                     // relative number of timeslices requested to jump (negative is to future)
                     // Should this be relative or absolute?
+                    // relative, so that we can calculate estimated arrival frame
                     int timesliceDelta = 0;
 
-                    // assigned by source timeslice then reflected back by destination in JUMP_RESPONSE
-                    uint32_t requesterConnId;
+                    // unique identifier for matching departure&arrival pairs
+                    // (usually generated from timestamp)
+                    uint32_t tripId;
 
-                    // Entity belonging to address who is jumping
+                    // Entity who is jumping
                     // REMEMBER to serialize this entity in message before adding params!
                     Entity entity = NULL_ENTITY;
                     Signature sign;
+
+                    // indicates that this is the focal entity for a client
+                    bool isFocal = false;
                 };
             // Reponse returned by destination timeslice to confirm that they are ready to receive the time traveller
-            const EventId JUMP_RESPONSE = __LINE__;
-                struct JUMP_RESPONSE_params
+            const EventId JUMP_ARRIVAL = __LINE__;
+                struct JUMP_ARRIVAL_params
                 {
-                    // return client connection id which server provided us in the JUMP_REQUEST
-                    uint32_t requesterConnId = 0;
+                    // relative number of timeslices requested to jump (negative is to future)
+                    // (negation of the departure)
+                    int timesliceDelta = 0;
 
-                    // generated secret code for client to use when they connect
+                    // unique identifier for matching departure&arrival pairs (copied from departure)
                     // 0 implies failure, do not jump
-                    uint32_t transferCode = 0;
+                    uint32_t tripId;
+
+                    // Entity who is jumping (copied from departure)
+                    Entity entity = NULL_ENTITY;
+
+                    // indicates that this is the focal entity for a client (copied from departure)
+                    bool isFocal = false;
 
                     // inform client of where to connect
-                    // they must already know the address
+                    // they must already know the address?
                     uint16_t port = 0;
-                };
-            // meta-data about a jump event used by parallel cosmos timestreams
-            const EventId JUMP_RECEIPT = __LINE__;
-                struct JUMP_RECEIPT_params
-                {
-                    // was this event a departure or an arrival?
-                    bool isDeparture;
-
-                    // use message header coherency is when this event occurred
-                    // coherency point when this event's sister occurred in the other timeslice
-                    uint16_t otherCoherency;
-
-                    // Entity who is jumping
-                    Entity entity;
-
-                    // unique identifier for matching departure&arrival pairs
-                    std::chrono::system_clock::time_point tripId;
                 };
         } // namespace network
 

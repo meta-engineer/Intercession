@@ -93,6 +93,16 @@ namespace pleep
 
     void Cosmos::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
     {
+        if (!entity_exists(entity))
+        {
+            PLEEPLOG_WARN("Tried to deserialize entity " + std::to_string(entity) + " which does not exist?");
+            return;
+        }
+
+        Signature entitySign = this->get_entity_signature(entity);
+        // add component if missing from entitySign
+        if (!entitySign.test(type)) add_component(entity, type);
+
         m_componentRegistry->deserialize_single_component(entity, type, msg);
     }
     

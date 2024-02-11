@@ -44,6 +44,7 @@ namespace pleep
         void _entity_created_handler(EventMessage creationEvent);
         void _entity_removed_handler(EventMessage removalEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
+        void _jump_departure_handler(EventMessage jumpEvent);
 
         // TimelineApi (generated for us by AppGateway) to communicate with other servers
         TimelineApi m_timelineApi;
@@ -53,12 +54,12 @@ namespace pleep
 
         std::weak_ptr<Cosmos> m_workingCosmos;
 
-        // Save serialized entities waiting for their clients to connect
-        std::unordered_map<uint32_t, EventMessage> m_transferCache;
-
         // map of currently existing client focal entities (NOT necessarily our hosted entities)
         // uint32_t is connection id value, used to search for Connection object
         std::unordered_map<Entity, uint32_t> m_clientEntities;
+
+        // temporary mapping between transfercodes and focal entities for soon-to-be connecting clients
+        std::unordered_map<uint32_t, Entity> m_transferCache;
     };
 }
 

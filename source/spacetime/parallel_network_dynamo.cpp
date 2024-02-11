@@ -146,7 +146,7 @@ namespace pleep
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
 
-        // Promote directly to forked
+        // Promote directly to forked (no need to have any forking delay while already in parallel)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forked);
     }
   

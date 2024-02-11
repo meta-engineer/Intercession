@@ -191,10 +191,10 @@ namespace pleep
                     //      one entity has chainlink 0 AND the other is not chainlink 0
                     //  OR
                     //      neither entity is chainlink 0 and one entity has a "forked" state AND the other is not forked
-                    if ((thisLink  != NULL_CAUSALCHAINLINK) && (otherLink != NULL_CAUSALCHAINLINK) &&
-                        (((thisLink==0) ^ (otherLink==0))
-                         ||
-                         (thisLink!=0 && otherLink!=0 && (is_divergent(thisState) ^ is_divergent(otherState)))
+                    if ((thisLink  != NULL_CAUSALCHAINLINK) && (otherLink != NULL_CAUSALCHAINLINK) && (
+                            ((thisLink==0) ^ (otherLink==0))
+                            ||
+                            (thisLink!=0 && otherLink!=0 && (is_divergent(thisState) ^ is_divergent(otherState)))
                         )
                        )
                     {

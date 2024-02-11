@@ -91,6 +91,9 @@ namespace pleep
                 std::string hostedCountString = "Hosted Entity Count: " + std::to_string(m_currentCosmos->get_num_hosted_entities());
                 ImGui::Text(hostedCountString.c_str());
 
+                std::string focalEntityString = "Focal entity: " + std::to_string(m_currentCosmos->get_focal_entity());
+                ImGui::Text(focalEntityString.c_str());
+
                 ImGui::Text(("Update count: " + std::to_string(m_currentCosmos->get_coherency())).c_str());
             }
 
@@ -99,7 +102,8 @@ namespace pleep
 
             // Edit 1 float using a slider from 0.0f to 1.0f
             //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+            // Edit 3 floats representing a color
+            //ImGui::ColorEdit3("clear color", (float*)&clear_color);
 
             ImGui::Text("NetworkDynamo%sconnected",
                  m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
@@ -122,29 +126,25 @@ namespace pleep
             ImGui::SameLine();
             if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
 
-            if (ImGui::Button("Jump to past"))
+            if (ImGui::Button("Quick jump to past"))
             {
                 // usually this would be invoked from some behavior (responding to a keystroke)
                 // which means it must occur via eventBroker
-                EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
                 Entity me = m_currentCosmos->get_focal_entity();
-                Signature mySign = m_currentCosmos->get_entity_signature(me);
-                m_currentCosmos->serialize_entity_components(me, mySign, jumpMessage);
-                events::network::JUMP_REQUEST_params jumpInfo{
-                    1, 0, me, mySign
+                events::network::JUMP_DEPARTURE_params jumpInfo{
+                    1, {}, me
                 };
                 jumpMessage << jumpInfo;
                 m_eventBroker->send_event(jumpMessage);
             }
             ImGui::SameLine();
-            if (ImGui::Button("Jump to future"))
+            if (ImGui::Button("Quick jump to future"))
             {
-                EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
                 Entity me = m_currentCosmos->get_focal_entity();
-                Signature mySign = m_currentCosmos->get_entity_signature(me);
-                m_currentCosmos->serialize_entity_components(me, mySign, jumpMessage);
-                events::network::JUMP_REQUEST_params jumpInfo{
-                    -1, 0, me, mySign
+                events::network::JUMP_DEPARTURE_params jumpInfo{
+                    -1, {}, me
                 };
                 jumpMessage << jumpInfo;
                 m_eventBroker->send_event(jumpMessage);

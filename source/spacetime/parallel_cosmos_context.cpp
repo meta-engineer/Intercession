@@ -197,6 +197,7 @@ namespace pleep
             {
                 // ignore non-temporal entities
                 // (or entities with chainlink 0, how did they even get forked to begin with?)
+                PLEEPLOG_ERROR("Failed to extract entity " + std::to_string(localEntity) + " because its causal chain link value is: " + std::to_string(derive_causal_chain_link(localEntity)));
                 continue;
             }
 
@@ -208,7 +209,8 @@ namespace pleep
                 /// use parallel entity as source for local entity
                 continue;
             }
-            else if (is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
+            // easier to extract ALL local entities, than to compute non-divergences somehow
+            else if (true)//(is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
             {
                 m_currentCosmos->serialize_entity_components(signMapIt.first, signMapIt.second, extraction);
 
@@ -224,6 +226,13 @@ namespace pleep
                 
                 // carry over their forked state to ensure copying to next parallel
                 dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
+
+                PLEEPLOG_TRACE("Extracted entity: " + std::to_string(signMapIt.first));
+            }
+            else
+            {
+                // entity was not created nor forked during parallel
+                PLEEPLOG_TRACE("Ignoring entity: " + std::to_string(signMapIt.first));
             }
 
             // if this is timeslice 0 then clear all forked entity states NOW

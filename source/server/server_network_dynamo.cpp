@@ -30,6 +30,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ServerNetworkDynamo::_timestream_interception_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ServerNetworkDynamo::_jump_departure_handler));
 
         PLEEPLOG_TRACE("Done server networking pipeline setup");
     }
@@ -40,6 +41,7 @@ namespace pleep
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ServerNetworkDynamo::_timestream_interception_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ServerNetworkDynamo::_jump_departure_handler));
     }
     
     void ServerNetworkDynamo::run_relays(double deltaTime) 
@@ -198,54 +200,109 @@ namespace pleep
                 }
             }
             break;
-            case events::network::JUMP_REQUEST:
+            case events::network::JUMP_DEPARTURE:
             {
-                PLEEPLOG_DEBUG("Received jump request from a server");
+                PLEEPLOG_DEBUG("Received jump departure request from a server");
 
-                events::network::JUMP_REQUEST_params jumpInfo;
+                events::network::JUMP_DEPARTURE_params jumpInfo;
                 msg >> jumpInfo;
-                msg << jumpInfo;
                 
-                // generate transfer code for client
-                uint32_t timeSeed = static_cast<uint32_t>(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-                );
-                uint32_t transferCode = Squirrel3(jumpInfo.entity, timeSeed);
-                while(m_transferCache.count(transferCode))
-                {
-                    PLEEPLOG_ERROR("Generated transfer code is already taken, trying again...");
-                    timeSeed--;
-                    transferCode = Squirrel3(jumpInfo.entity, timeSeed);
-                }
-
-                // save entity in preparation for client to connect soon
-                m_transferCache.insert({transferCode, msg});
-
-                // return good jump response
-                EventMessage responseMsg(events::network::JUMP_RESPONSE);
-                events::network::JUMP_RESPONSE_params responseInfo{
-                    jumpInfo.requesterConnId,
-                    transferCode,
+                int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
+                
+                // return jump arrival (delta should be guarenteed valid)
+                EventMessage arrivalMsg(events::network::JUMP_ARRIVAL);
+                events::network::JUMP_ARRIVAL_params arrivalInfo{
+                    jumpInfo.timesliceDelta * -1,
+                    jumpInfo.tripId,
+                    jumpInfo.entity,
+                    jumpInfo.isFocal,
                     m_timelineApi.get_port()
                 };
-                responseMsg << responseInfo;
+                // wait to pack params until we know if result was good
 
-                // return to sender
-                int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
-                m_timelineApi.send_message(static_cast<TimesliceId>(source), responseMsg);
+                // agnostic to pc or npc we'll create the entity now, 
+                //   and expect pcs will have their clients connect later with tripId
+                if (m_clientEntities.count(jumpInfo.entity) > 0 || cosmos->entity_exists(jumpInfo.entity))
+                {
+                    PLEEPLOG_ERROR("Entity already exists during jump request?");
+                    // return failure response
+                    arrivalInfo.tripId = 0;
+                    arrivalInfo.port = 0;
+                    
+                    arrivalMsg << arrivalInfo;
+                    // return to sender
+                    m_timelineApi.send_message(static_cast<TimesliceId>(source), arrivalMsg);
+                }
+                else
+                {
+                    // Push jump arrival to timeline (BEFORE creation event occurs)
+                    // Note that arrival doesn't contain serialized data
+                    if (m_timelineApi.has_past())
+                    {
+                        increment_causal_chain_link(arrivalInfo.entity);
+
+                        arrivalMsg << arrivalInfo;
+                        m_timelineApi.push_past_timestream(arrivalInfo.entity, arrivalMsg);
+
+                        // restore message/info state for use in present
+                        arrivalMsg >> arrivalInfo;
+                        decrement_causal_chain_link(arrivalInfo.entity);
+                    }
+
+                    cosmos->register_entity(jumpInfo.entity);
+
+                    // A normal timestream invoked register should NOT increment host count
+                    // because it is dont upon pushing that creation event to the timestream
+                    // but here we need to specially invoke host count increment
+                    // (this is in addition to host increment in event handler if we have a past)
+                    EventMessage createMsg(events::cosmos::ENTITY_CREATED);
+                    events::cosmos::ENTITY_CREATED_params createInfo{
+                        jumpInfo.entity,
+                        jumpInfo.sign
+                    };
+                    createMsg << createInfo;
+                    m_timelineApi.send_message(derive_timeslice_id(createInfo.entity), createMsg);
+
+                    // entity exists now, write components to it
+                    cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, false, msg);
+                    
+                    // save tripId in client map in preparation for client to connect soon
+                    if (jumpInfo.isFocal)
+                    {
+                        // Between this point and client connection
+                        // we may accidentally try to access that connection id which is not real
+                        // maybe we want a dedicated "transfer" buffer to store waiting trips?
+
+                        m_transferCache.insert({ jumpInfo.tripId, jumpInfo.entity });
+                    }
+
+                    arrivalMsg << arrivalInfo;
+                    // return to sender
+                    m_timelineApi.send_message(static_cast<TimesliceId>(source), arrivalMsg);
+
+                    // Jump Complete!
+                }
             }
             break;
-            case events::network::JUMP_RESPONSE:
+            case events::network::JUMP_ARRIVAL:
             {
                 PLEEPLOG_DEBUG("Received jump response from a server");
 
-                events::network::JUMP_RESPONSE_params jumpInfo;
+                events::network::JUMP_ARRIVAL_params jumpInfo;
                 msg >> jumpInfo;
                 msg << jumpInfo;
 
-                // forward message to jump requesting client
-                PLEEPLOG_DEBUG("Forwarding to " + std::to_string(jumpInfo.requesterConnId));
-                m_networkApi.send_message(jumpInfo.requesterConnId, msg);
+                // if entity belongs to a client forward message to them
+                if (jumpInfo.isFocal)
+                {
+                    uint32_t connId = m_clientEntities.at(jumpInfo.entity);
+                    PLEEPLOG_DEBUG("Forwarding it to " + std::to_string(connId));
+                    m_networkApi.send_message(connId, msg);
+                }
+
+                // How do we ensure that host count does not reach 0 prematurely?
+                // We must only delete jumping entity now that they are guarenteed to exist elsewhere
+                cosmos->condemn_entity(jumpInfo.entity);
             }
             break;
             case events::cosmos::CONDEMN_ENTITY:
@@ -325,6 +382,10 @@ namespace pleep
                 {
                     // continue to clear out messages if no working cosmos
                     if (!cosmos) continue;
+
+                    // pop will stop if next message is too far in future, but
+                    // if message is from too far in the past ignore it also
+                    if (evnt.header.coherency < cosmos->get_coherency()) continue;
                     
                     // Handle timestream messages just as a client would, i think?
                     switch(evnt.header.id)
@@ -475,44 +536,9 @@ namespace pleep
                 // check transfer codes for available entity
                 if (clientInfo.transferCode != 0 && m_transferCache.count(clientInfo.transferCode))
                 {
-                    // fetch serialized entity data cache from previous JUMP_REQUEST
-                    EventMessage jumpMsg = m_transferCache.at(clientInfo.transferCode);
+                    // entity should be ready and waiting already
+                    clientInfo.entity = m_transferCache.at(clientInfo.transferCode);
                     m_transferCache.erase(clientInfo.transferCode);
-                    events::network::JUMP_REQUEST_params jumpInfo;
-                    jumpMsg >> jumpInfo;
-
-                    if (cosmos->register_entity(jumpInfo.entity))
-                    {
-                        clientInfo.entity = jumpInfo.entity;
-        
-                        cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, false, jumpMsg);
-                        PLEEPLOG_DEBUG("Registered entity from transfer cache " + std::to_string(jumpInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
-
-                        // signal to host to incrememnt host count (like create_entity does locally)
-                        // (this is in addition to host increment in event handler if we have a past)
-                        EventMessage createMsg(events::cosmos::ENTITY_CREATED);
-                        events::cosmos::ENTITY_CREATED_params createInfo{
-                            jumpInfo.entity,
-                            jumpInfo.sign
-                        };
-                        createMsg << createInfo;
-                        m_timelineApi.send_message(derive_timeslice_id(createInfo.entity), createMsg);
-
-                        // signal jump source timeslice to delete its copy of entity
-                        // (as long as the above createMsg is received first, host count will not 0 out)
-                        EventMessage condemnMsg(events::cosmos::CONDEMN_ENTITY);
-                        events::cosmos::CONDEMN_ENTITY_params condemnInfo{
-                            jumpInfo.entity
-                        };
-                        condemnMsg << condemnInfo;
-                        int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
-                        m_timelineApi.send_message(static_cast<TimesliceId>(source), condemnMsg);
-                    }
-                    else
-                    {
-                        PLEEPLOG_ERROR("Registry of transferred entity " + std::to_string(jumpInfo.entity) + " failed");
-                        clientInfo.entity = NULL_ENTITY;
-                    }
                 }
                 else
                 {
@@ -547,34 +573,20 @@ namespace pleep
                 m_clientEntities.insert({ clientInfo.entity, remoteMsg.remote->get_id() });
             }
             break;
-            case events::network::JUMP_REQUEST:
+            case events::network::JUMP_DEPARTURE:
             {
                 PLEEPLOG_DEBUG("[" + std::to_string(remoteMsg.remote->get_id()) + "] Received jump request from a client");
+                
+                // Do we have to attach connection id? 
+                // Can't we simply check if the jumped entity is focussed by a client and inform them the jump is successful?
+                // Are there any cases where a client would request a jump for a non-focal entity?
+                // Or do we want to explicitly forbid that?
+                // in general the client should be able to invoke behaviours of some entity, and that can let it trigger a jump by itself
 
-                // lead local client connection id into message
-                events::network::JUMP_REQUEST_params jumpInfo;
-                remoteMsg.msg >> jumpInfo;
-                jumpInfo.requesterConnId = remoteMsg.remote->get_id();
-                remoteMsg.msg << jumpInfo;
+                events::network::JUMP_DEPARTURE_params jumpInfo;
 
-                // send to server based on timesliceDelta
-                int destination = m_timelineApi.get_timeslice_id() + jumpInfo.timesliceDelta;
-
-                // ensure destination is in range
-                if (destination < 0 || destination > m_timelineApi.get_num_timeslices() - 1)
-                {
-                    // create error response for client
-                    EventMessage errorMsg(events::network::JUMP_RESPONSE);
-                    events::network::JUMP_RESPONSE_params errorInfo{
-                        0, 0, 0
-                    };
-                    errorMsg << errorInfo;
-                    remoteMsg.remote->send(errorMsg);
-                    break;
-                }
-
-                // good to send now
-                m_timelineApi.send_message(static_cast<TimesliceId>(destination), remoteMsg.msg);
+                // forward to general jump departure handler
+                m_sharedBroker->send_event(remoteMsg.msg);
             }
             break;
             default:
@@ -693,7 +705,7 @@ namespace pleep
         // Entity cannot be created in a non-normal timestreamState?
 
         // if entity was created locally, its host count starts at 1
-        // if entity was send from the future, it will have been incrememnted when it entered our future timestream
+        // if entity has propagated from the future, it will have been incrememnted when it entered our future timestream
 
         // If we have a past timeslice, that means next frame this entity updates will enter the past timestream
         if (m_timelineApi.has_past())
@@ -787,6 +799,62 @@ namespace pleep
             // timesliceId decreases into the future
             assert(m_timelineApi.get_timeslice_id() > 0);
             m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, interceptionEvent);
+        }
+    }
+
+    void ServerNetworkDynamo::_jump_departure_handler(EventMessage jumpEvent)
+    {
+        // some behavior or forwarded client message has called for an entity to jump
+        // Message should not yet have serialized data!
+        events::network::JUMP_DEPARTURE_params jumpInfo;
+        jumpEvent >> jumpInfo;
+
+        // jumps triggered by propogated entities (chainlink > 0) are duplicates and can be ignored
+        if (derive_causal_chain_link(jumpInfo.entity) > 0) return;
+
+        // generate our own tripId (can't trust client)
+        uint32_t timeSeed = static_cast<uint32_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+        );
+        jumpInfo.tripId = Squirrel3(jumpInfo.entity, timeSeed);
+
+        // forward request to destination timeslice based on timesliceDelta
+        int destination = m_timelineApi.get_timeslice_id() + jumpInfo.timesliceDelta;
+
+        // check if this entity belongs to a client right now
+        if (m_clientEntities.count(jumpInfo.entity) > 0)
+        {
+            jumpInfo.isFocal = true;
+        }
+
+        // ensure destination is in range AND is not same as present
+        if (destination < 0 || destination > m_timelineApi.get_num_timeslices() - 1 || destination == m_timelineApi.get_timeslice_id())
+        {
+            /// TODO: if client invoked this jump inform then that request is invalid?
+        }
+        else
+        {
+            // build message data now (server side)
+            std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+            jumpInfo.sign = cosmos->get_entity_signature(jumpInfo.entity);
+            cosmos->serialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpEvent);
+            jumpEvent << jumpInfo;
+            
+            // There will be a small delay before we know if jump succeeded or failed
+            // after which we can reset and/or inform client
+
+            // good to send now
+            m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
+
+            // push to my timestream? Remember to increment chain link
+            if (m_timelineApi.has_past())
+            {
+                jumpEvent >> jumpInfo;
+                increment_causal_chain_link(jumpInfo.entity);
+                jumpEvent << jumpInfo;
+                m_timelineApi.push_past_timestream(jumpInfo.entity, jumpEvent);
+            }
+
         }
     }
 }
