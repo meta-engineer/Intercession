@@ -100,9 +100,12 @@ namespace pleep
             const EventId ENTITY_UPDATE = __LINE__;
                 struct ENTITY_UPDATE_params {
                     Entity entity = NULL_ENTITY;
+                    // indicates which components are serialized in this message
+                    // and therefore the components you must deserialize (even if you discard some)
                     Signature sign;
-                    // indicates if components omitted from sign are NOT implied as removed
-                    bool subset = false;
+                    // indicates which components from the sign to use
+                    // (only ComponentCategory::all implies removal of components)
+                    ComponentCategory category;
                 };
 
             // Request for the whole cosmos to be remade

@@ -129,17 +129,11 @@ namespace pleep
 
         EventMessage lanMsg(events::cosmos::ENTITY_UPDATE);
         cosmos->serialize_entity_components(crate, lanMsg);
-        events::cosmos::ENTITY_UPDATE_params lanInfo = { fakeCrate, cosmos->get_entity_signature(crate) };
-        //lanMsg << lanInfo;
 
         cosmos->destroy_entity(crate);
 
         cosmos->register_entity(fakeCrate);
-        for (ComponentType c = 0; c < lanInfo.sign.size(); c++)
-        {
-            if (lanInfo.sign.test(c)) cosmos->add_component(lanInfo.entity, c);
-        }
-        cosmos->deserialize_entity_components(fakeCrate, lanMsg);
+        cosmos->deserialize_entity_components(fakeCrate, lanMsg, ComponentCategory::all);
         // ***************************************************************************/
 
 

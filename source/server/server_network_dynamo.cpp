@@ -264,7 +264,7 @@ namespace pleep
                     m_timelineApi.send_message(derive_timeslice_id(createInfo.entity), createMsg);
 
                     // entity exists now, write components to it
-                    cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, false, msg);
+                    cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, msg, ComponentCategory::all);
                     
                     // save tripId in client map in preparation for client to connect soon
                     if (jumpInfo.isFocal)
@@ -426,7 +426,7 @@ namespace pleep
                         else
                         {
                             // if non-divergent entity, then read update into Cosmos as normal
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, evnt);
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
                         }
                     }
                     break;
@@ -487,7 +487,7 @@ namespace pleep
                 // TODO: Check updated entity matches client's assigned entity
 
                 // We should only be receiving upstream components...
-                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, true, remoteMsg.msg);
+                if (cosmos) cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, remoteMsg.msg, ComponentCategory::upstream);
             }
             break;
             case events::network::NEW_CLIENT:
@@ -554,7 +554,7 @@ namespace pleep
                 events::cosmos::ENTITY_UPDATE_params updateInfo = {
                     clientInfo.entity,
                     cosmos->get_entity_signature(clientInfo.entity) & cosmos->get_category_signature(ComponentCategory::upstream),
-                    true
+                    ComponentCategory::upstream
                 };
                 cosmos->serialize_entity_components(updateInfo.entity, updateInfo.sign, updateMsg);
 
@@ -607,7 +607,7 @@ namespace pleep
                 events::cosmos::ENTITY_UPDATE_params clientUpdateInfo = {
                     signIt.first,
                     signIt.second & cosmos->get_category_signature(ComponentCategory::downstream),
-                    true
+                    ComponentCategory::downstream
                 };
                 cosmos->serialize_entity_components(clientUpdateInfo.entity, clientUpdateInfo.sign, clientUpdateMsg);
 
@@ -625,7 +625,7 @@ namespace pleep
                 events::cosmos::ENTITY_UPDATE_params childUpdateInfo = {
                     signIt.first,
                     signIt.second,  // full signature of components
-                    false
+                    ComponentCategory::all
                 };
                 cosmos->serialize_entity_components(childUpdateInfo.entity, childUpdateInfo.sign, childUpdateMsg);
                 
@@ -842,11 +842,12 @@ namespace pleep
             
             // There will be a small delay before we know if jump succeeded or failed
             // after which we can reset and/or inform client
+            // for now assume ok and send/emplace in timestream
 
             // good to send now
             m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
 
-            // push to my timestream? Remember to increment chain link
+            // push to my timestream: Remember to increment chain link
             if (m_timelineApi.has_past())
             {
                 jumpEvent >> jumpInfo;

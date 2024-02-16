@@ -57,7 +57,7 @@ namespace pleep
                 events::cosmos::ENTITY_UPDATE_params focalInfo = {
                     focalEntity, 
                     cosmos->get_entity_signature(focalEntity) & cosmos->get_category_signature(ComponentCategory::upstream),
-                    true
+                    ComponentCategory::upstream
                 };
                 cosmos->serialize_entity_components(focalInfo.entity, focalInfo.sign, focalUpdate);
                 focalUpdate << focalInfo;
@@ -117,7 +117,7 @@ namespace pleep
                 if (cosmos->entity_exists(updateInfo.entity))
                 {
                     // read update into Cosmos
-                    cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, updateInfo.subset, msg);
+                    cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, msg, updateInfo.category);
                 }
                 else
                 {

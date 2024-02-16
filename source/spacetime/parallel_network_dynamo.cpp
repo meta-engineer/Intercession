@@ -57,7 +57,6 @@ namespace pleep
                     {
                     case events::cosmos::ENTITY_UPDATE:
                     {
-                        // ONLY EXTRACT UPSTREAM COMPONENTS!
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
                         evnt >> updateInfo;
 
@@ -66,25 +65,8 @@ namespace pleep
                             break;
                         }
 
-                        Signature upstreamSign = cosmos->get_category_signature(ComponentCategory::upstream);
-
-                        // extract and dump any components I don't want
-                        // without having to know each one specifically
-                        for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
-                        {
-                            if (updateInfo.sign.test(i))
-                            {
-                                if (upstreamSign.test(i))
-                                {
-                                    cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
-                                }
-                                else
-                                {
-                                    cosmos->discard_single_component(i, evnt);
-                                }
-                            }
-                        }
-
+                        // ONLY EXTRACT UPSTREAM COMPONENTS!
+                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
@@ -113,6 +95,20 @@ namespace pleep
 
                         // use condemn event to avoid double deletion
                         cosmos->condemn_entity(removeInfo.entity);
+                    }
+                    break;
+                    case events::network::JUMP_DEPARTURE:
+                    {
+                        // encountered a jump during re-simulation
+                        // we need to determine if the events of the re-sim have diverged "significantly" enough
+                        // and the departure which occurs in-cosmos does not match this one
+                        // meaning the arrival with the corresponding tripId no longer makes sense
+                        // (including if this departure NEVER occurs in-cosmos)
+
+                        // Networker happens before behaver this frame, so we should store this event,
+                        // and wait for the behaver to trigger its version.
+                        // Do we have any margin for being off frame?
+                        // departures are emplaced upon first event emission
                     }
                     break;
                     default:

@@ -79,7 +79,7 @@ namespace pleep
 
         // loop through each ComponentType in entitySign, map to name, index that component array,
         // call deserialize_single_component with that component
-        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
+        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg, Signature filterSign);
 
         // index component array using name,
         // get that array to unpack next data in msg, and copy it into entity's data
@@ -252,7 +252,7 @@ namespace pleep
         }
     }
 
-    inline void ComponentRegistry::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg)
+    inline void ComponentRegistry::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg, Signature filterSign)
     {
         for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
         {
@@ -266,7 +266,14 @@ namespace pleep
 
                 // default:
                 //PLEEPLOG_DEBUG("Deserializing msg(" + std::to_string(msg.size()) + ") into " + std::string(componentTypename));
-                this->deserialize_single_component(entity, i, msg);
+                if (filterSign.test(i))
+                {
+                    this->deserialize_single_component(entity, i, msg);
+                }
+                else
+                {
+                    this->discard_single_component(i, msg);
+                }
             }
         }
     }

@@ -69,10 +69,10 @@ namespace pleep
     // or we could have the component registry assign a clasification on registry...
     enum class ComponentCategory
     {
-        unknown,
+        all,            // Any Components
         downstream,     // Components which flow out to clients
         upstream,       // Components which flow into servers
-        count
+        unknown
     };
 
     // Helper functions for comprehending Entity bit-wise composition

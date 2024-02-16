@@ -84,7 +84,7 @@ namespace pleep
                 
                 // entity value is not transferable so flag as NULL_ENTITY
                 events::cosmos::ENTITY_UPDATE_params entityInfo{
-                    NULL_ENTITY, e.second, false
+                    NULL_ENTITY, e.second, ComponentCategory::all
                 };
                 jumpCache.back() << entityInfo;
             }
@@ -106,7 +106,7 @@ namespace pleep
             
             // create entity
             const Entity reload = cosmos->create_entity(false);
-            cosmos->deserialize_entity_components(reload, entityInfo.sign, entityInfo.subset, entityMsg);
+            cosmos->deserialize_entity_components(reload, entityInfo.sign, entityMsg, entityInfo.category);
 
 
             // special cases:

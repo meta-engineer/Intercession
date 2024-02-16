@@ -135,8 +135,8 @@ namespace pleep
             m_currentCosmos->deserialize_entity_components(
                 signMapIt.first,
                 signMapIt.second,
-                false,
-                entityUpdate
+                entityUpdate,
+                ComponentCategory::all
             );
             assert(m_currentCosmos->entity_exists(signMapIt.first));
 
@@ -222,7 +222,7 @@ namespace pleep
                 assert(dstCosmos->entity_exists(localEntity));
 
                 /// parallel forked entities to be extracted to destination
-                dstCosmos->deserialize_entity_components(localEntity, signMapIt.second, false, extraction);
+                dstCosmos->deserialize_entity_components(localEntity, signMapIt.second, extraction, ComponentCategory::all);
                 
                 // carry over their forked state to ensure copying to next parallel
                 dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);

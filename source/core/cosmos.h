@@ -152,11 +152,10 @@ namespace pleep
         void serialize_entity_components(Entity entity, Signature sign, EventMessage& msg);
 
         // Unpack each component from msg according to entity signature
-        // Components in entity signature but missing from sign are left unchanged.
-        // Components in sign but missing from entity signature will THROW range_error
-        //   add_component() must be called before deserialising data to that component
+        // Only components in category are written (and added if necessary)
+        // If ComponentCategory::all, then components are also removed from entity to match sign
         // !!! msg must NOT include header params (entity id and signature)
-        void deserialize_entity_components(Entity entity, Signature sign, bool subset, EventMessage& msg);
+        void deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg, ComponentCategory category = ComponentCategory::all);
 
         // Unpack a component (specified by type) from message and update entity with its new values
         // Use if you want to manually unpack each component and validate them before writing
@@ -400,6 +399,11 @@ namespace pleep
 
     inline Signature Cosmos::get_category_signature(ComponentCategory category)
     {
+        if (ComponentCategory::all == category)
+        {
+            Signature all; all.set();
+            return all;
+        }
         return m_componentRegistry->get_category_signature(category);
     }
     

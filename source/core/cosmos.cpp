@@ -61,7 +61,7 @@ namespace pleep
         m_componentRegistry->serialize_entity_components(entity, sign, msg);
     }
 
-    void Cosmos::deserialize_entity_components(Entity entity, Signature sign, bool subset, EventMessage& msg)
+    void Cosmos::deserialize_entity_components(Entity entity, Signature sign, EventMessage& msg, ComponentCategory category)
     {
         if (!entity_exists(entity))
         {
@@ -70,25 +70,26 @@ namespace pleep
         }
 
         Signature entitySign = this->get_entity_signature(entity);
+        Signature categorySign = this->get_category_signature(category);
 
-        // add any components in sign and missing from entitySign
-        // if subset is FALSE, remove any components in entitySign and not in sign
+        // add any components in sign & category BUT missing from entitySign
+        // if category is all, remove any components in entitySign BUT not in sign
         for (ComponentType c = 0; c < sign.size(); c++)
         {
-            if (sign.test(c) && !entitySign.test(c)) add_component(entity, c);
+            if (sign.test(c) && categorySign.test(c) && !entitySign.test(c)) add_component(entity, c);
 
-            if (!sign.test(c) && entitySign.test(c) && !subset) remove_component(entity, c);
+            if (!sign.test(c) && category == ComponentCategory::all && entitySign.test(c)) remove_component(entity, c);
         }
 
         // confirm signature matching succeeded
         entitySign = this->get_entity_signature(entity);
-        // find components ONLY in sign
-        if (((entitySign ^ sign) & sign).any())
+        // find components ONLY in sign AND category
+        if (((entitySign ^ sign) & sign & categorySign).any())
         {
-            PLEEPLOG_ERROR("Requested deserialized signature (" + sign.to_string() + ") which is a superset of entity (" + std::to_string(entity) + ") signature (" + entitySign.to_string() + ")");
+            PLEEPLOG_ERROR("Requested deserialized signature (" + (sign&categorySign).to_string() + ") which is a superset of entity (" + std::to_string(entity) + ") signature (" + entitySign.to_string() + ")");
             throw std::range_error("Signature mismatch for requested deserialization");
         }
-        m_componentRegistry->deserialize_entity_components(entity, sign, msg);
+        m_componentRegistry->deserialize_entity_components(entity, sign, msg, categorySign);
     }
 
     void Cosmos::deserialize_single_component(Entity entity, ComponentType type, EventMessage& msg)
