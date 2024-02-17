@@ -28,6 +28,8 @@ namespace pleep
         void submit(CosmosAccessPacket data) override;
 
         size_t get_num_connections() override;
+        
+        events::network::APP_INFO_params get_app_info() override;
 
         void restart_connection(const std::string& address, uint16_t port) override;
 
@@ -47,6 +49,9 @@ namespace pleep
         uint32_t m_transferCode = 0;
         // local (client-side) entities to carry over between jumps
         std::queue<EventMessage> m_jumpCache;
+
+        // Store most recently connected server app info
+        events::network::APP_INFO_params m_serverInfo;
     };
 }
 

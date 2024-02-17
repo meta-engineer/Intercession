@@ -174,6 +174,9 @@ namespace pleep
                 {
                     // pass CosmosBuilder::Config?
                     // pass timeline_config?
+
+                    TimesliceId currentTimeslice = 0;
+                    size_t totalTimeslices = 0;
                 };
                 
             // Servers receive this as a request froma  client to be added to the cosmos

@@ -497,13 +497,7 @@ namespace pleep
 
                 events::network::NEW_CLIENT_params clientInfo;
                 remoteMsg.msg >> clientInfo;
-
-                // TODO: Send Cosmos config
-                // should be stateless and scan current workingCosmos?
-                // How should scan work, just store config into Cosmos when it is built? What if it changes afterwards?
-                // If CosmosBuilder could use synchro/component typeid then we could scan Cosmos' registries
-                // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
-
+                
                 // if we have no cosmos at this point we can't proceed
                 // maybe we should deny client connections if there is no cosmos?
                 // assert(cosmos);
@@ -511,12 +505,27 @@ namespace pleep
                 
                 PLEEPLOG_WARN("New client joined, I should send them a cosmos config!");
                 remoteMsg.remote->enable_sending();
+
+                /// TODO: Send (Intercession) app info
+                // num timeslices, current timeslice, cosmos configuration?
+                EventMessage appMsg(events::network::APP_INFO);
+                events::network::APP_INFO_params appInfo = get_app_info();
+                appMsg << appInfo;
+                remoteMsg.remote->send(appMsg);
+
+                // Cosmos config
+                // should be stateless and scan current workingCosmos?
+                // How should scan work, just store config into Cosmos when it is built? What if it changes afterwards?
+                // If CosmosBuilder could use synchro/component typeid then we could scan Cosmos' registries
+                // CosmosBuilder::Config needs to be serializable... are std::sets serializable?
+
                 /* Message<EventId> configMsg(events::cosmos::CONFIG);
                 events::cosmos::CONFIG_params configInfo;
                 CosmosBuilder scanner;
                 configInfo.config = scanner.scan(cosmos);
                 configMsg << configInfo;
                 remoteMsg.remote->send(configMsg); */
+
 
                 PLEEPLOG_DEBUG("Sending Entities to new client");
                 // Send initialization for all entities that already exist
@@ -690,6 +699,14 @@ namespace pleep
     size_t ServerNetworkDynamo::get_num_connections()
     {
         return m_networkApi.get_num_connections();
+    }
+    
+    events::network::APP_INFO_params ServerNetworkDynamo::get_app_info()
+    {
+        events::network::APP_INFO_params appInfo;
+        appInfo.currentTimeslice = m_timelineApi.get_timeslice_id();
+        appInfo.totalTimeslices = m_timelineApi.get_num_timeslices();
+        return appInfo;
     }
     
     void ServerNetworkDynamo::_entity_created_handler(EventMessage creationEvent)

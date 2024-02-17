@@ -125,17 +125,19 @@ namespace pleep
 
             ImGui::Text("NetworkDynamo%sconnected",
                  m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
+
             /// TODO: how to determine what timeslice we are connected to since client has id NULL_TIMESLICEID for logistics purposes?
-            
-            static float TestData[3]={0.0f, 0.0f, 0.0f};
-            static int testTimeslice = 0;
-            TestData[testTimeslice] = 0.0f;
+            static float timesliceData[TIMESLICEID_SIZE]={0.0f};
+            static events::network::APP_INFO_params appInfo{};
+            timesliceData[appInfo.currentTimeslice] = 0.0f;
             // get new timeslice
-            TestData[testTimeslice] = 2.0f;
+            appInfo = m_dynamoCluster.networker->get_app_info();
+            timesliceData[appInfo.currentTimeslice] = 1.0f;
             
+            ImGui::Text("                    Present <--------------- Past");
             ImGui::Text("Current Timeslice:");
             ImGui::SameLine();
-            ImGui::PlotHistogram("", TestData, 3, 0, std::to_string(testTimeslice).c_str());
+            ImGui::PlotHistogram("", timesliceData, static_cast<int>(appInfo.totalTimeslices), 0, std::to_string(appInfo.currentTimeslice).c_str());
 
             // Buttons return true when clicked (most widgets return true when edited/activated)
             if (ImGui::Button("Reconnect"))
@@ -150,7 +152,7 @@ namespace pleep
             ImGui::SameLine();
             ImGui::Text("to timeslice %d", nextTimesliceId);
             ImGui::SameLine();
-            if (ImGui::Button("+")) nextTimesliceId++;
+            if (ImGui::Button("+") && nextTimesliceId+1 < appInfo.totalTimeslices) nextTimesliceId++;
             ImGui::SameLine();
             if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
             

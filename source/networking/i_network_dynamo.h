@@ -48,6 +48,13 @@ namespace pleep
             return 0;
         }
 
+        // for servers: return my app info
+        // for clients: return connected server's app info
+        virtual events::network::APP_INFO_params get_app_info()
+        {
+            return {};
+        }
+
         // for servers: close all connections and reopen with address/port
         // for clients: close connection and try to reconnect to address/port
         virtual void restart_connection(const std::string& address, uint16_t port)

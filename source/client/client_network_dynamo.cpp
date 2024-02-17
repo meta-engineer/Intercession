@@ -94,7 +94,7 @@ namespace pleep
                     return;
                 }
 
-                PLEEPLOG_INFO("Remote appInfo matches local appInfo! Good to keep communicating.");
+                PLEEPLOG_INFO("Remote program info matches local program info! Good to keep communicating.");
 
                 EventMessage newClientMsg(events::network::NEW_CLIENT);
                 events::network::NEW_CLIENT_params newClientInfo{
@@ -105,6 +105,19 @@ namespace pleep
 
                 // only use transfer code once
                 m_transferCode = 0;
+            }
+            break;
+            case events::network::APP_INFO:
+            {
+                PLEEPLOG_TRACE("Received APP_INFO message");
+
+                // store app info for ui?
+                events::network::APP_INFO_params appInfo;
+                msg >> appInfo;
+
+                m_serverInfo = appInfo;
+
+                // do anything with it now?
             }
             break;
             case events::cosmos::ENTITY_UPDATE:
@@ -242,6 +255,11 @@ namespace pleep
     size_t ClientNetworkDynamo::get_num_connections()
     {
         return m_networkApi.is_ready();
+    }
+    
+    events::network::APP_INFO_params ClientNetworkDynamo::get_app_info()
+    {
+        return m_serverInfo;
     }
 
     

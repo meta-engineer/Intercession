@@ -38,6 +38,8 @@ namespace pleep
         TimesliceId get_timeslice_id() override;
 
         size_t get_num_connections() override;
+        
+        events::network::APP_INFO_params get_app_info() override;
 
     private:
         // event handlers
