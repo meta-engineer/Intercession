@@ -24,6 +24,8 @@ namespace pleep
     {
     public:
         // build empty ecs
+        // receive broker from context
+        // receive timeslice ID from networker
         Cosmos(std::shared_ptr<EventBroker> sharedBroker, const TimesliceId localTimesliceIndex = NULL_TIMESLICEID);
         ~Cosmos();
 

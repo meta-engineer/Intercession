@@ -16,7 +16,7 @@ namespace pleep
     class BipedBehaviors : public I_BehaviorsDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner) override
+        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner, std::shared_ptr<EventBroker> sharedBroker) override
         {
             // should Biped "control" be done here?
             // (we fetch input component, physics/transform, and a standalon biped component and operate on them)
@@ -197,6 +197,32 @@ namespace pleep
                     create_test_projectile(cosmos, entity, transform.origin+ aimHeading, aimHeading*biped.shootForce);
                 }
  */
+
+                // Back mouse button    
+                if (input.actions.test(SpacialActions::action3)
+                    && input.actionVals.at(SpacialActions::action3))
+                {
+                    EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
+                    events::network::JUMP_DEPARTURE_params jumpInfo{
+                        1, {}, entity
+                    };
+                    jumpMessage << jumpInfo;
+                    PLEEPLOG_DEBUG("Jump Backwards!");
+                    sharedBroker->send_event(jumpMessage);
+                }
+                
+                // forward mouse button
+                if (input.actions.test(SpacialActions::action4)
+                    && input.actionVals.at(SpacialActions::action4))
+                {
+                    EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
+                    events::network::JUMP_DEPARTURE_params jumpInfo{
+                        -1, {}, entity
+                    };
+                    jumpMessage << jumpInfo;
+                    PLEEPLOG_DEBUG("Jump Forwards!");
+                    sharedBroker->send_event(jumpMessage);
+                }
             }
             catch(const std::exception& err)
             {

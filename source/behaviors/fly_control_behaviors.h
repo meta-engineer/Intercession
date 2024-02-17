@@ -17,9 +17,10 @@ namespace pleep
     class FlyControlBehaviors : public I_BehaviorsDrivetrain
     {
     public:
-        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner) override
+        void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner, std::shared_ptr<EventBroker> sharedBroker) override
         {
             UNREFERENCED_PARAMETER(deltaTime);
+            UNREFERENCED_PARAMETER(sharedBroker);
 
             std::shared_ptr<Cosmos> cosmos = owner.lock();
             // how was owner null, but BehaviorsPacket has a component REFERENCE?

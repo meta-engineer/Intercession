@@ -72,15 +72,25 @@ namespace pleep
         ImGui::NewFrame();
         // show ui window
         {
-            static float f = 0.0f;
-            static uint16_t nextTimesliceId = 0;
-            static bool checkbox;
+            ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+            static bool p_open;
+            
+            static int location = 0;
+            const float PAD = 10.0f;
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+            ImVec2 work_size = viewport->WorkSize;
+            ImVec2 window_pos, window_pos_pivot;
+            window_pos.x = (location & 1) ? (work_pos.x + work_size.x - PAD) : (work_pos.x + PAD);
+            window_pos.y = (location & 2) ? (work_pos.y + work_size.y - PAD) : (work_pos.y + PAD);
+            window_pos_pivot.x = (location & 1) ? 1.0f : 0.0f;
+            window_pos_pivot.y = (location & 2) ? 1.0f : 0.0f;
+            ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
 
             // Create a window and append into it.
-            ImGui::Begin("Client Context Debug");
+            ImGui::Begin("Client Context Debug", &p_open, overlayFlags);
 
-            // Display some text (you can use a format strings too)
-            ImGui::Text("This window runs outside of the cosmos");
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
             // Report Cosmos info
             if (m_currentCosmos)
@@ -96,18 +106,36 @@ namespace pleep
 
                 ImGui::Text(("Update count: " + std::to_string(m_currentCosmos->get_coherency())).c_str());
             }
+            
+            // Display some text (you can use a format strings too)
+            //ImGui::Text("This window runs outside of the cosmos");
 
             // Edit bools storing our window open/close state
+            //static bool checkbox;
             //ImGui::Checkbox("checkbox", &checkbox);
 
             // Edit 1 float using a slider from 0.0f to 1.0f
+            //static float f = 0.0f;
             //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
             // Edit 3 floats representing a color
             //ImGui::ColorEdit3("clear color", (float*)&clear_color);
 
+            static uint16_t nextTimesliceId = 0;
+            static int currTimesliceId = 0;
+
             ImGui::Text("NetworkDynamo%sconnected",
                  m_dynamoCluster.networker->get_num_connections() < 1 ? " is NOT " : " IS ");
             /// TODO: how to determine what timeslice we are connected to since client has id NULL_TIMESLICEID for logistics purposes?
+            
+            static float TestData[3]={0.0f, 0.0f, 0.0f};
+            static int testTimeslice = 0;
+            TestData[testTimeslice] = 0.0f;
+            // get new timeslice
+            TestData[testTimeslice] = 2.0f;
+            
+            ImGui::Text("Current Timeslice:");
+            ImGui::SameLine();
+            ImGui::PlotHistogram("", TestData, 3, 0, std::to_string(testTimeslice).c_str());
 
             // Buttons return true when clicked (most widgets return true when edited/activated)
             if (ImGui::Button("Reconnect"))
@@ -125,32 +153,8 @@ namespace pleep
             if (ImGui::Button("+")) nextTimesliceId++;
             ImGui::SameLine();
             if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
+            
 
-            if (ImGui::Button("Quick jump to past"))
-            {
-                // usually this would be invoked from some behavior (responding to a keystroke)
-                // which means it must occur via eventBroker
-                EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
-                Entity me = m_currentCosmos->get_focal_entity();
-                events::network::JUMP_DEPARTURE_params jumpInfo{
-                    1, {}, me
-                };
-                jumpMessage << jumpInfo;
-                m_eventBroker->send_event(jumpMessage);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Quick jump to future"))
-            {
-                EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
-                Entity me = m_currentCosmos->get_focal_entity();
-                events::network::JUMP_DEPARTURE_params jumpInfo{
-                    -1, {}, me
-                };
-                jumpMessage << jumpInfo;
-                m_eventBroker->send_event(jumpMessage);
-            }
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
         }
         // Render out ui

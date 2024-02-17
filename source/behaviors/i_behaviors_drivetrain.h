@@ -30,11 +30,11 @@ namespace pleep
 
         // invoked once per fixed interval per entity which holds it in their BehaviorsComponent
         // Passes individual BehaviorsPacket members to avoid circular dependency
-        virtual void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner);
+        virtual void on_fixed_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner, std::shared_ptr<EventBroker> sharedBroker);
         
         // invoked once per frame interval per entity which holds it in their BehaviorsComponent
         // Passes individual BehaviorsPacket members to avoid circular dependency
-        virtual void on_frame_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner);
+        virtual void on_frame_update(double deltaTime, BehaviorsComponent& behaviors, Entity entity, std::weak_ptr<Cosmos> owner, std::shared_ptr<EventBroker> sharedBroker);
 
         // invoked when the behaviors owner collides with another collider
         // we'll copy parameters just incase

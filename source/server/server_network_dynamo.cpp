@@ -775,17 +775,6 @@ namespace pleep
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         if (m_workingCosmos.expired()) return;
 
-        // check for upstream components to determine if this is a pc/animate entity?
-        Signature recipSign = cosmos->get_entity_signature(interceptionInfo.recipient);
-        if ((recipSign & cosmos->get_category_signature(ComponentCategory::upstream)).any())
-        {
-            // recipient has upstream components
-            PLEEPLOG_DEBUG("PC INTERCEPTION DETECTED!");
-
-            // pc must be discluded from parallel simulation
-            // its deletion must be carried forward to next timeslice (parallel cosmos must support DELETE events)
-        }
-
         // Put the entity into a forking timestream state (stop receiving from future)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forking);
 

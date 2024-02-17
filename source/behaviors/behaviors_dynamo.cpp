@@ -31,9 +31,10 @@ namespace pleep
             // TODO: Dynamos will need to seperate fixed/frame
             if (data.behaviors.use_fixed_update)
             {
-                data.behaviors.drivetrain->on_fixed_update(deltaTime, data.behaviors, data.entity, data.owner);
+                data.behaviors.drivetrain->on_fixed_update(deltaTime, data.behaviors, data.entity, data.owner, m_sharedBroker);
             }
-            //data.behaviors.drivetrain->on_frame_update(deltaTime, data.behaviors, data.entity, data.owner);
+            
+            //on_frame_update()
         }
     }
     
