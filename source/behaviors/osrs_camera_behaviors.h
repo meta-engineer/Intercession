@@ -128,7 +128,9 @@ namespace pleep
                         targetOrigin = targetTransform.origin;
                         
                         // set origin to point towards target
-                        // TODO: make this parametric so camera movement isn't identical to target
+                        /// TODO: Physics step happens next so sometimes target can move before rendering
+                        /// make this parametric so camera movement isn't identical to target?
+                        /// dirVector * 1 - (1/(dirDelta+1))
                         transform.origin = targetOrigin - (direction * camera.range);
                     }
                 }

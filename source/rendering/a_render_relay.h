@@ -52,12 +52,17 @@ namespace pleep
         // once engage is done they should clear their packets
         // render relays don't have multi-timestep engages, but on engage failure clear is needed
         // if subclasses store additional packets they should override
-        virtual void clear() {}
+        virtual void clear()
+        {
+            // invalidate volatile ecs reference
+           m_viewTransform = nullptr;
+        }
 
         // pass in camera to render with (overwrites last submitted camera)
         void submit(CameraPacket data)
         {
-            m_viewPos = data.transform.origin;
+            // store reference to camera, because it can change before rendering
+            m_viewTransform = &(data.transform);
 
             // if camera dimensions change (either new camera or modified current camera)
             // render resources need to be resized
@@ -84,7 +89,7 @@ namespace pleep
         // Camera info passed from dynamo
         // ECS components are volatile, so copy in needed info
         //   (subclasses can override for more)
-        glm::vec3    m_viewPos    = glm::vec3(0.0f);
+        TransformComponent* m_viewTransform = nullptr;
         unsigned int m_viewWidth  = 1024;
         unsigned int m_viewHeight = 1024;
 

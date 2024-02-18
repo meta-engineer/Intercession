@@ -24,10 +24,6 @@ namespace pleep
         _build_cosmos();
         // TODO: use network dynamo to get cosmos config from server (some loading cosmos while waiting?)
 
-        // TODO: set simulation and physics integration timesteps from config
-        //m_fixedTimeStep = ;
-        //m_dynamoCluster.physicser->set_time_step();
-
         // TODO: call network dynamo to setup connection
         // How does this method fit into the interface?
         //m_dynamoCluster.networker->setup_connection();

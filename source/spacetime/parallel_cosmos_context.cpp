@@ -320,7 +320,7 @@ namespace pleep
             // so we want to exit before any fixed steps this cycle
 
             // don't run this frame
-            m_timeRemaining = std::chrono::duration<double>(-2147483647);
+            m_fixedTimeRemaining = std::chrono::duration<double>(-2147483647);
             // don't run next frame
             this->stop();
 
@@ -337,7 +337,7 @@ namespace pleep
 
         // artifically give ample time to reach target without waiting
         // pretend we are always behind in simulation time, and need to catch up
-        m_timeRemaining = m_fixedTimeStep;
+        m_fixedTimeRemaining = m_fixedTimeStep;
 
         m_currentCosmos->update();
     }

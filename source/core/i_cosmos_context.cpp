@@ -37,28 +37,44 @@ namespace pleep
                 // smarter way to get dt? duration.count() is in seconds?
                 thisTimeVal = std::chrono::system_clock::now();
                 deltaTime = thisTimeVal - lastTimeVal;
+
+                /// If not enough time has passed for either fixed or frame update
+                /// then don't waist effort priming
+                if (m_fixedTimeRemaining + deltaTime < m_fixedTimeStep 
+                    && m_frameTimeRemaining + deltaTime < m_minFrameTimestep)
+                {
+                    /// TODO: stop this busy waiting? Is sleeping a good idea on a non-RTOS?
+                    continue;
+                }
+
+                m_fixedTimeRemaining += deltaTime;
+                m_frameTimeRemaining += deltaTime;
                 lastTimeVal = thisTimeVal;
 
                 // ***** Setup Frame *****
                 this->_prime_frame();
 
                 // ***** Run fixed timestep(s) *****
-                m_timeRemaining += deltaTime;
-                if (m_timeRemaining >= m_fixedTimeStep)
+                if (m_fixedTimeRemaining >= m_fixedTimeStep)
                 {
-                    m_timeRemaining -= m_fixedTimeStep;
+                    m_fixedTimeRemaining -= m_fixedTimeStep;
                     this->_on_fixed(m_fixedTimeStep.count());
                     // only increment coherency when simulation steps forward
                     
                     if (m_currentCosmos) m_currentCosmos->increment_coherency();
                 }
-                if (m_timeRemaining >= m_fixedTimeStep * 2.0)
+                if (m_fixedTimeRemaining >= m_fixedTimeStep * 2.0)
                 {
-                    PLEEPLOG_WARN("Frame loop falling behind by " + std::to_string(m_timeRemaining.count() / m_fixedTimeStep.count()) + " frames.");
+                    PLEEPLOG_WARN("Frame loop falling behind by " + std::to_string(m_fixedTimeRemaining.count() / m_fixedTimeStep.count()) + " frames.");
                 }
 
                 // ***** Run "frame time" timestep *****
-                this->_on_frame(deltaTime.count());
+                if (m_frameTimeRemaining >= m_minFrameTimestep)
+                {
+                    this->_on_frame(deltaTime.count());
+                    using namespace std::chrono_literals;
+                    m_frameTimeRemaining = 0s;
+                }
 
                 // ***** Finish Frame *****
                 // Context gets last word on any final superceding actions

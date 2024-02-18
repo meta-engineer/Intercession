@@ -21,7 +21,6 @@ namespace pleep
         // Keep frame loop alive until then
 
         // setup any event handlers
-        m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ClientNetworkDynamo::_jump_departure_handler));
         
         PLEEPLOG_TRACE("Done client networking pipeline setup");
     }
@@ -29,7 +28,6 @@ namespace pleep
     ClientNetworkDynamo::~ClientNetworkDynamo() 
     {
         // clear event handlers
-        m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ClientNetworkDynamo::_jump_departure_handler));
     }
 
     void ClientNetworkDynamo::run_relays(double deltaTime) 
@@ -267,14 +265,5 @@ namespace pleep
     {
         m_networkApi.disconnect();
         m_networkApi.connect(address, port);
-    }
-
-    void ClientNetworkDynamo::_jump_departure_handler(EventMessage jumpMsg)
-    {
-        /// TODO: Should we let the servers behaviour trigger the request, via our input?
-        ///     Otherwise will we have a duplicate request?
-
-        // forward message on to server, expecting a JUMP_ARRIVAL to be returned to us sometime soon
-        m_networkApi.send_message(jumpMsg);
     }
 }

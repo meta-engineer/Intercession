@@ -90,13 +90,17 @@ namespace pleep
 
         // runtime calibrations
         // Fixed timestep for input processing
-        std::chrono::duration<double> m_fixedTimeStep = 
+        const std::chrono::duration<double> m_fixedTimeStep = 
             std::chrono::duration<double>(1.0/FRAMERATE);
         // mechanism for tracking how many fixed timesteps to process
-        std::chrono::duration<double> m_timeRemaining = 
+        std::chrono::duration<double> m_fixedTimeRemaining = 
             std::chrono::duration<double>(0.0);
-        // max number of fixed iterations to catchup before letting system progress/respond
-        const size_t m_maxSteps = 30;
+        // set HARD frame max something reasonable to prevent squealing
+        const std::chrono::duration<double> m_minFrameTimestep = 
+            std::chrono::duration<double>(1.0f / 600.0f);
+        // time elapsed since last frame render
+        std::chrono::duration<double> m_frameTimeRemaining = 
+            std::chrono::duration<double>(0.0);
     };
 }
 

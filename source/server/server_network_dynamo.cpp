@@ -579,6 +579,7 @@ namespace pleep
                 // we should also keep track of the clientInfo.entity ourselves
                 // when we receive input updates from this client, we can validate the target entity
                 // and ensure they only affect this entity only!
+                assert(m_clientEntities.count(clientInfo.entity) == 0);
                 m_clientEntities.insert({ clientInfo.entity, remoteMsg.remote->get_id() });
             }
             break;

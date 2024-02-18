@@ -35,7 +35,6 @@ namespace pleep
 
     private:
         // event handlers
-        void _jump_departure_handler(EventMessage jumpMsg);
 
         // Networking relays
 

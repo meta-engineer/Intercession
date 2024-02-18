@@ -160,8 +160,11 @@ namespace pleep
             //glEnable(GL_STENCIL_TEST);
 
             // uniforms
-            // TODO: ingest camera info
-            m_sm.set_vec3("viewPos", m_viewPos);
+            if (m_viewTransform)
+            {
+                m_sm.set_vec3("viewPos", m_viewTransform->origin);
+            }
+            // else what? Dynamo shouldn't call us
 
             // we'll set light uniforms collectively here
             m_numRayLights = 0;
