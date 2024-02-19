@@ -73,6 +73,9 @@ namespace pleep
         // but it prevents the thread blowing up at least
         if (is_running()) return false;
 
+        assert(sourceCosmos != nullptr);
+        assert(sourceFutureTimestreams != nullptr);
+
         const std::lock_guard<std::mutex> lk(m_accessMux);
 
         // if we were already init by someone else first then skip:
@@ -275,11 +278,11 @@ namespace pleep
             m_eventBroker->send_event(initMessage);
             m_resolutionNeeded = false;
         }
-        // otherwise send init request to timesliceId - 1 until we reach timeslice 0
+        // otherwise send init request to same timesliceId until we reach timeslice 0
         else if (dstCosmos->get_host_id() > 0U)
         {
             EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ dstCosmos->get_host_id() - 1U };
+            events::parallel::INIT_params initInfo{ dstCosmos->get_host_id() };
             initMessage << initInfo;
             m_eventBroker->send_event(initMessage);
         }

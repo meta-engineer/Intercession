@@ -45,6 +45,7 @@ int main(int argc, char** argv)
 
     // TODO: Parse config options directly OR some config ini filename for server topology
     pleep::TimelineConfig cfg;
+    cfg.numTimeslices = 3;
 
     // TODO: Parse serialized cosmos (world) data and meta-data
     //pleep::CosmosConfig serializedCosmos;

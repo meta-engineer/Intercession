@@ -151,7 +151,13 @@ namespace pleep
             if (ImGui::Button("+") && nextTimesliceId+1 < appInfo.totalTimeslices) nextTimesliceId++;
             ImGui::SameLine();
             if (ImGui::Button("-") && nextTimesliceId > 0) nextTimesliceId--;
-            
+
+            ImGui::Text("Controls:");
+            ImGui::Text("- LMB: Nothing");
+            ImGui::Text("- MMB: Camera");
+            ImGui::Text("- RMB: Move");
+            ImGui::Text("- MB4: Jump backwards in time");
+            ImGui::Text("- MB5: Jump forwards in time");
 
             ImGui::End();
         }

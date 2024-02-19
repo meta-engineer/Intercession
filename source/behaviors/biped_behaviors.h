@@ -208,6 +208,10 @@ namespace pleep
                     };
                     jumpMessage << jumpInfo;
                     PLEEPLOG_DEBUG("Jump Backwards!");
+
+                    // prevent double jump on arrival
+                    input.clear();
+
                     sharedBroker->send_event(jumpMessage);
                 }
                 
@@ -221,6 +225,10 @@ namespace pleep
                     };
                     jumpMessage << jumpInfo;
                     PLEEPLOG_DEBUG("Jump Forwards!");
+                    
+                    // prevent double jump on arrival
+                    input.clear();
+
                     sharedBroker->send_event(jumpMessage);
                 }
             }

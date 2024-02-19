@@ -72,7 +72,7 @@ namespace pleep
         // timepoint when we should stop ourselves
         uint16_t m_coherencyTarget;
         // flag indicates when present frontier is reached, start again from the past
-        bool m_resolutionNeeded;
+        bool m_resolutionNeeded = false;
 
         // past & future should not be able to access simultaneously, however future can access during internal thread running
         std::mutex m_accessMux;
