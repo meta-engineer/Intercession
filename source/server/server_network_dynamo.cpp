@@ -30,6 +30,7 @@ namespace pleep
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ServerNetworkDynamo::_timestream_interception_handler));
+        m_sharedBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_STATE_CHANGE, ServerNetworkDynamo::_timestream_state_change_handler));
         m_sharedBroker->add_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ServerNetworkDynamo::_jump_departure_handler));
 
         PLEEPLOG_TRACE("Done server networking pipeline setup");
@@ -41,6 +42,7 @@ namespace pleep
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ServerNetworkDynamo::_entity_created_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ServerNetworkDynamo::_entity_removed_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ServerNetworkDynamo::_timestream_interception_handler));
+        m_sharedBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_STATE_CHANGE, ServerNetworkDynamo::_timestream_state_change_handler));
         m_sharedBroker->remove_listener(METHOD_LISTENER(events::network::JUMP_DEPARTURE, ServerNetworkDynamo::_jump_departure_handler));
     }
     
@@ -157,46 +159,34 @@ namespace pleep
                 }
             }
             break;
-            case events::cosmos::TIMESTREAM_INTERCEPTION:
+            case events::cosmos::TIMESTREAM_STATE_CHANGE:
             {
                 // we are signalled that an interception has occurred sometime/where from another timeslice
-                // if we have a future version of that entity, then set it to be "superposition"
-                events::cosmos::TIMESTREAM_INTERCEPTION_params data;
+
+                events::cosmos::TIMESTREAM_STATE_CHANGE_params data;
                 msg >> data;
-
-                CausalChainlink link = derive_causal_chain_link(data.recipient);
-                if (link <= 0)
-                {
-                    PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(data.recipient) + ") cannot have been interrupted. Ignoring...");
-                    break;
-                }
-
-                TimesliceId host = derive_timeslice_id(data.recipient);
-                GenesisId genesis = derive_genesis_id(data.recipient);
-
-                // ASSUME interception happened in our direct child, therefore
-                // check for entity with 1 less causalchainlink than the reported recipient
-                Entity presentRecipient = compose_entity(host, genesis, link - 1);
-
-                if (!cosmos->entity_exists(presentRecipient))
-                {
-                    PLEEPLOG_WARN("Future of intercepted entity (" + std::to_string(presentRecipient) + ") does not exist. Message may not have been sent from direct child? Ignoring...");
-                    break;
-                }
-
+                PLEEPLOG_TRACE("Received TIMESTREAM_STATE_CHANGE event for entity " + std::to_string(data.entity) + " to state " + std::to_string(data.newState));
                 
-                // Put the entity into a superposition
-                cosmos->set_timestream_state(presentRecipient, TimestreamState::superposition);
+                TimesliceId host = derive_timeslice_id(data.entity);
+                GenesisId genesis = derive_genesis_id(data.entity);
+                CausalChainlink link = derive_causal_chain_link(data.entity);
 
-                // pass interception notification up the chain
-                if (m_timelineApi.has_future())
+                // cases: 
+                // If we are exactly 1 timeslice ahead (less) than event,
+                // AND (it has diverged OR become superposition)
+                // then set our present version of that entity to be "superposition"
+                if (data.timeslice - m_timelineApi.get_timeslice_id() == 1U
+                    && (TimestreamState::superposition==data.newState || is_divergent(data.newState))
+                    && link >= 1U)
                 {
-                    data.recipient = presentRecipient;
-                    msg << data;
+                    Entity presentRecipient = compose_entity(host, genesis, link - 1U);
+                    if (!cosmos->entity_exists(presentRecipient))
+                    {
+                        PLEEPLOG_WARN("Future of changed state entity (" + std::to_string(presentRecipient) + ") does not exist? Ignoring...");
+                        break;
+                    }
 
-                    // timesliceId decreases into the future
-                    assert(m_timelineApi.get_timeslice_id() > 0);
-                    m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, msg);
+                    cosmos->set_timestream_state(presentRecipient, TimestreamState::superposition);
                 }
             }
             break;
@@ -775,7 +765,8 @@ namespace pleep
     
     void ServerNetworkDynamo::_timestream_interception_handler(EventMessage interceptionEvent)
     {
-        PLEEPLOG_DEBUG("Handling TIMESTREAM_INTERCEPTION event");
+        // Something (like collision) has detected an interception between two entities
+        PLEEPLOG_TRACE("Handling TIMESTREAM_INTERCEPTION event");
 
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
@@ -795,17 +786,47 @@ namespace pleep
 
         // Put the entity into a forking timestream state (stop receiving from future)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forking);
+        // "Divergent" state (forking) now restricts reading downstream components from the timestream
+    }
 
-        // Signal to future timeslice to put recipient into superposition timestream state
-        // Timestream forked state should restrict reading from the timestream from our side
+    void ServerNetworkDynamo::_timestream_state_change_handler(EventMessage stateEvent)
+    {
+        // entity state has changed in our local cosmos
+        events::cosmos::TIMESTREAM_STATE_CHANGE_params stateInfo;
+        stateEvent >> stateInfo;
+        stateEvent << stateInfo;
+        //PLEEPLOG_TRACE("Handling TIMESTREAM_STATE_CHANGE event for entity " + std::to_string(stateInfo.entity) + " to state " + std::to_string(stateInfo.newState));
 
-        // We also need to be able to detect knock-on interactions an object with a non-zero chainlink might cause after being modified by a chainlink zero entity, before and after superposition resolution
-
-        if (m_timelineApi.has_future())
+        // what states do we want clients to know about?
+        // forking/superposition: inform server
+        // merged/superposition: inform clients
+        switch (stateInfo.newState)
         {
-            // timesliceId decreases into the future
-            assert(m_timelineApi.get_timeslice_id() > 0);
-            m_timelineApi.send_message(m_timelineApi.get_timeslice_id() - 1, interceptionEvent);
+        case TimestreamState::merged:
+        {
+            m_networkApi.broadcast_message(stateEvent);
+        }
+        break;
+        case TimestreamState::superposition:
+        {
+            // signal to both client
+            m_networkApi.broadcast_message(stateEvent);
+            // and future timeslice
+        }
+        // fallthrough:
+        case TimestreamState::forking:
+        {
+            // signal to future, so they can apply superposition
+            if (m_timelineApi.has_future() && stateInfo.timeslice >= 1U)
+            {
+                m_timelineApi.send_message(stateInfo.timeslice - 1U, stateEvent);
+            }
+        }
+        break;
+        default:
+        {
+            // ignore any other state changes
+        }
         }
     }
 

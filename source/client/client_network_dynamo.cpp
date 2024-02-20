@@ -227,6 +227,15 @@ namespace pleep
                 m_transferCode = jumpInfo.tripId;
             }
             break;
+            case events::cosmos::TIMESTREAM_STATE_CHANGE:
+            {
+                // since server is same timeslice as us, we just copy the state
+                events::cosmos::TIMESTREAM_STATE_CHANGE_params stateInfo;
+                msg >> stateInfo;
+                PLEEPLOG_TRACE("Handling TIMESTREAM_STATE_CHANGE event for entity " + std::to_string(stateInfo.entity) + " to state " + std::to_string(stateInfo.newState));
+                cosmos->set_timestream_state(stateInfo.entity, stateInfo.newState);
+            }
+            break;
             default:
             {
                 PLEEPLOG_TRACE("Received unknown message: " + msg.info());

@@ -9,6 +9,7 @@
 #include "ecs/ecs_types.h"
 #include "events/message.h"
 #include "build_config.h"
+#include "spacetime/timestream_state.h"
 
 namespace pleep
 {
@@ -113,7 +114,20 @@ namespace pleep
             // not be guarenteed to happen immediately, but before next frame
             //const EventId RESET = __LINE__;
 
-            // signals an entity which was "merged" with the timestream has been "forked"
+            // Signals an entity has changed its timestream state
+            // This is not a command, but simply a notification of occurrance 
+            // for the receiver to interpret however they wish
+            const EventId TIMESTREAM_STATE_CHANGE = __LINE__;
+                struct TIMESTREAM_STATE_CHANGE_params {
+                    // Entity who has _already_ been changed
+                    Entity entity;
+                    // State that entity transitioned to
+                    TimestreamState newState;
+                    // location change occurred
+                    TimesliceId timeslice;
+                };
+
+            // Signals an entity which was "merged" with the timestream has been "forked"
             //   (by a time-traveller)
             const EventId TIMESTREAM_INTERCEPTION = __LINE__;
                 struct TIMESTREAM_INTERCEPTION_params {
@@ -123,7 +137,7 @@ namespace pleep
                     Entity recipient;
                 };
 
-            // signals an object has caused a paradox?
+            // Signals an object has caused a paradox?
             // manual rewriting of timestream for entity?
             // and/or new entities generated due to the intercession?
             const EventId TIMESTREAM_INTERCESSION = __LINE__;

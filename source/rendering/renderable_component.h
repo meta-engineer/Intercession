@@ -98,6 +98,7 @@ namespace pleep
         // last push extra data
         // transform
         msg << data.localTransform;
+        // skip highlight? Only set on client, so server will override
 
         return msg;
     }

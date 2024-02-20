@@ -159,6 +159,16 @@ namespace pleep
         }
 
         m_timestreamStates[entity] = { newState, m_stateCoherency };
+
+        // Signal state change event
+        EventMessage stateEvent(events::cosmos::TIMESTREAM_STATE_CHANGE);
+        events::cosmos::TIMESTREAM_STATE_CHANGE_params stateInfo;
+        stateInfo.entity = entity;
+        stateInfo.newState = newState;
+        stateInfo.timeslice = m_hostId;
+        stateEvent << stateInfo;
+        m_sharedBroker->send_event(stateEvent);
+
         return true;
     }
 

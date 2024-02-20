@@ -67,7 +67,6 @@ namespace pleep
             // Update renderable members based on other components...
 
             // DEBUG: set highlight based on timestream state
-            // (clients currently don't get timestreamstate updates)
             if (cosmos->get_timestream_state(entity).first == TimestreamState::superposition)
             {
                 renderable.highlight = true;

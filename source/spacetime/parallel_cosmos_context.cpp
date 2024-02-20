@@ -208,7 +208,8 @@ namespace pleep
             // and extract any entity local entities which have diverged during simulation
             if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
             {
-                /// TODO: created entities to be extracted to destination (with new id)
+                /// TODO: locally created entities to be extracted to destination with new id
+                // (once we have the ability to create entities at all)
                 /// use parallel entity as source for local entity
                 continue;
             }
@@ -244,6 +245,20 @@ namespace pleep
             {
                 dstCosmos->set_timestream_state(localEntity, TimestreamState::merged);
             }
+
+            // overwrite this entities recent past with parallels history?
+            // alternatively if we could set all current timestream events to upstream only
+            //   it would continue simulating (theoretically) identically to parallel's history
+            // an then every NEW timestream event from here onward would be a full update...
+
+            // we could... stuff a re-merge event into timestream now, so entity stays mergING until it reaches this point...
+            // it should theoretically follow the same deterministic path as it did while forked inside parallel
+
+            // will this short-cut cause problems during loop unrolling?
+            // Since it depends on timestream state being merging to avoid reading the outdated data, if state is not maintained it will follow the old history.
+
+            // Clear mergING state for this entity in the recent past:
+            //m_timelineApi.send_message(m_currentTimeslice, ...);
         }
 
         // remove any local entities from the destination which were condemned during the run
