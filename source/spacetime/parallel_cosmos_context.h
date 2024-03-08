@@ -62,6 +62,7 @@ namespace pleep
 
     protected:
         // event handlers
+        void _divergence_handler(EventMessage divEvent);
         void _entity_removed_handler(EventMessage removalEvent);
 
         void _prime_frame() override;

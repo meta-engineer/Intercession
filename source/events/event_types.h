@@ -281,6 +281,14 @@ namespace pleep
                     TimesliceId destinationTimeslice;
                     // use coherency from message header
                 };
+            // indicates a divergence has occurred the given timeslice
+            // if not running, parallel should send an init to that slice
+            // if yes running, parallel should cycle when it reaches the present
+            const EventId DIVERGENCE = __LINE__;
+                struct DIVERGENCE_params
+                {
+                    TimesliceId sourceTimeslice;
+                };
         } // namespace parallel
     }
 }

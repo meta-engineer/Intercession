@@ -7,6 +7,7 @@
 
 #include "networking/i_network_dynamo.h"
 #include "networking/timeline_api.h"
+#include "spacetime/timejump_conditions.h"
 
 namespace pleep
 {
@@ -32,11 +33,21 @@ namespace pleep
         void _timestream_interception_handler(EventMessage interceptionEvent);
         void _parallel_init_handler(EventMessage initEvent);
         void _parallel_finished_handler(EventMessage finishedEvent);
+        void _jump_departure_handler(EventMessage jumpEvent);
 
         // TimelineApi (generated for us by AppGateway) to communicate with servers
         TimelineApi m_timelineApi;
         
         std::weak_ptr<Cosmos> m_workingCosmos;
+
+        // cache of departure conditions to match between timestream (during network dynamo) and cosmos (during behaviours dynamo)
+        // non-matching departures are determined to be divergent and promoted to m_divergentDepartures
+        // cleared after each frame
+        std::unordered_map<Entity, TimejumpConditions> m_departureConditions;
+
+        // cache of tripId, and entity data at a departure which diverged locally from the timestream
+        // if we reach an arrival with a matching tripId in timestrean, override with the cached data
+        std::unordered_map<uint32_t, EventMessage> m_divergentDepartures;
     };
 }
 

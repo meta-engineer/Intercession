@@ -225,7 +225,9 @@ namespace pleep
                 }
                 else
                 {
-                    // Push jump arrival to timeline (BEFORE creation event occurs)
+                    cosmos->register_entity(jumpInfo.entity);
+                    
+                    // Push jump arrival to timeline (AFTER creation event occurs)
                     // Note that arrival doesn't contain serialized data
                     if (m_timelineApi.has_past())
                     {
@@ -238,8 +240,6 @@ namespace pleep
                         arrivalMsg >> arrivalInfo;
                         decrement_causal_chain_link(arrivalInfo.entity);
                     }
-
-                    cosmos->register_entity(jumpInfo.entity);
 
                     // A normal timestream invoked register should NOT increment host count
                     // because it is dont upon pushing that creation event to the timestream
@@ -313,6 +313,13 @@ namespace pleep
                 PLEEPLOG_DEBUG("Received init request from parallel context");
                 // parallel is ready to start and has requested we init it
                 m_timelineApi.parallel_load_and_link(cosmos);
+
+                // check if load was successful
+                if (m_timelineApi.parallel_get_timeslice() != m_timelineApi.get_timeslice_id())
+                {
+                    // someone else beat us, parallel is not mirroring us...
+                    break;
+                }
 
                 // estimate a lower bound of where the next slice could be (to avoid overshooting)
                 m_timelineApi.parallel_retarget(cosmos->get_coherency() + m_timelineApi.get_timeslice_delay() - 1U);
@@ -400,16 +407,17 @@ namespace pleep
                             
                             for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
                             {
-                                if (updateInfo.sign.test(i))
+                                if (!updateInfo.sign.test(i))
                                 {
-                                    if (upstreamSign.test(i))
-                                    {
-                                        cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
-                                    }
-                                    else
-                                    {
-                                        cosmos->discard_single_component(i, evnt);
-                                    }
+                                    continue;
+                                }
+                                if (upstreamSign.test(i))
+                                {
+                                    cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
+                                }
+                                else
+                                {
+                                    cosmos->discard_single_component(i, evnt);
                                 }
                             }
                         }
@@ -446,6 +454,40 @@ namespace pleep
 
                         // use condemn event to avoid double deletion
                         cosmos->condemn_entity(removeInfo.entity);
+                    }
+                    break;
+                    case events::network::JUMP_DEPARTURE:
+                    {
+                        // forward this departure into the timestream with the same tripId
+                        // for our present entity
+
+                        events::network::JUMP_DEPARTURE_params jumpInfo;
+                        evnt >> jumpInfo;
+                        increment_causal_chain_link(jumpInfo.entity);
+                        evnt << jumpInfo;
+                        // timesliceDelta remains same
+
+                        if (m_timelineApi.has_past())
+                        {
+                            m_timelineApi.push_past_timestream(jumpInfo.entity, evnt);
+                        }
+                    }
+                    break;
+                    case events::network::JUMP_ARRIVAL:
+                    {
+                        // forward this arrival into the timestream with the same tripId
+                        // for our present entity
+
+                        events::network::JUMP_ARRIVAL_params jumpInfo;
+                        evnt >> jumpInfo;
+                        increment_causal_chain_link(jumpInfo.entity);
+                        evnt << jumpInfo;
+                        // timesliceDelta remains same
+
+                        if (m_timelineApi.has_past())
+                        {
+                            m_timelineApi.push_past_timestream(jumpInfo.entity, evnt);
+                        }
                     }
                     break;
                     default:

@@ -15,41 +15,24 @@ namespace pleep
         m_dynamoCluster.physicser = std::make_shared<PhysicsDynamo>(m_eventBroker);
 
         // event handlers
+        m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
 
     ParallelCosmosContext::~ParallelCosmosContext()
     {
+        m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
 
     void ParallelCosmosContext::request_resolution(TimesliceId requesterId)
     {
-        PLEEPLOG_DEBUG("Timeslice " + std::to_string(requesterId) + " is requesting resolution");
-        const std::lock_guard<std::mutex> lk(m_accessMux);
+        // no lock needed
 
-        // if already simulating, add request to special buffer?
-        // if not simulating send init request to requester
-        // simulating != running
-        // use cosmos existing as indication???
-        if (m_currentTimeslice == NULL_TIMESLICEID)
-        {
-            // send init request back to requesterId via event to network dynamo
-            EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ requesterId };
-            initMessage << initInfo;
-            m_eventBroker->send_event(initMessage);
-        }
-        else
-        {
-            // if we haven't reached requesterId then no worries, we'll get there this cycle
-            // if we are at or behind requesterId then we need another cycle
-            if (m_currentTimeslice > requesterId)
-            {
-                /// set dirty bit to be checked at the end of a cycle, so that we start another cycle to resolve it
-                m_resolutionNeeded = true;
-            }
-        }
+        EventMessage divMessage(events::parallel::DIVERGENCE);
+        events::parallel::DIVERGENCE_params divInfo{ requesterId };
+        divMessage << divInfo;
+        m_eventBroker->send_event(divMessage);
     }
     
     void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
@@ -80,6 +63,8 @@ namespace pleep
 
         // if we were already init by someone else first then skip:
         if (m_currentTimeslice != NULL_TIMESLICEID) return false;
+        
+        m_currentTimeslice = sourceCosmos->get_host_id();
 
         // keep parallel's ID as NULL_TIMESLICEID, and register local entities as foreign
         // then convert NULL_TIMESLICEID entities to local upon extraction
@@ -153,8 +138,6 @@ namespace pleep
                 sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merging);
             }
         }
-
-        m_currentTimeslice = sourceCosmos->get_host_id();
         
         return true;
     }
@@ -310,6 +293,36 @@ namespace pleep
         ///   the forked set in parallel cosmos is a superset of the merging set in the past, so we could send event to past to update all to promote to merged...
 
         return true;
+    }
+
+    void ParallelCosmosContext::_divergence_handler(EventMessage divEvent)
+    {
+        events::parallel::DIVERGENCE_params divInfo;
+        divEvent >> divInfo;
+        PLEEPLOG_DEBUG("Timeslice " + std::to_string(divInfo.sourceTimeslice) + " has a divergence, we are running parallel timeslice " + std::to_string(m_currentTimeslice));
+
+        // no lock needed for m_currentTimeslice?
+        const std::lock_guard<std::mutex> lk(m_accessMux);
+
+        // if already simulating, add request to special buffer?
+        // if not simulating send init request to requester
+        // simulating != running
+        // use cosmos existing as indication???
+        if (m_currentTimeslice == NULL_TIMESLICEID)
+        {
+            // send init request back to requesterId via event to network dynamo
+            EventMessage initMessage(events::parallel::INIT);
+            events::parallel::INIT_params initInfo{ divInfo.sourceTimeslice };
+            initMessage << initInfo;
+            m_eventBroker->send_event(initMessage);
+        }
+        else if (m_currentTimeslice <= divInfo.sourceTimeslice)
+        {
+            // if we are at or behind requesterId then we need another cycle
+            /// set dirty bit to be checked at the end of a cycle, so that we start another cycle to resolve it
+            m_resolutionNeeded = true;
+        }
+        // if we haven't reached requesterId then no worries, we'll get there this cycle
     }
 
     void ParallelCosmosContext::_entity_removed_handler(EventMessage removalEvent)
