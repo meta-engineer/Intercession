@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "logging/pleep_log.h"
-#include "networking/ts_queue.h"
+#include "networking/ts_deque.h"
 #include "networking/net_message.h"
 #include "networking/net_connection.h"
 
@@ -212,7 +212,7 @@ namespace net
 
         // A queue for all messages of the designated server type
         // All my related connections will share this queue
-        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
+        TsDeque<OwnedMessage<T_Msg>> m_incomingMessages;
 
     private:
         // Maintain container of established connections

@@ -9,7 +9,7 @@
 #include <string>
 
 #include "logging/pleep_log.h"
-#include "networking/ts_queue.h"
+#include "networking/ts_deque.h"
 #include "networking/timeline_config.h"
 #include "networking/entity_timestream_map.h"
 #include "events/event_types.h"
@@ -33,7 +33,7 @@ namespace pleep
     public:
         // Should queue type contain the source id? Otherwise it has to be built into message manually
         // Hard-code message type to use EventId (to avoid template cascading)
-        using Multiplex = std::unordered_map<TimesliceId, TsQueue<Message<EventId>>>;
+        using Multiplex = std::unordered_map<TimesliceId, TsDeque<Message<EventId>>>;
 
         // Accept top level timeline config, and my individual timesliceId
         // accept Message Conduits shared for each individual api?
@@ -54,7 +54,7 @@ namespace pleep
         // ***** Accessors for multiplex *****
 
         // Restrict access to outgoing queues to only be sendable
-        bool send_message(TimesliceId id, EventMessage& data);
+        bool send_message(TimesliceId id, const EventMessage& data);
         // check to prevent popping empty deque
         bool is_message_available();
         // Restrict access to incoming queue to only be poppable
@@ -70,15 +70,20 @@ namespace pleep
 
         // because event type is ambiguous, caller must specify entity regardless
         // data should have coherency set, but is not strictly enforced
-        void push_past_timestream(Entity entity, Message<EventId>& data);
+        void push_past_timestream(Entity entity, const EventMessage& data);
         // give potenial Entities to pop from
         std::vector<Entity> get_entities_with_future_streams();
         // Restrict access for future timestreams to only be poppable
         bool pop_future_timestream(Entity entity, uint16_t coherency, EventMessage& dest);
-        // link sourceTimestreams to our held futureTimestreams
-        void link_future_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams);
-        // unlink held future timestream
-        void unlink_future_timestreams();
+
+        // copy pointer to sourceTimestreams, overwrites both m_future and m_past
+        // (for parallel to use breakpoint functions)
+        // pass nullptr to effectively unlink
+        void link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams);
+        // push to "past" at breakpoint
+        void push_timestream_at_breakpoint(Entity entity, const EventMessage& data);
+        // pop from "future" at breakpoint
+        bool pop_timestream_at_breakpoint(Entity entity, uint16_t coherency, EventMessage& dest);
 
         // ***** Accessors for Parallel Context *****
 
@@ -129,7 +134,7 @@ namespace pleep
         std::shared_ptr<TimelineApi::Multiplex> multiplex = std::make_shared<TimelineApi::Multiplex>();
         for (TimesliceId i = 0; i < numUsers; i++)
         {
-            // emplace with default constructor for TsQueue
+            // emplace with default constructor for TsDeque
             multiplex->operator[](i);
         }
         

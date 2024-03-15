@@ -52,7 +52,8 @@ namespace pleep
         // Check Entity should be from another host?
         // Can there be an edge case where another host passes us our own entity?
         // Returns true when entity is valid to use and register components to
-        bool register_entity(Entity entity);
+        // initialize all components in initSign before sending creation event
+        bool register_entity(Entity entity, Signature initSign = {});
 
         // flag entity to be destroyed before next update cycle
         // source: can specify an entity deletion was triggered by.
@@ -276,7 +277,7 @@ namespace pleep
         return entity;
     }
     
-    inline bool Cosmos::register_entity(Entity entity)
+    inline bool Cosmos::register_entity(Entity entity, Signature initSign)
     {
         if (entity == NULL_ENTITY) return false;
 
@@ -284,10 +285,17 @@ namespace pleep
 
         if (!isEntityValid) return false;
 
+        // entity is created successfully, init its components:
+        for (ComponentType c = 0; c < initSign.size(); c++)
+        {
+            if (initSign.test(c)) add_component(entity, c);
+        }
+
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
-            entity
+            entity,
+            initSign
         };
         newEntityEvent << newEntityParams;
         m_sharedBroker->send_event(newEntityEvent);

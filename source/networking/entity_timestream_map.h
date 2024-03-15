@@ -7,7 +7,7 @@
 #include <mutex>
 #include <memory>
 
-#include "networking/ts_queue.h"
+#include "networking/ts_breakpoint_queue.h"
 #include "networking/net_message.h"
 #include "ecs/ecs_types.h"
 #include "events/event_types.h"
@@ -43,93 +43,35 @@ namespace pleep
     class EntityTimestreamMap
     {
     public:
-        // Timestream could be it's own class to manage Message ordering
-        // do we need use of deque iterators? or do we need threadsafe?
-        // we could provide specific extra threadsafe operations like searches to maintain threadsafety
+        // Timestream is a queue accessed by future (push_back), past (pop_front)
+        //   as well as paralle who needs access to the middle, so use a TsBreakpointQueue
+        //   to allow the use of iterators without any multithread nonsense
         // Hard-code message type to use EventId (to avoid template cascading)
-        using Timestream = TsQueue<Message<EventId>>;
+        using Timestream = TsBreakpointQueue<EventMessage>;
 
         EntityTimestreamMap() = default;
-
-        // deadlock-avoiding copy between timestreams
-        static void link_timestreams(std::shared_ptr<EntityTimestreamMap> source,
-                                     std::shared_ptr<EntityTimestreamMap> destination)
-        {
-            if (source == nullptr || destination == nullptr)
-            {
-                PLEEPLOG_WARN("Called link_timestreams on null timestream map pointers?!");
-                return;
-            }
-
-            // necessary?
-            PLEEPLOG_DEBUG("unlink source timestream");
-            EntityTimestreamMap::unlink_timestreams(source);
-            PLEEPLOG_DEBUG("unlink destination timestream");
-            EntityTimestreamMap::unlink_timestreams(destination);
-
-            static std::mutex deadlockMux;
-            // since only 1 thread can have this lock...
-            const std::lock_guard<std::mutex> lk(deadlockMux);
-            // only 1 thread should ever be trying to hold BOTH locks at once
-            const std::lock_guard<std::mutex> sk(source->m_mapMux);
-            const std::lock_guard<std::mutex> dk(destination->m_mapMux);
-            PLEEPLOG_DEBUG("squired both locks");
-
-            PLEEPLOG_DEBUG("copy timestream data");
-            /// TODO: copy all current contents
-            /// unordered_map copy constructor?
-            // do not use class method to avoid self-deadlock
-            destination->m_timestreams.clear();
-            /// TsQueue can be copied? only by emplacing!
-            for (auto& srcIt : source->m_timestreams)
-            {
-                destination->m_timestreams.emplace(srcIt.first, srcIt.second);
-            }
-
-            PLEEPLOG_DEBUG("set link pointers");
-            // link source parallel
-            source->m_linkedTimestreamMap = destination;
-            // link destination parallel (for unlinking)
-            destination->m_linkedTimestreamMap = source;
-        }
-
-        // deadlock avoiding assignment for both timestreams
-        static void unlink_timestreams(std::shared_ptr<EntityTimestreamMap> toUnlink)
-        {
-            if (toUnlink->m_linkedTimestreamMap == nullptr) return;
-
-            {
-                const std::lock_guard<std::mutex> lk(toUnlink->m_linkedTimestreamMap->m_mapMux);
-                toUnlink->m_linkedTimestreamMap->m_linkedTimestreamMap = nullptr;
-            }
-
-            {
-                const std::lock_guard<std::mutex> lk(toUnlink->m_mapMux);
-                toUnlink->m_linkedTimestreamMap = nullptr;
-            }
-        }
 
         // Wrap message Queue methods to maintain timestamp ordering.
 
         // If no stream exists emplace it.
         // No strict ordering of messages enforced, msg coherency will be use for pop availability
         // coherency is circular so there is no catch-all default value
-        void push_to_timestream(Entity entity, Message<EventId> msg)
+        void push_to_timestream(Entity entity, const EventMessage& msg)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
             // TODO: detect when timstreams has gone way beyond expected capacity and stop pushing
             //PLEEPLOG_DEBUG("Pushing event: " + std::to_string(msg.header.id) + " for entity: " + std::to_string(entity) + " at coherency: " + std::to_string(msg.header.coherency));
 
-            // operator[] emplaces with default constructor for TsQueue
+            // operator[] emplaces with default constructor for TsBreakpointQueue
             m_timestreams[entity].push_back(msg);
+        }
+        void push_to_timestream_at_breakpoint(Entity entity, const EventMessage& msg)
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
 
-            // if a parallel timestream is registered then push to it
-            if (m_linkedTimestreamMap)
-            {
-                // dont recurse, do it directly
-                m_linkedTimestreamMap->m_timestreams[entity].push_back(msg);
-            }
+            // operator[] emplaces with default constructor for TsBreakpointQueue
+            m_timestreams[entity].push_at_breakpoint(msg);
         }
 
         // check if timestream exists for an entity, if it is non-empty,
@@ -139,6 +81,13 @@ namespace pleep
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
             return is_data_available(entity, currentCoherency);
+        }
+        // check if breakpoint is active AND if it has any data behind it
+        bool entity_has_data_at_breakpoint(Entity entity, uint16_t currentCoherency)
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+
+            return is_data_available_at_breakpoint(entity, currentCoherency);
         }
 
         // check if entity has an active timestream (empty or not)
@@ -163,7 +112,7 @@ namespace pleep
         }
 
         // we should only be able to pop once the correct coherency has been reached
-        bool pop_from_timestream(Entity entity, uint16_t currentCoherency, Message<EventId>& dest)
+        bool pop_from_timestream(Entity entity, uint16_t currentCoherency, EventMessage& dest)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
@@ -171,10 +120,17 @@ namespace pleep
             if (!is_data_available(entity, currentCoherency)) return false;
             //PLEEPLOG_DEBUG("Popping for entity: " + std::to_string(entity) + " on coherency: " + std::to_string(currentCoherency) + ". There are " + std::to_string(m_timestreams.at(entity).count()) + " messages.");
 
+            // breakpoint may still prevent the "avaiable" data from being popped
             return m_timestreams.at(entity).pop_front(dest);
+        }
+        bool pop_from_timestream_at_breakpoint(Entity entity, uint16_t currentCoherency, EventMessage& dest)
+        {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
+            
+            // check if data is available internally to avoid lock juggling
+            if (!is_data_available_at_breakpoint(entity, currentCoherency)) return false;
 
-            // TODO: either check for empty timestream or check for when we pop a ENTITY_REMOVED
-            //   message and remove index (entity) from timestream map
+            return m_timestreams.at(entity).pop_at_breakpoint(dest);
         }
 
         // Clear timestream for specified Entity
@@ -183,7 +139,6 @@ namespace pleep
             const std::lock_guard<std::mutex> lk(m_mapMux);
             if (m_timestreams.count(entity)) m_timestreams.at(entity).clear();  // queue.clear()
         }
-
         // Clear ALL timestreams
         void clear()
         {
@@ -200,12 +155,28 @@ namespace pleep
             const std::lock_guard<std::mutex> lk(m_mapMux);
             m_timestreams.erase(entity);
         }
-
         // Remove ALL indexed timestreams
         void remove()
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
             m_timestreams.clear();              // unordered_map.clear()
+        }
+
+        // ativate all mapped Timestream breakpoints
+        void set_breakpoints()
+        {
+            for (auto& timestreamIt : m_timestreams)
+            {
+                timestreamIt.second.set_breakpoint_at_begin();
+            }
+        }
+        // remove all mapped Timestream breakpoints
+        void remove_breakpoints()
+        {
+            for (auto& timestreamIt : m_timestreams)
+            {
+                timestreamIt.second.remove_breakpoint();
+            }
         }
 
     private:
@@ -217,16 +188,23 @@ namespace pleep
             // no lock, only for internal use
             auto timestreams_it = m_timestreams.find(entity);
             return timestreams_it != m_timestreams.end()
-                && !timestreams_it->second.empty()
-                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.front().header.coherency);
+                && timestreams_it->second.is_data_available()
+                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.peek_front().header.coherency);
         }
+        bool is_data_available_at_breakpoint(Entity entity, uint16_t currentCoherency)
+        {
+            // no lock, only for internal use
+            auto timestreams_it = m_timestreams.find(entity);
+            return timestreams_it != m_timestreams.end()
+                && timestreams_it->second.is_data_available_at_breakpoint()
+                && coherency_greater_or_equal(currentCoherency, timestreams_it->second.peek_breakpoint().header.coherency);
+        }
+
+        // check if timestream exists
 
         std::unordered_map<Entity, Timestream> m_timestreams;
 
         std::mutex m_mapMux;
-
-        // parallel timestream map to duplicate pushed messages into
-        std::shared_ptr<EntityTimestreamMap> m_linkedTimestreamMap;
     };
 }
 

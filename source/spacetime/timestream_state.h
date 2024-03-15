@@ -12,8 +12,6 @@ namespace pleep
     {
         merged = 0,     // Propogating state into past, and receiving new state from future
                         //   (whether or not there is any state being sent to it, like user entities)
-        merging,        // This entity's FUTURE is currently being resolved by a parallel cosmos
-                        //   will convert to merged once future timestream is spliced
         forked,         // Only propagating into the past, not receiving new state from future
                         //   indicates this entity is diverged from its future and needs to be resolved
         forking,        // Considered as forked for propogation, but awaiting timeout before
@@ -28,17 +26,18 @@ namespace pleep
         Future chainlink:
                                 ╭─> merged : Interception is resolved and we can return to merged
         merged -> superposition ┤
-                                ╰─> ghost  : Intercession triggered, we become ghost to resolve paradox
+                ^               ╰─> ghost  : Intercession triggered, we become ghost to resolve paradox
+                ╰─ Interception signal received (from past)
 
         Past chainlink:
-        merged -> forking -> forked -> merging -> merged
-                              │         │          ╰─> extracted from parallel
-                              │         ╰─> being processed by parallel
-                              ╰─> signals to parallel
+        merged -> forking -> forked -> merged
+                ^          ^         ^     
+                │          │         ╰─ timestream being corrected by parallel
+                │          ╰─ timeout elapsed, signals to parallel for resolution
+                ╰─ Interception signal received (from present), waiting for timeout
     */
 
     // convenience function for capturing multiple stages of forking
-    // Not including merging because that interaction should be captured & resolved during parallel simulation
     inline bool is_divergent(TimestreamState state)
     {
         return state == TimestreamState::forking || state == TimestreamState::forked;

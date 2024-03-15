@@ -10,7 +10,7 @@
 #include <asio/ts/buffer.hpp>
 #include <asio/ts/internet.hpp>
 
-#include "networking/ts_queue.h"
+#include "networking/ts_deque.h"
 #include "networking/net_message.h"
 #include "networking/net_i_server.h"
 #include "networking/pleep_crypto.h"
@@ -39,7 +39,7 @@ namespace net
     class Connection : public std::enable_shared_from_this<Connection<T_Msg>>
     {
     public:
-        Connection(asio::io_context& asioContext, asio::ip::tcp::socket socket, TsQueue<OwnedMessage<T_Msg>>& inQ)
+        Connection(asio::io_context& asioContext, asio::ip::tcp::socket socket, TsDeque<OwnedMessage<T_Msg>>& inQ)
             : m_asioContext(asioContext)
             , m_socket(std::move(socket))
             , m_incomingMessages(inQ)
@@ -463,10 +463,10 @@ namespace net
         asio::io_context& m_asioContext;
 
         // Queue of Messages to be sent
-        TsQueue<Message<T_Msg>>       m_outgoingMessages;
+        TsDeque<Message<T_Msg>>       m_outgoingMessages;
         // Reference to Connection OWNER's queue of Messages recieved
         // thus servers can have multiple Connections all push to 1 queue
-        TsQueue<OwnedMessage<T_Msg>>& m_incomingMessages;
+        TsDeque<OwnedMessage<T_Msg>>& m_incomingMessages;
         // Storage for building incoming message
         Message<T_Msg>                m_scratchMessage;
 

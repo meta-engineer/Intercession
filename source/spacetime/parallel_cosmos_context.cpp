@@ -7,7 +7,7 @@ namespace pleep
 {
     ParallelCosmosContext::ParallelCosmosContext(TimelineApi localTimelineApi)
         : I_CosmosContext()
-        , m_timelineApi(localTimelineApi)
+        , m_timelineSize{ localTimelineApi.get_num_timeslices() }
     {
         // dynamos should only be for headless simulation
         m_dynamoCluster.networker = std::make_shared<ParallelNetworkDynamo>(m_eventBroker, localTimelineApi);
@@ -70,16 +70,11 @@ namespace pleep
         // then convert NULL_TIMESLICEID entities to local upon extraction
 
         // build new cosmos
-        PLEEPLOG_DEBUG("Initializing cosmos");
+        //PLEEPLOG_DEBUG("Initializing cosmos");
         /// TEMP: use hard-coded cosmos config
         m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
         m_currentCosmos->set_coherency(sourceCosmos->get_coherency());
         PLEEPLOG_DEBUG("Setting cosmos to start at coherency " + std::to_string(m_currentCosmos->get_coherency()));
-
-        PLEEPLOG_DEBUG("Copying over timestreams");
-        // mirror and link timestreams together to maintain sync after load
-        m_timelineApi.link_future_timestreams(sourceFutureTimestreams);
-
 
         // I can't just copy cosmos as it is because any time travellers aren't in the future...
         // I need to copy the cosmos as it is in the timestream, 
@@ -93,7 +88,7 @@ namespace pleep
         //      - maybe... just use them as-is, but don't extract them, so they stay the same, but affect the simulation correctly 
         // - remove timestreamstate of all entities which aren't forked
 
-        PLEEPLOG_DEBUG("Copying over entities");
+        //PLEEPLOG_DEBUG("Copying over entities");
 
         // CosmosConfig should setup all synchros, dynamos, and eventbroker
         // Then we can simply copy every entity over through serialization
@@ -113,13 +108,12 @@ namespace pleep
                 entityUpdate
             );
 
-            PLEEPLOG_DEBUG("Creating parallel entity " + std::to_string(signMapIt.first));
-            if (!m_currentCosmos->register_entity(signMapIt.first))
+            PLEEPLOG_DEBUG("Loading parallel entity " + std::to_string(signMapIt.first));
+            if (!m_currentCosmos->register_entity(signMapIt.first, signMapIt.second))
             {
                 PLEEPLOG_DEBUG("Entity registration failed?");
                 continue;
             }
-            PLEEPLOG_DEBUG("Entity registration suceeded");
             m_currentCosmos->deserialize_entity_components(
                 signMapIt.first,
                 signMapIt.second,
@@ -129,15 +123,20 @@ namespace pleep
             assert(m_currentCosmos->entity_exists(signMapIt.first));
 
             // after transferring components timestream state should be transferred as well
-            // meaning setting forked entities in parallel, and re-merging them in source
+            // meaning setting forked entities in parallel, and re-merge them in source
             // (as we are about to resolve them)
             // should this be forkING entities as well? kinda defeats the point of having another state
             if (sourceCosmos->get_timestream_state(signMapIt.first).first == TimestreamState::forked)
             {
                 m_currentCosmos->set_timestream_state(signMapIt.first, TimestreamState::forked);
-                sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merging);
+                sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merged);
             }
         }
+        
+        //PLEEPLOG_DEBUG("Copying over timestreams");
+        // do this AFTER entities to avoid passing any init events into timestream
+        // link timestreams together to maintain sync after load
+        m_dynamoCluster.networker->link_timestreams(sourceFutureTimestreams);
         
         return true;
     }
@@ -178,7 +177,6 @@ namespace pleep
             EventMessage extraction(events::cosmos::ENTITY_UPDATE);
             
             Entity localEntity = signMapIt.first;
-            assert(derive_causal_chain_link(localEntity) != 0);
             if (!decrement_causal_chain_link(localEntity))
             {
                 // ignore non-temporal entities
@@ -204,7 +202,7 @@ namespace pleep
                 // entity should already exist
                 if (!dstCosmos->entity_exists(localEntity))
                 {
-                    PLEEPLOG_ERROR("Non-null-host entity " + std::to_string(localEntity) + " from past does not already exist in future.");
+                    PLEEPLOG_ERROR("Entity " + std::to_string(localEntity) + " with non-null-host from past does not already exist in future.");
                 }
                 assert(dstCosmos->entity_exists(localEntity));
 
@@ -214,12 +212,12 @@ namespace pleep
                 // carry over their forked state to ensure copying to next parallel
                 dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
 
-                PLEEPLOG_TRACE("Extracted entity: " + std::to_string(signMapIt.first));
+                PLEEPLOG_TRACE("Extracted entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
             }
             else
             {
                 // entity was not created nor forked during parallel
-                PLEEPLOG_TRACE("Ignoring entity: " + std::to_string(signMapIt.first));
+                PLEEPLOG_TRACE("Ignoring entity: " + std::to_string(localEntity));
             }
 
             // if this is timeslice 0 then clear all forked entity states NOW
@@ -228,20 +226,6 @@ namespace pleep
             {
                 dstCosmos->set_timestream_state(localEntity, TimestreamState::merged);
             }
-
-            // overwrite this entities recent past with parallels history?
-            // alternatively if we could set all current timestream events to upstream only
-            //   it would continue simulating (theoretically) identically to parallel's history
-            // an then every NEW timestream event from here onward would be a full update...
-
-            // we could... stuff a re-merge event into timestream now, so entity stays mergING until it reaches this point...
-            // it should theoretically follow the same deterministic path as it did while forked inside parallel
-
-            // will this short-cut cause problems during loop unrolling?
-            // Since it depends on timestream state being merging to avoid reading the outdated data, if state is not maintained it will follow the old history.
-
-            // Clear mergING state for this entity in the recent past:
-            //m_timelineApi.send_message(m_currentTimeslice, ...);
         }
 
         // remove any local entities from the destination which were condemned during the run
@@ -264,14 +248,14 @@ namespace pleep
         // EXTRACTION COMPLETE!
         m_currentCosmos = nullptr;
         m_currentTimeslice = NULL_TIMESLICEID;
-        m_timelineApi.unlink_future_timestreams();
+        m_dynamoCluster.networker->link_timestreams(nullptr); // this will unlink current timestreams
 
         // if this is timeslice 0 AND m_resolutionNeeded is true,
         //   then send new init request to past-most timeslice
         if (dstCosmos->get_host_id() == 0U && m_resolutionNeeded)
         {
             EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_timelineApi.get_num_timeslices() - 1U) };
+            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_timelineSize - 1U) };
             initMessage << initInfo;
             m_eventBroker->send_event(initMessage);
             m_resolutionNeeded = false;
@@ -285,12 +269,6 @@ namespace pleep
             m_eventBroker->send_event(initMessage);
         }
         // otherwise we're done until later requests
-
-        /// TODO: Entities created partway through a simulation won't properly propogate into the past
-        /// We may have to keep a parallel past timestream, and splice it into local past timestream when extracting...
-        ///   then the previous timeslice will have a "seamless" timestream
-        /// ALSO promote "merging" entities in the past to "merged" once the timestream is spliced
-        ///   the forked set in parallel cosmos is a superset of the merging set in the past, so we could send event to past to update all to promote to merged...
 
         return true;
     }

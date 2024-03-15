@@ -46,7 +46,7 @@ namespace pleep
         cosmos->add_component(floor, RigidBodyComponent{});
         // ***************************************************************************
 
-        // ***************************************************************************
+        /***************************************************************************
         ModelCache::ImportReceipt gamecube_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - GameCube\\Gamecube\\gamecube.obj");
 
         Entity gamebox = cosmos->create_entity();
@@ -78,9 +78,9 @@ namespace pleep
         BoxColliderComponent gamebox_collider;
         gamebox_collider.localTransform.scale = glm::vec3(1.0f, 0.75f, 1.0f);
         cosmos->add_component(gamebox, gamebox_collider);
-        // ***************************************************************************
+        // ***************************************************************************/
         
-        // ***************************************************************************
+        /**************************************************************************
         ModelCache::create_material("lightbulb_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse,  "resources/blending_transparent_window.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
@@ -103,8 +103,8 @@ namespace pleep
         spot_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
         spot_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(spot, spot_renderable);
-        // ***************************************************************************
-        // ***************************************************************************
+        // *************************************************************************** */
+        /***************************************************************************
         ModelCache::ImportReceipt picto_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - The Legend of Zelda The Wind Waker - Picto Box\\pictobox.obj");
 
         Entity picto = cosmos->create_entity();
@@ -116,10 +116,10 @@ namespace pleep
             picto_renderable.materials.push_back(ModelCache::fetch_material(matName));
         picto_renderable.localTransform.scale = { 0.5f, 0.5f, 0.5f };
         cosmos->add_component(picto, picto_renderable);
-        // ***************************************************************************
+        // ***************************************************************************/
 
 
-        // ***************************************************************************
+        /***************************************************************************
         ModelCache::ImportReceipt meteor_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\3DS - Pokemon Super Mystery Dungeon - Meteor\\Meteor\\ev01_meteor.obj");
 
         Entity meteor = cosmos->create_entity();
@@ -135,9 +135,9 @@ namespace pleep
             meteor_renderable.materials.push_back(ModelCache::fetch_material(matName));
         meteor_renderable.localTransform.scale = { 0.5f, 0.5f, 0.5f };
         cosmos->add_component(meteor, meteor_renderable);
-        // ***************************************************************************
+        // ***************************************************************************/
 
-        // ***************************************************************************
+        /***************************************************************************
         Entity point = cosmos->create_entity();
         cosmos->add_component(point, TransformComponent(glm::vec3(10.0f, -1.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(point).scale = glm::vec3(0.2f);
@@ -148,7 +148,7 @@ namespace pleep
         point_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
         point_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(point, point_renderable);
-        // ***************************************************************************
+        // ***************************************************************************/
 
         return cosmos;
     }

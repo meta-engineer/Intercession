@@ -10,7 +10,7 @@ clients and timeslice servers (aswell as coordinator/dispatcher servers eventual
 Right now all files/resources are contained in the networking/ subdirectory, but better
 partitioning may make clearer functionality
 
-There are some self-contained utility headers like net_message.h and net_tsqueue.h
+There are some self-contained utility headers like net_message.h and ts_deque.h
 Aswell as parts of the simulation engine proper, like net_dynamo.h
 
 It may make sense to separate the utils into a "PleepNet" library.

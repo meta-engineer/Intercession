@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "logging/pleep_log.h"
-#include "networking/ts_queue.h"
+#include "networking/ts_deque.h"
 #include "networking/net_message.h"
 #include "networking/net_connection.h"
 
@@ -136,7 +136,7 @@ namespace net
 
     protected:
         // messages recieved from connected "remote"
-        TsQueue<OwnedMessage<T_Msg>> m_incomingMessages;
+        TsDeque<OwnedMessage<T_Msg>> m_incomingMessages;
 
         // root context shared with connections
         asio::io_context m_asioContext;

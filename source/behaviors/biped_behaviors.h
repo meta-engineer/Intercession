@@ -202,30 +202,30 @@ namespace pleep
                 if (input.actions.test(SpacialActions::action3)
                     && input.actionVals.at(SpacialActions::action3))
                 {
-                    EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
-                    events::network::JUMP_DEPARTURE_params jumpInfo{
-                        1, {}, entity
+                    EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                    events::network::JUMP_params jumpInfo{
+                        1, entity
                     };
                     jumpMessage << jumpInfo;
-                    PLEEPLOG_DEBUG("Jump Backwards!");
+                    PLEEPLOG_DEBUG("Jump " + std::to_string(entity) + " Backwards!");
 
                     // prevent double jump on arrival
                     input.clear();
 
                     sharedBroker->send_event(jumpMessage);
                 }
-                
+
                 // forward mouse button
                 if (input.actions.test(SpacialActions::action4)
                     && input.actionVals.at(SpacialActions::action4))
                 {
-                    EventMessage jumpMessage(events::network::JUMP_DEPARTURE);
-                    events::network::JUMP_DEPARTURE_params jumpInfo{
-                        -1, {}, entity
+                    EventMessage jumpMessage(events::network::JUMP_REQUEST);
+                    events::network::JUMP_params jumpInfo{
+                        -1, entity
                     };
                     jumpMessage << jumpInfo;
-                    PLEEPLOG_DEBUG("Jump Forwards!");
-                    
+                    PLEEPLOG_DEBUG("Jump " + std::to_string(entity) + " Forwards!");
+
                     // prevent double jump on arrival
                     input.clear();
 

@@ -47,7 +47,8 @@ namespace pleep
         void _entity_removed_handler(EventMessage removalEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
         void _timestream_state_change_handler(EventMessage stateEvent);
-        void _jump_departure_handler(EventMessage jumpEvent);
+        void _jump_request_handler(EventMessage jumpEvent);
+        void _jump_arrival_handler(EventMessage jumpEvent);
 
         // TimelineApi (generated for us by AppGateway) to communicate with other servers
         TimelineApi m_timelineApi;

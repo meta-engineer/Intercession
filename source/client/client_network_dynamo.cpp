@@ -143,13 +143,7 @@ namespace pleep
                 msg >> createInfo;
                 PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
-                if (cosmos->register_entity(createInfo.entity))
-                {
-                    for (ComponentType c = 0; c < createInfo.sign.size(); c++)
-                    {
-                        if (createInfo.sign.test(c)) cosmos->add_component(createInfo.entity, c);
-                    }
-                }
+                cosmos->register_entity(createInfo.entity, createInfo.sign);
             }
             break;
             case events::cosmos::ENTITY_REMOVED:
@@ -202,11 +196,11 @@ namespace pleep
             break;
             case events::network::JUMP_ARRIVAL:
             {
-                events::network::JUMP_ARRIVAL_params jumpInfo;
+                events::network::JUMP_params jumpInfo;
                 msg >> jumpInfo;
 
                 // check if server has denied our jump request
-                if (jumpInfo.tripId == 0) break;
+                if (jumpInfo.port == 0) break;
                 
                 PLEEPLOG_TRACE("Received JUMP_ARRIVAL message, i can connect to: " + std::to_string(jumpInfo.port) + " with trip id: " + std::to_string(jumpInfo.tripId));
 

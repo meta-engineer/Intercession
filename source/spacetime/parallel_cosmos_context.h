@@ -78,12 +78,9 @@ namespace pleep
         // past & future should not be able to access simultaneously, however future can access during internal thread running
         std::mutex m_accessMux;
 
-        // save copy of TimelineApi to avoid going through network dynamo
-        // remember these resources are shared
-        TimelineApi m_timelineApi;
-
         // which timeslice are we paralleling?
         TimesliceId m_currentTimeslice = NULL_TIMESLICEID;
+        size_t m_timelineSize = 0;
 
         // remember condemned entities during simulation for "extraction"
         std::unordered_set<Entity> m_condemnedEntities;

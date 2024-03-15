@@ -1,5 +1,5 @@
-#ifndef TS_QUEUE_H
-#define TS_QUEUE_H
+#ifndef TS_DEQUE_H
+#define TS_DEQUE_H
 
 //#include "intercession_pch.h"
 #include <mutex>
@@ -8,29 +8,18 @@
 
 namespace pleep
 {
-    // "Thread Safe Queue", while not directly related to networking
+    // "Thread Safe Deque", while not directly related to networking
     // (due to templating) This queue will buffer incoming/outgoing
     // network messages on an app's connection, which will by async
     template<typename T_Element>
-    class TsQueue
+    class TsDeque
     {
     public:
-        TsQueue() = default;
+        TsDeque() = default;
         // not safe to have copies? m_dequeMux is not copyable
-        TsQueue(const TsQueue<T_Element>&) = delete;
-        // Non-const copy constructor???
-        TsQueue(TsQueue<T_Element>& other)
-        {
-            const std::lock_guard<std::mutex> lk(other.m_dequeMux);
-            // dont need our own lock because we are a constructor?
-
-            // are Message<> safe to copy? They are vectors, so probably
-            m_deque = other.m_deque;
-
-            // keep our own mutex and condition variable
-        }
+        TsDeque(const TsDeque<T_Element>&) = delete;
         // I don't know why this was suggested to be virtual
-        virtual ~TsQueue() { clear(); }
+        virtual ~TsDeque() { clear(); }
         
         // Wrap deque methods
 
@@ -42,7 +31,7 @@ namespace pleep
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             if (m_deque.empty())
             {
-                throw std::range_error("Called front() on empty TsQueue");
+                throw std::range_error("Called front() on empty TsDeque");
             }
             return m_deque.front();
         }
@@ -54,7 +43,7 @@ namespace pleep
             const std::lock_guard<std::mutex> lk(m_dequeMux);
             if (m_deque.empty())
             {
-                throw std::range_error("Called back() on empty TsQueue");
+                throw std::range_error("Called back() on empty TsDeque");
             }
             return m_deque.back();
         }
@@ -136,4 +125,4 @@ namespace pleep
     };
 }
 
-#endif // TS_QUEUE_H
+#endif // TS_DEQUE_H

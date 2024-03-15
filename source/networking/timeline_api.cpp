@@ -59,7 +59,7 @@ namespace pleep
         return m_simulationHz;
     }
 
-    bool TimelineApi::send_message(TimesliceId id, EventMessage& data)
+    bool TimelineApi::send_message(TimesliceId id, const EventMessage& data)
     {
         // sending to my own id is ok, because we can re-use the same logic on receiving
         /*
@@ -99,7 +99,7 @@ namespace pleep
         return m_pastTimestreams != nullptr;
     }
 
-    void TimelineApi::push_past_timestream(Entity entity, Message<EventId>& data)
+    void TimelineApi::push_past_timestream(Entity entity, const EventMessage& data)
     {
         if (!m_pastTimestreams)
         {
@@ -128,17 +128,41 @@ namespace pleep
         }
         return m_futureTimestreams->pop_from_timestream(entity, coherency, dest);
     }
-
     
-    void TimelineApi::link_future_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams)
+    void TimelineApi::link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams)
     {
-        EntityTimestreamMap::link_timestreams(sourceTimestreams, m_futureTimestreams);
+        // clear breakpoints of old streams which we linked to
+        if (m_futureTimestreams) m_futureTimestreams->remove_breakpoints();
+        if (m_pastTimestreams) m_pastTimestreams->remove_breakpoints();
+
+        // set breakpoint to start
+        if (sourceTimestreams) sourceTimestreams->set_breakpoints();
+
+        // do both so that has_past and has_future work as expected
+        m_futureTimestreams = sourceTimestreams;
+        m_pastTimestreams = sourceTimestreams;
+    }
+    
+    void TimelineApi::push_timestream_at_breakpoint(Entity entity, const EventMessage& data)
+    {
+        if (!m_pastTimestreams)
+        {
+            PLEEPLOG_WARN("This timeslice has no past timestream to push to");
+            return;
+        }
+        m_pastTimestreams->push_to_timestream_at_breakpoint(entity, data);
+    }
+    bool TimelineApi::pop_timestream_at_breakpoint(Entity entity, uint16_t coherency, EventMessage& dest)
+    {
+        // use the "future" timestream
+        if (!m_futureTimestreams)
+        {
+            PLEEPLOG_WARN("This timeslice has no future timestream to pop from");
+            return false;
+        }
+        return m_futureTimestreams->pop_from_timestream_at_breakpoint(entity, coherency, dest);
     }
 
-    void TimelineApi::unlink_future_timestreams()
-    {
-        EntityTimestreamMap::unlink_timestreams(m_futureTimestreams);
-    }
 
     void TimelineApi::parallel_notify_divergence()
     {
@@ -163,7 +187,7 @@ namespace pleep
     void TimelineApi::parallel_retarget(uint16_t newTarget)
     {
         if (m_sharedParallel == nullptr) return;
-        PLEEPLOG_DEBUG("Updating parallel coherency target to " + std::to_string(newTarget));
+        //PLEEPLOG_DEBUG("Updating parallel coherency target to " + std::to_string(newTarget));
         m_sharedParallel->set_coherency_target(newTarget);
     }
 

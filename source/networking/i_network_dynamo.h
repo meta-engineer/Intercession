@@ -2,8 +2,10 @@
 #define I_NETWORK_DYNAMO_H
 
 //#include "intercession_pch.h"
+#include <memory>
 #include "core/a_dynamo.h"
 #include "core/cosmos_access_packet.h"
+#include "networking/entity_timestream_map.h"
 
 namespace pleep
 {
@@ -62,6 +64,13 @@ namespace pleep
             UNREFERENCED_PARAMETER(address);
             UNREFERENCED_PARAMETER(port);
             return;
+        }
+
+        // for servers: Overwrite current timelineApi timestreams with the sourceTimestreams and set breakpoints
+        // for clients: N/A
+        virtual void link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams)
+        {
+            UNREFERENCED_PARAMETER(sourceTimestreams);
         }
     };
 }

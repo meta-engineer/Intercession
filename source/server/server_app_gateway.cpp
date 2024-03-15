@@ -27,7 +27,7 @@ namespace pleep
         // has access to timeslices via sharedMultiplex, and its own parallel timestream
         // NULL_TIMESLICEID is for clients, parallel must take on the id of whoever it is parallel to.
         std::shared_ptr<ParallelCosmosContext> parallelContext = std::make_shared<ParallelCosmosContext>(
-            TimelineApi(cfg, NULL_TIMESLICEID, sharedMultiplex, nullptr, std::make_shared<EntityTimestreamMap>(), nullptr)
+            TimelineApi(cfg, NULL_TIMESLICEID, sharedMultiplex, nullptr, nullptr, nullptr)
         );
 
         // construct timeslices in reverse order so that origin/present (0) is created LAST

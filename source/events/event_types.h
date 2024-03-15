@@ -218,46 +218,36 @@ namespace pleep
                     //uint16_t coherency;
                 };
 
-            // Request timetravel
-            // entity will be serialized into the Message before _params
+            // Indicates an entity is intending to timetravel
+            // contains serialized entity
+            const EventId JUMP_REQUEST = __LINE__;
+            // indicates entity is about to leave a timeslice
+            // No serialized data (not necessary)
             const EventId JUMP_DEPARTURE = __LINE__;
-                struct JUMP_DEPARTURE_params
+            // indicates entity has just arrived in a timeslice
+            // contains serialized entity
+            const EventId JUMP_ARRIVAL = __LINE__;
+                // All JUMP_ events can just use the same _params struct:
+                struct JUMP_params
                 {
                     // relative number of timeslices requested to jump (negative is to future)
-                    // Should this be relative or absolute?
-                    // relative, so that we can calculate estimated arrival frame
+                    // relative, so that it works natively after being propogated
+                    // departures and arrivals should be inverse
                     int timesliceDelta = 0;
-
-                    // unique identifier for matching departure&arrival pairs
-                    // (usually generated from timestamp)
-                    uint32_t tripId;
 
                     // Entity who is jumping
                     // REMEMBER to serialize this entity in message before adding params!
                     Entity entity = NULL_ENTITY;
                     Signature sign;
 
-                    // indicates that this is the focal entity for a client
-                    bool isFocal = false;
-                };
-            // Reponse returned by destination timeslice to confirm that they are ready to receive the time traveller
-            const EventId JUMP_ARRIVAL = __LINE__;
-                struct JUMP_ARRIVAL_params
-                {
-                    // relative number of timeslices requested to jump (negative is to future)
-                    // (negation of the departure)
-                    int timesliceDelta = 0;
-
-                    // unique identifier for matching departure&arrival pairs (copied from departure)
+                    // unique identifier for matching departure&arrival pairs
+                    // (usually generated from timestamp)
                     // 0 implies failure, do not jump
                     uint32_t tripId;
 
-                    // Entity who is jumping (copied from departure)
-                    Entity entity = NULL_ENTITY;
-
-                    // indicates that this is the focal entity for a client (copied from departure)
+                    // indicates that this is the focal entity for a client
                     bool isFocal = false;
-
+                    
                     // inform client of where to connect
                     // they must already know the address?
                     uint16_t port = 0;

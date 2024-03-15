@@ -27,13 +27,18 @@ namespace pleep
 
         // Cosmos should be used to fetch all entities to broadcast?
         void submit(CosmosAccessPacket data) override;
+        
+        // Overwrite current timelineApi timestreams with the sourceTimestreams and set breakpoints
+        void link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams) override;
 
     private:
         // event handlers
+        void _entity_created_handler(EventMessage creationEvent);
+        void _entity_removed_handler(EventMessage removalEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
         void _parallel_init_handler(EventMessage initEvent);
         void _parallel_finished_handler(EventMessage finishedEvent);
-        void _jump_departure_handler(EventMessage jumpEvent);
+        void _jump_request_handler(EventMessage jumpEvent);
 
         // TimelineApi (generated for us by AppGateway) to communicate with servers
         TimelineApi m_timelineApi;
