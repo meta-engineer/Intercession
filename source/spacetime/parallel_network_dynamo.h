@@ -46,13 +46,13 @@ namespace pleep
         std::weak_ptr<Cosmos> m_workingCosmos;
 
         // cache of departure conditions to match between timestream (during network dynamo) and cosmos (during behaviours dynamo)
-        // non-matching departures are determined to be divergent and promoted to m_divergentDepartures
+        // non-matching departures are determined to be divergent and promoted to m_divergentJumpRequests
         // cleared after each frame
-        std::unordered_map<Entity, TimejumpConditions> m_departureConditions;
+        std::unordered_map<Entity, TimejumpConditions> m_jumpConditions;
 
         // cache of tripId, and entity data at a departure which diverged locally from the timestream
         // if we reach an arrival with a matching tripId in timestrean, override with the cached data
-        std::unordered_map<uint32_t, EventMessage> m_divergentDepartures;
+        std::unordered_map<uint32_t, EventMessage> m_divergentJumpRequests;
     };
 }
 

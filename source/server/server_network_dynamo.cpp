@@ -93,6 +93,7 @@ namespace pleep
         // Ordering of methods?
         // First: process DIRECT messages from other timeslices
         //_process_timeline_messages();
+        {
         EventMessage msg;
         while(m_timelineApi.pop_message(msg))
         {
@@ -202,9 +203,15 @@ namespace pleep
                 /// Back here (after event) we send a JUMP_ARRIVAL notification back to source (implying an arrival has occurred elsewhere in spacetime)
                 /// source then pushes a DEPARTURE (sends same to repective client) and then condemns the entity
 
+                // convert message into an arrival for response (maintaining serialised data):
+                msg.header.id = events::network::JUMP_ARRIVAL;
+
                 events::network::JUMP_params jumpInfo;
                 msg >> jumpInfo;
+
                 int source = m_timelineApi.get_timeslice_id() - jumpInfo.timesliceDelta;
+                // inverse delta to be relative to our local time
+                jumpInfo.timesliceDelta *= -1;
 
                 if (m_clientEntities.count(jumpInfo.entity) > 0 || cosmos->entity_exists(jumpInfo.entity))
                 {
@@ -213,18 +220,15 @@ namespace pleep
                     jumpInfo.port = 0;
                     msg << jumpInfo;
 
-                    // return to sender (request error)
+                    // return to sender (arrival error)
                     m_timelineApi.send_message(static_cast<TimesliceId>(source), msg);
                 }
                 else
                 {
-                    // convert message into an arrival (maintaining serialised data):
-                    msg.header.id = events::network::JUMP_ARRIVAL;
-                    jumpInfo.timesliceDelta *= -1;
+                    // pc will need to know where to go
                     jumpInfo.port = m_timelineApi.get_port();
                     msg << jumpInfo;
 
-                    
                     // Agnostic to pc or npc we'll create the entity now, 
                     // and expect pcs will have their clients connect later with tripId
                     cosmos->register_entity(jumpInfo.entity, jumpInfo.sign);
@@ -295,6 +299,7 @@ namespace pleep
                     msg >> jumpInfo;
                     increment_causal_chain_link(jumpInfo.entity);
                     msg << jumpInfo;
+                    msg.header.coherency = cosmos->get_coherency();
                     // MUST still contain serialized data from initial JUMP_REQUEST!
                     m_timelineApi.push_past_timestream(jumpInfo.entity, msg);
                 }
@@ -367,6 +372,7 @@ namespace pleep
                 PLEEPLOG_DEBUG("Received unknown message id " + std::to_string(msg.header.id));
             }
             }
+        }
         }
 
         // Second: handle incoming timestream messages from future timeslice
@@ -457,13 +463,18 @@ namespace pleep
                         cosmos->condemn_entity(removeInfo.entity);
                     }
                     break;
+                    case events::network::JUMP_REQUEST:
+                    {
+                        // Just ignore this and wait for the subsiquent departure (if jump was successful)
+                    }
+                    break;
                     case events::network::JUMP_DEPARTURE:
                     {
                         // we should expect a condemn to occur later this frame.
                         // need to emit this on event broker? maybe later.
 
                         events::network::JUMP_params jumpInfo;
-                        msg >> jumpInfo;
+                        evnt >> jumpInfo;
                         assert(jumpInfo.entity == entity);
 
                         // forward this departure into the timestream with the same tripId
@@ -473,7 +484,7 @@ namespace pleep
                             increment_causal_chain_link(jumpInfo.entity);
                             // timesliceDelta remains same
 
-                            msg << jumpInfo;
+                            evnt << jumpInfo;
                             m_timelineApi.push_past_timestream(jumpInfo.entity, evnt);
                         }
                     }
@@ -481,7 +492,7 @@ namespace pleep
                     case events::network::JUMP_ARRIVAL:
                     {
                         // handle arrivals in timestream or directly after JUMP_REQUEST the same:
-                        m_sharedBroker->send_event(msg);
+                        m_sharedBroker->send_event(evnt);
                     }
                     break;
                     default:
@@ -852,6 +863,9 @@ namespace pleep
 
     void ServerNetworkDynamo::_jump_request_handler(EventMessage jumpEvent)
     {
+        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+        if (m_workingCosmos.expired()) return;
+
         // some behavior has called for an entity to jump
         // Message should not yet have serialized data!
         events::network::JUMP_params jumpInfo;
@@ -879,22 +893,35 @@ namespace pleep
         if (destination < 0 || destination > m_timelineApi.get_num_timeslices() - 1 || destination == m_timelineApi.get_timeslice_id())
         {
             /// TODO: if client invoked this jump inform then that request is invalid?
+
+            return;
         }
-        else
+
+        // build message data (now that we're server side)
+        jumpInfo.sign = cosmos->get_entity_signature(jumpInfo.entity);
+        cosmos->serialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpEvent);
+        jumpEvent << jumpInfo;
+        
+        // good to send request now
+        m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
+
+        // push request to timestream so that it can be validated during parallel
+        if (m_timelineApi.has_past())
         {
-            // build message data (now that we're server side)
-            std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
-            jumpInfo.sign = cosmos->get_entity_signature(jumpInfo.entity);
-            cosmos->serialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpEvent);
+            jumpEvent >> jumpInfo;
+            increment_causal_chain_link(jumpInfo.entity);
+
             jumpEvent << jumpInfo;
-            
-            // good to send request now
-            m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
+            jumpEvent.header.coherency = cosmos->get_coherency();
+            m_timelineApi.push_past_timestream(jumpInfo.entity, jumpEvent);
         }
     }
 
     void ServerNetworkDynamo::_jump_arrival_handler(EventMessage jumpEvent)
     {
+        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
+        if (m_workingCosmos.expired()) return;
+
         // arrival has happened on the timestream (or directly after a JUMP_REQUEST)
         // entity should have been created already, so just unpack
 
@@ -908,6 +935,7 @@ namespace pleep
             // timesliceDelta remains same
 
             jumpEvent << jumpInfo;
+            jumpEvent.header.coherency = cosmos->get_coherency();
             m_timelineApi.push_past_timestream(jumpInfo.entity, jumpEvent);
 
             // restore message/info state for use in present
@@ -915,7 +943,6 @@ namespace pleep
             decrement_causal_chain_link(jumpInfo.entity);
         }
 
-        std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         assert(cosmos->entity_exists(jumpInfo.entity));
         // entity exists, write components to it
         cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpEvent, ComponentCategory::all);
