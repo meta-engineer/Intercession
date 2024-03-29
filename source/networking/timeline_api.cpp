@@ -80,6 +80,18 @@ namespace pleep
         return true;
     }
 
+    bool TimelineApi::broadcast_message(const EventMessage& data)
+    {
+        for (auto& msgQ : *m_multiplex)
+        {
+            if (msgQ.first == m_timesliceId) continue;
+
+            msgQ.second.push_back(data);
+        }
+        // is there any "false" condition?
+        return true;
+    }
+
     bool TimelineApi::is_message_available()
     {
         return !(m_multiplex->at(m_timesliceId).empty());

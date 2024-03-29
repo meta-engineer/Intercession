@@ -66,13 +66,22 @@ namespace pleep
                         //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
                         assert(updateInfo.entity == entity);
 
-                        if (!cosmos->entity_exists(updateInfo.entity))
-                        {
-                            break;
-                        }
+                        if (!cosmos->entity_exists(updateInfo.entity)) break;
+
+                        /// When a paradox occurs we may want the entity to be forced to follow its state in the timestream instead of only following the upstream
+                        /// So perhaps we want to specifically carry over its "forked" state from the previous worldline, even though it doesn't interact with any forked entity
+                        /// Then we can set it to merged when we know it is causing a paradox
+                        /// Thus, if something new comes along, it will re-fork it and it will behave inline with upstream only... (possibly causing another paradox)
 
                         // ONLY EXTRACT UPSTREAM COMPONENTS!
-                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
+                        {
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        }
+                        else
+                        {
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        }
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
@@ -117,12 +126,16 @@ namespace pleep
                         /// TODO: check entry already exists somehow?
                         assert(m_jumpConditions.count(jumpInfo.entity) < 1);
                         m_jumpConditions.insert({ jumpInfo.entity, extract_jump_conditions(evnt, cosmos) });
+
+                        // clear any previously stored request divergences for this tripId
+                        // we'll generate a new one (if applicable) when we handle the cosmos' request
+                        m_divergentJumpRequests.erase(jumpInfo.tripId);
                     }
                     break;
                     case events::network::JUMP_DEPARTURE:
                     {
-                        // encountered a jump during re-simulation
-                        // we need to determine if the events of the re-sim have diverged "significantly" enough
+                        // entity jumped here in the current history
+                        // we need to determine if the events of history have diverged "significantly" enough
                         // and the departure which occurs in-cosmos does not match this one
                         // meaning the arrival with the corresponding tripId no longer makes sense
                         // (including if this departure NEVER occurs in-cosmos)
@@ -143,7 +156,7 @@ namespace pleep
                         /// TODO: can we be robust to receiving the departure too early?
 
                         // nothing to do without past, just ignore it
-                        if (!m_timelineApi.has_past()) return;
+                        if (!m_timelineApi.has_past()) break;
 
                         // propogate a departure event into the past depending on...
                         // if we have a divergent departure for this trip use that
@@ -160,15 +173,20 @@ namespace pleep
                             events::network::JUMP_params newJumpInfo;
                             newJump >> newJumpInfo;
                             newJump << newJumpInfo;
-                            PLEEPLOG_DEBUG("Using cached divergent departure: " + std::to_string(newJumpInfo.tripId));
 
-                            m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, newJump);
+                            // ensure this trip matches our chainlink (it could be "old", leftover from future slice)
+                            if (newJumpInfo.entity == jumpInfo.entity)
+                            {
+                                PLEEPLOG_DEBUG("Using cached divergent departure: " + std::to_string(newJumpInfo.tripId) + " for entity " + std::to_string(newJumpInfo.entity));
+
+                                m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, newJump);
+                                break;
+                            }
                         }
-                        else
-                        {
-                            PLEEPLOG_DEBUG("No divergent departure to use");
-                            m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, evnt);
-                        }
+
+                        // if no divergent jump, or jump was too old:
+                        PLEEPLOG_DEBUG("No divergent departure to use");
+                        m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, evnt);
                     }
                     break;
                     case events::network::JUMP_ARRIVAL:
@@ -352,7 +370,7 @@ namespace pleep
         events::network::JUMP_params jumpInfo;
         jumpEvent >> jumpInfo;
 
-        PLEEPLOG_WARN("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PARALLEL COSMOS JUMP REQUEST FOR: " + std::to_string(jumpInfo.entity) + " to " + std::to_string(jumpInfo.timesliceDelta));
+        PLEEPLOG_WARN("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PARALLEL COSMOS JUMP REQUEST FOR: " + std::to_string(jumpInfo.entity) + ", delta: " + std::to_string(jumpInfo.timesliceDelta));
 
         // manually extract components from cosmos, not the message:
         TimejumpConditions newConditions{ 0 };
@@ -380,7 +398,7 @@ namespace pleep
         {
             // jump is same, history has not changed
             PLEEPLOG_DEBUG(".......................................... EQUIVALENT JUMP REQUEST DETECTED: " + std::to_string(m_jumpConditions[jumpInfo.entity].tripId));
-            PLEEPLOG_DEBUG("Compared: " + std::to_string(newConditions.origin.x) + ", " + std::to_string(newConditions.origin.y) + ", " + std::to_string(newConditions.origin.z) + " | " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.x) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.y) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.z));
+            PLEEPLOG_DEBUG("Comparing new: " + std::to_string(newConditions.origin.x) + ", " + std::to_string(newConditions.origin.y) + ", " + std::to_string(newConditions.origin.z) + " to expected: " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.x) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.y) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.z));
 
             /// TODO: Can the departure happen the same frame? is it possible that the other server responds fast enough for this server to handle its request & response in the same queue?
             /// if so... It will already have been handled...
@@ -394,12 +412,13 @@ namespace pleep
         {
             // jump is in a divergent history
             PLEEPLOG_DEBUG("########################################## DIVERGENT JUMP REQUEST DETECTED: " + std::to_string(m_jumpConditions[jumpInfo.entity].tripId));
-            PLEEPLOG_DEBUG("Compared: " + std::to_string(newConditions.origin.x) + ", " + std::to_string(newConditions.origin.y) + ", " + std::to_string(newConditions.origin.z) + " | " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.x) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.y) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.z));
+            PLEEPLOG_DEBUG("Comparing new: " + std::to_string(newConditions.origin.x) + ", " + std::to_string(newConditions.origin.y) + ", " + std::to_string(newConditions.origin.z) + " to expected: " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.x) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.y) + ", " + std::to_string(m_jumpConditions[jumpInfo.entity].origin.z));
 
             // store request for when we encounter the arrival with matching tripId
             // use tripId from original timestream jump?
             jumpInfo.tripId = m_jumpConditions[jumpInfo.entity].tripId;
             jumpEvent << jumpInfo;
+            PLEEPLOG_DEBUG("Storing new for use at matching arrival.");
             m_divergentJumpRequests.insert({ jumpInfo.tripId, jumpEvent });
 
             /// indicate another parallel cycle is needed

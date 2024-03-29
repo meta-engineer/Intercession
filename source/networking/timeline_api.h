@@ -55,6 +55,8 @@ namespace pleep
 
         // Restrict access to outgoing queues to only be sendable
         bool send_message(TimesliceId id, const EventMessage& data);
+        // Send identical message to all OTHER timeslices
+        bool broadcast_message(const EventMessage& data);
         // check to prevent popping empty deque
         bool is_message_available();
         // Restrict access to incoming queue to only be poppable

@@ -174,22 +174,35 @@ namespace pleep
                 GenesisId genesis = derive_genesis_id(data.entity);
                 CausalChainlink link = derive_causal_chain_link(data.entity);
 
-                // cases: 
-                // If we are exactly 1 timeslice ahead (less) than event,
-                // AND (it has diverged OR become superposition)
-                // then set our present version of that entity to be "superposition"
-                if (data.timeslice - m_timelineApi.get_timeslice_id() == 1U
-                    && (TimestreamState::superposition==data.newState || is_divergent(data.newState))
-                    && link >= 1U)
+                switch (data.newState)
                 {
-                    Entity presentRecipient = compose_entity(host, genesis, link - 1U);
-                    if (!cosmos->entity_exists(presentRecipient))
+                    case TimestreamState::forking:
+                    case TimestreamState::forked:
                     {
-                        PLEEPLOG_WARN("Future of changed state entity (" + std::to_string(presentRecipient) + ") does not exist? Ignoring...");
-                        break;
-                    }
+                        // entity of same link should match (coming from parallel)
+                        if (cosmos->entity_exists(data.entity))
+                        {
+                            cosmos->set_timestream_state(data.entity, TimestreamState::forked);
+                        }
 
-                    cosmos->set_timestream_state(presentRecipient, TimestreamState::superposition);
+                        // any entity with a lesser chainlink should be set to superposition
+                        // (state change of a link-0 entity doesn't have any effect)
+                        for (CausalChainlink pLink = link - 1U; pLink < NULL_CAUSALCHAINLINK; pLink--)
+                        {
+                            Entity testEntity = compose_entity(host, genesis, pLink);
+
+                            if (cosmos->entity_exists(testEntity))
+                            {
+                                cosmos->set_timestream_state(testEntity, TimestreamState::superposition);
+                            }
+                        }
+                    }
+                    break;
+                    default:
+                    {
+
+                    }
+                    break;
                 }
             }
             break;
@@ -475,6 +488,7 @@ namespace pleep
 
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
+                        if (jumpInfo.entity != entity) PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(entity));
                         assert(jumpInfo.entity == entity);
 
                         // forward this departure into the timestream with the same tripId
@@ -842,16 +856,13 @@ namespace pleep
         {
             // signal to both client
             m_networkApi.broadcast_message(stateEvent);
-            // and future timeslice
+            // and other timeslices
         }
         // fallthrough:
         case TimestreamState::forking:
         {
-            // signal to future, so they can apply superposition
-            if (m_timelineApi.has_future() && stateInfo.timeslice >= 1U)
-            {
-                m_timelineApi.send_message(stateInfo.timeslice - 1U, stateEvent);
-            }
+            // signal to ALL timeslices, who check for any temporalentity with a lesser chainlink
+            m_timelineApi.broadcast_message(stateEvent);
         }
         break;
         default:
