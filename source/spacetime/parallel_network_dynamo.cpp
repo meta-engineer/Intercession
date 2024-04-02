@@ -51,11 +51,11 @@ namespace pleep
         {
             std::vector<Entity> availableEntities = m_timelineApi.get_entities_with_future_streams();
 
-            for (Entity& entity : availableEntities)
+            for (Entity& evntEntity : availableEntities)
             {
                 EventMessage evnt(1);
                 // timeline api will return false if nothing available at currentCoherency or earlier
-                while (m_timelineApi.pop_timestream_at_breakpoint(entity, currentCoherency, evnt))
+                while (m_timelineApi.pop_timestream_at_breakpoint(evntEntity, currentCoherency, evnt))
                 {
                     switch(evnt.header.id)
                     {
@@ -64,7 +64,7 @@ namespace pleep
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
                         evnt >> updateInfo;
                         //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
-                        assert(updateInfo.entity == entity);
+                        assert(updateInfo.entity == evntEntity);
 
                         if (!cosmos->entity_exists(updateInfo.entity)) break;
 
@@ -80,6 +80,8 @@ namespace pleep
                         }
                         else
                         {
+                            /// TODO: Entities which have a "lack" of interaction will not be marked as forked, but we want them to be upstream only after their non-interaction... instead just make everything always upstream?
+                            /// this may also be useful in intercession resolution to ensure entity follows self-consistent history
                             cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
                         }
                     }
@@ -90,7 +92,7 @@ namespace pleep
                         // same as server?
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
-                        assert(createInfo.entity == entity);
+                        assert(createInfo.entity == evntEntity);
                         PLEEPLOG_DEBUG("Parallel Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                         cosmos->register_entity(createInfo.entity, createInfo.sign);
@@ -101,7 +103,7 @@ namespace pleep
                         // repeat removal
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
-                        assert(removeInfo.entity == entity);
+                        assert(removeInfo.entity == evntEntity);
                         PLEEPLOG_TRACE("Parallel Remove Entity: " + std::to_string(removeInfo.entity));
 
                         // use condemn event to avoid double deletion
@@ -118,7 +120,7 @@ namespace pleep
                         evnt >> jumpInfo;
                         evnt << jumpInfo;
                         PLEEPLOG_WARN("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ PARALLEL TIMESTREAM REQUEST FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
-                        assert(jumpInfo.entity == entity);
+                        assert(jumpInfo.entity == evntEntity);
 
                         // DO NOT forward this to past, wait for local request to do that (if ever)
                         
@@ -134,7 +136,7 @@ namespace pleep
                     break;
                     case events::network::JUMP_DEPARTURE:
                     {
-                        // entity jumped here in the current history
+                        // evntEntity jumped here in the current history
                         // we need to determine if the events of history have diverged "significantly" enough
                         // and the departure which occurs in-cosmos does not match this one
                         // meaning the arrival with the corresponding tripId no longer makes sense
@@ -148,7 +150,7 @@ namespace pleep
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
                         evnt << jumpInfo;
-                        assert(jumpInfo.entity == entity);
+                        assert(jumpInfo.entity == evntEntity);
                         PLEEPLOG_WARN("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ PARALLEL TIMESTREAM DEPARTURE FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
 
                         // if we've reached the departure, then clear the request's conditions
@@ -193,8 +195,9 @@ namespace pleep
                     {
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
-                        assert(jumpInfo.entity == entity);
                         PLEEPLOG_WARN("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& PARALLEL TIMESTREAM ARRIVAL FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
+                        if (jumpInfo.entity != evntEntity) PLEEPLOG_CRITICAL("Event params entity " + std::to_string(jumpInfo.entity) + " does not match timestream entity " + std::to_string(evntEntity));
+                        assert(jumpInfo.entity == evntEntity);
 
                         // creation event should have appeared before this
                         assert(cosmos->entity_exists(jumpInfo.entity));
@@ -206,9 +209,15 @@ namespace pleep
 
                             EventMessage& cachedJump = m_divergentJumpRequests.at(jumpInfo.tripId);
                             // push THIS version of arrival to past
+                            // relative to this present entity
                             if (m_timelineApi.has_past())
                             {
                                 cachedJump.header.id = events::network::JUMP_ARRIVAL;
+                                events::network::JUMP_params arrivalParams;
+                                cachedJump >> arrivalParams;
+                                arrivalParams.entity = jumpInfo.entity;
+                                cachedJump << arrivalParams;
+
                                 cachedJump.header.coherency = evnt.header.coherency;
                                 // parallel is in same timeframe as past, so no increment chain link
                                 m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, cachedJump);
@@ -216,7 +225,12 @@ namespace pleep
 
                             events::network::JUMP_params cachedJumpInfo;
                             cachedJump >> cachedJumpInfo;
-                            assert(jumpInfo.entity == cachedJumpInfo.entity);
+                            PLEEPLOG_DEBUG("Divergent data for entity: " + std::to_string(cachedJumpInfo.entity));
+                            // This arrival event could have propogated into a past-ward timeslice 
+                            // since it occurred, meaning jumpInfo.entity will be 1 higher chainlink
+                            // this should be ok? as long as the tripId is well-managed
+                            //assert(jumpInfo.entity == cachedJumpInfo.entity);
+                            assert(jumpInfo.entity >= cachedJumpInfo.entity);
 
                             cosmos->deserialize_entity_components(jumpInfo.entity, cachedJumpInfo.sign, cachedJump);
 

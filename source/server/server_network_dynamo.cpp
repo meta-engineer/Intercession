@@ -397,11 +397,11 @@ namespace pleep
             // not necessarily our cosmos' entities...
             std::vector<Entity> availableEntities = m_timelineApi.get_entities_with_future_streams();
 
-            for (Entity& entity : availableEntities)
+            for (Entity& evntEntity : availableEntities)
             {
                 EventMessage evnt(1);
                 // timeline api will return false if nothing available at currentCoherency or earlier
-                while (m_timelineApi.pop_future_timestream(entity, currentCoherency, evnt))
+                while (m_timelineApi.pop_future_timestream(evntEntity, currentCoherency, evnt))
                 {
                     // pop will stop if next message is too far in future, but
                     // if message is from too far in the past ignore it also
@@ -414,7 +414,7 @@ namespace pleep
                     {
                         events::cosmos::ENTITY_UPDATE_params updateInfo;
                         evnt >> updateInfo;
-                        assert(updateInfo.entity == entity);
+                        assert(updateInfo.entity == evntEntity);
                         //PLEEPLOG_DEBUG("Update Entity: " + std::to_string(updateInfo.entity) + " | " + updateInfo.sign.to_string());
 
                         // ensure entity exists
@@ -457,7 +457,7 @@ namespace pleep
                         // register entity and create components to match signature
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
-                        assert(createInfo.entity == entity);
+                        assert(createInfo.entity == evntEntity);
                         PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
                         cosmos->register_entity(createInfo.entity, createInfo.sign);
@@ -469,7 +469,7 @@ namespace pleep
                         // (sender SHOULD have correctly offset causalchainlink already)
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
-                        assert(removeInfo.entity == entity);
+                        assert(removeInfo.entity == evntEntity);
                         PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
                         // use condemn event to avoid double deletion
@@ -488,8 +488,8 @@ namespace pleep
 
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
-                        if (jumpInfo.entity != entity) PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(entity));
-                        assert(jumpInfo.entity == entity);
+                        if (jumpInfo.entity != evntEntity) PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(evntEntity));
+                        assert(jumpInfo.entity == evntEntity);
 
                         // forward this departure into the timestream with the same tripId
                         // but relative to our present entity

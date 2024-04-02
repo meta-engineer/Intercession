@@ -22,28 +22,52 @@ namespace pleep
             {TextureType::normal, "resources/moon_normal.png"},
         });
 
-        Entity floor = cosmos->create_entity(false);
-        cosmos->add_component(floor, TransformComponent(glm::vec3(0.0f, -2.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor).orientation = 
+        Entity floor_1 = cosmos->create_entity(false);
+        cosmos->add_component(floor_1, TransformComponent(glm::vec3(10.0f, -8.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(floor_1).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(50.0f, 50.0f, 0.05f);
+        cosmos->get_component<TransformComponent>(floor_1).scale = glm::vec3(24.0f, 50.0f, 2.0f);
         
-        RenderableComponent floor_renderable;
-        floor_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
-        cosmos->add_component(floor, floor_renderable);
+        RenderableComponent floor_1_renderable;
+        floor_1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        floor_1_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(floor_1, floor_1_renderable);
         
-        PhysicsComponent floor_physics;
+        PhysicsComponent floor_1_physics;
         // TODO: in general generate mass from a known density
-        floor_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
-        floor_physics.lockOrigin = true;
-        floor_physics.lockedOrigin = cosmos->get_component<TransformComponent>(floor).origin;
-        floor_physics.lockOrientation = true;
-        floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
-        cosmos->add_component(floor, floor_physics);
-        cosmos->add_component(floor, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
-        cosmos->add_component(floor, RigidBodyComponent{});
+        floor_1_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        floor_1_physics.lockOrigin = true;
+        floor_1_physics.lockedOrigin = cosmos->get_component<TransformComponent>(floor_1).origin;
+        floor_1_physics.lockOrientation = true;
+        floor_1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor_1).orientation;
+        cosmos->add_component(floor_1, floor_1_physics);
+        cosmos->add_component(floor_1, BoxColliderComponent{});
+        cosmos->get_component<BoxColliderComponent>(floor_1).localTransform.origin.z = -0.499f;
+        cosmos->add_component(floor_1, RigidBodyComponent{});
+
+        
+        Entity floor_2 = cosmos->create_entity(false);
+        cosmos->add_component(floor_2, TransformComponent(glm::vec3(-14.0f, -10.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(floor_2).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(floor_2).scale = glm::vec3(24.0f, 50.0f, 0.05f);
+        
+        RenderableComponent floor_2_renderable;
+        floor_2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        floor_2_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
+        cosmos->add_component(floor_2, floor_2_renderable);
+        
+        PhysicsComponent floor_2_physics;
+        // TODO: in general generate mass from a known density
+        floor_2_physics.mass = INFINITE_MASS;//5.0f * 500.0f;
+        floor_2_physics.lockOrigin = true;
+        floor_2_physics.lockedOrigin = cosmos->get_component<TransformComponent>(floor_2).origin;
+        floor_2_physics.lockOrientation = true;
+        floor_2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor_2).orientation;
+        cosmos->add_component(floor_2, floor_2_physics);
+        cosmos->add_component(floor_2, BoxColliderComponent{});
+        cosmos->get_component<BoxColliderComponent>(floor_2).localTransform.origin.z = -0.499f;
+        cosmos->add_component(floor_2, RigidBodyComponent{});
         // ***************************************************************************
 
         /***************************************************************************
