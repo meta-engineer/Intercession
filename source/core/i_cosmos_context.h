@@ -21,7 +21,7 @@
 
 namespace pleep
 {
-    const uint16_t FRAMERATE = 60;
+    const uint16_t FRAMERATE = 45;
 
     // Abstract base class that:
     // maintains a current interactive "world" aka cosmos and attaches dynamos to it

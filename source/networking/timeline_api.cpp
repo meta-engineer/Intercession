@@ -26,7 +26,6 @@ namespace pleep
 
         // store whole cfg, or just copy individual members?
         m_delayToNextTimeslice = cfg.timesliceDelay;
-        m_simulationHz = cfg.simulationHz;
 
         // offset port in series by unique timeslice id
         m_port = cfg.presentPort + m_timesliceId;
@@ -52,11 +51,6 @@ namespace pleep
     uint16_t TimelineApi::get_timeslice_delay()
     {
         return m_delayToNextTimeslice;
-    }
-
-    uint16_t TimelineApi::get_simulation_hz()
-    {
-        return m_simulationHz;
     }
 
     bool TimelineApi::send_message(TimesliceId id, const EventMessage& data)

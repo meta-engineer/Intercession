@@ -21,18 +21,17 @@ namespace pleep
 
         // Cosmos updates per second
         // simulation includes input polling, parsing incoming network messages, behavior updates, physics integration.collision
-        uint16_t simulationHz = 60;
+        //uint16_t simulationHz = 60;
         // server updates don't need to happen every frame, client can dead reckon for a few
         // serializing the whole cosmos is costly so do it less frequently
         // (client upstream changes would still need to happen every simulation update)
         //double networkHz    = 30.0;
         // renderHz is as-fast-as-possible after the above fixed timesteps (rendering/animation/ui)
 
-        // number of frames between each timeslice
+        // number of seconds between each timeslice
         // total timeline duration can be inferred as timesliceDelay * numTimeslices
         // (explicitly define delay means total duration is always cleanly divisible)
-        // total delay in seconds is timesliceDelay / simulationHz
-        uint16_t timesliceDelay = 10 * simulationHz;
+        uint16_t timesliceDelay = 10;
         // must not exceed TIMESLICEID_SIZE
         TimesliceId numTimeslices = 2;
     };

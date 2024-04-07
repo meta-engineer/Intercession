@@ -35,7 +35,8 @@ namespace pleep
             // TEMP: delay Cosmos' coherency into the past according to our timeslice id
             // assume all servers will start at once
             m_currentCosmos->set_coherency(0 - 
-                static_cast<uint16_t>(localTimelineApi.get_timeslice_delay() *
+                static_cast<uint16_t>(localTimelineApi.get_timeslice_delay() * 
+                                      FRAMERATE *
                                       localTimelineApi.get_timeslice_id())
             );
         }

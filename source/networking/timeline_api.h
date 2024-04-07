@@ -49,7 +49,6 @@ namespace pleep
         size_t get_num_timeslices();
         uint16_t get_port();
         uint16_t get_timeslice_delay();
-        uint16_t get_simulation_hz();
 
         // ***** Accessors for multiplex *****
 

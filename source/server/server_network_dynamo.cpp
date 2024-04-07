@@ -152,7 +152,7 @@ namespace pleep
             {
                 events::network::COHERENCY_SYNC_params data;
                 msg >> data;
-                uint16_t targetCoherency = msg.header.coherency - static_cast<uint16_t>(m_timelineApi.get_timeslice_delay());
+                uint16_t targetCoherency = msg.header.coherency - (m_timelineApi.get_timeslice_delay()*FRAMERATE);
 
                 if (targetCoherency != cosmos->get_coherency())
                 {
@@ -347,7 +347,7 @@ namespace pleep
                 }
 
                 // estimate a lower bound of where the next slice could be (to avoid overshooting)
-                m_timelineApi.parallel_retarget(cosmos->get_coherency() + m_timelineApi.get_timeslice_delay() - 1U);
+                m_timelineApi.parallel_retarget(cosmos->get_coherency() + m_timelineApi.get_timeslice_delay()*FRAMERATE - 1U);
                 m_timelineApi.parallel_start();
 
                 // future server will continue to update target and handle FINISHED...
