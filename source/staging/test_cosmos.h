@@ -56,15 +56,28 @@ namespace pleep
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         cosmos->add_component(frog, frog_physics);
 
-        // frog "body"
-        BoxColliderComponent frog_box;
-        frog_box.localTransform.scale = glm::vec3(500.0f, 400.0f, 500.0f);
-        frog_box.responseType = CollisionResponseType::rigid;
-        cosmos->add_component(frog, frog_box);
-        RigidBodyComponent frog_rigidBody;
-        frog_rigidBody.influenceOrientation = false;
-        cosmos->add_component(frog, frog_rigidBody);
+        ColliderComponent frog_collider;
 
+        // frog "body"
+        frog_collider.colliders[0] = Collider(ColliderType::box, CollisionType::rigid);
+        frog_collider.colliders[0].localTransform.scale = glm::vec3(500.0f, 400.0f, 500.0f);
+        frog_collider.colliders[0].influenceOrientation = false;
+
+        // frog "legs"
+        frog_collider.colliders[1] = Collider(ColliderType::ray, CollisionType::spring);
+        frog_collider.colliders[1].localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        frog_collider.colliders[1].localTransform.scale = glm::vec3(1.0f, 1.0f, 500.0f);
+        frog_collider.colliders[1].inheritOrientation = false;
+        frog_collider.colliders[1].useBehaviorsResponse = true;
+        frog_collider.colliders[1].influenceOrientation = false;
+        frog_collider.colliders[1].stiffness = 10000.0f;
+        frog_collider.colliders[1].damping = 100.0f;
+        frog_collider.colliders[1].restLength = 0.1f; // therefore ride height of 0.9
+        frog_collider.colliders[1].staticFriction = 0.0f;
+        frog_collider.colliders[1].dynamicFriction = 0.0f;
+
+        cosmos->add_component(frog, frog_collider);
+        
         // behaviors handle legs collider events (below)
         cosmos->add_component(frog, SpacialInputComponent{});
         cosmos->add_component(frog, BipedComponent{});
@@ -73,23 +86,6 @@ namespace pleep
         frog_behaviors.use_fixed_update = true;
         // store behaviors in self
         cosmos->add_component(frog, frog_behaviors);
-
-        // frog "legs"
-        RayColliderComponent frog_ray;
-        frog_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 500.0f);
-        frog_ray.responseType = CollisionResponseType::spring;
-        frog_ray.inheritOrientation = false;
-        frog_ray.useBehaviorsResponse = true;
-        cosmos->add_component(frog, frog_ray);
-        SpringBodyComponent frog_springBody;
-        frog_springBody.influenceOrientation = false;
-        frog_springBody.stiffness = 10000.0f;
-        frog_springBody.damping = 100.0f;
-        frog_springBody.restLength = 0.1f; // therefore ride height of 0.9
-        frog_springBody.staticFriction = 0.0f;
-        frog_springBody.dynamicFriction = 0.0f;
-        cosmos->add_component(frog, frog_springBody);
         // ***************************************************************************
 
 /*
@@ -119,8 +115,9 @@ namespace pleep
         crate_physics.angularVelocity = glm::vec3(0.0f, 0.7f, 0.2f);
         crate_physics.mass = 100.0f;
         cosmos->add_component(crate, crate_physics);
-        cosmos->add_component(crate, BoxColliderComponent{});
-        cosmos->add_component(crate, RigidBodyComponent{});
+        cosmos->add_component(crate, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ***************************************************************************
 
 
@@ -164,8 +161,9 @@ namespace pleep
         //block_physics.lockedOrientation = cosmos->get_component<TransformComponent>(block).orientation;
         block_physics.mass = 500.0f;
         cosmos->add_component(block, block_physics);
-        cosmos->add_component(block, BoxColliderComponent{});
-        cosmos->add_component(block, RigidBodyComponent{});
+        cosmos->add_component(block, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ******************************************************************************
 
         // ***************************************************************************
@@ -191,18 +189,15 @@ namespace pleep
         //torus_physics.velocity = glm::vec3(1.0f, 0.0f, 0.0f);
         cosmos->add_component(torus, torus_physics);
         
-        BoxColliderComponent torus_collider;
-        torus_collider.localTransform.scale = glm::vec3(2.4f, 0.6f, 2.4f);
-        torus_collider.responseType = CollisionResponseType::spring;
-        torus_collider.inheritOrientation = true;
+        ColliderComponent torus_collider;
+        torus_collider.colliders[1] = Collider(ColliderType::box, CollisionType::spring);
+        torus_collider.colliders[1].localTransform.scale = glm::vec3(2.4f, 0.6f, 2.4f);
+        torus_collider.colliders[1].inheritOrientation = true;
+        torus_collider.colliders[1].restLength = 0.0f;
+        torus_collider.colliders[1].stiffness  = 20000.0f;
+        torus_collider.colliders[1].damping    = 400.0f;
+        torus_collider.colliders[1].influenceOrientation = true;
         cosmos->add_component(torus, torus_collider);
-        
-        SpringBodyComponent torus_springBody;
-        torus_springBody.restLength = 0.0f;
-        torus_springBody.stiffness  = 20000.0f;
-        torus_springBody.damping    = 400.0f;
-        torus_springBody.influenceOrientation = true;
-        cosmos->add_component(torus, torus_springBody);
         // ***************************************************************************
 
         Entity wall1 = cosmos->create_entity();
@@ -263,9 +258,10 @@ namespace pleep
         floor_physics.lockOrientation = true;
         floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
         cosmos->add_component(floor, floor_physics);
-        cosmos->add_component(floor, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
-        cosmos->add_component(floor, RigidBodyComponent{});
+        cosmos->add_component(floor, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(floor).colliders[0].localTransform.origin.z = -0.499f;
         // ***************************************************************************
 
         // ***************************************************************************
@@ -297,9 +293,10 @@ namespace pleep
         snow_physics.lockOrientation = true;
         snow_physics.lockedOrientation = cosmos->get_component<TransformComponent>(snow).orientation;
         cosmos->add_component(snow, snow_physics);
-        cosmos->add_component(snow, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(snow).localTransform.origin.z = -0.5f;
-        cosmos->add_component(snow, RigidBodyComponent{});
+        cosmos->add_component(snow, ColliderComponent{
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(snow).colliders[0].localTransform.origin.z = -0.5f;
         // ***************************************************************************
 
 

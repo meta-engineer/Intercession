@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19.1)
 
-project(INTERCESSION VERSION 0.9.3 LANGUAGES C CXX)
+project(INTERCESSION VERSION 0.10.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -29,10 +29,11 @@ if(MSVC)
   target_compile_options(${SERVER_NAME} PRIVATE /W4)
   target_compile_options(${CLIENT_NAME} PRIVATE /W4)
   # /W4 for warnings, /WX for warnings as errors
+  # /O3 for all optimizations
 else()
-  target_compile_options(${ENGINE_NAME} PRIVATE -Wall)
-  target_compile_options(${SERVER_NAME} PRIVATE -Wall)
-  target_compile_options(${CLIENT_NAME} PRIVATE -Wall)
+  target_compile_options(${ENGINE_NAME} PRIVATE -Wall -O3)
+  target_compile_options(${SERVER_NAME} PRIVATE -Wall -O3)
+  target_compile_options(${CLIENT_NAME} PRIVATE -Wall -O3)
   # -Wall -Wextra -Wpedantic -Werror
 endif()
 

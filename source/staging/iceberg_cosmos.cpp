@@ -71,11 +71,12 @@ namespace pleep
         gamecube_physics.lockOrigin = true;
         gamecube_physics.lockedOrigin = cosmos->get_component<TransformComponent>(gamecube).origin;
         cosmos->add_component(gamecube, gamecube_physics);
-        BoxColliderComponent gamecube_box;
-        gamecube_box.localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
-        gamecube_box.localTransform.origin = glm::vec3(0.0f, 3.8f, 0.0f);
-        cosmos->add_component(gamecube, gamecube_box);
-        cosmos->add_component(gamecube, RigidBodyComponent{});
+        ColliderComponent gamecube_collider{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        };
+        gamecube_collider.colliders[0].localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
+        gamecube_collider.colliders[0].localTransform.origin = glm::vec3(0.0f, 3.8f, 0.0f);
+        cosmos->add_component(gamecube, gamecube_collider);
         // ***************************************************************************
 
         
@@ -98,14 +99,13 @@ namespace pleep
         PhysicsComponent gamebox_physics;
         gamebox_physics.mass = 200.0f;
         cosmos->add_component(gamebox, gamebox_physics);
-        
-        RigidBodyComponent gamebox_rigidbody{};
-        gamebox_rigidbody.dynamicFriction = 0.8f;
-        gamebox_rigidbody.restitution = 0.2f;
-        cosmos->add_component(gamebox, gamebox_rigidbody);
-        
-        BoxColliderComponent gamebox_collider;
-        gamebox_collider.localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
+
+        ColliderComponent gamebox_collider{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        };
+        gamebox_collider.colliders[0].dynamicFriction = 0.8f;
+        gamebox_collider.colliders[0].restitution = 0.2f;
+        gamebox_collider.colliders[0].localTransform.scale = glm::vec3(10.0f, 7.4f, 10.0f);
         cosmos->add_component(gamebox, gamebox_collider);
         // ***************************************************************************
 
@@ -129,8 +129,9 @@ namespace pleep
         crate_physics.angularVelocity = glm::vec3(0.0f, 0.7f, 0.2f);
         crate_physics.mass = 100.0f;
         cosmos->add_component(crate, crate_physics);
-        cosmos->add_component(crate, BoxColliderComponent{});
-        cosmos->add_component(crate, RigidBodyComponent{});
+        cosmos->add_component(crate, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ***************************************************************************
 
 
@@ -161,8 +162,9 @@ namespace pleep
         //block_physics.lockedOrientation = cosmos->get_component<TransformComponent>(block).orientation;
         block_physics.mass = 500.0f;
         cosmos->add_component(block, block_physics);
-        cosmos->add_component(block, BoxColliderComponent{});
-        cosmos->add_component(block, RigidBodyComponent{});
+        cosmos->add_component(block, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ******************************************************************************
 
 
@@ -196,9 +198,10 @@ namespace pleep
                 floor_physics.lockOrientation = true;
                 floor_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor).orientation;
                 cosmos->add_component(floor, floor_physics);
-                cosmos->add_component(floor, BoxColliderComponent{});
-                cosmos->get_component<BoxColliderComponent>(floor).localTransform.origin.z = -0.499f;
-                cosmos->add_component(floor, RigidBodyComponent{});
+                cosmos->add_component(floor, ColliderComponent{ 
+                    { Collider(ColliderType::box, CollisionType::rigid) }
+                });
+                cosmos->get_component<ColliderComponent>(floor).colliders[0].localTransform.origin.z = -0.499f;
             }
         }
 
@@ -278,8 +281,9 @@ namespace pleep
         ramp1_physics.lockOrientation = true;
         ramp1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp1).orientation;
         cosmos->add_component(ramp1, ramp1_physics);
-        cosmos->add_component(ramp1, BoxColliderComponent{});
-        cosmos->add_component(ramp1, RigidBodyComponent{});
+        cosmos->add_component(ramp1, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         
         Entity ramp2 = cosmos->create_entity(false);
         cosmos->add_component(ramp2, TransformComponent(glm::vec3(20.0f, 0.0f, 0.0f)));
@@ -299,8 +303,9 @@ namespace pleep
         ramp2_physics.lockOrientation = true;
         ramp2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp2).orientation;
         cosmos->add_component(ramp2, ramp2_physics);
-        cosmos->add_component(ramp2, BoxColliderComponent{});
-        cosmos->add_component(ramp2, RigidBodyComponent{});
+        cosmos->add_component(ramp2, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         
         Entity ramp3 = cosmos->create_entity(false);
         cosmos->add_component(ramp3, TransformComponent(glm::vec3(20.0f, 1.0f, -3.0f)));
@@ -320,8 +325,9 @@ namespace pleep
         ramp3_physics.lockOrientation = true;
         ramp3_physics.lockedOrientation = cosmos->get_component<TransformComponent>(ramp3).orientation;
         cosmos->add_component(ramp3, ramp3_physics);
-        cosmos->add_component(ramp3, BoxColliderComponent{});
-        cosmos->add_component(ramp3, RigidBodyComponent{});
+        cosmos->add_component(ramp3, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ******************************************************************************
 
         
@@ -340,8 +346,9 @@ namespace pleep
         teeter_physics.lockOrigin = true;
         teeter_physics.lockedOrigin = cosmos->get_component<TransformComponent>(teeter).origin;
         cosmos->add_component(teeter, teeter_physics);
-        cosmos->add_component(teeter, BoxColliderComponent{});
-        cosmos->add_component(teeter, RigidBodyComponent{});
+        cosmos->add_component(teeter, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
         // ******************************************************************************
 
 
@@ -364,9 +371,10 @@ namespace pleep
         wall1_physics.lockOrientation = true;
         wall1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall1).orientation;
         cosmos->add_component(wall1, wall1_physics);
-        cosmos->add_component(wall1, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(wall1).localTransform.origin.z = -0.499f;
-        cosmos->add_component(wall1, RigidBodyComponent{});
+        cosmos->add_component(wall1, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(wall1).colliders[0].localTransform.origin.z = -0.499f;
 
         Entity wall2 = cosmos->create_entity(false);
         cosmos->add_component(wall2, TransformComponent(glm::vec3(0.0f, 8.0f, -30.0f)));
@@ -384,9 +392,10 @@ namespace pleep
         wall2_physics.lockOrientation = true;
         wall2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall2).orientation;
         cosmos->add_component(wall2, wall2_physics);
-        cosmos->add_component(wall2, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(wall2).localTransform.origin.z = -0.499f;
-        cosmos->add_component(wall2, RigidBodyComponent{});
+        cosmos->add_component(wall2, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(wall2).colliders[0].localTransform.origin.z = -0.499f;
 
         Entity wall3 = cosmos->create_entity(false);
         cosmos->add_component(wall3, TransformComponent(glm::vec3(-30.0f, 8.0f, 0.0f)));
@@ -406,9 +415,10 @@ namespace pleep
         wall3_physics.lockOrientation = true;
         wall3_physics.lockedOrientation = cosmos->get_component<TransformComponent>(wall3).orientation;
         cosmos->add_component(wall3, wall3_physics);
-        cosmos->add_component(wall3, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(wall3).localTransform.origin.z = -0.499f;
-        cosmos->add_component(wall3, RigidBodyComponent{});
+        cosmos->add_component(wall3, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(wall3).colliders[0].localTransform.origin.z = -0.499f;
         // ***************************************************************************
 
 

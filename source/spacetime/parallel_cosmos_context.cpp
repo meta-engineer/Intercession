@@ -346,7 +346,7 @@ namespace pleep
 
         // artifically give ample time to reach target without waiting
         // pretend we are always behind in simulation time, and need to catch up
-        m_fixedTimeRemaining = m_fixedTimeStep;
+        m_fixedTimeRemaining = m_fixedTimeStep * 2.0;
 
         m_currentCosmos->update();
     }

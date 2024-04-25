@@ -43,8 +43,9 @@ namespace pleep
         thrown_physics.angularVelocity = glm::vec3(1.1f, 2.1f, 0.2f);
         thrown_physics.mass = 10.0f;
         cosmos->add_component(thrown, thrown_physics);
-        cosmos->add_component(thrown, BoxColliderComponent{});        
-        cosmos->add_component(thrown, RigidBodyComponent{});
+        cosmos->add_component(thrown, ColliderComponent{
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
 
         // Add behavior to timeout and disappear
         ProjectileComponent thrown_projectile;

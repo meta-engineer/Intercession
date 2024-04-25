@@ -41,10 +41,7 @@ namespace pleep
         newCosmos->register_component<CameraComponent>();
         newCosmos->register_component<LightSourceComponent>();
         newCosmos->register_component<PhysicsComponent>();
-        newCosmos->register_component<BoxColliderComponent>();
-        newCosmos->register_component<RayColliderComponent>();
-        newCosmos->register_component<RigidBodyComponent>();
-        newCosmos->register_component<SpringBodyComponent>();
+        newCosmos->register_component<ColliderComponent>();
         newCosmos->register_component<BehaviorsComponent>();
         newCosmos->register_component<OscillatorComponent>();
         //PLEEPLOG_WARN("Found unknown component enum value: " + std::to_string(static_cast<uint16_t>(cType)));
@@ -60,8 +57,7 @@ namespace pleep
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(callerDynamos.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(callerDynamos.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(callerDynamos.physicser);
-        newCosmos->register_synchro<BoxColliderSynchro>()->attach_dynamo(callerDynamos.physicser);
-        newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(callerDynamos.physicser);
+        newCosmos->register_synchro<ColliderSynchro>()->attach_dynamo(callerDynamos.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(callerDynamos.networker);
         newCosmos->register_synchro<BehaviorsSynchro>()->attach_dynamo(callerDynamos.behaver);
         //PLEEPLOG_WARN("found unknown synchro enum value: " + std::to_string(static_cast<uint16_t>(sType)));

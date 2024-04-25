@@ -47,11 +47,12 @@ namespace pleep
         cosmos->add_component(mainCamera, camera_behaviors);
 
         // ray collider for mouse click
-        RayColliderComponent camera_ray;
-        camera_ray.responseType = CollisionResponseType::noop;
-        camera_ray.useBehaviorsResponse = true;
-        camera_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 100.0f);
-        cosmos->add_component(mainCamera, camera_ray);
+        ColliderComponent camera_collider{
+            { Collider(ColliderType::ray, CollisionType::noop) }
+        };
+        camera_collider.colliders[0].useBehaviorsResponse = true;
+        camera_collider.colliders[0].localTransform.scale = glm::vec3(1.0f, 1.0f, 100.0f);
+        cosmos->add_component(mainCamera, camera_collider);
 
         // empty renderable to render collider
         cosmos->add_component(mainCamera, RenderableComponent{});

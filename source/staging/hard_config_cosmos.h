@@ -25,10 +25,7 @@ namespace pleep
         cosmosConfig.insert_component<CameraComponent>();
         cosmosConfig.insert_component<LightSourceComponent>();
         cosmosConfig.insert_component<PhysicsComponent>();
-        cosmosConfig.insert_component<BoxColliderComponent>();
-        cosmosConfig.insert_component<RayColliderComponent>();
-        cosmosConfig.insert_component<RigidBodyComponent>();
-        cosmosConfig.insert_component<SpringBodyComponent>();
+        cosmosConfig.insert_component<ColliderComponent>();
         cosmosConfig.insert_component<BehaviorsComponent>();
         cosmosConfig.insert_component<OscillatorComponent>();
 
@@ -36,8 +33,7 @@ namespace pleep
         cosmosConfig.insert_synchro<LightingSynchro>();
         cosmosConfig.insert_synchro<RenderSynchro>();
         cosmosConfig.insert_synchro<PhysicsSynchro>();
-        cosmosConfig.insert_synchro<BoxColliderSynchro>();
-        cosmosConfig.insert_synchro<RayColliderSynchro>();
+        cosmosConfig.insert_synchro<ColliderSynchro>();
         cosmosConfig.insert_synchro<NetworkSynchro>();
         cosmosConfig.insert_synchro<BehaviorsSynchro>();
         // build cosmos according to config
@@ -54,10 +50,7 @@ namespace pleep
         newCosmos->register_component<CameraComponent>();
         newCosmos->register_component<LightSourceComponent>();
         newCosmos->register_component<PhysicsComponent>();
-        newCosmos->register_component<BoxColliderComponent>();
-        newCosmos->register_component<RayColliderComponent>();
-        newCosmos->register_component<RigidBodyComponent>();
-        newCosmos->register_component<SpringBodyComponent>();
+        newCosmos->register_component<ColliderComponent>();
         newCosmos->register_component<BehaviorsComponent>();
         newCosmos->register_component<OscillatorComponent>();
         newCosmos->register_component<ProjectileComponent>();
@@ -67,8 +60,7 @@ namespace pleep
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(dynamoCluster.physicser);
-        newCosmos->register_synchro<BoxColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
-        newCosmos->register_synchro<RayColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
+        newCosmos->register_synchro<ColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(dynamoCluster.networker);
         newCosmos->register_synchro<BehaviorsSynchro>()->attach_dynamo(dynamoCluster.behaver);
 

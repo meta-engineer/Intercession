@@ -63,7 +63,7 @@ namespace pleep
                     
                     if (m_currentCosmos) m_currentCosmos->increment_coherency();
                 }
-                if (m_fixedTimeRemaining >= m_fixedTimeStep * 2.0)
+                if (m_fixedTimeRemaining >= m_fixedTimeStep * 3.0)
                 {
                     PLEEPLOG_WARN("Frame loop falling behind by " + std::to_string(m_fixedTimeRemaining.count() / m_fixedTimeStep.count()) + " frames.");
                 }

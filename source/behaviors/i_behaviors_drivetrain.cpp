@@ -39,7 +39,7 @@ namespace pleep
         UNREFERENCED_PARAMETER(collisionPoint);
         UNREFERENCED_PARAMETER(sharedBroker);
         PLEEPLOG_WARN("Drivetrain has no implementation for called behaviors. Disabling...");
-        colliderData.collider->useBehaviorsResponse = false;
+        colliderData.collider.useBehaviorsResponse = false;
     }
 
     void I_BehaviorsDrivetrain::on_collision_enter()

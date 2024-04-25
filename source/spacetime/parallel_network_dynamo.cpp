@@ -196,8 +196,13 @@ namespace pleep
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
                         PLEEPLOG_WARN("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& PARALLEL TIMESTREAM ARRIVAL FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
-                        if (jumpInfo.entity != evntEntity) PLEEPLOG_CRITICAL("Event params entity " + std::to_string(jumpInfo.entity) + " does not match timestream entity " + std::to_string(evntEntity));
-                        assert(jumpInfo.entity == evntEntity);
+
+                        //assert(jumpInfo.entity == evntEntity);
+                        if (jumpInfo.entity != evntEntity)
+                        {
+                            PLEEPLOG_CRITICAL("JUMP_ARRIVAL event params entity " + std::to_string(jumpInfo.entity) + " does not match timestream entity " + std::to_string(evntEntity));
+                            break;
+                        }
 
                         // creation event should have appeared before this
                         assert(cosmos->entity_exists(jumpInfo.entity));

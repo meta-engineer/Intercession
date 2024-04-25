@@ -488,8 +488,13 @@ namespace pleep
 
                         events::network::JUMP_params jumpInfo;
                         evnt >> jumpInfo;
-                        if (jumpInfo.entity != evntEntity) PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(evntEntity));
-                        assert(jumpInfo.entity == evntEntity);
+
+                        //assert(jumpInfo.entity == evntEntity);
+                        if (jumpInfo.entity != evntEntity)
+                        {
+                            PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(evntEntity));
+                            break;
+                        }
 
                         // forward this departure into the timestream with the same tripId
                         // but relative to our present entity

@@ -44,25 +44,26 @@ namespace pleep
         pc_physics.lockedOrientation = pc_transform.orientation;
         pc_physics.mass = 40.0f;
         cosmos->add_component(pc, pc_physics);
-        cosmos->add_component(pc, BoxColliderComponent{});
+        ColliderComponent pc_collider{ 
+            { Collider(ColliderType::box, CollisionType::rigid),
+              Collider(ColliderType::ray, CollisionType::spring) }
+        };
 
-        cosmos->add_component(pc, RigidBodyComponent{});
+        // ray "legs" are the second collider
+        Collider& pc_ray = pc_collider.colliders[1];
 
-        RayColliderComponent pc_ray;
         pc_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));   // this should be along biped "support" axis
         pc_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 1.5f);
-        pc_ray.responseType = CollisionResponseType::spring;
+        pc_ray.collisionType = CollisionType::spring;
         pc_ray.inheritOrientation = false;
         pc_ray.useBehaviorsResponse = true;     // to set grounded state for on_fixed behaviour
-        cosmos->add_component(pc, pc_ray);
-        SpringBodyComponent pc_springBody;
-        pc_springBody.influenceOrientation = false;
-        pc_springBody.stiffness = 2500.0f;
-        pc_springBody.damping = 400.0f;
-        pc_springBody.restLength = 0.3f;
-        pc_springBody.staticFriction = 0.0f;
-        pc_springBody.dynamicFriction = 0.0f;
-        cosmos->add_component(pc, pc_springBody);
+        pc_ray.influenceOrientation = false;
+        pc_ray.stiffness = 2500.0f;
+        pc_ray.damping = 400.0f;
+        pc_ray.restLength = 0.3f;
+        pc_ray.staticFriction = 0.0f;
+        pc_ray.dynamicFriction = 0.0f;
+        cosmos->add_component(pc, pc_collider);
 
         // This entity will be set as main for its respective client, so it will only 
         // receive input on that client, and we will only allow input from that client

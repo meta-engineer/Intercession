@@ -1,5 +1,5 @@
-#ifndef RAY_COLLIDER_SYNCHRO_H
-#define RAY_COLLIDER_SYNCHRO_H
+#ifndef COLLIDER_SYNCHRO_H
+#define COLLIDER_SYNCHRO_H
 
 //#include "intercession_pch.h"
 #include <memory>
@@ -9,7 +9,7 @@
 
 namespace pleep
 {
-    class RayColliderSynchro : public I_Synchro
+    class ColliderSynchro : public I_Synchro
     {
     public:
         // explicitly inherit constructors
@@ -22,13 +22,13 @@ namespace pleep
 
         Signature derive_signature() override;
 
-        // synchro needs a RenderDynamo to operate on
+        // synchro needs a PhysicsDynamo to operate on
         void attach_dynamo(std::shared_ptr<PhysicsDynamo> contextDynamo);
-
+        
     private:
         // dynamo provided by cosmos context to invoke on update
         std::shared_ptr<PhysicsDynamo> m_attachedPhysicsDynamo;
     };
 }
 
-#endif // RAY_COLLIDER_SYNCHRO_H
+#endif // COLLIDER_SYNCHRO_H

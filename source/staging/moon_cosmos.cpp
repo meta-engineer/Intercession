@@ -41,9 +41,10 @@ namespace pleep
         floor_1_physics.lockOrientation = true;
         floor_1_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor_1).orientation;
         cosmos->add_component(floor_1, floor_1_physics);
-        cosmos->add_component(floor_1, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor_1).localTransform.origin.z = -0.499f;
-        cosmos->add_component(floor_1, RigidBodyComponent{});
+        cosmos->add_component(floor_1, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(floor_1).colliders[0].localTransform.origin.z = -0.499f;
 
         
         Entity floor_2 = cosmos->create_entity(false);
@@ -65,9 +66,10 @@ namespace pleep
         floor_2_physics.lockOrientation = true;
         floor_2_physics.lockedOrientation = cosmos->get_component<TransformComponent>(floor_2).orientation;
         cosmos->add_component(floor_2, floor_2_physics);
-        cosmos->add_component(floor_2, BoxColliderComponent{});
-        cosmos->get_component<BoxColliderComponent>(floor_2).localTransform.origin.z = -0.499f;
-        cosmos->add_component(floor_2, RigidBodyComponent{});
+        cosmos->add_component(floor_2, ColliderComponent{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        });
+        cosmos->get_component<ColliderComponent>(floor_2).colliders[0].localTransform.origin.z = -0.499f;
         // ***************************************************************************
 
         /***************************************************************************
@@ -94,13 +96,12 @@ namespace pleep
         gamebox_physics.mass = 200.0f;
         cosmos->add_component(gamebox, gamebox_physics);
         
-        RigidBodyComponent gamebox_rigidbody{};
-        gamebox_rigidbody.dynamicFriction = 0.7f;
-        gamebox_rigidbody.restitution = 0.1f;
-        cosmos->add_component(gamebox, gamebox_rigidbody);
-        
-        BoxColliderComponent gamebox_collider;
-        gamebox_collider.localTransform.scale = glm::vec3(1.0f, 0.75f, 1.0f);
+        ColliderComponent gamebox_collider{ 
+            { Collider(ColliderType::box, CollisionType::rigid) }
+        };
+        gamebox_collider.colliders[0].localTransform.scale = glm::vec3(1.0f, 0.75f, 1.0f);
+        gamebox_collider.colliders[0].dynamicFriction = 0.7f;
+        gamebox_collider.colliders[0].restitution = 0.1f;
         cosmos->add_component(gamebox, gamebox_collider);
         // ***************************************************************************/
         

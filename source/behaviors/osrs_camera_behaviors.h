@@ -10,7 +10,6 @@
 #include "inputting/spacial_input_component.h"
 #include "rendering/camera_component.h"
 #include "behaviors/biped_component.h"
-#include "physics/ray_collider_component.h"
 #include "core/cosmos.h"
 
 namespace pleep
@@ -36,7 +35,10 @@ namespace pleep
                 //PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
                 CameraComponent& camera = cosmos->get_component<CameraComponent>(entity);
-                RayColliderComponent& ray = cosmos->get_component<RayColliderComponent>(entity);
+                ColliderComponent& collider = cosmos->get_component<ColliderComponent>(entity);
+                // assume collider 0 is mouse-ray
+                assert(collider.colliders[0].colliderType == ColliderType::ray);
+                Collider& ray = collider.colliders[0];
                 
                 glm::vec3 direction = transform.get_heading();
 
@@ -171,7 +173,6 @@ namespace pleep
                 std::shared_ptr<Cosmos> cosmos = callerData.owner.lock();
                 if (callerData.owner.expired()) return;
 
-                //RayColliderComponent& ray = cosmos->get_component<RayColliderComponent>(callerData.collidee);
                 CameraComponent& camera = cosmos->get_component<CameraComponent>(callerData.collidee);
 
                 // need to make collision available as a position for the target entity
@@ -206,7 +207,7 @@ namespace pleep
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
                 PLEEPLOG_WARN("Could not fetch a Ray Component for entity " + std::to_string(callerData.collidee) + " calling behaviors. This behaviors cannot operate on this entity without it. Disabling caller's collider behaviors response.");
-                callerData.collider->useBehaviorsResponse = false;
+                callerData.collider.useBehaviorsResponse = false;
             }
         }       
     };

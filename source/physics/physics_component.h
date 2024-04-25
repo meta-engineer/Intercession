@@ -3,8 +3,6 @@
 
 //#include "intercession_pch.h"
 #include <glm/glm.hpp>
-#include "ecs/ecs_types.h"
-#include "physics/i_collider_component.h"
 
 namespace pleep
 {

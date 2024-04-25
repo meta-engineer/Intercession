@@ -25,10 +25,7 @@ namespace pleep
         cosmos_builder::Config cosmosConfig;
         cosmosConfig.insert_component<TransformComponent>();
         cosmosConfig.insert_component<PhysicsComponent>();
-        cosmosConfig.insert_component<BoxColliderComponent>();
-        cosmosConfig.insert_component<RayColliderComponent>();
-        cosmosConfig.insert_component<RigidBodyComponent>();
-        cosmosConfig.insert_component<SpringBodyComponent>();
+        cosmosConfig.insert_component<ColliderComponent>();
         cosmosConfig.insert_component<BehaviorsComponent>();
 
         // build cosmos according to config
@@ -83,38 +80,34 @@ namespace pleep
         //frog_physics.angularVelocity = glm::vec3(0.2f, 0.0f, 0.2f);
         cosmos->add_component(frog, frog_physics);
 
-        // frog "body"
-        BoxColliderComponent frog_box;
-        //frog_box.localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
-        frog_box.responseType = CollisionResponseType::rigid;
-        cosmos->add_component(frog, frog_box);
-        RigidBodyComponent frog_rigidBody;
-        frog_rigidBody.influenceOrientation = false;
-        cosmos->add_component(frog, frog_rigidBody);
+        ColliderComponent frog_collider;
 
-        // behaviors handle legs collider events (below)
+        // frog "body"
+        //frog_collier.colliders[0].localTransform.scale = glm::vec3(5.0f, 4.0f, 5.0f);
+        frog_collider.colliders[0] = Collider(ColliderType::box, CollisionType::rigid);
+        frog_collider.colliders[0].influenceOrientation = false;
+
+        // frog "legs"
+        frog_collider.colliders[1] = Collider(ColliderType::ray, CollisionType::spring);
+        frog_collider.colliders[1].localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        //frog_collider.colliders[1].localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
+        frog_collider.colliders[1].inheritOrientation = false;
+        frog_collider.colliders[1].useBehaviorsResponse = true;
+        frog_collider.colliders[1].influenceOrientation = false;
+        frog_collider.colliders[1].stiffness = 10000.0f;
+        frog_collider.colliders[1].damping = 500.0f;
+        frog_collider.colliders[1].restLength = 0.1f; // therefore ride height of 0.9
+        frog_collider.colliders[1].staticFriction = 0.0f;
+        frog_collider.colliders[1].dynamicFriction = 0.0f;
+
+        cosmos->add_component(frog, frog_collider);
+        
+        // behaviors handle legs collider events
         BehaviorsComponent frog_behaviors;
         frog_behaviors.drivetrain = BehaviorsLibrary::fetch_behaviors(BehaviorsLibrary::BehaviorsType::biped_control);
         frog_behaviors.use_fixed_update = true;
         // store behaviors in self
         cosmos->add_component(frog, frog_behaviors);
-
-        // frog "legs"
-        RayColliderComponent frog_ray;
-        frog_ray.localTransform.orientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-        //frog_ray.localTransform.scale = glm::vec3(1.0f, 1.0f, 5.0f);
-        frog_ray.responseType = CollisionResponseType::spring;
-        frog_ray.inheritOrientation = false;
-        frog_ray.useBehaviorsResponse = true;
-        cosmos->add_component(frog, frog_ray);
-        SpringBodyComponent frog_springBody;
-        frog_springBody.influenceOrientation = false;
-        frog_springBody.stiffness = 10000.0f;
-        frog_springBody.damping = 500.0f;
-        frog_springBody.restLength = 0.1f; // therefore ride height of 0.9
-        frog_springBody.staticFriction = 0.0f;
-        frog_springBody.dynamicFriction = 0.0f;
-        cosmos->add_component(frog, frog_springBody);
         // ***************************************************************************
 
 

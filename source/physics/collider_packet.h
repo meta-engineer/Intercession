@@ -3,7 +3,7 @@
 
 //#include "intercession_pch.h"
 #include "physics/transform_component.h"
-#include "physics/i_collider_component.h"
+#include "physics/collider.h"
 #include "ecs/ecs_types.h"
 
 namespace pleep
@@ -16,8 +16,8 @@ namespace pleep
     struct ColliderPacket
     {
         TransformComponent& transform;
-        // dynamo/relay can read collider->type from base pointer
-        I_ColliderComponent* collider;
+        // Each packet contains a single collider per entity
+        Collider& collider;
 
         // provide access to ecs for different collision responses
         Entity collidee = NULL_ENTITY;

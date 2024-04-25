@@ -10,8 +10,7 @@
 #include "rendering/renderable_component.h"
 #include "rendering/render_packet.h"
 #include "rendering/debug_render_packet.h"
-#include "physics/box_collider_component.h"
-#include "physics/ray_collider_component.h"
+#include "physics/collider_component.h"
 
 namespace pleep
 {
@@ -80,23 +79,38 @@ namespace pleep
 
             // DEBUG: Look for collider components for debug rendering?
             // we only need base transform, collider transform, BasicSupermeshType, and maybe Entity for colour seed?
-            if (cosmos->has_component<BoxColliderComponent>(entity) &&
-                cosmos->get_component<BoxColliderComponent>(entity).isActive == true)
+            if (cosmos->has_component<ColliderComponent>(entity))
             {
-                m_attachedRenderDynamo->submit(DebugRenderPacket{
-                    entity,
-                    cosmos->get_component<BoxColliderComponent>(entity).compose_transform(transform),
-                    ModelManager::BasicSupermeshType::cube
-                });
-            }
-            if (cosmos->has_component<RayColliderComponent>(entity) &&
-                cosmos->get_component<RayColliderComponent>(entity).isActive == true)
-            {
-                m_attachedRenderDynamo->submit(DebugRenderPacket{
-                    entity,
-                    cosmos->get_component<RayColliderComponent>(entity).compose_transform(transform),
-                    ModelManager::BasicSupermeshType::vector
-                });
+                const ColliderComponent& comp = cosmos->get_component<ColliderComponent>(entity);
+
+                for (int i = 0; i < COLLIDERS_PER_ENTITY; i++)
+                {
+                    const Collider& collider = comp.colliders[i];
+
+                    if (!collider.isActive) continue;
+
+                    switch(collider.colliderType)
+                    {
+                    case ColliderType::box:
+                    {
+                        m_attachedRenderDynamo->submit(DebugRenderPacket{
+                            entity,
+                            collider.compose_transform(transform),
+                            ModelManager::BasicSupermeshType::cube
+                        });
+                    }
+                    break;
+                    case ColliderType::ray:
+                    {
+                        m_attachedRenderDynamo->submit(DebugRenderPacket{
+                            entity,
+                            collider.compose_transform(transform),
+                            ModelManager::BasicSupermeshType::vector
+                        });
+                    }
+                    break;
+                    }
+                }
             }
         }
 

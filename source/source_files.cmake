@@ -26,12 +26,8 @@ set(COMMON_SOURCE_FILES
 
     source/physics/physics_dynamo.cpp
     source/physics/physics_synchro.cpp
-    source/physics/box_collider_synchro.cpp
-    source/physics/ray_collider_synchro.cpp
-    source/physics/box_collider_component.cpp
-    source/physics/ray_collider_component.cpp
-    source/physics/rigid_body_component.cpp
-    source/physics/spring_body_component.cpp
+    source/physics/collider_synchro.cpp
+    source/physics/collision_procedures.cpp
 
     source/networking/network_synchro.cpp
     source/networking/timeline_api.cpp

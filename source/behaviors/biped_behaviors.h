@@ -7,6 +7,7 @@
 #include "behaviors/behaviors_component.h"
 #include "core/cosmos.h"
 #include "physics/physics_component.h"
+#include "physics/collider_component.h"
 #include "behaviors/biped_component.h"
 #include "inputting/spacial_input_component.h"
 #include "staging/test_projectile.h"
@@ -45,6 +46,7 @@ namespace pleep
             {
                 TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
                 PhysicsComponent& physics = cosmos->get_component<PhysicsComponent>(entity);
+                ColliderComponent& collider = cosmos->get_component<ColliderComponent>(entity);
                 BipedComponent& biped = cosmos->get_component<BipedComponent>(entity);
                 SpacialInputComponent& input = cosmos->get_component<SpacialInputComponent>(entity);
 
@@ -144,35 +146,41 @@ namespace pleep
 
                 // TODO: make a proper state machine to manage these conditions and component changes
 
+                // assume second collider is "legs" ray
+                Collider& legs = collider.colliders[1];
+
+                // I Have No Legs And I Must Jump
+                if (legs.colliderType != ColliderType::ray || 
+                    legs.collisionType != CollisionType::spring)
+                {
+                    // cannot jump
+                }
                 // while jump is off CD
-                if (biped.jumpCooldownRemaining <= 0)
+                else if (biped.jumpCooldownRemaining <= 0)
                 {
                     // Move legs restLength to top
-                    if (cosmos->has_component<SpringBodyComponent>(entity))
+                    legs.damping = 400.0f;
+                    
+                    // try jumping
+                    if (biped.isGrounded &&
+                        input.actions.test(SpacialActions::moveVertical) &&
+                        input.actionVals.at(SpacialActions::moveVertical) > 0)
                     {
-                        cosmos->get_component<SpringBodyComponent>(entity).damping = 400.0f;
+                        biped.jumpCooldownRemaining = biped.jumpCooldownTime;
 
-                        // try jumping
-                        if (biped.isGrounded &&
-                            input.actions.test(SpacialActions::moveVertical) &&
-                            input.actionVals.at(SpacialActions::moveVertical) > 0)
-                        {
-                            biped.jumpCooldownRemaining = biped.jumpCooldownTime;
-
-                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.0f;
-                            cosmos->get_component<SpringBodyComponent>(entity).damping = 0.0f;
-                        }
-                        // try crouching
-                        else if (input.actions.test(SpacialActions::moveVertical) &&
-                            input.actionVals.at(SpacialActions::moveVertical) < 0)
-                        {
-                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.6f;
-                        }
-                        // otherwise standing
-                        else
-                        {
-                            cosmos->get_component<SpringBodyComponent>(entity).restLength = 0.3f;
-                        }
+                        legs.restLength = 0.0f;
+                        legs.damping = 0.0f;
+                    }
+                    // try crouching
+                    else if (input.actions.test(SpacialActions::moveVertical) &&
+                        input.actionVals.at(SpacialActions::moveVertical) < 0)
+                    {
+                        legs.restLength = 0.6f;
+                    }
+                    // otherwise standing
+                    else
+                    {
+                        legs.restLength = 0.3f;
                     }
                 }
                 // jump is on CD (during jump)
@@ -237,7 +245,7 @@ namespace pleep
                 UNREFERENCED_PARAMETER(err);
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
-                PLEEPLOG_WARN("Could not fetch components (Transform, Biped, and/or SpacialInput) for entity " + std::to_string(entity) + ". This behaviors cannot operate on this entity without them. Disabling caller's on_fixed_update behaviors.");
+                PLEEPLOG_WARN("Could not fetch components (Transform, Physics, Collider, Biped, and/or SpacialInput) for entity " + std::to_string(entity) + ". This behaviors cannot operate on this entity without them. Disabling caller's on_fixed_update behaviors.");
                 behaviors.use_fixed_update = false;
             }
         }
@@ -269,7 +277,7 @@ namespace pleep
                 // ComponentRegistry will log error itself
                 //PLEEPLOG_WARN(err.what());
                 PLEEPLOG_WARN("Could not fetch a Biped Component for entity " + std::to_string(callerData.collidee) + " calling behaviors. This behaviors cannot operate on this entity without it. Disabling caller's collider behaviors response.");
-                callerData.collider->useBehaviorsResponse = false;
+                callerData.collider.useBehaviorsResponse = false;
             }
         }
     };
