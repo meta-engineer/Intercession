@@ -17,16 +17,16 @@ namespace pleep
         
         // ***************************************************************************
         ModelCache::create_material("floor_mat", std::unordered_map<TextureType, std::string>{
-            {TextureType::diffuse, "resources/moon_diffuse.png"},
-            {TextureType::specular, "resources/moon_diffuse.png"},
-            {TextureType::normal, "resources/moon_normal.png"},
+            {TextureType::diffuse, "resources/grid.png"},
+            {TextureType::specular, "resources/grid.png"},
+            {TextureType::normal, "resources/grid_normal.png"},
         });
 
         Entity floor_1 = cosmos->create_entity(false);
-        cosmos->add_component(floor_1, TransformComponent(glm::vec3(10.0f, -8.0f, 0.0f)));
+        cosmos->add_component(floor_1, TransformComponent(glm::vec3(12.0f, -4.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor_1).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor_1).scale = glm::vec3(24.0f, 50.0f, 2.0f);
+        cosmos->get_component<TransformComponent>(floor_1).scale = glm::vec3(24.0f, 24.0f, 2.0f);
         
         RenderableComponent floor_1_renderable;
         floor_1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
@@ -48,10 +48,10 @@ namespace pleep
 
         
         Entity floor_2 = cosmos->create_entity(false);
-        cosmos->add_component(floor_2, TransformComponent(glm::vec3(-14.0f, -10.0f, 0.0f)));
+        cosmos->add_component(floor_2, TransformComponent(glm::vec3(-12.0f, -6.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(floor_2).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(floor_2).scale = glm::vec3(24.0f, 50.0f, 0.05f);
+        cosmos->get_component<TransformComponent>(floor_2).scale = glm::vec3(24.0f, 24.0f, 0.05f);
         
         RenderableComponent floor_2_renderable;
         floor_2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
@@ -72,7 +72,7 @@ namespace pleep
         cosmos->get_component<ColliderComponent>(floor_2).colliders[0].localTransform.origin.z = -0.499f;
         // ***************************************************************************
 
-        /***************************************************************************
+        //***************************************************************************
         ModelCache::ImportReceipt gamecube_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - GameCube\\Gamecube\\gamecube.obj");
 
         Entity gamebox = cosmos->create_entity();
@@ -93,19 +93,19 @@ namespace pleep
         cosmos->add_component(gamebox, gamebox_renderable);
 
         PhysicsComponent gamebox_physics;
-        gamebox_physics.mass = 200.0f;
+        gamebox_physics.mass = 100.0f;
         cosmos->add_component(gamebox, gamebox_physics);
         
         ColliderComponent gamebox_collider{ 
             { Collider(ColliderType::box, CollisionType::rigid) }
         };
         gamebox_collider.colliders[0].localTransform.scale = glm::vec3(1.0f, 0.75f, 1.0f);
-        gamebox_collider.colliders[0].dynamicFriction = 0.7f;
+        gamebox_collider.colliders[0].dynamicFriction = 0.9f;
         gamebox_collider.colliders[0].restitution = 0.1f;
         cosmos->add_component(gamebox, gamebox_collider);
         // ***************************************************************************/
         
-        /**************************************************************************
+        //**************************************************************************
         ModelCache::create_material("lightbulb_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse,  "resources/blending_transparent_window.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
@@ -115,7 +115,7 @@ namespace pleep
         });
 
         Entity spot = cosmos->create_entity();
-        cosmos->add_component(spot, TransformComponent(glm::vec3(-10.0f, 4.0f, 0.0f)));
+        cosmos->add_component(spot, TransformComponent(glm::vec3(-12.0f, 4.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(spot).scale = glm::vec3(0.2f);
         cosmos->get_component<TransformComponent>(spot).orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -133,7 +133,7 @@ namespace pleep
         ModelCache::ImportReceipt picto_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - The Legend of Zelda The Wind Waker - Picto Box\\pictobox.obj");
 
         Entity picto = cosmos->create_entity();
-        cosmos->add_component(picto, TransformComponent(glm::vec3(-10.6f, 4.0f, 0.0f)));
+        cosmos->add_component(picto, TransformComponent(glm::vec3(-12.6f, 4.0f, 0.0f)));
 
         RenderableComponent picto_renderable;
         picto_renderable.meshData = ModelCache::fetch_supermesh(picto_import.supermeshName);
@@ -149,7 +149,7 @@ namespace pleep
 
         Entity meteor = cosmos->create_entity();
         TransformComponent meteor_transform;
-        meteor_transform.origin = { 10.0f, -1.5f, -1.5f };
+        meteor_transform.origin = { 12.0f, -1.5f, -1.5f };
         meteor_transform.orientation = 
             glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         cosmos->add_component(meteor, meteor_transform);
@@ -162,9 +162,9 @@ namespace pleep
         cosmos->add_component(meteor, meteor_renderable);
         // ***************************************************************************/
 
-        /***************************************************************************
+        //***************************************************************************
         Entity point = cosmos->create_entity();
-        cosmos->add_component(point, TransformComponent(glm::vec3(10.0f, -1.0f, 0.0f)));
+        cosmos->add_component(point, TransformComponent(glm::vec3(12.0f, -1.0f, 0.0f)));
         cosmos->get_component<TransformComponent>(point).scale = glm::vec3(0.2f);
         // remember this is relative to exposure
         cosmos->add_component(point, LightSourceComponent(glm::vec3(2.0f, 3.0f, 6.0f)));

@@ -137,18 +137,18 @@ namespace pleep
         }
     }
 
-    std::shared_ptr<Armature> ModelManager::fetch_armature(const std::string& name)
+    Armature ModelManager::fetch_armature(const std::string& name)
     {
         auto armatureIt = this->m_armatureMap.find(name);
         if (armatureIt == this->m_armatureMap.end())
         {
             PLEEPLOG_WARN("Armature " + name + " is not cached.");
-            return nullptr;
+            return Armature{};
         }
         else
         {
             // return copy (copy constructor must be a deep copy)
-            return std::make_shared<Armature>(*(armatureIt->second));
+            return armatureIt->second;
         }
     }
 
@@ -157,7 +157,7 @@ namespace pleep
         auto animationIt = this->m_animationMap.find(name);
         if (animationIt == this->m_animationMap.end())
         {
-            PLEEPLOG_WARN("Material " + name + " is not cached.");
+            PLEEPLOG_WARN("Animation " + name + " is not cached.");
             return nullptr;
         }
         else
@@ -319,7 +319,7 @@ namespace pleep
             return receipt;
         } 
 
-        // Assume submeshes are children of root node who have >0 meshes
+        // Assume    meshes are children of root node who have >0 meshes
         // Assume armatures are children of root node who have =0 meshes
         for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
         {
@@ -432,17 +432,15 @@ namespace pleep
             if (std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName) == receipt.armatureNames.end()) continue;
 
             m_armatureMap[armatureName] = _build_armature(scene->mRootNode->mChildren[i], armatureName);
-            m_armatureMap[armatureName]->m_sourceFilepath = armatureName;
-            m_armatureMap[armatureName]->m_sourceFilepath = receipt.importSourceFilepath;
+            m_armatureMap[armatureName].m_sourceFilepath = armatureName;
+            m_armatureMap[armatureName].m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    std::shared_ptr<Armature> ModelManager::_build_armature(const aiNode* node, const std::string& armatureName)
+    Armature ModelManager::_build_armature(const aiNode* node, const std::string& armatureName)
     {
         //PLEEPLOG_DEBUG("Loading armature: " + armatureName);
-        UNREFERENCED_PARAMETER(armatureName);
         std::vector<Bone> armatureBones;
-        std::unordered_map<std::string, unsigned int> armatureBoneIdMap;
 
         // node format should be that this node is the name of the armature
         // with only 1 child: the root bone of the actual bone heirarchy
@@ -450,33 +448,35 @@ namespace pleep
         if (node->mNumChildren == 1)
         {
             // assuming every descendant node is a bone
-            _extract_bones_from_node(node->mChildren[0], armatureBones, armatureBoneIdMap);
+            _extract_bones_from_node(node->mChildren[0], armatureBones, armatureName);
         }
         // otherwise we'll have to investigate how armatures are formatted
 
         // assume every descendant node is a bone?
-        return std::make_shared<Armature>(armatureBones, armatureBoneIdMap);
+        return Armature{armatureBones};
     }
 
     
-    void ModelManager::_extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap)
+    void ModelManager::_extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::string armatureName)
     {
         // add this bone to map
         unsigned int thisBoneId = static_cast<unsigned int>(armatureBones.size());
         // node name should be guarenteed to be valid for bones
-        armatureBoneIdMap[node->mName.data] = thisBoneId;
+        m_boneIdMapMap[armatureName][node->mName.data] = thisBoneId;
         // add this node to armature
         armatureBones.push_back(
             Bone(node->mName.data, thisBoneId, assimp_converters::convert_matrix4(node->mTransformation))
         );
         // Bone will be missing inverse bind matrix, which is known by the submeshes
 
+        m_boneArmatureMap[node->mName.data] = armatureName;
+
         // recurse
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
             // we know what id our child will pick before we recurse into _process_node
-            armatureBones[thisBoneId].childIds.push_back(static_cast<unsigned int>(armatureBones.size()));
-            _extract_bones_from_node(node->mChildren[i], armatureBones, armatureBoneIdMap);
+            armatureBones[thisBoneId].m_childIds.push_back(static_cast<unsigned int>(armatureBones.size()));
+            _extract_bones_from_node(node->mChildren[i], armatureBones, armatureName);
         }
     }
     
@@ -523,12 +523,15 @@ namespace pleep
 
         // extract vertices
         _extract_vertices(vertices, mesh);
+        //PLEEPLOG_DEBUG("Loaded vertices");
         // extract indices
         _extract_indices(indices, mesh);
+        //PLEEPLOG_DEBUG("Loaded indices");
 
         // extract bone weights
         // setup bone data for each vertex iterating by bones, not by vertices like above
         _extract_bone_weights_for_vertices(vertices, mesh, receipt);
+        //PLEEPLOG_DEBUG("Loaded bone weights");
 
         return std::make_shared<Mesh>(vertices, indices);
     }
@@ -591,25 +594,45 @@ namespace pleep
         {
             aiBone* boneData = src->mBones[boneIndex];
             std::string boneName = boneData->mName.C_Str();
+            //PLEEPLOG_DEBUG("Loading bone: " + boneName);
 
             // find bone armature
             std::string armatureName = boneData->mArmature->mName.C_Str();
             // check if armature exists
             auto armatureIt = m_armatureMap.find(armatureName);
+            if (armatureIt == m_armatureMap.end())
+            {
+                PLEEPLOG_WARN("Armature " + armatureName + " for bone doesn't exist?");
+                continue;
+            }
+
             // check if armature is part of THIS import
             auto armatureReceiptIt = std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName);
+            if (armatureReceiptIt == receipt.armatureNames.end())
+            {
+                PLEEPLOG_WARN("Armature " + armatureName + " isn't part of this import?");
+                continue;
+            }
+
             // check if bone exists in imported armature
-            auto boneIdIt = m_armatureMap[armatureName]->m_boneIdMap.find(boneName);
+            auto boneIdIt = m_boneIdMapMap[armatureName].find(boneName);
+            if (boneIdIt == m_boneIdMapMap[armatureName].end())
+            {
+                PLEEPLOG_WARN("Bone " + boneName + " does not exist in armature " + armatureName);
+                continue;
+            }
             // get bone id
             unsigned int boneId = boneIdIt->second;
 
             // while we're here, set mesh to bone transform in armature
-            m_armatureMap[armatureName]->m_bones[boneId].m_bindTransform = assimp_converters::convert_matrix4(boneData->mOffsetMatrix);
+            //PLEEPLOG_DEBUG("Setting bone transform in armature: " + armatureName);
+            m_armatureMap[armatureName].m_bones[boneId].m_bindTransform = assimp_converters::convert_matrix4(boneData->mOffsetMatrix);
 
             // now to actually set the weights...
             // fetch corresponding weight per vertex for *this* bone
             aiVertexWeight* vertexWeights = boneData->mWeights;
 
+            //PLEEPLOG_DEBUG("Setting weights: " + std::to_string(boneData->mNumWeights));
             for (unsigned int weightIndex = 0; weightIndex < boneData->mNumWeights; weightIndex++)
             {
                 // indices in our vertex array SHOULD match ai indices
@@ -631,22 +654,67 @@ namespace pleep
         for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
             aiAnimation *animation = scene->mAnimations[i];
-            m_animationMap[std::string(animation->mName.C_Str())] = _build_animation(animation, receipt.animationNames[i]);
+            std::string animationName = animation->mName.C_Str();
+            if (animationName.empty())
+            {
+                animationName = receipt.importName + "_animation_" + std::to_string(i);
+            }
+            //PLEEPLOG_DEBUG("Loading anime-tion " + animationName);
+
+            m_animationMap[animationName] = _build_animation(animation);
 
             // TODO: provide name, filepath, and ALL data required for serialization OUTSIDE of _build_animation, so that ModelManagerFaux's life is easy
+            m_animationMap[animationName]->m_name = animationName;
+            m_animationMap[animationName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    std::shared_ptr<AnimationSkeletal> ModelManager::_build_animation(const aiAnimation *animation, const std::string& animationName)
+    std::shared_ptr<AnimationSkeletal> ModelManager::_build_animation(const aiAnimation *animation)
     {
-        PLEEPLOG_WARN("NO IMPLEMENTATION FOR Loading animation: " + std::string(animation->mName.C_Str()));
-        UNREFERENCED_PARAMETER(animation);
-        UNREFERENCED_PARAMETER(animationName);
+        std::shared_ptr<AnimationSkeletal> newAnimation = std::make_shared<AnimationSkeletal>();
+        newAnimation->m_duration = animation->mDuration;
+        newAnimation->m_frequency = animation->mTicksPerSecond;
 
-        // TODO: animations are weird...
-        return nullptr;
+        // For each boneId, extract each keyframe
+        for (unsigned int channelId = 0; channelId < animation->mNumChannels; channelId++)
+        {
+            //PLEEPLOG_DEBUG("Fetching channel " + std::to_string(channelId));
+            const std::string boneName = animation->mChannels[channelId]->mNodeName.data;
+            //PLEEPLOG_DEBUG("Fetching bone " + boneName);
+            const std::string armatureName = m_boneArmatureMap[boneName];
+            //PLEEPLOG_DEBUG("Fetching armature " + armatureName);
+
+            // channels indices do not align with bone indices
+            // so we need to lookup its real boneId
+            unsigned int boneId = m_boneIdMapMap[armatureName][boneName];
+
+            //PLEEPLOG_DEBUG("Loading keyframes for: " + boneName);
+
+            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumPositionKeys; t++)
+            {
+                newAnimation->m_posKeyframes[boneId].push_back({
+                    assimp_converters::convert_vec3(animation->mChannels[channelId]->mPositionKeys[t].mValue),
+                    animation->mChannels[channelId]->mPositionKeys[t].mTime
+            });
+            }
+            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumRotationKeys; t++)
+            {
+                newAnimation->m_rotKeyframes[boneId].push_back({
+                    assimp_converters::convert_quat(animation->mChannels[channelId]->mRotationKeys[t].mValue),
+                    animation->mChannels[channelId]->mRotationKeys[t].mTime
+                });
+            }
+            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumScalingKeys; t++)
+            {
+                newAnimation->m_sclKeyframes[boneId].push_back({
+                    assimp_converters::convert_vec3(animation->mChannels[channelId]->mScalingKeys[t].mValue),
+                    animation->mChannels[channelId]->mScalingKeys[t].mTime
+                });
+            }
+        }
+        return newAnimation;
     }
-    
+
     std::shared_ptr<Supermesh> ModelManager::_build_cube_supermesh() 
     {
         // generate cube mesh data
@@ -1031,5 +1099,6 @@ namespace pleep
         {
             PLEEPLOG_DEBUG("    " + name);
         }
+        PLEEPLOG_DEBUG("Done receipt");
     }
 }

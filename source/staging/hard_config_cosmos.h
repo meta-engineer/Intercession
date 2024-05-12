@@ -47,6 +47,7 @@ namespace pleep
         newCosmos->register_component<TransformComponent>();
         newCosmos->register_component<SpacialInputComponent>(ComponentCategory::upstream);
         newCosmos->register_component<RenderableComponent>();
+        newCosmos->register_component<AnimationComponent>();
         newCosmos->register_component<CameraComponent>();
         newCosmos->register_component<LightSourceComponent>();
         newCosmos->register_component<PhysicsComponent>();

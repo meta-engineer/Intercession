@@ -18,7 +18,7 @@ layout (std140) uniform viewTransforms
 uniform mat4 model_to_world;
 
 // Bones per Vertex Buffer (aka per mesh)
-const int MAX_BONES = 100;
+const int MAX_BONES = 64;
 const int MAX_BONE_INFLUENCE = 4;       // because we use a vec4
 uniform mat4 finalBonesMatrices[MAX_BONES];
 

@@ -73,7 +73,7 @@ namespace pleep
         // (or a deep copy for armatures)
         std::shared_ptr<const Supermesh>         fetch_supermesh(const std::string& name);
         std::shared_ptr<const Material>          fetch_material(const std::string& name);
-        std::shared_ptr<Armature>                fetch_armature(const std::string& name);
+        Armature                                 fetch_armature(const std::string& name);
         std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name);
         
         // hardcoded supermeshes
@@ -141,10 +141,14 @@ namespace pleep
         std::unordered_map<std::string, std::shared_ptr<Material>> m_materialMap;
         // armature node name -> Armature
         // Armatures are individual to each entity and should be copied NOT shared
-        std::unordered_map<std::string, std::shared_ptr<Armature>> m_armatureMap;
+        std::unordered_map<std::string, Armature> m_armatureMap;
+        // armature node name + bone node name -> bone Id
+        // bone Id == index in armature.m_bones
+        std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>> m_boneIdMapMap;
+        // bone name -> armature name
+        std::unordered_map<std::string, std::string> m_boneArmatureMap;
         // animation name -> AnimationSkeletal
-        // (Distribute only shared_ptr<const AnimationSkeletal> to not let copies modify)
-        // Animation data is shared between entities, animation state is in individual animation component
+        // (Distribute only shared_ptr<const Material> to not let copies modify keyframes)
         std::unordered_map<std::string, std::shared_ptr<AnimationSkeletal>> m_animationMap;
 
         // Check for possible assets (according to format assumptions above) and load into receipt
@@ -162,8 +166,8 @@ namespace pleep
         // Iterate through root nodes for those in scanned receipt armatures,
         //   emplace as Armaturse m_armatureMap named as node name
         void _process_armatures(const aiScene* scene, const ImportReceipt& receipt);
-        virtual std::shared_ptr<Armature> _build_armature(const aiNode* node, const std::string& armatureName);
-        void _extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::unordered_map<std::string, unsigned int>& armatureBoneIdMap);
+        virtual Armature _build_armature(const aiNode* node, const std::string& armatureName);
+        void _extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::string armatureName);
 
         // Iterate through root node for those in scanned receipt meshes,
         //   emplace as Supermeshes m_supermeshMap named as node name
@@ -178,7 +182,7 @@ namespace pleep
 
         // Iterate through scene animations, load and emplace as new AnimationSkeletal in m_animationMap
         void _process_animations(const aiScene* scene, const ImportReceipt& receipt);
-        virtual std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation* animation, const std::string& animationName);
+        virtual std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation* animation);
 
         // should be congruent with definition of SphereCollider (approximately)
         //virtual std::shared_ptr<Supermesh> _build_sphere_supermesh();

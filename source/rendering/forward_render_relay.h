@@ -11,7 +11,7 @@
 #include "rendering/model_cache.h"
 
 #define RENDER_COLLIDERS
-//#define RENDER_MESHES
+#define RENDER_MESHES
 
 namespace pleep
 {
@@ -231,6 +231,9 @@ namespace pleep
 
                 // check nullptr
                 if (data.renderable.meshData == nullptr) continue;
+
+                // pass in all associated bones:
+                //data.renderable.armature;
 
                 m_sm.activate();
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform() * data.renderable.localTransform.get_model_transform());

@@ -40,11 +40,11 @@ namespace pleep
         // ***** Fetch Methods *****
         // If asset exists in cache return shallow, const, shared instance from cache
         // (or a deep copy for armatures)
-        inline std::shared_ptr<const Supermesh>         fetch_supermesh(const std::string& name)
+        inline std::shared_ptr<const Supermesh>   fetch_supermesh(const std::string& name)
         { return g_modelManager->fetch_supermesh(name); }
-        inline std::shared_ptr<const Material>          fetch_material(const std::string& name)
+        inline std::shared_ptr<const Material>    fetch_material(const std::string& name)
         { return g_modelManager->fetch_material(name); }
-        inline std::shared_ptr<Armature>                fetch_armature(const std::string& name)
+        inline Armature                           fetch_armature(const std::string& name)
         { return g_modelManager->fetch_armature(name); }
         inline std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name)
         { return g_modelManager->fetch_animation(name); }

@@ -20,9 +20,10 @@ namespace pleep
         UNREFERENCED_PARAMETER(eventBroker);
 
         // ***************************************************************************
-        ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Olimar.obj");
+        //ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Olimar.dae");
+        ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession\\resources\\vampire\\dancing_vampire3.dae");
 
-        //ModelManager::debug_receipt(olimar_import);
+        ModelManager::debug_receipt(olimar_import);
 
         Entity pc = cosmos->create_entity();
         TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));

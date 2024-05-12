@@ -34,7 +34,7 @@ namespace pleep
         std::string m_name;
         // mine and my children's ids match indexed position in Armature
         unsigned int m_id;
-        std::vector<unsigned int> childIds;
+        std::vector<unsigned int> m_childIds;
     };
 }
 

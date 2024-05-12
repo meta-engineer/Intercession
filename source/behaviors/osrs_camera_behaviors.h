@@ -91,20 +91,29 @@ namespace pleep
                     //const float disp   = 4.0f * (float)deltaTime;
                     const float rot    = 0.20f * (float)deltaTime;
                     const float aspect = 1.2f;  // increase in yaw compared to pitch
-                    //const float gimbalLimit = 0.1f;  // rads
-                    glm::vec3 gimbalUp = glm::vec3(0.0f, 1.0f, 0.0);
-                    glm::vec3 tangent = glm::normalize(glm::cross(direction, gimbalUp));
+                    const float gimbalLimit = 0.2f;  // rads
+                    glm::vec3 tangent = glm::normalize(glm::cross(direction, camera.gimbalUp));
 
                     if (input.actions.test(SpacialActions::rotatePitch))
                     {
-                        transform.orientation = glm::angleAxis(rot * (float)input.actionVals.at(SpacialActions::rotatePitch), -tangent) * transform.orientation;
+                        // looking upward is posative
+                        float turnAngle = rot * (float)input.actionVals.at(SpacialActions::rotatePitch) * -1.0f;
+                        // clip turnAngle to not go past gimbal singularity
+                        const float headingAngle = glm::acos(glm::dot(direction, camera.gimbalUp));
+                        // limit looking up
+                        if (headingAngle - turnAngle < 1.0f)
+                            turnAngle = headingAngle - 1.0f;
+                        // limit looking down
+                        if (headingAngle - turnAngle > glm::pi<float>() - gimbalLimit)
+                            turnAngle = headingAngle -(glm::pi<float>() - gimbalLimit);
+
+                        transform.orientation = glm::angleAxis(turnAngle, tangent) * transform.orientation;
                     }
 
                     if (input.actions.test(SpacialActions::rotateYaw))
                     {
-                        transform.orientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), -gimbalUp) * transform.orientation;
+                        transform.orientation = glm::angleAxis(rot * aspect * (float)input.actionVals.at(SpacialActions::rotateYaw), -camera.gimbalUp) * transform.orientation;
                     }
-                    
                 }
                 // can use scroll anytime
                 if (input.actions.test(SpacialActions::rotateRoll))

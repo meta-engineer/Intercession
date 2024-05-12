@@ -19,11 +19,11 @@ namespace pleep
         // Create empty Material
         std::shared_ptr<Material> _build_material(const aiMaterial* material, const std::string& materialName, const std::string& directory) override;
         // Create empty Armature (Armatures have no gpu data so we _could_ safely populate them)
-        std::shared_ptr<Armature> _build_armature(const aiNode* node, const std::string& armatureName) override;
+        Armature _build_armature(const aiNode* node, const std::string& armatureName) override;
         // Create empty Mesh
         std::shared_ptr<Mesh> _build_mesh(const aiMesh* mesh, const ImportReceipt& receipt) override;
         // Create empty Animation (Animations have no gpu data so we _could_ safely populate them)
-        std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation *animation, const std::string& animationName) override;
+        std::shared_ptr<AnimationSkeletal> _build_animation(const aiAnimation *animation) override;
 
         // Create BasicSupermeshTypes with only name and filepath
         std::shared_ptr<Supermesh> _build_cube_supermesh() override;

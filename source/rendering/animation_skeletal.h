@@ -47,18 +47,14 @@ namespace pleep
         AnimationSkeletal() = default;
         ~AnimationSkeletal() = default;
 
-        
+        double m_duration;  // in units of "ticks"
+        double m_frequency; // "ticks" per second (to convert real-time to animation-time)
 
-    private:
-        // keyframes mapped by bone id
-        std::unordered_map<int, std::vector<PositionKeyframe>> posKeyframes;
-        std::unordered_map<int, std::vector<RotationKeyframe>> rotKeyframes;
-        std::unordered_map<int, std::vector<ScaleKeyframe>>    sclKeyframes;
+        // keyframes mapped by boneId
+        std::unordered_map<unsigned int, std::vector<PositionKeyframe>> m_posKeyframes;
+        std::unordered_map<unsigned int, std::vector<RotationKeyframe>> m_rotKeyframes;
+        std::unordered_map<unsigned int, std::vector<ScaleKeyframe>>    m_sclKeyframes;
 
-        double duration;
-        double frequency; // "ticks" per second (what does assimp define as tick? some arbitrary time scale)
-
-        
         // Name given for this animation
         std::string m_name;
         // Filename this animation was imported from

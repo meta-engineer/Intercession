@@ -26,6 +26,16 @@ namespace assimp_converters
         // TODO: check vec3 member ordering to directly return constructor
         return to;
     }
+
+    inline glm::quat convert_quat(const aiQuaternion& from)
+    {
+        glm::quat to;
+        to.x = from.x;
+        to.y = from.y;
+        to.z = from.z;
+        to.w = from.w;
+        return to;
+    }
 }
 
 

@@ -26,6 +26,7 @@
 #include "physics/collider_component.h"
 #include "inputting/spacial_input_component.h"
 #include "rendering/renderable_component.h"
+#include "rendering/animation_component.h"
 #include "rendering/camera_component.h"
 #include "rendering/light_source_component.h"
 #include "core/meta_component.h"

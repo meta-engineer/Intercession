@@ -42,13 +42,13 @@ namespace pleep
         return std::make_shared<Material>();
     }
     
-    std::shared_ptr<Armature> ModelManagerFaux::_build_armature(const aiNode* node, const std::string& armatureName) 
+    Armature ModelManagerFaux::_build_armature(const aiNode* node, const std::string& armatureName) 
     {
         UNREFERENCED_PARAMETER(node);
         UNREFERENCED_PARAMETER(armatureName);
         
         // Armature will have no bones
-        return std::make_shared<Armature>();
+        return Armature{};
     }
     
     std::shared_ptr<Mesh> ModelManagerFaux::_build_mesh(const aiMesh* mesh, const ImportReceipt& receipt)
@@ -60,14 +60,11 @@ namespace pleep
         return std::make_shared<Mesh>();
     }
     
-    std::shared_ptr<AnimationSkeletal> ModelManagerFaux::_build_animation(const aiAnimation *animation, const std::string& animationName) 
+    std::shared_ptr<AnimationSkeletal> ModelManagerFaux::_build_animation(const aiAnimation *animation) 
     {
-        PLEEPLOG_WARN("NO IMPLEMENTATION FOR Loading animation: " + std::string(animation->mName.C_Str()));
         UNREFERENCED_PARAMETER(animation);
-        UNREFERENCED_PARAMETER(animationName);
 
-        // TODO: animations are weird...
-        return nullptr;
+        return std::make_shared<AnimationSkeletal>();
     }
     
     std::shared_ptr<Supermesh> ModelManagerFaux::_build_cube_supermesh() 

@@ -7,6 +7,7 @@
 
 #include "rendering/supermesh.h"
 #include "rendering/material.h"
+#include "rendering/armature.h"
 #include "events/message.h"
 
 namespace pleep
@@ -30,7 +31,11 @@ namespace pleep
         // each material corresponds with the supermesh submesh at the same index
         // excess materials are ignored, excess submeshes reuse the last-most material
         std::vector<std::shared_ptr<const Material>> materials;
-        
+
+        // mutable copy of armature data to store current bone state between frames
+        // (and after animation relay has set them for this frame)
+        //Armature armature;
+
         // Additional rendering options. should this be part of a material component?
 
         // TODO: how is this texture managed? init to id = 0?
