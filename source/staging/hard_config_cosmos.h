@@ -60,6 +60,7 @@ namespace pleep
         newCosmos->register_synchro<SpacialInputSynchro>()->attach_dynamo(dynamoCluster.inputter);
         newCosmos->register_synchro<LightingSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<RenderSynchro>()->attach_dynamo(dynamoCluster.renderer);
+        newCosmos->register_synchro<AnimationSynchro>()->attach_dynamo(dynamoCluster.renderer);
         newCosmos->register_synchro<PhysicsSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<ColliderSynchro>()->attach_dynamo(dynamoCluster.physicser);
         newCosmos->register_synchro<NetworkSynchro>()->attach_dynamo(dynamoCluster.networker);

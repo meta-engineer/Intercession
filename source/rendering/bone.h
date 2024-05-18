@@ -7,6 +7,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <string>
 
+#include "events/message.h"
+
 namespace pleep
 {
     // Defines a sub-space of the cosmos as part of an armature
@@ -15,6 +17,7 @@ namespace pleep
     class Bone
     {
     public:
+        Bone() = default;
         Bone(const std::string& name, const int id, const glm::mat4& relativeTransform)
             : m_name(name)
             , m_id(id)
@@ -24,6 +27,9 @@ namespace pleep
         
         // the current transform position/orientation of this bone (modified by AnimationSkeletal)
         glm::mat4 m_localTransform = glm::mat4(1.0f);
+
+
+        // "const" members set at import time:
 
         // transform relative to this node's parent
         glm::mat4 m_relativeTransform = glm::mat4(1.0f);

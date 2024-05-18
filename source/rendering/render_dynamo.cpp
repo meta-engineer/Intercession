@@ -23,6 +23,7 @@ namespace pleep
         glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_viewTransformUboId, 0, 2 * sizeof(glm::mat4));
 
         // setup relays
+        m_animator    = std::make_unique<AnimationRelay>();
         m_forwardPass = std::make_unique<ForwardRenderRelay>();
         m_bloomPass   = std::make_unique<BloomRenderRelay>();
         m_screenPass  = std::make_unique<ScreenRenderRelay>();
@@ -91,6 +92,11 @@ namespace pleep
         m_screenPass->submit(data);
         m_bloomPass->submit(data);
     }
+    
+    void RenderDynamo::submit(AnimationPacket data)
+    {
+        m_animator->submit(data);
+    }
 
     
     void RenderDynamo::run_relays(double deltaTime) 
@@ -100,7 +106,6 @@ namespace pleep
         //   initialize the frame
         //   then render through each renderable it has been submitted
         //   then close the frame
-        UNREFERENCED_PARAMETER(deltaTime);
 
         // if there is no camera data then... exit early
         // make sure relays are still reset after!
@@ -125,6 +130,10 @@ namespace pleep
         GLenum err;
         err = glGetError();
         if (err) { PLEEPLOG_ERROR("glError before render: " + std::to_string(err)); }
+        
+        m_animator->engage(deltaTime);
+        err = glGetError();
+        if (err) { PLEEPLOG_ERROR("glError after animation pass: " + std::to_string(err)); }
 
         m_forwardPass->engage(m_viewportDims);
         err = glGetError();
@@ -143,6 +152,7 @@ namespace pleep
     {
         // TODO: render relays are not setup to have fixed timestep (multiple iterations per frame)
         // so they clear themselves automatically
+        m_animator->clear();
         m_forwardPass->clear();
         m_bloomPass->clear();
         m_screenPass->clear();

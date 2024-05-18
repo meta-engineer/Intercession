@@ -18,9 +18,11 @@
 #include "rendering/debug_render_packet.h"
 #include "rendering/light_source_packet.h"
 #include "rendering/camera_packet.h"
+#include "rendering/animation_packet.h"
 #include "rendering/forward_render_relay.h"
 #include "rendering/screen_render_relay.h"
 #include "rendering/bloom_render_relay.h"
+#include "rendering/animation_relay.h"
 
 namespace pleep
 {
@@ -41,6 +43,8 @@ namespace pleep
         void submit(LightSourcePacket data);
         // pass in main camera (overrides last submittion)
         void submit(CameraPacket data);
+        // pass in armature and animation to step forwards for this frame
+        void submit(AnimationPacket data);
 
         // process render command queue
         void run_relays(double deltaTime) override;
@@ -82,6 +86,10 @@ namespace pleep
         // dynamo would just call to access the outputs
         //   and pass them to the input of the next relay in the pipeline
         // We still need to explicitly know what/how many outputs/inputs and link them manually
+
+        // RELAY STEP 0
+        // update armature bones before any actual rendering
+        std::unique_ptr<AnimationRelay> m_animator;
 
         // RELAY STEP 1
         // forward pass has 0 input textures, 1 fbo, 1 rbo, 2 output textures

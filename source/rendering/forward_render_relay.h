@@ -20,7 +20,7 @@ namespace pleep
     public:
         ForwardRenderRelay()
             : m_sm(
-                "source/shaders/tangents_ubo.vs",
+                "source/shaders/bones_ubo.vs",
                 "source/shaders/new_material_hdr.fs"
             )
             , m_normalVisualizerSm(
@@ -232,10 +232,14 @@ namespace pleep
                 // check nullptr
                 if (data.renderable.meshData == nullptr) continue;
 
-                // pass in all associated bones:
-                //data.renderable.armature;
-
                 m_sm.activate();
+
+                // pass in all associated bones:
+                for (int i = 0; i < MAX_BONES && i < data.renderable.armature.m_bones.size(); i++)
+                {
+                    m_sm.set_mat4("final_bone_matrices[" + std::to_string(i) + "]", data.renderable.armature.m_bones[i].m_localTransform);
+                }
+
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform() * data.renderable.localTransform.get_model_transform());
                 for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
                 {

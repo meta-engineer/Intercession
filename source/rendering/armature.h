@@ -33,16 +33,37 @@ namespace pleep
     template<typename T_Msg>
     Message<T_Msg>& operator<<(Message<T_Msg>& msg, const Armature& data)
     {
-        PLEEPLOG_DEBUG("Reached unimplemented Message stream in <Armature> overload!");
         // REMEMBER this is a STACK so reverse the order!!!
+
+        msg << data.m_sourceFilepath;
+        msg << data.m_name;
 
         return msg;
     }
     template<typename T_Msg>
     Message<T_Msg>& operator>>(Message<T_Msg>& msg, Armature& data)
     {
-        PLEEPLOG_DEBUG("Reached unimplemented Message stream out <Armature> overload!");
-        
+        // only write data if name has changed.
+        // if so fetch from ModelCache instead of deserializing?
+
+        std::string newName;
+        msg >> newName;
+
+        std::string newSource;
+        msg >> newSource;
+
+        if (data.m_name != newName)
+        {
+            // try to import armature...
+            data = ModelCache::fetch_armature(newName);
+            // check if succeeded
+            if (data.m_name != newName)
+            {
+                ModelCache::import(newSource);
+                // try again?
+                data = ModelCache::fetch_armature(newName);
+            }
+        }
 
         return msg;
     }

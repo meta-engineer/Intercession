@@ -14,6 +14,7 @@
 // include Synchros
 #include "inputting/spacial_input_synchro.h"
 #include "rendering/render_synchro.h"
+#include "rendering/animation_synchro.h"
 #include "rendering/lighting_synchro.h"
 #include "physics/physics_synchro.h"
 #include "physics/collider_synchro.h"

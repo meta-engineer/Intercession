@@ -11,6 +11,7 @@
 #include "behaviors/biped_component.h"
 #include "inputting/spacial_input_component.h"
 #include "staging/test_projectile.h"
+#include "rendering/animation_component.h"
 
 namespace pleep
 {
@@ -238,6 +239,15 @@ namespace pleep
                     input.clear();
 
                     sharedBroker->send_event(jumpMessage);
+                }
+
+
+                // update animation state
+                if (cosmos->has_component<AnimationComponent>(entity))
+                {
+                    AnimationComponent& anime = cosmos->get_component<AnimationComponent>(entity);
+
+                    anime.m_currentTime += glm::length(planarVelocity) * deltaTime;
                 }
             }
             catch(const std::exception& err)

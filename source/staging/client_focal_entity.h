@@ -35,8 +35,14 @@ namespace pleep
         for (auto matname : olimar_import.supermeshMaterialNames)
             pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
         pc_renderable.localTransform.origin.y = -0.5f;
-        pc_renderable.localTransform.scale = { 0.15f, 0.15f, 0.15f };
+        pc_renderable.localTransform.scale = { 0.015f, 0.015f, 0.015f };
+        pc_renderable.armature = ModelCache::fetch_armature(olimar_import.armatureNames[0]);
         cosmos->add_component(pc, pc_renderable);
+
+        AnimationComponent pc_animation;
+        pc_animation.m_currentAnimation = olimar_import.animationNames[0];
+        pc_animation.animations[olimar_import.animationNames[0]] = ModelCache::fetch_animation(olimar_import.animationNames[0]);
+        cosmos->add_component(pc, pc_animation);
 
         PhysicsComponent pc_physics;
         //pc_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);

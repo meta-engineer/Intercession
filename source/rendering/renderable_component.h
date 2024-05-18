@@ -34,7 +34,7 @@ namespace pleep
 
         // mutable copy of armature data to store current bone state between frames
         // (and after animation relay has set them for this frame)
-        //Armature armature;
+        Armature armature;
 
         // Additional rendering options. should this be part of a material component?
 
@@ -60,7 +60,10 @@ namespace pleep
         // Pass ModelCache keys AND source filepaths incase it needs to be imported
         // REMEMBER this is a STACK so reverse the order!!!
 
-        // stack mat data first
+        // stack armature data first
+        msg << data.armature;
+
+        // stack mat data second
         /// TODO: What if material has no sourceFilepath? (created manually)
         size_t numMats = data.materials.size();
         // (remember this must be in reverse order as well)
@@ -87,7 +90,7 @@ namespace pleep
         // then push number of materials
         msg << numMats;
         
-        // stack mesh data first
+        // stack mesh data third
         size_t numMeshes = data.meshData ? 1 : 0;
         if (numMeshes > 0)
         {
@@ -251,6 +254,9 @@ namespace pleep
             }
             // else material names match, continue as-is
         }
+
+        // last stream out armature
+        msg >> data.armature;
 
         return msg;
     }

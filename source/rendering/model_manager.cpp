@@ -432,7 +432,7 @@ namespace pleep
             if (std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName) == receipt.armatureNames.end()) continue;
 
             m_armatureMap[armatureName] = _build_armature(scene->mRootNode->mChildren[i], armatureName);
-            m_armatureMap[armatureName].m_sourceFilepath = armatureName;
+            m_armatureMap[armatureName].m_name = armatureName;
             m_armatureMap[armatureName].m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
