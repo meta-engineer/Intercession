@@ -72,7 +72,7 @@ namespace pleep
         cosmos->get_component<ColliderComponent>(floor_2).colliders[0].localTransform.origin.z = -0.499f;
         // ***************************************************************************
 
-        //***************************************************************************
+        /***************************************************************************
         ModelCache::ImportReceipt gamecube_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - GameCube\\Gamecube\\gamecube.obj");
 
         Entity gamebox = cosmos->create_entity();
@@ -165,7 +165,7 @@ namespace pleep
         //***************************************************************************
         Entity point = cosmos->create_entity();
         cosmos->add_component(point, TransformComponent(glm::vec3(12.0f, -1.0f, 0.0f)));
-        cosmos->get_component<TransformComponent>(point).scale = glm::vec3(0.2f);
+        //cosmos->get_component<TransformComponent>(point).scale = glm::vec3(0.2f);
         // remember this is relative to exposure
         cosmos->add_component(point, LightSourceComponent(glm::vec3(2.0f, 3.0f, 6.0f)));
 
@@ -173,6 +173,17 @@ namespace pleep
         point_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
         point_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(point, point_renderable);
+        
+        PhysicsComponent point_physics;
+        point_physics.mass = 100.0f;
+        cosmos->add_component(point, point_physics);
+        
+        ColliderComponent gamebox_collider{ 
+            { Collider(ColliderType::sphere, CollisionType::rigid) }
+        };
+        gamebox_collider.colliders[0].dynamicFriction = 0.9f;
+        gamebox_collider.colliders[0].restitution = 0.1f;
+        cosmos->add_component(point, gamebox_collider);
         // ***************************************************************************/
 
         return cosmos;

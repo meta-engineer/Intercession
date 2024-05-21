@@ -20,7 +20,7 @@ namespace pleep
         none,
         //AABB,
         box, // unit cube, use localTransform.scale to set side lengths
-        //sphere,
+        sphere, // unit sphere (diameter 1)
         ray, // unit vector (0,0,1), use localTransform to rotate and scale ray
         //capsule,
         //cylinder,

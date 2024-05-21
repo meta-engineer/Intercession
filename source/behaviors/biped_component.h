@@ -6,9 +6,19 @@
 
 namespace pleep
 {
+    enum class BipedState
+    {
+        stand,
+        walk,
+        airborne,
+    };
+
     // storage component used by biped behaviours
     struct BipedComponent
     {
+        // state must be protected for any on-transition side effects
+        BipedState state;
+
         // this property may have to align with net world forces (gravity/bouyancy/mangnetism?)
         //   but not acceleration due to collision
         // it may also have to influence collider/entity orientation

@@ -2,7 +2,7 @@
 
 namespace pleep
 {
-    bool null_null_intersect(
+    bool null_intersect(
         ColliderPacket&,
         ColliderPacket&,
         glm::vec3&, glm::vec3&, float&
@@ -47,7 +47,7 @@ namespace pleep
         //   equal sized basis vector (aka normalized)
         // we'll wait until the axes are tested to normalize incase of early exits
 
-        // this' face normals (w=0.0f -> no translation)
+        // box A' face normals (w=0.0f -> no translation)
         axes[0] = normalTransformA * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
         axes[1] = normalTransformA * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
         axes[2] = normalTransformA * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
@@ -146,8 +146,8 @@ namespace pleep
         }
         else if (contactManifoldA.size() == 1)
         {
-            // single penetrating vertex on this
-            // invert to point to be on surface of other
+            // single penetrating vertex on A
+            // invert to point to be on surface of B
             collisionPoint = contactManifoldA.front() + (collisionNormal * collisionDepth);
             return true;
         }
@@ -230,6 +230,215 @@ namespace pleep
         //return false;
     }
     
+    bool box_sphere_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    )
+    {
+        if (sphere_box_intersect(dataB, dataA, collisionPoint, collisionNormal, collisionDepth))
+        {
+            // collision metadata returned is relative to passed this, invert to be relative to other
+            collisionNormal *= -1.0f;
+            collisionPoint = collisionPoint + (collisionNormal * collisionDepth);
+            return true;
+        }
+        return false;
+    }
+    
+    bool box_ray_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    )
+    {
+        if (ray_box_intersect(dataB, dataA, collisionPoint, collisionNormal, collisionDepth))
+        {
+            // collision metadata returned is relative to passed this, invert to be relative to other
+            collisionNormal *= -1.0f;
+            collisionPoint = collisionPoint + (collisionNormal * collisionDepth);
+            return true;
+        }
+        return false;
+    }
+
+
+    bool sphere_box_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    )
+    {
+        assert(dataA.collider.colliderType == ColliderType::sphere);
+        assert(dataB.collider.colliderType == ColliderType::box);
+
+        // Same SAT axes as box-box, but use project_sphere, and sphere contact manifold instead
+        
+        // entity transform non-uniform scale might not be applicable to certain colliders
+        glm::mat4 localTransformA  = dataA.collider.compose_transform(dataA.transform);
+        glm::mat3 normalTransformA = glm::transpose(glm::inverse(glm::mat3(localTransformA)));
+        glm::mat4 localTransformB  = dataB.collider.compose_transform(dataB.transform);
+        glm::mat3 normalTransformB = glm::transpose(glm::inverse(glm::mat3(localTransformB)));
+
+        std::array<glm::vec3, 15> axes;
+        // each calculated interval must be comparable, so they need to be using
+        //   equal sized basis vector (aka normalized)
+        // we'll wait until the axes are tested to normalize incase of early exits
+
+        // box A' face normals (w=0.0f -> no translation)
+        axes[0] = normalTransformA * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+        axes[1] = normalTransformA * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        axes[2] = normalTransformA * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+        // box B's face normals (w=0.0f -> no translation)
+        axes[3] = normalTransformB * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+        axes[4] = normalTransformB * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        axes[5] = normalTransformB * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+        // edge "normals"
+        axes[6] = glm::cross(axes[0], axes[3]);
+        axes[7] = glm::cross(axes[0], axes[4]);
+        axes[8] = glm::cross(axes[0], axes[5]);
+        axes[9] = glm::cross(axes[1], axes[3]);
+        axes[10]= glm::cross(axes[1], axes[4]);
+        axes[11]= glm::cross(axes[1], axes[5]);
+        axes[12]= glm::cross(axes[2], axes[3]);
+        axes[13]= glm::cross(axes[2], axes[4]);
+        axes[14]= glm::cross(axes[2], axes[5]);
+
+        // Maintain data from positive collision tests
+        glm::vec3 minPenetrateNormal(0.0f);   // vector of collision force? world-space
+        float minPenetrateDepth = INFINITY;   // depth along best normal?
+
+        // continuous collision:
+        // get velocity of this relative to box B (thisVelocity - otherVelocity)
+        // extend the interval of this by that relative velocity
+
+        for (int a = 0; a < 15; a++)
+        {
+            // wait as late as possible to normalize each axis
+            axes[a] = glm::normalize(axes[a]);
+            // CHECK! if colliders are alligned cross products might not work!
+            if (isnan(axes[a].x))
+                continue;
+
+            glm::vec2 intervalA = project_sphere(localTransformA, axes[a]);
+            glm::vec2 intervalB = project_box(localTransformB, axes[a]);
+
+            // no continuous collision for now
+            // TODO: get relative velocity, extend intervalA by velocity
+            // TODO: determine direction of normal based on velocities
+
+            float penetration = 0;
+            bool flipAxis = false;
+            // determine direction of penetration by midpoints until we account for velocities
+            if ((intervalA.x + intervalA.y)/2.0f > (intervalB.x + intervalB.y)/2.0f)
+            {
+                penetration = intervalB.y - intervalA.x;
+            }
+            else
+            {
+                penetration = intervalA.y - intervalB.x;
+                // other is ahead of this, so flip axis so that it points "away" from other's surface towards this
+                flipAxis = true;
+            }
+            
+            // is there a seperating plane for this axis?
+            if (penetration <= 0)
+            {
+                return false;
+            }
+
+            // does this axes have the best overlap?
+            if (penetration < minPenetrateDepth)
+            {
+                minPenetrateDepth = penetration;
+                minPenetrateNormal = flipAxis ? -axes[a] : axes[a];
+            }
+        }
+
+        // write to references for collision normal, depth (and collision location?)
+        collisionNormal = minPenetrateNormal;
+        collisionDepth = minPenetrateDepth;
+
+        // use collisionNormal to find penetrating points
+        // we could maybe have tracked & maintained these points during projection...
+        // Find all points in contact manifold for each object
+
+        // sphere only every has 1 point in contact manifold, so skip this
+        // contact point is from sphere origin along normal to surface of box
+        
+        // only considers scale along x
+        const glm::vec3 sphereSurface = localTransformA * glm::vec4(UNIT_RADIUS,0,0, 1.0f);
+        const float sphereRadius = glm::length(sphereSurface);
+
+        collisionPoint = 
+                glm::vec3(localTransformA * glm::vec4(0,0,0, 1.0f))     // origin of sphere
+                - (collisionNormal * sphereRadius)                      // surface of sphere            
+                + (collisionNormal * collisionDepth);                   // surface of box
+        return true;
+    }
+
+    bool sphere_sphere_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    )
+    {
+        assert(dataA.collider.colliderType == ColliderType::sphere);
+        assert(dataB.collider.colliderType == ColliderType::sphere);
+
+        glm::mat4 localTransformA   = dataA.collider.compose_transform(dataA.transform);
+        glm::mat4 localTransformB   = dataB.collider.compose_transform(dataB.transform);
+
+        /// This one should be easy
+        /// Get origins of both spheres, calc distance between them.
+        /// collision depth = distance - sum of radii
+        ///   (if depth > 0 then collision has occurred)
+        /// collision normal is vector between origins,
+        /// collision point is surface of B along normal,
+        
+        const glm::vec3 originA = localTransformA * glm::vec4(0,0,0, 1.0f);
+        const glm::vec3 originB = localTransformB * glm::vec4(0,0,0, 1.0f);
+        // for radius scaling use only x
+        const float radiusA = UNIT_RADIUS * dataA.collider.localTransform.scale.x * dataA.transform.scale.x; 
+        const float radiusB = UNIT_RADIUS * dataB.collider.localTransform.scale.x * dataB.transform.scale.x; 
+
+        // pointing away from B
+        glm::vec3 dir = originA - originB;
+        const float dist = glm::length(dir);
+
+        // weird case where they exactly overlap?
+        if (dist == 0) return false;
+
+        const float depth = (radiusA + radiusB) - dist;
+        // no collision
+        if (depth <= 0) return false;
+
+        // yes collision
+        collisionDepth = depth;
+        // normalize the normal now (to save computing length twice)
+        collisionNormal = dir / dist;
+        // on surface of B (regardless of depth)
+        collisionPoint = originB + (collisionNormal * radiusB);
+        return true;
+    }
+
+    bool sphere_ray_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    )
+    {
+        /// TODO: this
+        UNREFERENCED_PARAMETER(dataA);
+        UNREFERENCED_PARAMETER(dataB);
+        UNREFERENCED_PARAMETER(collisionPoint);
+        UNREFERENCED_PARAMETER(collisionNormal);
+        UNREFERENCED_PARAMETER(collisionDepth);
+
+        return false;
+    }
+
+
     bool ray_box_intersect(
         ColliderPacket& dataA,
         ColliderPacket& dataB,
@@ -274,7 +483,7 @@ namespace pleep
         {
             axes[a] = glm::normalize(axes[a]);
             
-            glm::vec2 rayProject  = project_ray(localTransformA,  axes[a]);
+            glm::vec2 rayProject  = project_ray(localTransformA, axes[a]);
             glm::vec2 boxInterval = project_box(localTransformB, axes[a]);
 
             float penetration = 0;
@@ -380,14 +589,13 @@ namespace pleep
         return true;
     }
     
-    // just call ray_box and invert
-    bool box_ray_intersect(
+    bool ray_sphere_intersect(
         ColliderPacket& dataA,
         ColliderPacket& dataB,
         glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
     )
     {
-        if (ray_box_intersect(dataB, dataA, collisionPoint, collisionNormal, collisionDepth))
+        if (sphere_ray_intersect(dataB, dataA, collisionPoint, collisionNormal, collisionDepth))
         {
             // collision metadata returned is relative to passed this, invert to be relative to other
             collisionNormal *= -1.0f;
@@ -416,7 +624,7 @@ namespace pleep
 
     // PHYSICS RESPONSE PROCEDURES
 
-    void null_null_response(
+    void null_response(
         ColliderPacket&, PhysicsComponent&, 
         ColliderPacket&, PhysicsComponent&, 
         glm::vec3&, glm::vec3&, float&

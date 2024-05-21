@@ -9,8 +9,8 @@ namespace pleep
 {
     // HELPER FUNCTIONS
     
-    // unit cube has sidelength of 1.0
-    constexpr float CUBE_RADIUS         = 0.5f;
+    // unit cube has sidelength of 1.0, sphere has a diameter of 1
+    constexpr float UNIT_RADIUS         = 0.5f;
 
     // callibrations for manifold checking
     // TODO: these may need to be non-const and vary based on size of collider
@@ -45,9 +45,9 @@ namespace pleep
                 for (int k = -1; k < 2; k+=2)
                 {
                     glm::vec3 vertex = {
-                        CUBE_RADIUS * i,
-                        CUBE_RADIUS * j,
-                        CUBE_RADIUS * k
+                        UNIT_RADIUS * i,
+                        UNIT_RADIUS * j,
+                        UNIT_RADIUS * k
                     };
 
                     vertex = boxTrans * glm::vec4(vertex, 1.0f);
@@ -85,6 +85,21 @@ namespace pleep
         return glm::vec2(originProjection, endProjection);
     }
 
+    inline static glm::vec2 project_sphere(const glm::mat4& sphereTrans, const glm::vec3& axis)
+    {
+        // find origin projection
+        // then add/subtract radius
+
+        const glm::vec3 sphereOrigin = sphereTrans * glm::vec4(0,0,0, 1.0f);
+        // only considers scale along x
+        const glm::vec3 sphereSurface = sphereTrans * glm::vec4(UNIT_RADIUS,0,0, 1.0f);
+
+        const float originProjection = glm::dot(sphereOrigin, axis);
+        const float radiusProjection = glm::dot(glm::length(sphereSurface - sphereOrigin) * axis, axis);
+
+        return glm::vec2(originProjection - radiusProjection, originProjection + radiusProjection);
+    }
+
     // fill dest with all points on plane perpendicular and farthest along axis
     // Manifold must be returned in winding order around the perimeter
     // uses static manifold calibrations (shared with static_intersect)
@@ -106,9 +121,9 @@ namespace pleep
         for (int index : order)
         {
             glm::vec3 vertex = {
-                CUBE_RADIUS * dimensions.x,
-                CUBE_RADIUS * dimensions.y,
-                CUBE_RADIUS * dimensions.z
+                UNIT_RADIUS * dimensions.x,
+                UNIT_RADIUS * dimensions.y,
+                UNIT_RADIUS * dimensions.z
             };
 
             // we have to do this matrix multiply again...
@@ -306,7 +321,7 @@ namespace pleep
     // collisionDepth -> surface of A = collisionPoint - (collisionDepth * collisionNormal)
     // For now specify non-continuous time (static) intersection detection
 
-    bool null_null_intersect(
+    bool null_intersect(
         ColliderPacket&,
         ColliderPacket&,
         glm::vec3&, glm::vec3&, float&
@@ -317,19 +332,43 @@ namespace pleep
         ColliderPacket& dataB,
         glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
     );
+    bool box_sphere_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    );
+    bool box_ray_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    );
+    
+    bool sphere_box_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    );
+    bool sphere_sphere_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    );
+    bool sphere_ray_intersect(
+        ColliderPacket& dataA,
+        ColliderPacket& dataB,
+        glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
+    );
 
     bool ray_box_intersect(
         ColliderPacket& dataA,
         ColliderPacket& dataB,
         glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
     );
-
-    bool box_ray_intersect(
+    bool ray_sphere_intersect(
         ColliderPacket& dataA,
         ColliderPacket& dataB,
         glm::vec3& collisionPoint, glm::vec3& collisionNormal, float& collisionDepth
     );
-
     bool ray_ray_intersect(
         ColliderPacket& dataA,
         ColliderPacket& dataB,
@@ -339,7 +378,7 @@ namespace pleep
 
     // PHYSICS RESPONSE PROCEDURES
 
-    void null_null_response(
+    void null_response(
         ColliderPacket&, PhysicsComponent&, 
         ColliderPacket&, PhysicsComponent&, 
         glm::vec3&, glm::vec3&, float&
@@ -368,12 +407,13 @@ namespace pleep
     using intersectionProcedure = std::function<
         bool(ColliderPacket&, ColliderPacket&, glm::vec3&, glm::vec3&, float&)
     >;
-    static_assert(ColliderType::count == static_cast<ColliderType>(3));
+    static_assert(ColliderType::count == static_cast<ColliderType>(4));
     const intersectionProcedure intersectProcedures[static_cast<size_t>(ColliderType::count)]
                                                    [static_cast<size_t>(ColliderType::count)] = {
-        {null_null_intersect, null_null_intersect, null_null_intersect},
-        {null_null_intersect, box_box_intersect,   box_ray_intersect},
-        {null_null_intersect, ray_box_intersect,   ray_ray_intersect}
+        {null_intersect,    null_intersect,         null_intersect,             null_intersect},
+        {null_intersect,    box_box_intersect,      box_sphere_intersect,       box_ray_intersect},
+        {null_intersect,    sphere_box_intersect,   null_intersect,             null_intersect},
+        {null_intersect,    ray_box_intersect,      null_intersect,             ray_ray_intersect}
     };
 
     // lookup table for collision physics response between different body types
@@ -383,10 +423,10 @@ namespace pleep
     static_assert(CollisionType::count == static_cast<CollisionType>(4));
     const responseProcedure responseProcedures[static_cast<size_t>(CollisionType::count)]
                                               [static_cast<size_t>(CollisionType::count)] = {
-        {null_null_response, null_null_response,    null_null_response,     null_null_response},
-        {null_null_response, rigid_rigid_response,  rigid_spring_response,  null_null_response},
-        {null_null_response, spring_rigid_response, null_null_response,     null_null_response},
-        {null_null_response, null_null_response,    null_null_response,     null_null_response}
+        {null_response,     null_response,          null_response,              null_response},
+        {null_response,     rigid_rigid_response,   rigid_spring_response,      null_response},
+        {null_response,     spring_rigid_response,  null_response,              null_response},
+        {null_response,     null_response,          null_response,              null_response}
     };
 
 }

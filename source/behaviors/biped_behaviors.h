@@ -62,6 +62,22 @@ namespace pleep
                 // derive velocity perpendicular to support axis
                 const glm::vec3 planarVelocity = physics.velocity - (glm::dot(physics.velocity, biped.supportAxis) * biped.supportAxis);
 
+                // transition state
+                if (!biped.isGrounded)
+                {
+                    biped.state = BipedState::airborne;
+                }
+                else
+                {
+                    if (glm::length2(planarVelocity) > 0.001f)
+                    {
+                        biped.state = BipedState::walk;
+                    }
+                    else
+                    {
+                        biped.state = BipedState::stand;
+                    }
+                }
 
                 // apply angular acceleration from current orientation towards aimOrientation
                 
@@ -138,10 +154,19 @@ namespace pleep
                 else
                 {
                     glm::vec3 airAcceleration = targetVector * biped.airAcceleration;
-                    
-                    /// TODO: Air movement should only be for changing direction, should not be able to accelerate beyond airMaxSpeed
-
                     physics.acceleration += airAcceleration;
+                    
+                    /// Should not be able to accelerate beyond airMaxSpeed
+                    /// If already beyond max air speed then don't go any further
+                    if (glm::length2(physics.velocity) > biped.airMaxSpeed*biped.airMaxSpeed)
+                    {
+                        // remove parallel component
+                        float abDot = glm::dot(airAcceleration, physics.velocity);
+                        if (abDot > 0)
+                        {
+                            physics.acceleration -= abDot / glm::dot(physics.velocity,physics.velocity) * physics.velocity;
+                        }
+                    }
                 }
 
 
@@ -243,11 +268,39 @@ namespace pleep
 
 
                 // update animation state
+                // translate biped state into selected animation?
+                // maybe make map with all biped states. Everytime state transitions lookup animation name and set it in animation component.
                 if (cosmos->has_component<AnimationComponent>(entity))
                 {
                     AnimationComponent& anime = cosmos->get_component<AnimationComponent>(entity);
 
-                    anime.m_currentTime += glm::length(planarVelocity) * deltaTime;
+                    switch (biped.state)
+                    {
+                    case BipedState::stand:
+                    {
+                        anime.m_currentTime = 0.0;
+                        anime.m_currentAnimation = "";
+                    }
+                    break;
+                    case BipedState::walk:
+                    {
+                        anime.m_currentTime += glm::length(planarVelocity) * deltaTime / 4.0;
+                        anime.m_currentAnimation = anime.animations.cbegin()->first;
+                    }
+                    break;
+                    case BipedState::airborne:
+                    {
+                        anime.m_currentTime = 0.0;
+                        anime.m_currentAnimation = "";
+                    }
+                    break;
+                    default:
+                    {
+                        // t-pose
+                        anime.m_currentTime = 0.0;
+                        anime.m_currentAnimation = "";
+                    }
+                    }
                 }
             }
             catch(const std::exception& err)

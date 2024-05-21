@@ -109,6 +109,15 @@ namespace pleep
                         });
                     }
                     break;
+                    case ColliderType::sphere:
+                    {
+                        m_attachedRenderDynamo->submit(DebugRenderPacket{
+                            entity,
+                            collider.compose_transform(transform),
+                            ModelManager::BasicSupermeshType::icosahedron
+                        });
+                    }
+                    break;
                     }
                 }
             }

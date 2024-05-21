@@ -23,7 +23,11 @@ namespace pleep
             {
                 AnimationPacket& data = *packet_it;
 
-                if (data.animatable.m_currentAnimation == "") continue;
+                if (data.animatable.m_currentAnimation == "")
+                {
+                    clear_bones_transform(data.renderable.armature.m_bones);
+                    continue;
+                }
 
                 auto animation_it = data.animatable.animations.find(data.animatable.m_currentAnimation);
                 if (animation_it == data.animatable.animations.end())
@@ -38,7 +42,7 @@ namespace pleep
                 //data.animatable.m_currentTime += deltaTime;
 
                 // Need to compose transform recursively starting from root bone...?
-                calculate_bone_transform(
+                calculate_bones_transform(
                     data.renderable.armature.m_bones,
                     data.animatable.animations[data.animatable.m_currentAnimation],
                     0,
@@ -51,7 +55,7 @@ namespace pleep
         }
 
         // recursive tree crawl to set all
-        void calculate_bone_transform(std::vector<Bone>& bones, std::shared_ptr<const AnimationSkeletal> animation, const unsigned int boneIndex, glm::mat4 parentTransform, const double elapsedTime)
+        void calculate_bones_transform(std::vector<Bone>& bones, std::shared_ptr<const AnimationSkeletal> animation, const unsigned int boneIndex, glm::mat4 parentTransform, const double elapsedTime)
         {
             size_t currentFrame = static_cast<size_t>((elapsedTime * animation->m_frequency) / animation->m_duration * animation->m_posKeyframes.at(boneIndex).size());
             currentFrame = currentFrame % animation->m_posKeyframes.at(boneIndex).size();
@@ -71,7 +75,15 @@ namespace pleep
             // pass onto children
             for (unsigned int childId : bones[boneIndex].m_childIds)
             {
-                calculate_bone_transform(bones, animation, childId, globalTransform, elapsedTime);
+                calculate_bones_transform(bones, animation, childId, globalTransform, elapsedTime);
+            }
+        }
+
+        void clear_bones_transform(std::vector<Bone>& bones)
+        {
+            for (Bone& bone : bones)
+            {
+                bone.m_localTransform = glm::mat4(1.0f);
             }
         }
         
