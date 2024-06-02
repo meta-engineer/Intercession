@@ -41,41 +41,75 @@ namespace pleep
                 // TODO: we want this to be tied to behaviour script (for velocity based animation)
                 //data.animatable.m_currentTime += deltaTime;
 
+                // PLEEPLOG_DEBUG("Animating " + data.animatable.m_currentAnimation + " on armature " + data.renderable.armature.m_name + " with bones: " + std::to_string(data.renderable.armature.m_bones.size()));
+
                 // Need to compose transform recursively starting from root bone...?
                 calculate_bones_transform(
-                    data.renderable.armature.m_bones,
+                    data.renderable.armature,
                     data.animatable.animations[data.animatable.m_currentAnimation],
-                    0,
-                    glm::mat4(1.0f),
+                    0,  // boneIndex 0 should be root of armature
+                    glm::mat4(1.0f),//data.renderable.armature.m_relativeTransform,//
                     data.animatable.m_currentTime
                 );
 
-                //PLEEPLOG_DEBUG("Animating " + data.animatable.m_currentAnimation + " on armature " + data.renderable.armature.m_name + " with bones: " + std::to_string(data.renderable.armature.m_bones.size()));
+                // PLEEPLOG_DEBUG("Done animation");
             }
         }
 
-        // recursive tree crawl to set all
-        void calculate_bones_transform(std::vector<Bone>& bones, std::shared_ptr<const AnimationSkeletal> animation, const unsigned int boneIndex, glm::mat4 parentTransform, const double elapsedTime)
+        // recursive tree crawl to set all bones
+        void calculate_bones_transform(Armature& armature, std::shared_ptr<const AnimationSkeletal> animation, const unsigned int boneIndex, glm::mat4 parentTransform, const double elapsedTime)
         {
-            size_t currentFrame = static_cast<size_t>((elapsedTime * animation->m_frequency) / animation->m_duration * animation->m_posKeyframes.at(boneIndex).size());
-            currentFrame = currentFrame % animation->m_posKeyframes.at(boneIndex).size();
+            if (animation->m_duration <= 0) return;
+            const double currentTick = elapsedTime * animation->m_frequency;
+            const double progress = fmod(currentTick / animation->m_duration, 1.0);
+            
+            // for non-animated bones use relative transform
+            glm::mat4 interpolatedTransform = armature.m_bones[boneIndex].m_relativeTransform;
+            
+            // for animated bones OVERRIDE with keyframe position using elapsed time
+            if (animation->m_posKeyframes.count(boneIndex) || 
+                animation->m_rotKeyframes.count(boneIndex) || 
+                animation->m_sclKeyframes.count(boneIndex))
+            {
+                glm::mat4 translate(1.0f);
+                glm::mat4 rotate(1.0f);
+                glm::mat4 scale(1.0f);
 
-            // derive keyframe position for this bone using elapsed time
-            glm::mat4 interpolatedTransform = 
-                glm::translate(glm::mat4(1.0f), animation->m_posKeyframes.at(boneIndex).at(currentFrame).position) *
-                glm::toMat4(glm::normalize(animation->m_rotKeyframes.at(boneIndex).at(currentFrame).orientation)) *
-                glm::scale(glm::mat4(1.0f), animation->m_sclKeyframes.at(boneIndex).at(currentFrame).scale);
+                if (animation->m_posKeyframes.count(boneIndex))
+                {
+                    size_t posFrame = static_cast<size_t>(progress * animation->m_posKeyframes.at(boneIndex).size());
+                    translate = glm::translate(glm::mat4(1.0f), animation->m_posKeyframes.at(boneIndex).at(posFrame).position);
+                }
+
+                if (animation->m_rotKeyframes.count(boneIndex))
+                {
+                    size_t rotFrame = static_cast<size_t>(progress * animation->m_rotKeyframes.at(boneIndex).size());
+                    //PLEEPLOG_DEBUG("Animation frame: " + std::to_string(rotFrame));
+                    //const glm::quat key = animation->m_rotKeyframes.at(boneIndex).at(rotFrame).orientation;
+                    //PLEEPLOG_DEBUG(std::to_string(key.x) + ", " + std::to_string(key.y) + ", " + std::to_string(key.z) + ", " + std::to_string(key.w));
+                    rotate = glm::toMat4(glm::normalize(animation->m_rotKeyframes.at(boneIndex).at(rotFrame).orientation));
+                }
+
+                if (animation->m_sclKeyframes.count(boneIndex))
+                {
+                    size_t sclFrame = static_cast<size_t>(progress * animation->m_sclKeyframes.at(boneIndex).size());
+                    scale = glm::scale(glm::mat4(1.0f), animation->m_sclKeyframes.at(boneIndex).at(sclFrame).scale);
+                }
+            
+                //PLEEPLOG_DEBUG("Bone " + armature.m_bones[boneIndex].m_name + " is animated");
+                interpolatedTransform = translate * rotate * scale;
+            }
 
             // calculate transform for this "node"
-            glm::mat4 globalTransform = parentTransform * interpolatedTransform;
+            const glm::mat4 globalTransform = parentTransform * interpolatedTransform;
 
             // set bone's cached transform using parent & keyframe (and inverse bind)
-            bones[boneIndex].m_localTransform = globalTransform * bones[boneIndex].m_bindTransform;
+            armature.m_bones[boneIndex].m_localTransform = globalTransform * armature.m_bones[boneIndex].m_bindTransform;
 
             // pass onto children
-            for (unsigned int childId : bones[boneIndex].m_childIds)
+            for (unsigned int childId : armature.m_bones[boneIndex].m_childIds)
             {
-                calculate_bones_transform(bones, animation, childId, globalTransform, elapsedTime);
+                calculate_bones_transform(armature, animation, childId, globalTransform, elapsedTime);
             }
         }
 

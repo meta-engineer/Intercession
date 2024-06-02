@@ -270,6 +270,8 @@ namespace pleep
                 // update animation state
                 // translate biped state into selected animation?
                 // maybe make map with all biped states. Everytime state transitions lookup animation name and set it in animation component.
+                // who knows state -> animation map?
+                // maybe we enforce that animations have some known name format?
                 if (cosmos->has_component<AnimationComponent>(entity))
                 {
                     AnimationComponent& anime = cosmos->get_component<AnimationComponent>(entity);
@@ -278,19 +280,26 @@ namespace pleep
                     {
                     case BipedState::stand:
                     {
-                        anime.m_currentTime = 0.0;
+                        anime.m_currentTime += deltaTime;
                         anime.m_currentAnimation = "";
                     }
                     break;
                     case BipedState::walk:
                     {
+                        // TEMP: how to get walking animation's expected ground speed?
+                        // should have some standard like 1m/s?
+                        // also depends on mesh transform scale
                         anime.m_currentTime += glm::length(planarVelocity) * deltaTime / 4.0;
-                        anime.m_currentAnimation = anime.animations.cbegin()->first;
+                        // TEMP: how to map animation names to state enum?
+                        if (anime.animations.size())
+                        {
+                            anime.m_currentAnimation = anime.animations.cbegin()->first;
+                        }
                     }
                     break;
                     case BipedState::airborne:
                     {
-                        anime.m_currentTime = 0.0;
+                        anime.m_currentTime += deltaTime;
                         anime.m_currentAnimation = "";
                     }
                     break;
@@ -301,6 +310,11 @@ namespace pleep
                         anime.m_currentAnimation = "";
                     }
                     }
+                }
+
+                if (cosmos->has_component<RenderableComponent>(entity))
+                {
+                    cosmos->get_component<RenderableComponent>(entity).localTransform.origin.y = -1.0f * biped.groundDist;
                 }
             }
             catch(const std::exception& err)
@@ -328,6 +342,7 @@ namespace pleep
                 BipedComponent& biped = callerData.owner.lock()->get_component<BipedComponent>(callerData.collidee);
                 biped.isGrounded = true;
                 biped.groundNormal = collisionNormal;
+                biped.groundDist = glm::length(callerData.transform.origin - collisionPoint);
 
                 UNREFERENCED_PARAMETER(collisionPoint);
                 UNREFERENCED_PARAMETER(collisionDepth);

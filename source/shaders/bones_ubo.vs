@@ -40,7 +40,8 @@ out mat3 TBN;
 
 void main()
 {
-    mat4 model_to_bone = mat4(1.0f);
+    mat4 model_to_bone = mat4(0.0f);
+    bool has_bones = false;
     for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
     {
         if (aBoneIDs[i] <= -1)
@@ -56,6 +57,11 @@ void main()
         }
 
         model_to_bone += final_bone_matrices[aBoneIDs[i]] * aBoneWeights[i];
+        has_bones = true;
+    }
+    if (!has_bones)
+    {
+        model_to_bone = mat4(1.0f);
     }
  
     gl_Position = projection * world_to_view * model_to_world * model_to_bone * vec4(aPos, 1.0);

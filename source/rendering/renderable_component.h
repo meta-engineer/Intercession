@@ -5,31 +5,30 @@
 #include <vector>
 #include <memory>
 
-#include "rendering/supermesh.h"
+#include "rendering/mesh.h"
 #include "rendering/material.h"
 #include "rendering/armature.h"
 #include "events/message.h"
 
 namespace pleep
 {
-    // model library imports a set of submeshes, each with an associated material (perhaps the same material?)
+    // model library imports a set of meshes, each with an associated material (perhaps the same material?)
     // we want the meshes and materials themselves to be const references to the library cache
     // so that entities don't edit it locally (becuase it isn't a local resource)
     // they have to explicitly go to the model library and edit the "original"
 
-    // we then want to associate each submesh with a material
+    // we then want to associate each mesh with a material
     // so we could have another set for materials with indices in lockstep
-    // given only the submesh you can't know which material it is using (or which compnents it is in)
-    // you are also not restricted to only use submesh sets from the same "model"
+    // given only the mesh you can't know which material it is using (or which compnents it is in)
+    // you are also not restricted to only use mesh sets from the same "model"
     // though i'm not sure if this is desirable?
 
     struct RenderableComponent
     {
         // Loses mesh heirarchy?
-        // each supermesh submesh corresponds with the material at the same index
-        std::shared_ptr<const Supermesh> meshData = nullptr;
-        // each material corresponds with the supermesh submesh at the same index
-        // excess materials are ignored, excess submeshes reuse the last-most material
+        std::vector<std::shared_ptr<const Mesh>> meshData;
+        // each material corresponds with the mesh at the same index
+        // excess materials are ignored, excess meshes reuse the last-most material
         std::vector<std::shared_ptr<const Material>> materials;
 
         // mutable copy of armature data to store current bone state between frames
@@ -91,16 +90,16 @@ namespace pleep
         msg << numMats;
         
         // stack mesh data third
-        size_t numMeshes = data.meshData ? 1 : 0;
-        if (numMeshes > 0)
+        size_t numMeshes = data.meshData.size();
+        for (size_t m = numMeshes - 1; m < numMeshes; m--)
         {
             // send path string
-            msg << data.meshData->m_sourceFilepath;
+            msg << data.meshData[m]->m_sourceFilepath;
 
             // send name string
-            msg << data.meshData->m_name;
+            msg << data.meshData[m]->m_name;
         }
-        // then push "number" of supermeshes
+        // then push "number" of meshes
         msg << numMeshes;
 
         // last push extra data
@@ -118,53 +117,67 @@ namespace pleep
         msg >> data.localTransform;
 
 
-        // Stream out SuperMesh
+        // Stream out Meshes
         size_t numMeshes = 0;
         msg >> numMeshes;
         // if no meshes in msg, than clear component
         if (numMeshes == 0)
         {
-            data.meshData = nullptr;
+            data.meshData.clear();
+        }
+        // if mats deserialized is less than exist in data.materials, clear the excess
+        else if (numMeshes < data.meshData.size())
+        {
+            data.meshData.erase(data.meshData.begin()+numMeshes, data.meshData.end());
         }
         else
         {
-            // extract supermesh name
-            std::string newSupermeshName;
-            msg >> newSupermeshName;
-
-            // extract supermesh path
-            std::string newSupermeshPath;
-            msg >> newSupermeshPath;
-
-            // if msg has no mesh (empty string) also clear component mesh
-            if (newSupermeshName == "")
+            for (size_t m = 0; m < numMeshes; m++)
             {
-                data.meshData = nullptr;
-            }
-            // if (msg has a mesh and) component either has no mesh OR a different one
-            // then fetch from library
-            else if (data.meshData == nullptr || data.meshData->m_name != newSupermeshName)
-            {
-                std::shared_ptr<const Supermesh> libMesh = ModelCache::fetch_supermesh(newSupermeshName);
+                // extract mesh name
+                std::string newMeshName;
+                msg >> newMeshName;
 
-                // check if fetch was not successful
-                if (libMesh == nullptr)
+                // extract mesh path
+                std::string newMeshPath;
+                msg >> newMeshPath;
+
+                // ensure index exists
+                while (data.meshData.size() <= m)
                 {
-                    // try to import file
-                    ModelCache::ImportReceipt supermeshReceipt = ModelCache::import(newSupermeshPath);
-
-                    // confirm the msg supermesh name was imported
-                    if (newSupermeshName == supermeshReceipt.supermeshName)
-                    {
-                        // try to fetch again
-                        libMesh = ModelCache::fetch_supermesh(newSupermeshName);
-                    }
+                    data.meshData.push_back(nullptr);
                 }
 
-                // if supermesh was empty or failed it will be nullptr, assign either way
-                data.meshData = libMesh;
+                // if msg has no mesh (empty string) also clear component mesh
+                if (newMeshName == "")
+                {
+                    data.meshData[m] = nullptr;
+                }
+                // if (msg has a mesh and) component either has no mesh OR a different one
+                // then fetch from library
+                else if (data.meshData[m] == nullptr || data.meshData[m]->m_name != newMeshName)
+                {
+                    std::shared_ptr<const Mesh> libMesh = ModelCache::fetch_mesh(newMeshName);
+
+                    // check if fetch was not successful
+                    if (libMesh == nullptr)
+                    {
+                        // try to import file
+                        ModelCache::ImportReceipt meshReceipt = ModelCache::import(newMeshPath);
+
+                        // confirm the msg mesh name was imported
+                        if (std::find(meshReceipt.meshNames.begin(), meshReceipt.meshNames.end(), newMeshName) != meshReceipt.meshNames.end())
+                        {
+                            // try to fetch again
+                            libMesh = ModelCache::fetch_mesh(newMeshName);
+                        }
+                    }
+
+                    // if import was empty or failed it will be nullptr, assign either way
+                    data.meshData[m] = libMesh;
+                }
+                // else names match, continue as-is
             }
-            // else names match, continue as-is
         }
 
         // Stream out Materials

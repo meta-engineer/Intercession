@@ -230,7 +230,7 @@ namespace pleep
                 RenderPacket& data = *packet_it;
 
                 // check nullptr
-                if (data.renderable.meshData == nullptr) continue;
+                if (data.renderable.meshData.empty()) continue;
 
                 m_sm.activate();
 
@@ -241,7 +241,7 @@ namespace pleep
                 }
 
                 m_sm.set_mat4("model_to_world", data.transform.get_model_transform() * data.renderable.localTransform.get_model_transform());
-                for (unsigned int i = 0; i < data.renderable.meshData->m_submeshes.size(); i++)
+                for (unsigned int i = 0; i < data.renderable.meshData.size(); i++)
                 {
                     // if there are no materials... do nothing? get debug material from ModelCache?
                     // TEMP: "highlight" will make it blackout (no materials)
@@ -251,12 +251,12 @@ namespace pleep
                     }
                     else
                     {
-                        // if there aren't enough materials for all submeshes,
-                        // the un-paired submeshes will use the last-most material
+                        // if there aren't enough materials for all meshes,
+                        // the un-paired meshes will use the last-most material
                         _set_material_textures(m_sm, data.renderable.materials[i < data.renderable.materials.size() ? i : (data.renderable.materials.size() - 1)]);
                     }
                     
-                    data.renderable.meshData->m_submeshes[i]->invoke_draw(m_sm);
+                    data.renderable.meshData[i]->invoke_draw(m_sm);
                 }
                 m_sm.deactivate();
             }
@@ -272,14 +272,11 @@ namespace pleep
                 
                 glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
 
-                std::shared_ptr<const Supermesh> supermesh = ModelCache::fetch_supermesh(data.supermeshType);
-                for (auto submesh : supermesh->m_submeshes)
-                {
-                    // material?
-                    _set_material_textures(m_sm, nullptr);
+                std::shared_ptr<const Mesh> colliderMesh = ModelCache::fetch_mesh(data.meshType);
+                // material?
+                _set_material_textures(m_sm, nullptr);
 
-                    submesh->invoke_draw(m_sm);
-                }
+                colliderMesh->invoke_draw(m_sm);
                 
                 glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
                 m_sm.deactivate();

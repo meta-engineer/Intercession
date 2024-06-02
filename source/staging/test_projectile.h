@@ -25,7 +25,7 @@ namespace pleep
         cosmos->add_component(thrown, thrown_transform);
         
         RenderableComponent thrown_renderable;
-        thrown_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        thrown_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         if (ModelCache::fetch_material("thrown_mat") == nullptr)
         {
             ModelCache::create_material("thrown_mat", std::unordered_map<TextureType, std::string>{

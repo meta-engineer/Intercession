@@ -17,7 +17,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/bloom_texture.fs"
             )
-            , m_screenSupermesh(ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::screen))
+            , m_screenMesh(ModelCache::fetch_mesh(ModelCache::BasicMeshType::screen))
         {
             // I don't need uniform buffers
         }
@@ -78,7 +78,7 @@ namespace pleep
             glBindTexture(GL_TEXTURE_2D, m_hdrScreenTextureId);
             m_sm.set_int("bloomTexture", 1);
             
-            m_screenSupermesh->m_submeshes[0]->invoke_draw(m_sm);
+            m_screenMesh->invoke_draw(m_sm);
 
             m_sm.deactivate();
         }
@@ -94,9 +94,9 @@ namespace pleep
         // screen pass needs "screenTexture" texture id from previous a relay
         ShaderManager m_sm;
 
-        // For consistency we'll use a supermesh
-        // Should have only 1 submesh: a triangulated square spanning -1 to 1 in x and y
-        std::shared_ptr<const Supermesh> m_screenSupermesh;
+        // For consistency we'll use a mesh
+        // Should be a triangulated square spanning -1 to 1 in x and y
+        std::shared_ptr<const Mesh> m_screenMesh;
 
         // input textures to display
         unsigned int m_ldrScreenTextureId = 0;

@@ -37,9 +37,12 @@ namespace pleep
         cosmos->add_component(nana, TransformComponent(glm::vec3(-20.0f, 0.0f, 20.0f)));        cosmos->get_component<TransformComponent>(nana).orientation = glm::normalize(glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         
         RenderableComponent nana_renderable;
-        nana_renderable.meshData = ModelCache::fetch_supermesh(nana_import.supermeshName);
-        // load materials in order of submeshes
-        for (const std::string matName : nana_import.supermeshMaterialNames)
+        for (const std::string meshName : nana_import.meshNames)
+        {
+            nana_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
+        }
+        // load materials in order of meshes
+        for (const std::string matName : nana_import.materialNames)
         {
             nana_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
@@ -58,9 +61,12 @@ namespace pleep
         cosmos->add_component(gamecube, TransformComponent(glm::vec3(-20.0f, 0.0f, -20.0f)));
 
         RenderableComponent gamecube_renderable;
-        gamecube_renderable.meshData = ModelCache::fetch_supermesh(gamecube_import.supermeshName);
-        // load materials in order of submeshes
-        for (const std::string matName : gamecube_import.supermeshMaterialNames)
+        for (const std::string meshName : gamecube_import.meshNames)
+        {
+            gamecube_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
+        }
+        // load materials in order of meshes
+        for (const std::string matName : gamecube_import.materialNames)
         {
             gamecube_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
@@ -88,9 +94,12 @@ namespace pleep
         cosmos->add_component(gamebox, gamebox_transform);
 
         RenderableComponent gamebox_renderable;
-        gamebox_renderable.meshData = ModelCache::fetch_supermesh(gamecube_import.supermeshName);
-        // load materials in order of submeshes
-        for (const std::string matName : gamecube_import.supermeshMaterialNames)
+        for (const std::string meshName : gamecube_import.meshNames)
+        {
+            gamebox_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
+        }
+        // load materials in order of meshes
+        for (const std::string matName : gamecube_import.materialNames)
         {
             gamebox_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
@@ -116,7 +125,7 @@ namespace pleep
         cosmos->add_component(crate, crateTransform);
 
         RenderableComponent crate_renderable;
-        crate_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        crate_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         ModelCache::create_material("crate_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/container2.png"},
             {TextureType::specular, "resources/container2_specular.png"}
@@ -143,7 +152,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(block).scale = glm::vec3(1.8f, 0.3f, 1.8f);
 
         RenderableComponent block_renderable;
-        block_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        block_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         ModelCache::create_material("block_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/bricks2.jpg"},
             {TextureType::specular, "resources/bricks2_disp.jpg"},
@@ -185,7 +194,7 @@ namespace pleep
                 cosmos->get_component<TransformComponent>(floor).scale = glm::vec3(20.0f, 20.0f, 0.05f);
                 
                 RenderableComponent floor_renderable;
-                floor_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+                floor_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
                 floor_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
                 cosmos->add_component(floor, floor_renderable);
                 
@@ -215,7 +224,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(snow).scale = glm::vec3(20.0f, 20.0f, 1.0f);
 
         RenderableComponent snow_renderable;
-        snow_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        snow_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         ModelCache::create_material("snow_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/snow-packed12-Base_Color.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
@@ -234,7 +243,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(panel1).orientation = glm::angleAxis(3.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
         
         RenderableComponent panel1_renderable;
-        panel1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        panel1_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         ModelCache::create_material("panel1_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/wood.png"},
             {TextureType::specular, "resources/wood.png"},
@@ -250,7 +259,7 @@ namespace pleep
             glm::normalize(glm::angleAxis(2.5f, glm::vec3(0.0f, 1.0f, 0.0f)));
         
         RenderableComponent panel2_renderable;
-        panel2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        panel2_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         ModelCache::create_material("panel2_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse, "resources/wood.png"},
             {TextureType::specular, "resources/wood.png"},
@@ -270,7 +279,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(ramp1).scale = glm::vec3(10.0f, 0.5f, 2.0f);
 
         RenderableComponent ramp1_renderable;
-        ramp1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp1_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         ramp1_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp1, ramp1_renderable);
 
@@ -292,7 +301,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(ramp2).scale = glm::vec3(10.0f, 0.5f, 2.0f);
 
         RenderableComponent ramp2_renderable;
-        ramp2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp2_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         ramp2_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp2, ramp2_renderable);
 
@@ -314,7 +323,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(ramp3).scale = glm::vec3(10.0f, 0.5f, 2.0f);
 
         RenderableComponent ramp3_renderable;
-        ramp3_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        ramp3_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         ramp3_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(ramp3, ramp3_renderable);
 
@@ -337,7 +346,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(teeter).scale = glm::vec3(10.0f, 0.5f, 5.0f);
 
         RenderableComponent teeter_renderable;
-        teeter_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
+        teeter_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
         teeter_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(teeter, teeter_renderable);
 
@@ -360,7 +369,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(wall1).scale = glm::vec3(60.0f, 20.0f, 1.0f);
 
         RenderableComponent wall1_renderable;
-        wall1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        wall1_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         wall1_renderable.materials.push_back(ModelCache::fetch_material("block_mat"));
         cosmos->add_component(wall1, wall1_renderable);
 
@@ -381,8 +390,8 @@ namespace pleep
         cosmos->get_component<TransformComponent>(wall2).scale = glm::vec3(60.0f, 20.0f, 1.0f);
 
         RenderableComponent wall2_renderable;
-        wall2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        wall2_renderable.materials.push_back(ModelCache::fetch_material(gamecube_import.supermeshMaterialNames.front()));
+        wall2_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
+        wall2_renderable.materials.push_back(ModelCache::fetch_material(*(gamecube_import.materialNames.begin())));
         cosmos->add_component(wall2, wall2_renderable);
 
         PhysicsComponent wall2_physics;
@@ -404,8 +413,8 @@ namespace pleep
         cosmos->get_component<TransformComponent>(wall3).scale = glm::vec3(60.0f, 20.0f, 1.0f);
 
         RenderableComponent wall3_renderable;
-        wall3_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
-        wall3_renderable.materials.push_back(ModelCache::fetch_material(nana_import.supermeshMaterialNames.front()));
+        wall3_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
+        wall3_renderable.materials.push_back(ModelCache::fetch_material(*(nana_import.materialNames.begin())));
         cosmos->add_component(wall3, wall3_renderable);
 
         PhysicsComponent wall3_physics;
@@ -430,7 +439,7 @@ namespace pleep
         cosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         
         RenderableComponent light_renderable;
-        light_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        light_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
         ModelCache::create_material("lightbulb_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse,  "resources/blending_transparent_window.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},
@@ -462,7 +471,7 @@ namespace pleep
         cosmos->get_component<LightSourceComponent>(spot).attributes = glm::vec2{0.90f, 0.70f};
 
         RenderableComponent spot_renderable;
-        spot_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        spot_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
         spot_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(spot, spot_renderable);
         // ***************************************************************************

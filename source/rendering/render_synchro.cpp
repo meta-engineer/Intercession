@@ -59,9 +59,9 @@ namespace pleep
             TransformComponent& transform = cosmos->get_component<TransformComponent>(entity);
             RenderableComponent& renderable = cosmos->get_component<RenderableComponent>(entity);
             
-            // catch null supermesh and don't even bother dynamo with it
+            // catch empty mesh vector and don't even bother dynamo with it
             // except if render colliders is true
-            //if (renderable.meshData == nullptr) continue;
+            //if (renderable.meshData.empty()) continue;
 
             // Update renderable members based on other components...
 
@@ -78,7 +78,7 @@ namespace pleep
             m_attachedRenderDynamo->submit(RenderPacket{ transform, renderable });
 
             // DEBUG: Look for collider components for debug rendering?
-            // we only need base transform, collider transform, BasicSupermeshType, and maybe Entity for colour seed?
+            // we only need base transform, collider transform, BasicMeshType, and maybe Entity for colour seed?
             if (cosmos->has_component<ColliderComponent>(entity))
             {
                 const ColliderComponent& comp = cosmos->get_component<ColliderComponent>(entity);
@@ -96,7 +96,7 @@ namespace pleep
                         m_attachedRenderDynamo->submit(DebugRenderPacket{
                             entity,
                             collider.compose_transform(transform),
-                            ModelManager::BasicSupermeshType::cube
+                            ModelManager::BasicMeshType::cube
                         });
                     }
                     break;
@@ -105,7 +105,7 @@ namespace pleep
                         m_attachedRenderDynamo->submit(DebugRenderPacket{
                             entity,
                             collider.compose_transform(transform),
-                            ModelManager::BasicSupermeshType::vector
+                            ModelManager::BasicMeshType::vector
                         });
                     }
                     break;
@@ -114,7 +114,7 @@ namespace pleep
                         m_attachedRenderDynamo->submit(DebugRenderPacket{
                             entity,
                             collider.compose_transform(transform),
-                            ModelManager::BasicSupermeshType::icosahedron
+                            ModelManager::BasicMeshType::icosahedron
                         });
                     }
                     break;

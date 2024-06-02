@@ -32,8 +32,9 @@ namespace pleep
         return true;
     }
     
-    std::shared_ptr<Material> ModelManagerFaux::_build_material(const aiMaterial* material, const std::string& materialName, const std::string& directory) 
+    std::shared_ptr<Material> ModelManagerFaux::_build_material(const aiScene* scene, const aiMaterial* material, const std::string& materialName, const std::string& directory) 
     {
+        UNREFERENCED_PARAMETER(scene);
         UNREFERENCED_PARAMETER(material);
         UNREFERENCED_PARAMETER(materialName);
         UNREFERENCED_PARAMETER(directory);
@@ -42,10 +43,9 @@ namespace pleep
         return std::make_shared<Material>();
     }
     
-    Armature ModelManagerFaux::_build_armature(const aiNode* node, const std::string& armatureName) 
+    Armature ModelManagerFaux::_build_armature(const aiNode* node)
     {
         UNREFERENCED_PARAMETER(node);
-        UNREFERENCED_PARAMETER(armatureName);
         
         // Armature will have no bones
         return Armature{};
@@ -67,39 +67,27 @@ namespace pleep
         return std::make_shared<AnimationSkeletal>();
     }
     
-    std::shared_ptr<Supermesh> ModelManagerFaux::_build_cube_supermesh() 
+    std::shared_ptr<Mesh> ModelManagerFaux::_build_cube_mesh() 
     {
-        // Supermesh will have no Meshes
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::cube),
-            ENUM_TO_STR(BasicSupermeshType::cube)
-        );
+        // Mesh will have no Meshes
+        return std::make_shared<Mesh>();
     }
     
-    std::shared_ptr<Supermesh> ModelManagerFaux::_build_quad_supermesh() 
+    std::shared_ptr<Mesh> ModelManagerFaux::_build_quad_mesh() 
     {
-        // Supermesh will have no Meshes
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::quad),
-            ENUM_TO_STR(BasicSupermeshType::quad)
-        );
+        // Mesh will have no Meshes
+        return std::make_shared<Mesh>();
     }
     
-    std::shared_ptr<Supermesh> ModelManagerFaux::_build_screen_supermesh() 
+    std::shared_ptr<Mesh> ModelManagerFaux::_build_screen_mesh() 
     {
-        // Supermesh will have no Meshes
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::screen),
-            ENUM_TO_STR(BasicSupermeshType::screen)
-        );
+        // Mesh will have no Meshes
+        return std::make_shared<Mesh>();
     }
     
-    std::shared_ptr<Supermesh> ModelManagerFaux::_build_icosahedron_supermesh() 
+    std::shared_ptr<Mesh> ModelManagerFaux::_build_icosahedron_mesh() 
     {
-        // Supermesh will have no Meshes
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::icosahedron),
-            ENUM_TO_STR(BasicSupermeshType::icosahedron)
-        );
+        // Mesh will have no Meshes
+        return std::make_shared<Mesh>();
     }
 }

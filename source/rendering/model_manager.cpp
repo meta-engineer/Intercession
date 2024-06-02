@@ -10,31 +10,41 @@ namespace pleep
     ModelManager::ImportReceipt ModelManager::import(const std::string filepath)
     {
         // hardcoded assets need to be able to use the same import pathway as 
-        // other supermeshes for ambiguous deserialization
-        if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::cube))
+        // other meshes for ambiguous deserialization
+        if (filepath == ModelManager::ENUM_TO_STR(BasicMeshType::cube))
         {
-            this->m_supermeshMap[filepath] = this->_build_cube_supermesh();
-            return ImportReceipt{filepath, filepath, {filepath}};
+            this->m_meshMap[filepath] = this->_build_cube_mesh();
+            this->m_meshMap[filepath]->m_name = filepath;
+            this->m_meshMap[filepath]->m_sourceFilepath = filepath;
+            return ImportReceipt{filepath, filepath, {{filepath,{{filepath}}}}, {filepath}};
         }
-        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::quad))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicMeshType::quad))
         {
-            this->m_supermeshMap[filepath] = this->_build_quad_supermesh();
-            return ImportReceipt{filepath, filepath, {filepath}};
+            this->m_meshMap[filepath] = this->_build_quad_mesh();
+            this->m_meshMap[filepath]->m_name = filepath;
+            this->m_meshMap[filepath]->m_sourceFilepath = filepath;
+            return ImportReceipt{filepath, filepath, {{filepath,{{filepath}}}}, {filepath}};
         }
-        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::screen))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicMeshType::screen))
         {
-            this->m_supermeshMap[filepath] = this->_build_screen_supermesh();
-            return ImportReceipt{filepath, filepath, {filepath}};
+            this->m_meshMap[filepath] = this->_build_screen_mesh();
+            this->m_meshMap[filepath]->m_name = filepath;
+            this->m_meshMap[filepath]->m_sourceFilepath = filepath;
+            return ImportReceipt{filepath, filepath, {{filepath,{{filepath}}}}, {filepath}};
         }
-        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::icosahedron))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicMeshType::icosahedron))
         {
-            this->m_supermeshMap[filepath] = this->_build_icosahedron_supermesh();
-            return ImportReceipt{filepath, filepath, {filepath}};
+            this->m_meshMap[filepath] = this->_build_icosahedron_mesh();
+            this->m_meshMap[filepath]->m_name = filepath;
+            this->m_meshMap[filepath]->m_sourceFilepath = filepath;
+            return ImportReceipt{filepath, filepath, {{filepath,{{filepath}}}}, {filepath}};
         }
-        else if (filepath == ModelManager::ENUM_TO_STR(BasicSupermeshType::vector))
+        else if (filepath == ModelManager::ENUM_TO_STR(BasicMeshType::vector))
         {
-            this->m_supermeshMap[filepath] = this->_build_vector_supermesh();
-            return ImportReceipt{filepath, filepath, {filepath}};
+            this->m_meshMap[filepath] = this->_build_vector_mesh();
+            this->m_meshMap[filepath]->m_name = filepath;
+            this->m_meshMap[filepath]->m_sourceFilepath = filepath;
+            return ImportReceipt{filepath, filepath, {{filepath,{{filepath}}}}, {filepath}};
         }
 
         // TODO: Unit testing lmao
@@ -52,7 +62,7 @@ namespace pleep
         // load in model file (it is up to user to prevent redundant import calls)
         Assimp::Importer importer;
         // aiProcess_GenSmoothNormals ?
-        const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData);
+        const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData);
         if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
         {
             PLEEPLOG_ERROR("Assimp failed to load '" + filepath + "': " + std::string(importer.GetErrorString()));
@@ -65,21 +75,21 @@ namespace pleep
         // ***********************************
 
         // check for possible assets and load into receipt
-        ImportReceipt scan = this->_scan_scene(scene, filestem);
+        ImportReceipt scan = this->_scan_scene(scene, filestem, true);
         scan.importSourceFilepath = filepath;
-        //debug_receipt(scan);
+        debug_receipt(scan);
         
         // process materials and armatures first for meshes to reference
         this->_process_materials(scene, scan, directory);
-        this->_process_armatures(scene, scan);
-        this->_process_supermesh(scene, scan);
+        this->_process_armatures(scene->mRootNode, scan);//, glm::inverse(assimp_converters::convert_matrix4(scene->mRootNode->mTransformation)));
+        this->_process_meshes(scene, scan);
         this->_process_animations(scene, scan);
 
-        // return only unique assets
-        ImportReceipt receipt = this->_scan_scene(scene, filestem, false);
+        // now all assets are cached, user can call fetch methods using receipt names
+        // return ALL assets available in scene
+        ImportReceipt receipt = this->_scan_scene(scene, filestem);
         receipt.importSourceFilepath = filepath;
         //debug_receipt(receipt);
-        // now all assets are cached, user can call fetch methods using receipt names
         return receipt;
     }
 
@@ -109,12 +119,12 @@ namespace pleep
         return true;
     }
 
-    std::shared_ptr<const Supermesh> ModelManager::fetch_supermesh(const std::string& name)
+    std::shared_ptr<const Mesh> ModelManager::fetch_mesh(const std::string& name)
     {
-        auto meshIt = this->m_supermeshMap.find(name);
-        if (meshIt == this->m_supermeshMap.end())
+        auto meshIt = this->m_meshMap.find(name);
+        if (meshIt == this->m_meshMap.end())
         {
-            PLEEPLOG_WARN("Supermesh " + name + " is not cached.");
+            PLEEPLOG_WARN("Mesh " + name + " is not cached.");
             return nullptr;
         }
         else
@@ -166,14 +176,14 @@ namespace pleep
         }
     }
     
-    std::shared_ptr<const Supermesh> ModelManager::fetch_supermesh(const ModelManager::BasicSupermeshType id)
+    std::shared_ptr<const Mesh> ModelManager::fetch_mesh(const ModelManager::BasicMeshType id)
     {
         std::string polyName = ModelManager::ENUM_TO_STR(id);
         if (polyName == "") return nullptr;
         
-        // check if basic supermesh is in cache from previous call
-        auto meshIt = this->m_supermeshMap.find(polyName);
-        if (meshIt != this->m_supermeshMap.end())
+        // check if basic mesh is in cache from previous call
+        auto meshIt = this->m_meshMap.find(polyName);
+        if (meshIt != this->m_meshMap.end())
         {
             return meshIt->second;
         }
@@ -181,7 +191,7 @@ namespace pleep
         // otherwise, since "filepath" and name are identical we can import it
         this->import(polyName);
         // and then return it in this single call
-        return this->m_supermeshMap[polyName];
+        return this->m_meshMap[polyName];
     }
 
     void ModelManager::clear_unused()
@@ -241,13 +251,13 @@ namespace pleep
 
     void ModelManager::clear_all()
     {
-        this->m_supermeshMap.clear();
+        this->m_meshMap.clear();
         this->m_materialMap.clear();
         this->m_armatureMap.clear();
         this->m_animationMap.clear();
     }
     
-    ModelManager::ImportReceipt ModelManager::_scan_scene(const aiScene* scene, const std::string& nameDefault, const bool omitDuplicates) 
+    ModelManager::ImportReceipt ModelManager::_scan_scene(const aiScene* scene, const std::string& nameDefault, const bool omitExisting) 
     {
         ImportReceipt receipt;
         receipt.importName = nameDefault;
@@ -262,14 +272,14 @@ namespace pleep
             }
             
             // check uniqueness
-            if (omitDuplicates && m_materialMap.find(matName) != m_materialMap.end())
+            if (omitExisting && (m_materialMap.count(matName) || receipt.materialNames.count(matName)))
             {
-                PLEEPLOG_WARN("Could not import " + matName + " it already exists");
-                // we could try to generate a default name here?
+                PLEEPLOG_WARN("Could not import material " + matName + ", it already exists");
+                // we could try to generate a default name here if file name is different
                 continue;
             }
 
-            receipt.materialNames.push_back(matName);
+            receipt.materialNames.insert(matName);
         }
 
         // all animations should be directly in scene
@@ -282,77 +292,81 @@ namespace pleep
             }
 
             // check uniqueness
-            if (omitDuplicates && m_animationMap.find(animName) != m_animationMap.end())
+            if (omitExisting && (m_animationMap.count(animName) || receipt.animationNames.count(animName)))
             {
-                PLEEPLOG_WARN("Could not import " + animName + " it already exists");
+                PLEEPLOG_WARN("Could not import animation " + animName + ", it already exists");
                 // we could try to generate a default name here? unless this already is the deafult name
                 continue;
             }
 
-            receipt.animationNames.push_back(animName);
+            receipt.animationNames.insert(animName);
+        }
+
+        // all meshes should be directly in scene
+        for (unsigned int i = 0; i < scene->mNumMeshes; i++)
+        {
+            std::string meshName = scene->mMeshes[i]->mName.C_Str();
+            if (meshName.empty())
+            {
+                meshName = receipt.importName + "_mesh_" + std::to_string(i);
+            }
+            
+            // check uniqueness
+            if (omitExisting && (m_meshMap.count(meshName) || receipt.meshNames.count(meshName)))
+            {
+                PLEEPLOG_WARN("Could not import mesh " + meshName + ", it already exists");
+                // we could try to generate a default name here? unless this already is the deafult name
+                continue;
+            }
+
+            receipt.meshNames.insert(meshName);
         }
 
         // can scene not have root node?
         // scene.h::255 > "There will always be at least the root node if the import was successful"
         assert(scene->mRootNode);
-        
-        // Assume only 1 supermesh, the root node
-        std::string supermeshName = scene->mRootNode->mName.C_Str();
-        if (supermeshName.empty())
-        {
-            supermeshName = receipt.importName + "_supermesh";
-        }
-        // check uniqueness
-        if (omitDuplicates && m_supermeshMap.find(supermeshName) != m_supermeshMap.end())
-        {
-            PLEEPLOG_WARN("Could not import " + supermeshName + " it already exists");
-            // we could try to generate a default name here? unless this already is the default name
-        }
-        else // omitBuplicates == false
-        {
-            receipt.supermeshName = supermeshName;
-        }
 
-        // with no supermesh, no need to get supermeshSubmeshes, supermeshMaterials, or armatures
-        if (receipt.supermeshName.empty())
-        {
-            return receipt;
-        } 
+        // in GLB export if there are multiple objects, then root node will be called ROOT
+        // so if root node has name ROOT then treat each of its children as a collection
+        // otherwise root node is the only collection
+        // Is there any better way to recognize this?
 
-        // Assume    meshes are children of root node who have >0 meshes
-        // Assume armatures are children of root node who have =0 meshes
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
-        {
-            if (scene->mRootNode->mChildren[i]->mNumMeshes > 0)
-            {
-                for (unsigned int m = 0; m < scene->mRootNode->mChildren[i]->mNumMeshes; m++)
-                {
-                    aiMesh* submesh = scene->mMeshes[scene->mRootNode->mChildren[i]->mMeshes[m]];
-                    receipt.supermeshSubmeshNames.push_back(submesh->mName.C_Str());
+        // for now we'll just forget collections and import everything flat
+        // come back later if there is a need for better organization
 
-                    aiMaterial* material = scene->mMaterials[submesh->mMaterialIndex];
-                    receipt.supermeshMaterialNames.push_back(material->GetName().C_Str());
-                }
-            }
-            else
-            {
-                std::string armatureName = scene->mRootNode->mChildren[i]->mName.C_Str();
-                if (armatureName.empty())
-                {
-                    armatureName = receipt.importName + "_armature_" + std::to_string(i);
-                }
-                // check uniqueness
-                if (omitDuplicates && m_armatureMap.find(armatureName) != m_armatureMap.end())
-                {
-                    PLEEPLOG_WARN("Could not import " + armatureName + " it already exists");
-                    // we could try to generate a default name here? unless this already is the deafult name
-                    continue;
-                }
-                receipt.armatureNames.push_back(armatureName);
-            }
-        }
+        _scan_node(scene, scene->mRootNode, receipt, omitExisting);
 
         return receipt;
+    }
+    
+    void ModelManager::_scan_node(const aiScene* scene, const aiNode* node, ImportReceipt& receipt, const bool omitExisting)
+    {
+        // check if I have meshes
+        for (unsigned int m = 0; m < node->mNumMeshes; m++)
+        {
+            aiMesh* mesh = scene->mMeshes[node->mMeshes[m]];
+
+            // do those meshes have any bones and therefore armatures?
+            if (mesh->HasBones())
+            {
+                // only need to check first bone?
+                const std::string armatureName = mesh->mBones[0]->mArmature->mName.C_Str();
+                if (omitExisting && (m_armatureMap.count(armatureName) || receipt.armatureNames.count(armatureName)))
+                {
+                    PLEEPLOG_WARN("Could not import armature " + armatureName + ", it already exists");
+                    // we could try to generate a default name here? unless this already is the default name
+                    continue;
+                }
+                receipt.armatureNames.insert(armatureName);
+            }
+        }
+
+        for (unsigned int rootIndex = 0; rootIndex < node->mNumChildren; rootIndex++)
+        {
+            aiNode* child = node->mChildren[rootIndex];
+            _scan_node(scene, child, receipt, omitExisting);
+        }
+
     }
 
     
@@ -368,17 +382,17 @@ namespace pleep
                 materialName = receipt.importName + "_material_" + std::to_string(i);
             }
             // check if key was validated by scan
-            if (std::find(receipt.materialNames.begin(), receipt.materialNames.end(), materialName) == receipt.materialNames.end()) continue;
+            if (receipt.materialNames.count(materialName) == 0) continue;
 
-            m_materialMap[materialName] = _build_material(material, materialName, directory);
+            m_materialMap[materialName] = _build_material(scene, material, materialName, directory);
             m_materialMap[materialName]->m_name = materialName;
             m_materialMap[materialName]->m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    std::shared_ptr<Material> ModelManager::_build_material(const aiMaterial *material, const std::string& materialName, const std::string& directory)
+    std::shared_ptr<Material> ModelManager::_build_material(const aiScene* scene, const aiMaterial *material, const std::string& materialName, const std::string& directory)
     {
-        //PLEEPLOG_DEBUG("Loading material: " + materialName);
+        PLEEPLOG_DEBUG("Loading material: " + materialName);
         UNREFERENCED_PARAMETER(materialName);
 
         std::unordered_map<TextureType, Texture> loadedTextures;
@@ -399,60 +413,69 @@ namespace pleep
                     PLEEPLOG_WARN("Found more than one texture of type " + std::to_string(type) + " in material " + std::string(materialName) + " with name " + std::string(str.C_Str()) + " Ignoring...");
                     continue;
                 }
+                
+                const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(str.C_Str());
 
-                std::string filepath = str.C_Str();
-                if (!directory.empty())
-                    filepath = directory + '/' + filepath;
-                //PLEEPLOG_DEBUG("Loading texture: " + filepath);
+                // nullptr means it was not embedded
+                if (embeddedTexture == nullptr)
+                {
+                    std::string filepath = str.C_Str();
+                    if (!directory.empty())
+                        filepath = directory + '/' + filepath;
+                    PLEEPLOG_DEBUG("Loading texture: " + filepath);
 
-                // weirdness to pass Texture constructor parameters
-                loadedTextures.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(static_cast<TextureType>(type)),
-                    std::forward_as_tuple(static_cast<TextureType>(type), filepath)
-                );
+                    // weirdness to pass Texture constructor parameters
+                    loadedTextures.emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(static_cast<TextureType>(type)),
+                        std::forward_as_tuple(static_cast<TextureType>(type), filepath)
+                    );
+                }
+                else
+                {
+                    std::string filepath = embeddedTexture->mFilename.C_Str();
+                    PLEEPLOG_DEBUG("Texture: " + filepath + " was embedded, LOADING THIS IS NOT IMPLEMENTED, IGNORING!");
+                }
             }
         }
 
         return std::make_shared<Material>(std::move(loadedTextures));
     }
 
-    void ModelManager::_process_armatures(const aiScene *scene, const ImportReceipt& receipt)
+    void ModelManager::_process_armatures(const aiNode *node, const ImportReceipt& receipt, const glm::mat4 parentTransform)
     {
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
+        // crawl through nodes, if we find a node name which matches armature required by receipt
+        // then create an armature from it and all descendants.
+        const std::string nodeName = node->mName.C_Str();
+        if (receipt.armatureNames.count(nodeName))
         {
-            if (scene->mRootNode->mChildren[i]->mNumMeshes > 0) continue;
-
-            std::string armatureName = scene->mRootNode->mChildren[i]->mName.C_Str();
-            if (armatureName.empty())
+            // name should be guarenteed because it is referenced by bone?
+            m_armatureMap[nodeName] = _build_armature(node);
+            m_armatureMap[nodeName].m_name = nodeName;
+            m_armatureMap[nodeName].m_sourceFilepath = receipt.importSourceFilepath;
+            // apply parent transform at this point
+            m_armatureMap[nodeName].m_relativeTransform = parentTransform;
+        }
+        else
+        {
+            const glm::mat4 nodeTransform = parentTransform * assimp_converters::convert_matrix4(node->mTransformation);
+            // keep looking
+            for (unsigned int i = 0; i < node->mNumChildren; i++)
             {
-                armatureName = receipt.importName + "_armature_" + std::to_string(i);
+                _process_armatures(node->mChildren[i], receipt, nodeTransform);
             }
-            // check if key was validated by scan
-            if (std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName) == receipt.armatureNames.end()) continue;
-
-            m_armatureMap[armatureName] = _build_armature(scene->mRootNode->mChildren[i], armatureName);
-            m_armatureMap[armatureName].m_name = armatureName;
-            m_armatureMap[armatureName].m_sourceFilepath = receipt.importSourceFilepath;
         }
     }
 
-    Armature ModelManager::_build_armature(const aiNode* node, const std::string& armatureName)
+    Armature ModelManager::_build_armature(const aiNode* node)
     {
-        //PLEEPLOG_DEBUG("Loading armature: " + armatureName);
+        const std::string nodeName = node->mName.C_Str();
+        PLEEPLOG_DEBUG("Loading armature: " + nodeName);
         std::vector<Bone> armatureBones;
 
-        // node format should be that this node is the name of the armature
-        // with only 1 child: the root bone of the actual bone heirarchy
-        //assert(node->mNumChildren == 1);
-        if (node->mNumChildren == 1)
-        {
-            // assuming every descendant node is a bone
-            _extract_bones_from_node(node->mChildren[0], armatureBones, armatureName);
-        }
-        // otherwise we'll have to investigate how armatures are formatted
+        // assume every descendant node is a bone? including ourself
+        _extract_bones_from_node(node, armatureBones, nodeName);
 
-        // assume every descendant node is a bone?
         return Armature{armatureBones};
     }
 
@@ -460,64 +483,57 @@ namespace pleep
     void ModelManager::_extract_bones_from_node(const aiNode* node, std::vector<Bone>& armatureBones, std::string armatureName)
     {
         // add this bone to map
-        unsigned int thisBoneId = static_cast<unsigned int>(armatureBones.size());
+        const unsigned int thisBoneId = static_cast<unsigned int>(armatureBones.size());
+        const std::string thisBoneName = node->mName.C_Str();
         // node name should be guarenteed to be valid for bones
-        m_boneIdMapMap[armatureName][node->mName.data] = thisBoneId;
+
         // add this node to armature
         armatureBones.push_back(
-            Bone(node->mName.data, thisBoneId, assimp_converters::convert_matrix4(node->mTransformation))
+            Bone(thisBoneName, thisBoneId, assimp_converters::convert_matrix4(node->mTransformation))
         );
-        // Bone will be missing inverse bind matrix, which is known by the submeshes
+        // Bone will be missing inverse bind matrix, which is set by the mesh nodes
 
-        m_boneArmatureMap[node->mName.data] = armatureName;
+        // link bone to armature
+        m_boneIdMapMap[armatureName][thisBoneName] = thisBoneId;
+        m_boneArmatureMap[thisBoneName] = armatureName;
 
         // recurse
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            // we know what id our child will pick before we recurse into _process_node
+            // we know what id our child will pick before we recurse so we can save them easily now
             armatureBones[thisBoneId].m_childIds.push_back(static_cast<unsigned int>(armatureBones.size()));
             _extract_bones_from_node(node->mChildren[i], armatureBones, armatureName);
         }
     }
     
-    void ModelManager::_process_supermesh(const aiScene *scene, const ImportReceipt& receipt)
+    void ModelManager::_process_meshes(const aiScene* scene, const ImportReceipt& receipt) 
     {
-        if (receipt.supermeshName.empty()) return;
-
-        // any meshes directly in root node?
-        // scan assumes submeshes are only direct children of root node...
-        std::string supermeshName = receipt.supermeshName;
-        //PLEEPLOG_DEBUG("Loading supermesh " + supermeshName);
-        
-        m_supermeshMap[supermeshName] = _build_supermesh(scene, scene->mRootNode, receipt);
-        m_supermeshMap[supermeshName]->m_name = supermeshName;
-        m_supermeshMap[supermeshName]->m_sourceFilepath = receipt.importSourceFilepath;
-    }
-    
-    std::shared_ptr<Supermesh> ModelManager::_build_supermesh(const aiScene* scene, const aiNode* node, const ImportReceipt& receipt) 
-    {
-        std::shared_ptr<Supermesh> newSupermesh = std::make_shared<Supermesh>();
-        
-        // process children
-        for (unsigned int i = 0; i < node->mNumChildren; i++)
+        for (unsigned int m = 0; m < scene->mNumMeshes; m++)
         {
-            for (unsigned int m = 0; m < node->mChildren[i]->mNumMeshes; m++)
+            aiMesh* mesh = scene->mMeshes[m];
+            std::string meshName = mesh->mName.C_Str();
+            // use same rename rules
+            if (meshName.empty())
             {
-                aiMesh* submesh = scene->mMeshes[node->mChildren[i]->mMeshes[m]];
-                newSupermesh->m_submeshes.push_back(_build_mesh(submesh, receipt));
-                // apply name outside of _build_mesh for ModelManagerFaux
-                newSupermesh->m_submeshes.back()->m_name = std::string(submesh->mName.C_Str());
-                // I don't know if both levels need to have the source, but might aswell
-                newSupermesh->m_submeshes.back()->m_sourceFilepath = receipt.importSourceFilepath;
+                meshName = receipt.importName + "_mesh_" + std::to_string(m);
             }
-        }
 
-        return newSupermesh;
+            // check for meshes only in scan
+            if (receipt.meshNames.count(meshName) <= 0 || m_meshMap.count(meshName) > 0)
+            {
+                continue;
+            }
+
+            m_meshMap[meshName] = _build_mesh(mesh, receipt);
+            // apply name outside of _build_mesh for ModelManagerFaux
+            m_meshMap[meshName]->m_name = meshName;
+            m_meshMap[meshName]->m_sourceFilepath = receipt.importSourceFilepath;
+        }
     }
 
     std::shared_ptr<Mesh> ModelManager::_build_mesh(const aiMesh *mesh, const ImportReceipt& receipt)
     {
-        //PLEEPLOG_DEBUG("Loading mesh " + std::string(mesh->mName.C_Str()));
+        PLEEPLOG_DEBUG("Loading mesh " + std::string(mesh->mName.C_Str()));
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
 
@@ -589,26 +605,29 @@ namespace pleep
 
     void ModelManager::_extract_bone_weights_for_vertices(std::vector<Vertex> &dest, const aiMesh *src, const ImportReceipt& receipt)
     {
+        //PLEEPLOG_DEBUG("Mesh has bones: " + std::to_string(src->mNumBones));
         // parse through assimp bone list
         for (unsigned int boneIndex = 0; boneIndex < src->mNumBones; boneIndex++)
         {
             aiBone* boneData = src->mBones[boneIndex];
-            std::string boneName = boneData->mName.C_Str();
-            //PLEEPLOG_DEBUG("Loading bone: " + boneName);
+            // use bone name or bone->mNode name? We use node name elsewhere
+            std::string boneName = boneData->mNode->mName.C_Str();
+            // PLEEPLOG_DEBUG("Found bone: " + boneName);
 
             // find bone armature
             std::string armatureName = boneData->mArmature->mName.C_Str();
-            // check if armature exists
-            auto armatureIt = m_armatureMap.find(armatureName);
-            if (armatureIt == m_armatureMap.end())
+            //PLEEPLOG_DEBUG("Found armature: " + armatureName);
+            // TODO: empty armature name?
+
+            // check if armature exists (created earlier this import)
+            if (m_armatureMap.count(armatureName) == 0)
             {
                 PLEEPLOG_WARN("Armature " + armatureName + " for bone doesn't exist?");
                 continue;
             }
 
             // check if armature is part of THIS import
-            auto armatureReceiptIt = std::find(receipt.armatureNames.begin(), receipt.armatureNames.end(), armatureName);
-            if (armatureReceiptIt == receipt.armatureNames.end())
+            if (receipt.armatureNames.count(armatureName) == 0)
             {
                 PLEEPLOG_WARN("Armature " + armatureName + " isn't part of this import?");
                 continue;
@@ -623,16 +642,17 @@ namespace pleep
             }
             // get bone id
             unsigned int boneId = boneIdIt->second;
+            // PLEEPLOG_DEBUG("Which is Id: " + std::to_string(boneId));
 
             // while we're here, set mesh to bone transform in armature
-            //PLEEPLOG_DEBUG("Setting bone transform in armature: " + armatureName);
+            // PLEEPLOG_DEBUG("Setting bone transform in armature: " + armatureName);
             m_armatureMap[armatureName].m_bones[boneId].m_bindTransform = assimp_converters::convert_matrix4(boneData->mOffsetMatrix);
 
             // now to actually set the weights...
             // fetch corresponding weight per vertex for *this* bone
             aiVertexWeight* vertexWeights = boneData->mWeights;
 
-            //PLEEPLOG_DEBUG("Setting weights: " + std::to_string(boneData->mNumWeights));
+            // PLEEPLOG_DEBUG("Setting weights: " + std::to_string(boneData->mNumWeights));
             for (unsigned int weightIndex = 0; weightIndex < boneData->mNumWeights; weightIndex++)
             {
                 // indices in our vertex array SHOULD match ai indices
@@ -659,7 +679,7 @@ namespace pleep
             {
                 animationName = receipt.importName + "_animation_" + std::to_string(i);
             }
-            //PLEEPLOG_DEBUG("Loading anime-tion " + animationName);
+            PLEEPLOG_DEBUG("Loading anime-tion " + animationName);
 
             m_animationMap[animationName] = _build_animation(animation);
 
@@ -678,44 +698,46 @@ namespace pleep
         // For each boneId, extract each keyframe
         for (unsigned int channelId = 0; channelId < animation->mNumChannels; channelId++)
         {
+            const aiNodeAnim* nodeAnim = animation->mChannels[channelId];
             //PLEEPLOG_DEBUG("Fetching channel " + std::to_string(channelId));
-            const std::string boneName = animation->mChannels[channelId]->mNodeName.data;
+            const std::string boneName = nodeAnim->mNodeName.C_Str();
             //PLEEPLOG_DEBUG("Fetching bone " + boneName);
             const std::string armatureName = m_boneArmatureMap[boneName];
             //PLEEPLOG_DEBUG("Fetching armature " + armatureName);
 
             // channels indices do not align with bone indices
             // so we need to lookup its real boneId
-            unsigned int boneId = m_boneIdMapMap[armatureName][boneName];
+            const unsigned int boneId = m_boneIdMapMap[armatureName][boneName];
 
-            //PLEEPLOG_DEBUG("Loading keyframes for: " + boneName);
-
-            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumPositionKeys; t++)
+            //PLEEPLOG_DEBUG("Loading " + std::to_string(nodeAnim->mNumPositionKeys) + " position keyframes for: " + boneName);
+            for (unsigned int t = 0; t < nodeAnim->mNumPositionKeys; t++)
             {
                 newAnimation->m_posKeyframes[boneId].push_back({
-                    assimp_converters::convert_vec3(animation->mChannels[channelId]->mPositionKeys[t].mValue),
-                    animation->mChannels[channelId]->mPositionKeys[t].mTime
-            });
-            }
-            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumRotationKeys; t++)
-            {
-                newAnimation->m_rotKeyframes[boneId].push_back({
-                    assimp_converters::convert_quat(animation->mChannels[channelId]->mRotationKeys[t].mValue),
-                    animation->mChannels[channelId]->mRotationKeys[t].mTime
+                    assimp_converters::convert_vec3(nodeAnim->mPositionKeys[t].mValue),
+                    nodeAnim->mPositionKeys[t].mTime
                 });
             }
-            for (unsigned int t = 0; t < animation->mChannels[channelId]->mNumScalingKeys; t++)
+            //PLEEPLOG_DEBUG("Loading " + std::to_string(nodeAnim->mNumRotationKeys) + " rotation keyframes for: " + boneName);
+            for (unsigned int t = 0; t < nodeAnim->mNumRotationKeys; t++)
+            {
+                newAnimation->m_rotKeyframes[boneId].push_back({
+                    assimp_converters::convert_quat(nodeAnim->mRotationKeys[t].mValue),
+                    nodeAnim->mRotationKeys[t].mTime
+                });
+            }
+            //PLEEPLOG_DEBUG("Loading " + std::to_string(nodeAnim->mNumScalingKeys) + " scaling keyframes for: " + boneName);
+            for (unsigned int t = 0; t < nodeAnim->mNumScalingKeys; t++)
             {
                 newAnimation->m_sclKeyframes[boneId].push_back({
-                    assimp_converters::convert_vec3(animation->mChannels[channelId]->mScalingKeys[t].mValue),
-                    animation->mChannels[channelId]->mScalingKeys[t].mTime
+                    assimp_converters::convert_vec3(nodeAnim->mScalingKeys[t].mValue),
+                    nodeAnim->mScalingKeys[t].mTime
                 });
             }
         }
         return newAnimation;
     }
 
-    std::shared_ptr<Supermesh> ModelManager::_build_cube_supermesh() 
+    std::shared_ptr<Mesh> ModelManager::_build_cube_mesh() 
     {
         // generate cube mesh data
         std::vector<Vertex>       vertices;
@@ -792,14 +814,10 @@ namespace pleep
             indices.push_back(CUBE2_INDICES[i]);
         }
 
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::cube),
-            ENUM_TO_STR(BasicSupermeshType::cube),
-            std::make_shared<Mesh>(vertices, indices)
-        );
+        return std::make_shared<Mesh>(vertices, indices);
     }
     
-    std::shared_ptr<Supermesh> ModelManager::_build_quad_supermesh() 
+    std::shared_ptr<Mesh> ModelManager::_build_quad_mesh() 
     {
         // generate quad mesh data
         std::vector<Vertex>       vertices;
@@ -835,14 +853,10 @@ namespace pleep
             indices.push_back(QUAD_INDICES[i]);
         }
 
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::quad),
-            ENUM_TO_STR(BasicSupermeshType::quad),
-            std::make_shared<Mesh>(vertices, indices)
-        );
+        return std::make_shared<Mesh>(vertices, indices);
     }
     
-    std::shared_ptr<Supermesh> ModelManager::_build_screen_supermesh() 
+    std::shared_ptr<Mesh> ModelManager::_build_screen_mesh() 
     {
         // generate screen plane mesh data
         std::vector<Vertex>       vertices;
@@ -878,14 +892,10 @@ namespace pleep
             indices.push_back(SCREEN_INDICES[i]);
         }
 
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::screen),
-            ENUM_TO_STR(BasicSupermeshType::screen),
-            std::make_shared<Mesh>(vertices, indices)
-        );
+        return std::make_shared<Mesh>(vertices, indices);
     }
     
-    std::shared_ptr<Supermesh> ModelManager::_build_icosahedron_supermesh() 
+    std::shared_ptr<Mesh> ModelManager::_build_icosahedron_mesh() 
     {
         /*
         The vertices of an icosahedron centered at the origin with 
@@ -968,14 +978,10 @@ namespace pleep
             indices.push_back(ICOSA_INDICES[i]);
         }
 
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::icosahedron),
-            ENUM_TO_STR(BasicSupermeshType::icosahedron),
-            std::make_shared<Mesh>(vertices, indices)
-        );
+        return std::make_shared<Mesh>(vertices, indices);
     }
     
-    std::shared_ptr<Supermesh> ModelManager::_build_vector_supermesh()
+    std::shared_ptr<Mesh> ModelManager::_build_vector_mesh()
     {
         // generate pyramid mesh data
         std::vector<Vertex>       vertices;
@@ -1016,11 +1022,7 @@ namespace pleep
             indices.push_back(VECTOR_INDICES[i]);
         }
 
-        return std::make_shared<Supermesh>(
-            ENUM_TO_STR(BasicSupermeshType::vector),
-            ENUM_TO_STR(BasicSupermeshType::vector),
-            std::make_shared<Mesh>(vertices, indices)
-        );
+        return std::make_shared<Mesh>(vertices, indices);
     }
 
     void ModelManager::debug_scene(const aiScene *scene)
@@ -1031,6 +1033,7 @@ namespace pleep
         PLEEPLOG_DEBUG("    textures: " + std::to_string(scene->mNumTextures));
         PLEEPLOG_DEBUG("    animations: " + std::to_string(scene->mNumAnimations));
         
+        PLEEPLOG_DEBUG("Root node:");
         debug_nodes(scene, scene->mRootNode);
     }
 
@@ -1073,14 +1076,35 @@ namespace pleep
     {
         PLEEPLOG_DEBUG("Import receipt: " + receipt.importName);
         PLEEPLOG_DEBUG("from file: " + receipt.importSourceFilepath);
-        PLEEPLOG_DEBUG("Supermesh name: " + receipt.supermeshName);
-        PLEEPLOG_DEBUG("Supermesh submesh names:");
-        for (auto name : receipt.supermeshSubmeshNames)
+/* 
+        PLEEPLOG_DEBUG("Collection names:");
+        for (auto pair : receipt.collections)
         {
-            PLEEPLOG_DEBUG("    " + name);
+            PLEEPLOG_DEBUG("    " + pair.first);
+            PLEEPLOG_DEBUG("     Mesh names:");
+            for (auto name : pair.second.meshNames)
+            {
+                PLEEPLOG_DEBUG("        " + name);
+            }
+            PLEEPLOG_DEBUG("     Material names:");
+            for (auto name : pair.second.materialNames)
+            {
+                PLEEPLOG_DEBUG("        " + name);
+            }
+            PLEEPLOG_DEBUG("     Armature names:");
+            for (auto name : pair.second.armatureNames)
+            {
+                PLEEPLOG_DEBUG("        " + name);
+            }
+            PLEEPLOG_DEBUG("     Animation names:");
+            for (auto name : pair.second.animationNames)
+            {
+                PLEEPLOG_DEBUG("        " + name);
+            }
         }
-        PLEEPLOG_DEBUG("Supermesh Material names:");
-        for (auto name : receipt.supermeshMaterialNames)
+*/
+        PLEEPLOG_DEBUG("All Mesh names:");
+        for (auto name : receipt.meshNames)
         {
             PLEEPLOG_DEBUG("    " + name);
         }
@@ -1089,12 +1113,12 @@ namespace pleep
         {
             PLEEPLOG_DEBUG("    " + name);
         }
-        PLEEPLOG_DEBUG("Armature names:");
+        PLEEPLOG_DEBUG("All Armature names:");
         for (auto name : receipt.armatureNames)
         {
             PLEEPLOG_DEBUG("    " + name);
         }
-        PLEEPLOG_DEBUG("Animation names:");
+        PLEEPLOG_DEBUG("All Animation names:");
         for (auto name : receipt.animationNames)
         {
             PLEEPLOG_DEBUG("    " + name);

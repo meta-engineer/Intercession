@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "logging/pleep_log.h"
 #include "texture.h"
 #include "shader_manager.h"
 
@@ -42,6 +43,12 @@ namespace pleep
         // finds next disabled bone, and sets id and weight. Sets nothing if all 4 are valid bones
         inline void set_bone_data(int boneId, float weight)
         {
+            if (weight <= 0.0f)
+            {
+                // ignore bones with 0 weight, just waste a slot
+                //PLEEPLOG_WARN("Tried to set boneId " + std::to_string(boneId) + " to weird weight " + std::to_string(weight));
+                return;
+            }
             for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
             {
                 if (boneIds[i] < 0)
@@ -90,7 +97,7 @@ namespace pleep
 
         // Array Buffer Object, Vertex Buffer Object, Element Buffer Object
         unsigned int VAO_ID, VBO_ID, EBO_ID = 0;
-        //unsigned int m_vaoId, m_vboId, m_eboId;
+        bool m_isGlSetup = false;
 
 
         // Store struct member data into GL objects and retain IDs

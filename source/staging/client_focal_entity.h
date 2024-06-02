@@ -20,28 +20,33 @@ namespace pleep
         UNREFERENCED_PARAMETER(eventBroker);
 
         // ***************************************************************************
-        //ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Olimar.dae");
-        ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession\\resources\\vampire\\dancing_vampire3.dae");
+        // ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Pikmin (Yellow).obj");
+        // ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\yellow.glb");
+        ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\olimar.glb");
+        // ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\boblampclean.md5mesh");
+        // ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession\\resources\\vampire\\dancing_vampire3.dae");
 
-        ModelManager::debug_receipt(olimar_import);
+        //ModelManager::debug_receipt(olimar_import);
 
         Entity pc = cosmos->create_entity();
         TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;
-        //pc_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::cube);
-        pc_renderable.meshData = ModelCache::fetch_supermesh(olimar_import.supermeshName);
-        for (auto matname : olimar_import.supermeshMaterialNames)
+        //pc_renderable.meshData = ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube);
+        for (auto meshname : olimar_import.meshNames)
+            pc_renderable.meshData.push_back(ModelCache::fetch_mesh(meshname));
+        for (auto matname : olimar_import.materialNames)
             pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
-        pc_renderable.localTransform.origin.y = -0.5f;
-        pc_renderable.localTransform.scale = { 0.015f, 0.015f, 0.015f };
-        pc_renderable.armature = ModelCache::fetch_armature(olimar_import.armatureNames[0]);
+        //pc_renderable.localTransform.origin.y = -0.5f;
+        pc_renderable.localTransform.scale = { 0.2f, 0.2f, 0.2f };
+        if (olimar_import.armatureNames.size())
+            pc_renderable.armature = ModelCache::fetch_armature(*(olimar_import.armatureNames.begin()));
         cosmos->add_component(pc, pc_renderable);
 
         AnimationComponent pc_animation;
-        pc_animation.m_currentAnimation = olimar_import.animationNames[0];
-        pc_animation.animations[olimar_import.animationNames[0]] = ModelCache::fetch_animation(olimar_import.animationNames[0]);
+        for (auto animeName : olimar_import.animationNames)
+            pc_animation.animations[animeName] = ModelCache::fetch_animation(animeName);
         cosmos->add_component(pc, pc_animation);
 
         PhysicsComponent pc_physics;

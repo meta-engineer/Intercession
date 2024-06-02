@@ -13,9 +13,12 @@ namespace pleep
 
     Mesh::~Mesh()
     {
-        glDeleteBuffers(1, &EBO_ID);
-        glDeleteBuffers(1, &VBO_ID);
+        // can only call GL functions if GL has been setup
+        if (!m_isGlSetup) return;
+
         glDeleteBuffers(1, &VAO_ID);
+        glDeleteBuffers(1, &VBO_ID);
+        glDeleteBuffers(1, &EBO_ID);
     }
 
     void Mesh::_setup()
@@ -56,13 +59,16 @@ namespace pleep
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        m_isGlSetup = true;
     }
 
     void Mesh::invoke_draw(ShaderManager& sm) const
     {
+        if (!m_isGlSetup) return;
         // textures should already be set by relay
 
-        // TODO: Save some cycles by assuming sm will be activated?
+        // Save some cycles by assuming sm will be activated?
         UNREFERENCED_PARAMETER(sm);
         //sm.activate();
 
@@ -75,6 +81,7 @@ namespace pleep
 
     void Mesh::invoke_instanced_draw(ShaderManager& sm, size_t amount) const
     {
+        if (!m_isGlSetup) return;
         if (amount == 0) return;
         // textures should already be set by relay
 
@@ -91,6 +98,7 @@ namespace pleep
 
     void Mesh::setup_instance_transform_attrib_array(unsigned int offset)
     {
+        if (!m_isGlSetup) return;
         glBindVertexArray(VAO_ID);
 
         // Meshes already use 0(positions), 1(normals), 2(texture coords), 3(tangents)

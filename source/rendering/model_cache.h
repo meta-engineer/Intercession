@@ -6,7 +6,7 @@
 
 #include "rendering/model_manager.h"
 
-#include "rendering/supermesh.h"
+#include "rendering/mesh.h"
 #include "rendering/material.h"
 #include "rendering/armature.h"
 #include "rendering/animation_skeletal.h"
@@ -23,8 +23,8 @@ namespace pleep
 
         // "facaditory" duplicate ModelManager's ImportReceipt type
         using ImportReceipt = ModelManager::ImportReceipt;
-        // "facaditory" duplicate ModelManager's BasicSupermeshType type
-        using BasicSupermeshType = ModelManager::BasicSupermeshType;
+        // "facaditory" duplicate ModelManager's BasicMeshType type
+        using BasicMeshType = ModelManager::BasicMeshType;
 
         // Load all assets from given filepath into cache
         inline ImportReceipt import(std::string filepath)
@@ -40,19 +40,19 @@ namespace pleep
         // ***** Fetch Methods *****
         // If asset exists in cache return shallow, const, shared instance from cache
         // (or a deep copy for armatures)
-        inline std::shared_ptr<const Supermesh>   fetch_supermesh(const std::string& name)
-        { return g_modelManager->fetch_supermesh(name); }
-        inline std::shared_ptr<const Material>    fetch_material(const std::string& name)
+        inline std::shared_ptr<const Mesh>              fetch_mesh(const std::string& name)
+        { return g_modelManager->fetch_mesh(name); }
+        inline std::shared_ptr<const Material>          fetch_material(const std::string& name)
         { return g_modelManager->fetch_material(name); }
-        inline Armature                           fetch_armature(const std::string& name)
+        inline Armature                                 fetch_armature(const std::string& name)
         { return g_modelManager->fetch_armature(name); }
         inline std::shared_ptr<const AnimationSkeletal> fetch_animation(const std::string& name)
         { return g_modelManager->fetch_animation(name); }
 
-        // convenience method to fetch or generate-and-fetch hardcoded supermeshes
-        // Serialized hardcoded supermeshes will use their ENUM_TO_STR name to be fetched
-        inline std::shared_ptr<const Supermesh> fetch_supermesh(BasicSupermeshType id)
-        { return g_modelManager->fetch_supermesh(id); }
+        // convenience method to fetch or generate-and-fetch hardcoded basic meshes
+        // Serialized hardcoded basic meshes will use their ENUM_TO_STR name to be fetched
+        inline std::shared_ptr<const Mesh> fetch_mesh(BasicMeshType id)
+        { return g_modelManager->fetch_mesh(id); }
 
         // Clear cache of all models not used anywhere in the Cosmos
         // Shared pointers will remain with users whos already fetched them

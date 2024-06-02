@@ -22,6 +22,8 @@ namespace pleep
 
         // nodes/bones ordered by index (corresponding to vertex boneIds)
         std::vector<Bone> m_bones;
+        // accumulated node transform from root node to first actual bone node
+        glm::mat4 m_relativeTransform = glm::mat4(1.0f);
 
         // Name given for this armature
         std::string m_name;

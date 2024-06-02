@@ -61,17 +61,15 @@ namespace pleep
         cosmos->get_component<TransformComponent>(frog).scale = glm::vec3(0.001f, 0.001f, 0.001f);
         
         RenderableComponent frog_renderable;
-        if (!frog_import.supermeshNames.empty())
+        for (std::string meshName : frog_import.meshNames)
         {
-            frog_renderable.meshData = ModelCache::fetch_supermesh(frog_import.supermeshNames.front());
+            frog_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
         }
-        if (!frog_import.supermeshMaterialsNames.empty())
+        for (std::string matName : frog_import.materialNames)
         {
-            for (std::string matName : frog_import.supermeshMaterialsNames.front())
-            {
-                frog_renderable.materials.push_back(ModelCache::fetch_material(matName));
-            }
+            frog_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
+
         //std::shared_ptr<Model> frog_model = model_builder::create_cube("resources/container.jpg");
         cosmos->add_component(frog, frog_renderable);
         PhysicsComponent frog_physics;
@@ -119,7 +117,7 @@ namespace pleep
         cosmos->add_component(light, LightSourceComponent(glm::vec3(4.0f, 4.0f, 4.0f)));
         
         RenderableComponent light_renderable;
-        light_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        light_renderable.meshData = ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron);
         ModelCache::create_material("lightbulb_mat", std::unordered_map<TextureType, std::string>{
             {TextureType::diffuse,  "resources/blending_transparent_window.png"},
             {TextureType::specular, "resources/snow-packed12-Specular.png"},

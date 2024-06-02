@@ -29,7 +29,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(floor_1).scale = glm::vec3(24.0f, 24.0f, 2.0f);
         
         RenderableComponent floor_1_renderable;
-        floor_1_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        floor_1_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         floor_1_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
         cosmos->add_component(floor_1, floor_1_renderable);
         
@@ -54,7 +54,7 @@ namespace pleep
         cosmos->get_component<TransformComponent>(floor_2).scale = glm::vec3(24.0f, 24.0f, 0.05f);
         
         RenderableComponent floor_2_renderable;
-        floor_2_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::quad);
+        floor_2_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::quad));
         floor_2_renderable.materials.push_back(ModelCache::fetch_material("floor_mat"));
         cosmos->add_component(floor_2, floor_2_renderable);
         
@@ -82,9 +82,12 @@ namespace pleep
         cosmos->add_component(gamebox, gamebox_transform);
 
         RenderableComponent gamebox_renderable;
-        gamebox_renderable.meshData = ModelCache::fetch_supermesh(gamecube_import.supermeshName);
-        // load materials in order of submeshes
-        for (const std::string matName : gamecube_import.supermeshMaterialNames)
+        for (const std::string matName : gamecube_import.meshNames)
+        {
+            gamebox_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
+        }
+        // load materials in order of meshes
+        for (const std::string matName : gamecube_import.materialNames)
         {
             gamebox_renderable.materials.push_back(ModelCache::fetch_material(matName));
         }
@@ -125,7 +128,7 @@ namespace pleep
         cosmos->get_component<LightSourceComponent>(spot).attributes = glm::vec2{0.90f, 0.70f};
 
         RenderableComponent spot_renderable;
-        spot_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        spot_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
         spot_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(spot, spot_renderable);
         // *************************************************************************** */
@@ -136,8 +139,9 @@ namespace pleep
         cosmos->add_component(picto, TransformComponent(glm::vec3(-12.6f, 4.0f, 0.0f)));
 
         RenderableComponent picto_renderable;
-        picto_renderable.meshData = ModelCache::fetch_supermesh(picto_import.supermeshName);
-        for (const std::string matName : picto_import.supermeshMaterialNames)
+        for (const std::string meshName : picto_import.meshNames)
+            picto_renderable.meshData.push_Back(ModelCache::fetch_mesh(meshName));
+        for (const std::string matName : picto_import.materialNames)
             picto_renderable.materials.push_back(ModelCache::fetch_material(matName));
         picto_renderable.localTransform.scale = { 0.5f, 0.5f, 0.5f };
         cosmos->add_component(picto, picto_renderable);
@@ -155,8 +159,9 @@ namespace pleep
         cosmos->add_component(meteor, meteor_transform);
 
         RenderableComponent meteor_renderable;
-        meteor_renderable.meshData = ModelCache::fetch_supermesh(meteor_import.supermeshName);
-        for (const std::string matName : meteor_import.supermeshMaterialNames)
+        for (const std::string meshName : meteor_import.meshNames)
+            meteor_renderable.meshData.push_back(ModelCache::fetch_mesh(meshName));
+        for (const std::string matName : meteor_import.materialNames)
             meteor_renderable.materials.push_back(ModelCache::fetch_material(matName));
         meteor_renderable.localTransform.scale = { 0.5f, 0.5f, 0.5f };
         cosmos->add_component(meteor, meteor_renderable);
@@ -170,7 +175,7 @@ namespace pleep
         cosmos->add_component(point, LightSourceComponent(glm::vec3(2.0f, 3.0f, 6.0f)));
 
         RenderableComponent point_renderable;
-        point_renderable.meshData = ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::icosahedron);
+        point_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
         point_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(point, point_renderable);
         

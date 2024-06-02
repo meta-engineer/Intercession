@@ -18,7 +18,7 @@ namespace pleep
                 "source/shaders/screen_texture.vs",
                 "source/shaders/gaussian_1d.fs"
             )
-            , m_screenSupermesh(ModelCache::fetch_supermesh(ModelCache::BasicSupermeshType::screen))
+            , m_screenMesh(ModelCache::fetch_mesh(ModelCache::BasicMeshType::screen))
         {
             // I don't need uniform buffers
 
@@ -137,7 +137,7 @@ namespace pleep
                 m_isHorizontalPass = !m_isHorizontalPass;
 
                 glBindTexture(GL_TEXTURE_2D, nextTex);
-                m_screenSupermesh->m_submeshes[0]->invoke_draw(m_sm);
+                m_screenMesh->invoke_draw(m_sm);
 
                 // setup for next pass
                 nextFbo = m_bloomFboIds[(i+1) % 2];
@@ -151,9 +151,8 @@ namespace pleep
         // blur shader to process hdr texture into bloom texture
         ShaderManager m_sm;
         
-        // For consistency we'll use a supermesh
-        // Should have only 1 submesh: a triangulated square spanning -1 to 1 in x and y
-        std::shared_ptr<const Supermesh> m_screenSupermesh;
+        // needs to have normalized corner coordinates
+        std::shared_ptr<const Mesh> m_screenMesh;
         
         // input texture to process (passed in by configuration)
         unsigned int m_toBloomTextureId;

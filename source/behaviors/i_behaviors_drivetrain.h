@@ -47,7 +47,7 @@ namespace pleep
         virtual void on_collision_exit();
         
         // Stores the type of behaviors loaded here from library for serialization
-        // this matches the pattern of supermesh's m_sourceFilename.
+        // this matches the pattern of mesh's m_sourceFilename.
         // TODO this is public (for serializer access) and perhaps unsafe
         //     maybe make this protected and add operators/library as friends?
         BehaviorsLibrary::BehaviorsType m_libraryType = BehaviorsLibrary::BehaviorsType::none;

@@ -15,7 +15,7 @@ namespace pleep
     {
         Entity entity;
         glm::mat4 transform;
-        ModelManager::BasicSupermeshType supermeshType;
+        ModelManager::BasicMeshType meshType;
     };
 }
 
