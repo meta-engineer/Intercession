@@ -424,6 +424,7 @@ namespace pleep
                         filepath = directory + '/' + filepath;
                     PLEEPLOG_DEBUG("Loading texture: " + filepath);
 
+                    // create Texture without copying
                     // weirdness to pass Texture constructor parameters
                     loadedTextures.emplace(
                         std::piecewise_construct,
@@ -434,7 +435,20 @@ namespace pleep
                 else
                 {
                     std::string filepath = embeddedTexture->mFilename.C_Str();
-                    PLEEPLOG_DEBUG("Texture: " + filepath + " was embedded, LOADING THIS IS NOT IMPLEMENTED, IGNORING!");
+                    PLEEPLOG_DEBUG("Loading EMBEDDED Texture: " + filepath);
+
+                    // extract texture data directly
+                    const unsigned int texWidth = embeddedTexture->mWidth;
+                    const unsigned int texHeight = embeddedTexture->mHeight;
+                    const unsigned int texChannels = 4; // TODO: add achFormatHint[5-7] as integers?
+                    // use pcData directly and let assimp handle scene memory?
+                    aiTexel* texData = embeddedTexture->pcData;
+
+                    loadedTextures.emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(static_cast<TextureType>(type)),
+                        std::forward_as_tuple(static_cast<TextureType>(type), texWidth, texHeight, texChannels, reinterpret_cast<char*>(texData))
+                    );
                 }
             }
         }

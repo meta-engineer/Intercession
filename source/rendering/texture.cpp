@@ -153,5 +153,17 @@ namespace pleep
         glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 
+    Texture::Texture(const TextureType type, const unsigned int width, const unsigned int height, const unsigned int channels, const char* data)
+    {
+        UNREFERENCED_PARAMETER(type);
+        UNREFERENCED_PARAMETER(width);
+        UNREFERENCED_PARAMETER(height);
+        UNREFERENCED_PARAMETER(channels);
+        UNREFERENCED_PARAMETER(data);
+        PLEEPLOG_DEBUG("EMBEDDED TEXTURE LOADING IS NOT IMPLEMENTED, IGNORING!");
+
+        // how do I know to load texture from embedded source instead of independant image during deserialization?
+        
+    }
 
 }

@@ -276,6 +276,7 @@ namespace pleep
                 {
                     AnimationComponent& anime = cosmos->get_component<AnimationComponent>(entity);
 
+                    // map biped state to animation state
                     switch (biped.state)
                     {
                     case BipedState::stand:
@@ -289,7 +290,7 @@ namespace pleep
                         // TEMP: how to get walking animation's expected ground speed?
                         // should have some standard like 1m/s?
                         // also depends on mesh transform scale
-                        anime.m_currentTime += glm::length(planarVelocity) * deltaTime / 4.0;
+                        anime.m_currentTime += glm::length(planarVelocity) * deltaTime / 3.0;
                         // TEMP: how to map animation names to state enum?
                         if (anime.animations.size())
                         {
@@ -312,10 +313,15 @@ namespace pleep
                     }
                 }
 
+                // Shit tier Inverse Kinemetics
                 if (cosmos->has_component<RenderableComponent>(entity))
                 {
                     cosmos->get_component<RenderableComponent>(entity).localTransform.origin.y = -1.0f * biped.groundDist;
                 }
+
+                // tilt slightly towards acceleration
+                glm::vec3 tiltAxis = glm::cross(physics.acceleration, biped.supportAxis);
+                physics.angularAcceleration += tiltAxis * 0.5f;
             }
             catch(const std::exception& err)
             {

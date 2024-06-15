@@ -39,7 +39,7 @@ namespace pleep
         for (auto matname : olimar_import.materialNames)
             pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
         //pc_renderable.localTransform.origin.y = -0.5f;
-        pc_renderable.localTransform.scale = { 0.2f, 0.2f, 0.2f };
+        pc_renderable.localTransform.scale = { 0.15f, 0.15f, 0.15f };
         if (olimar_import.armatureNames.size())
             pc_renderable.armature = ModelCache::fetch_armature(*(olimar_import.armatureNames.begin()));
         cosmos->add_component(pc, pc_renderable);

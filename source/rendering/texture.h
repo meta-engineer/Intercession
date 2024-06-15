@@ -91,6 +91,12 @@ namespace pleep
         Texture(TextureType type, const std::string& filepath);
         // load cubemap texture from multiple files (ordered by GL_TEXTURE_CUBE_MAP_...)
         Texture(const std::vector<std::string> filepaths);
+        // create texture from preloaded data
+        Texture(const TextureType type, 
+                const unsigned int width, 
+                const unsigned int height, 
+                const unsigned int channels, 
+                const char* data);
         // copying a Texture would mean GPU memory could be freed by the copy
         Texture(const Texture&) = delete;
         // Texture must free its owned GPU memory
