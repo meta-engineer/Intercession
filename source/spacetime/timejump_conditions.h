@@ -25,6 +25,18 @@ namespace pleep
         }
     };
 
+    // Create jumpconditions from entities current state in cosmos
+    inline TimejumpConditions build_jump_conditions(Entity e, std::shared_ptr<Cosmos> cosmos)
+    {
+        TimejumpConditions newConditions{ 0 };
+        if (cosmos->has_component<TransformComponent>(e))
+        {
+            newConditions.origin = cosmos->get_component<TransformComponent>(e).origin;
+        }
+
+        return newConditions;
+    }
+
     // DESTRUCTIVELY extracts data from a jump message to create conditions for congruency
     // Assumes data is fully serialized and packed with params
     // cosmos is relative to components in data

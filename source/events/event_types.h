@@ -279,6 +279,16 @@ namespace pleep
                 {
                     TimesliceId sourceTimeslice;
                 };
+            // indicates a paradox is being resolved and this entity should merged in from the currently existing worldline
+            // (it should also increment worldlines) 
+            const EventId WORLDLINE_SHIFT = __LINE__;
+                struct WORLDLINE_SHIFT_params
+                {
+                    // entity should(?) always be a chainlink 0 entity
+                    Entity entity;
+                    // sign of any packed data
+                    Signature sign;
+                };
         } // namespace parallel
     }
 }

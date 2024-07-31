@@ -72,6 +72,14 @@ namespace pleep
         {
             UNREFERENCED_PARAMETER(sourceTimestreams);
         }
+        
+        // for servers: accessor for context to push special events WHEN IT KNOWS IT IS SAFE!
+        // for clients: N/A
+        virtual void push_to_linked_timestream(EventMessage extraEvent, Entity relevantEntity)
+        {
+            UNREFERENCED_PARAMETER(extraEvent);
+            UNREFERENCED_PARAMETER(relevantEntity);
+        }
     };
 }
 

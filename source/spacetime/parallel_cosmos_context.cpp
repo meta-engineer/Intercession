@@ -16,12 +16,14 @@ namespace pleep
 
         // event handlers
         m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
+        m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
 
     ParallelCosmosContext::~ParallelCosmosContext()
     {
         m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
+        m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
 
@@ -194,6 +196,29 @@ namespace pleep
                 /// use parallel entity as source for local entity
                 continue;
             }
+            else if (m_readingSteinerEntities.count(localEntity))
+            {
+                // ignore this entity extraction and keep current timeline's version
+                m_readingSteinerEntities.erase(localEntity);
+
+                // after decrement this can be a chainlink 0 entity
+                assert(derive_causal_chain_link(localEntity) == 0);
+
+                // up until this point this entity's timestream will be in parallel's worldline
+                // by ignoring it on extraction this causes it to shift to the physizalized worldline
+                // we need to add an event to the timestream to ensure this discontinuous state change is maintained over cycles
+
+                // we need to fetch the state of localEntity in dstCosmos and push this into a worldline shift event
+                EventMessage shiftEvent(events::parallel::WORLDLINE_SHIFT, dstCosmos->get_coherency());
+                events::parallel::WORLDLINE_SHIFT_params shiftInfo{ localEntity, dstCosmos->get_entity_signature(localEntity) };
+                dstCosmos->serialize_entity_components(shiftInfo.entity, shiftInfo.sign, shiftEvent);
+                shiftEvent << shiftInfo;
+                // how to access the timestream from here...?
+                m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
+                
+                PLEEPLOG_TRACE("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+                continue;
+            }
             // easier to extract ALL local entities, than to compute non-divergences somehow
             else if (true)//(is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
             {
@@ -269,6 +294,13 @@ namespace pleep
             m_eventBroker->send_event(initMessage);
         }
         // otherwise we're done until later requests
+        else
+        {
+            // any cleanup needed at end of parallel cyclings:
+
+            // just incase there are leftovers somehow
+            m_readingSteinerEntities.clear();
+        }
 
         return true;
     }
@@ -290,7 +322,9 @@ namespace pleep
         {
             // send init request back to requesterId via event to network dynamo
             EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ divInfo.sourceTimeslice };
+            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_timelineSize - 1U) };
+            // always start from beginning?
+            //events::parallel::INIT_params initInfo{ divInfo.sourceTimeslice };
             initMessage << initInfo;
             m_eventBroker->send_event(initMessage);
         }
@@ -313,6 +347,14 @@ namespace pleep
         removalEvent >> removalInfo;
 
         m_condemnedEntities.insert(removalInfo.entity);
+    }
+
+    void ParallelCosmosContext::_worldline_shift_handler(EventMessage shiftEvent)
+    {
+        events::parallel::WORLDLINE_SHIFT_params shiftInfo;
+        shiftEvent >> shiftInfo;
+
+        m_readingSteinerEntities.insert(shiftInfo.entity);
     }
 
 

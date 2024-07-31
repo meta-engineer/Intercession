@@ -98,6 +98,12 @@ namespace pleep
         return e & (~CAUSALCHAINLINK_MASK);
     }
 
+    // checks if entities are equal except for chainlink
+    inline bool same_temporal_entity(Entity lhs, Entity rhs)
+    {
+        return strip_causal_chain_link(lhs) == strip_causal_chain_link(rhs);
+    }
+
     // Compute entity value for given elements (does not "create" it in any cosmos)
     inline Entity compose_entity(TimesliceId t, GenesisId g, CausalChainlink c)
     {

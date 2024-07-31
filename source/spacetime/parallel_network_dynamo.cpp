@@ -73,17 +73,28 @@ namespace pleep
                         /// Then we can set it to merged when we know it is causing a paradox
                         /// Thus, if something new comes along, it will re-fork it and it will behave inline with upstream only... (possibly causing another paradox)
 
-                        // ONLY EXTRACT UPSTREAM COMPONENTS!
-                        if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
-                        {
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
-                        }
-                        else
-                        {
-                            /// TODO: Entities which have a "lack" of interaction will not be marked as forked, but we want them to be upstream only after their non-interaction... instead just make everything always upstream?
-                            /// this may also be useful in intercession resolution to ensure entity follows self-consistent history
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
-                        }
+                        // only extract upstream components
+                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+
+                        /// Check for divergent/forked timestream state?
+                        /// Entities which have a "lack" of interaction will not be marked as forked, but we want them to be upstream only after their non-interaction... instead just make everything always upstream?
+                        /// this may also be useful in intercession resolution to ensure entity follows self-consistent history
+                    }
+                    break;
+                    case events::parallel::WORLDLINE_SHIFT:
+                    {
+                        events::parallel::WORLDLINE_SHIFT_params shiftInfo;
+                        evnt >> shiftInfo;
+                        
+                        assert(shiftInfo.entity == evntEntity);
+                        if (!cosmos->entity_exists(shiftInfo.entity)) break;
+
+                        // should we check if this entity has diverged and then ignore the worldline shift?
+                        PLEEPLOG_DEBUG("Worldline shifting entity: " + std::to_string(shiftInfo.entity) + ". BTW its timestream state was: " + std::to_string(cosmos->get_timestream_state(shiftInfo.entity).first));
+
+                        
+                        // shift event was noted at this time, we need to overwrite with all components
+                        cosmos->deserialize_entity_components(shiftInfo.entity, shiftInfo.sign, evnt, ComponentCategory::all);
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
@@ -153,10 +164,6 @@ namespace pleep
                         assert(jumpInfo.entity == evntEntity);
                         PLEEPLOG_WARN("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ PARALLEL TIMESTREAM DEPARTURE FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
 
-                        // if we've reached the departure, then clear the request's conditions
-                        m_jumpConditions.erase(jumpInfo.entity);
-                        /// TODO: can we be robust to receiving the departure too early?
-
                         // nothing to do without past, just ignore it
                         if (!m_timelineApi.has_past()) break;
 
@@ -181,12 +188,13 @@ namespace pleep
                             {
                                 PLEEPLOG_DEBUG("Using cached divergent departure: " + std::to_string(newJumpInfo.tripId) + " for entity " + std::to_string(newJumpInfo.entity));
 
+                                // push the diverged jump (to match the diverged request that just occured)
                                 m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, newJump);
                                 break;
                             }
                         }
 
-                        // if no divergent jump, or jump was too old:
+                        // if no divergent jump (or jump was too old) then push existing departure (to match existing request which was pushed)
                         PLEEPLOG_DEBUG("No divergent departure to use");
                         m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, evnt);
                     }
@@ -237,14 +245,10 @@ namespace pleep
                             //assert(jumpInfo.entity == cachedJumpInfo.entity);
                             assert(jumpInfo.entity >= cachedJumpInfo.entity);
 
+                            // write new state into cosmos
                             cosmos->deserialize_entity_components(jumpInfo.entity, cachedJumpInfo.sign, cachedJump);
-
-                            // we've extracted everything, so pop the cache
+                            // we've extracted everything, so pop the cache (cachedJump is no longer defined)
                             m_divergentJumpRequests.erase(jumpInfo.tripId);
-                            
-                            // we don't want this to immediately get updated with the timestream
-                            // so lets consider this forked
-                            cosmos->set_timestream_state(jumpInfo.entity, TimestreamState::forked);
                         }
                         // if not then then forward it into history as-is, and use arrival data directly
                         else
@@ -263,6 +267,63 @@ namespace pleep
 
                             cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, evnt);
                         }
+
+
+                        // after writing corrected arrival state to cosmos we'll store it
+                        TimejumpConditions newConditions = build_jump_conditions(jumpInfo.entity, cosmos);
+
+                        // check for paradox
+                        // if conditions history creates a loop then paradox is detected
+                        // loop means the most recent jump is NOT equal, but there is an equal jump sometime before that
+                        PLEEPLOG_DEBUG("Jump revision history has " + std::to_string(m_jumpRevisionHistory.size()) + " trips");
+                        PLEEPLOG_DEBUG("This trip history has " + std::to_string(m_jumpRevisionHistory[jumpInfo.tripId].size()) + " jumps");
+                        if (!m_jumpRevisionHistory[jumpInfo.tripId].empty() && !(newConditions == m_jumpRevisionHistory[jumpInfo.tripId].back()))
+                        {
+                            // most recent arrival was different
+                            // now look for a match
+                            for (TimejumpConditions& cond : m_jumpRevisionHistory[jumpInfo.tripId])
+                            {
+                                if (newConditions == cond)
+                                {
+                                    PLEEPLOG_CRITICAL("----- ----- ----- ----- ----- ----- PARADOX DETECTED! ----- ----- ----- ----- ----- -----");
+                                    PLEEPLOG_DEBUG("Resolving trip: " + std::to_string(jumpInfo.tripId));
+
+                                    // duplicate arrival means parallel is on the worldline we want.
+                                    // the physicalized worldline needs to be overridden EXCEPT for the time-traveller who needs to be in the NEXT worldline.
+                                    // For a 2-phase paradox we can assume this is identical to the PREVIOUS worldline
+                                    // so we can simply maintain its current physicalized state.
+
+                                    // this discontinuous state change needs to persist across cycles, so we need a special event to cause a full overwrite of the time-traveller state
+                                    
+                                    // assuming the divergence event recently happened at the time-travelers subjective present
+                                    // we can wait until we reach that timeslice for extraction and cause the worldline shift
+                                    EventMessage shift(events::parallel::WORLDLINE_SHIFT);
+                                    // what other entities should not be changed? any?
+                                    events::parallel::WORLDLINE_SHIFT_params shiftInfo{ strip_causal_chain_link(jumpInfo.entity) };
+                                    shift << shiftInfo;
+                                    m_sharedBroker->send_event(shift);
+
+
+                                    // We also need to ignore the request mismatch for this cycle.
+                                    // next cycle will be self-consistent so it only needs to happen right now.
+                                    // ignore the upcoming departure mismatch between cosmos and timestream
+                                    m_resolvedTrips.insert(jumpInfo.tripId);
+
+                                    // clear this history
+                                    m_jumpRevisionHistory.erase(jumpInfo.tripId);
+
+                                    break;
+                                }
+                                //assert(!(newConditions == cond));
+                            }
+                        }
+
+                        // add to history (there will be duplicates)
+                        // we could only store non-consecutive duplicates to simplify?
+                        // if we guarentee there are no consecutive duplicates then we just have to check the match isn't back()
+                        PLEEPLOG_DEBUG("Storing arrival jumpConditions for paradox detection");
+                        m_jumpRevisionHistory[jumpInfo.tripId].push_back(newConditions);
+
                     }
                     break;
                     default:
@@ -312,6 +373,16 @@ namespace pleep
     void ParallelNetworkDynamo::link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams)
     {
         m_timelineApi.link_timestreams(sourceTimestreams);
+    }
+
+    void ParallelNetworkDynamo::push_to_linked_timestream(EventMessage extraEvent, Entity relevantEntity)
+    {
+        // forward to past
+        if (m_timelineApi.has_past())
+        {
+            // parallel is in same timeframe as past, so no increment chain link
+            m_timelineApi.push_timestream_at_breakpoint(relevantEntity, extraEvent);
+        }
     }
 
     void ParallelNetworkDynamo::_entity_created_handler(EventMessage creationEvent)
@@ -392,11 +463,7 @@ namespace pleep
         PLEEPLOG_WARN("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PARALLEL COSMOS JUMP REQUEST FOR: " + std::to_string(jumpInfo.entity) + ", delta: " + std::to_string(jumpInfo.timesliceDelta));
 
         // manually extract components from cosmos, not the message:
-        TimejumpConditions newConditions{ 0 };
-        if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
-        {
-            newConditions.origin = cosmos->get_component<TransformComponent>(jumpInfo.entity).origin;
-        }
+        TimejumpConditions newConditions = build_jump_conditions(jumpInfo.entity, cosmos);
 
         // complete jump request (like server does)
         jumpInfo.sign = cosmos->get_entity_signature(jumpInfo.entity);
@@ -427,7 +494,18 @@ namespace pleep
             jumpInfo.tripId = m_jumpConditions[jumpInfo.entity].tripId;
             jumpEvent << jumpInfo;
         }
-        else
+        else if (m_resolvedTrips.count(m_jumpConditions[jumpInfo.entity].tripId))
+        {
+            PLEEPLOG_DEBUG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> IGNORING RESOLVED JUMP REQUEST FOR TRIP: " + std::to_string(m_jumpConditions[jumpInfo.entity].tripId));
+
+            // same as for equivalent case
+            jumpInfo.tripId = m_jumpConditions[jumpInfo.entity].tripId;
+            jumpEvent << jumpInfo;
+
+            // also clear the resolved set
+            m_resolvedTrips.erase(m_jumpConditions[jumpInfo.entity].tripId);
+        }
+        else // newConditions != m_jumpConditions[jumpInfo.entity])
         {
             // jump is in a divergent history
             PLEEPLOG_DEBUG("########################################## DIVERGENT JUMP REQUEST DETECTED: " + std::to_string(m_jumpConditions[jumpInfo.entity].tripId));
@@ -439,6 +517,8 @@ namespace pleep
             jumpEvent << jumpInfo;
             PLEEPLOG_DEBUG("Storing new for use at matching arrival.");
             m_divergentJumpRequests.insert({ jumpInfo.tripId, jumpEvent });
+
+            PLEEPLOG_DEBUG("Divergent entity was " + std::to_string(cosmos->get_timestream_state(jumpInfo.entity).first));
 
             /// indicate another parallel cycle is needed
             /// TODO: this should depend on if jump is to past or future

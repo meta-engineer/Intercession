@@ -163,6 +163,7 @@ namespace pleep
         PLEEPLOG_DEBUG("EMBEDDED TEXTURE LOADING IS NOT IMPLEMENTED, IGNORING!");
 
         // how do I know to load texture from embedded source instead of independant image during deserialization?
+        // directly load assimp byte array as glTexImage2D?
         
     }
 

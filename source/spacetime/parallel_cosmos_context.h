@@ -64,6 +64,7 @@ namespace pleep
         // event handlers
         void _divergence_handler(EventMessage divEvent);
         void _entity_removed_handler(EventMessage removalEvent);
+        void _worldline_shift_handler(EventMessage shiftEvent);
 
         void _prime_frame() override;
         void _on_fixed(double fixedTime) override;
@@ -85,8 +86,10 @@ namespace pleep
         // remember condemned entities during simulation for "extraction"
         std::unordered_set<Entity> m_condemnedEntities;
 
-        // Store currently unmatched jump receipts in order of sister receipt's coherency
-        //std::map<uint16_t, EventMessage> jumpReceipts;
+        // whitelist of entities whos state IS NOT to be overridden by the worldline reconstruction
+        // when extracting to a timeline. (If this set is empty, extract all as normal)
+        // (thus shifting to the previous worldline at the moment of extraction)
+        std::unordered_set<Entity> m_readingSteinerEntities;
     };
 }
 

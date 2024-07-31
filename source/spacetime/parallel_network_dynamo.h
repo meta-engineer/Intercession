@@ -31,6 +31,9 @@ namespace pleep
         // Overwrite current timelineApi timestreams with the sourceTimestreams and set breakpoints
         void link_timestreams(std::shared_ptr<EntityTimestreamMap> sourceTimestreams) override;
 
+        // accessor for context to push special events WHEN IT KNOWS IT IS SAFE!
+        void push_to_linked_timestream(EventMessage extraEvent, Entity relevantEntity) override;
+
     private:
         // event handlers
         void _entity_created_handler(EventMessage creationEvent);
@@ -47,12 +50,19 @@ namespace pleep
 
         // cache of departure conditions to match between timestream (during network dynamo) and cosmos (during behaviours dynamo)
         // non-matching departures are determined to be divergent and promoted to m_divergentJumpRequests
-        // cleared after each frame
+        // cleared after each frame (after timestream and parallel requests are compared)
         std::unordered_map<Entity, TimejumpConditions> m_jumpConditions;
 
         // cache of tripId, and entity data at a departure which diverged locally from the timestream
-        // if we reach an arrival with a matching tripId in timestrean, override with the cached data
+        // if we reach an arrival with a matching tripId in timestream, override with the cached data
         std::unordered_map<uint32_t, EventMessage> m_divergentJumpRequests;
+
+        // list of previous states of divergent jumps indexed by the tripId
+        // should be cleared only after all divergences are settled and parallel stops running
+        std::unordered_map<uint32_t, std::vector<TimejumpConditions>> m_jumpRevisionHistory;
+
+
+        std::unordered_set<uint32_t> m_resolvedTrips;
     };
 }
 
