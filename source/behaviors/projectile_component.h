@@ -8,7 +8,11 @@ namespace pleep
     struct ProjectileComponent
     {
         double currLifetime = 0.0;
-        double maxLifetime = 3.0;
+        double maxLifetime = 300.0;
+
+        double hz = 1.0f;
+        double scaleMax = 1.0f;
+        double scaleMin = 1.0f;
     };
 }
 

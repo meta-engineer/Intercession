@@ -314,10 +314,10 @@ namespace pleep
                 }
 
                 // Shit tier Inverse Kinemetics
-                if (cosmos->has_component<RenderableComponent>(entity))
-                {
-                    cosmos->get_component<RenderableComponent>(entity).localTransform.origin.y = -1.0f * biped.groundDist;
-                }
+                // if (cosmos->has_component<RenderableComponent>(entity))
+                // {
+                //     cosmos->get_component<RenderableComponent>(entity).localTransform.origin.y = -1.0f * biped.groundDist;
+                // }
 
                 // tilt slightly towards acceleration
                 glm::vec3 tiltAxis = glm::cross(physics.acceleration, biped.supportAxis);

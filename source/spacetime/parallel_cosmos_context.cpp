@@ -1,6 +1,8 @@
 #include "parallel_cosmos_context.h"
 
+#include <glm/gtc/random.hpp>
 #include "staging/hard_config_cosmos.h"
+#include "staging/test_projectile.h"
 #include "spacetime/parallel_network_dynamo.h"
 
 namespace pleep
@@ -16,6 +18,7 @@ namespace pleep
 
         // event handlers
         m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
+        m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
@@ -23,6 +26,7 @@ namespace pleep
     ParallelCosmosContext::~ParallelCosmosContext()
     {
         m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::DIVERGENCE, ParallelCosmosContext::_divergence_handler));
+        m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
     }
@@ -217,6 +221,59 @@ namespace pleep
                 m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
                 
                 PLEEPLOG_TRACE("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+
+
+
+
+
+                // create mandella effect for this shift at this moment as well?
+                // worldline shift event happens at arrival time
+                // worldline shift timestream happens here at extraction (shortly after divergence)
+                // create mandella entity directly in dstCosmos? What about other mandella effects?
+                // entity needs to be based on localEntity at the time of the collision?
+                // How do I get information about the readingStienerEntity's divergence event. Collision meta-data?
+                // context can store every interaction event during the cycle
+                // may need more information about interception history (position/velocity at event time?)
+/*
+                // entity values in history are down a chainlink level
+                Entity sourceEntity = m_interceptionHistory.count(signMapIt.first) ? m_interceptionHistory.at(signMapIt.first).front() : signMapIt.first;
+                if (signMapIt.first == sourceEntity)
+                {
+                    PLEEPLOG_CRITICAL("UH OH interception history has itself!!!! NOT PROSSIBLE");
+                }
+                assert(signMapIt.first != sourceEntity);
+
+                auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
+                auto targetTrans = m_currentCosmos->get_component<TransformComponent>(signMapIt.first);
+                auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
+                auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(signMapIt.first);
+                glm::vec3 diff = targetTrans.origin - sourceTrans.origin;
+                diff = glm::length2(diff) == 0 ? glm::sphericalRand(1.0f) : glm::normalize(diff);
+
+                glm::vec3 newVel = glm::sphericalRand(1.0f);
+                // clip velocity to moving away from source
+                if (glm::dot(diff, newVel) < 0.0f)
+                {
+                    newVel += diff;
+                }
+                newVel *= 10.0f;
+                newVel += -sourcePhysics.velocity;
+                
+                // TODO: ensure this isn't clipping inside of source? or inside of anything for that matter? raycast from source?
+                // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
+
+                // velocity may be 0 at this time? derive displacement between both possible entities
+                // Entity mandella = create_test_projectile(
+                //     dstCosmos, NULL_ENTITY,
+                //     sourceTrans.origin + (newVel/5.0f), // give 0.2 sec head start
+                //     newVel
+                // );
+                //PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
+*/
+
+
+
+
                 continue;
             }
             // easier to extract ALL local entities, than to compute non-divergences somehow
@@ -300,6 +357,7 @@ namespace pleep
 
             // just incase there are leftovers somehow
             m_readingSteinerEntities.clear();
+            m_interceptionHistory.clear();
         }
 
         return true;
@@ -314,7 +372,7 @@ namespace pleep
         // no lock needed for m_currentTimeslice?
         const std::lock_guard<std::mutex> lk(m_accessMux);
 
-        // if already simulating, add request to special buffer?
+        // if already simulating, note for recycle
         // if not simulating send init request to requester
         // simulating != running
         // use cosmos existing as indication???
@@ -355,6 +413,17 @@ namespace pleep
         shiftEvent >> shiftInfo;
 
         m_readingSteinerEntities.insert(shiftInfo.entity);
+    }
+    
+    void ParallelCosmosContext::_timestream_interception_handler(EventMessage interceptionEvent)
+    {
+        events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
+        interceptionEvent >> interceptionInfo;
+
+        // cache interaction from agent -> recipient
+        PLEEPLOG_DEBUG("RECORDING interception from " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
+        m_interceptionHistory[interceptionInfo.agent].push(interceptionInfo.recipient);
+        m_interceptionHistory[interceptionInfo.recipient].push(interceptionInfo.agent);
     }
 
 

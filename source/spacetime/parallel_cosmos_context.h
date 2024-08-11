@@ -65,6 +65,7 @@ namespace pleep
         void _divergence_handler(EventMessage divEvent);
         void _entity_removed_handler(EventMessage removalEvent);
         void _worldline_shift_handler(EventMessage shiftEvent);
+        void _timestream_interception_handler(EventMessage interceptionEvent);
 
         void _prime_frame() override;
         void _on_fixed(double fixedTime) override;
@@ -90,6 +91,10 @@ namespace pleep
         // when extracting to a timeline. (If this set is empty, extract all as normal)
         // (thus shifting to the previous worldline at the moment of extraction)
         std::unordered_set<Entity> m_readingSteinerEntities;
+
+        // records the entities each entity has intercepted over the course of this history cycle
+        // should reset at the end of each cycle
+        std::unordered_map<Entity, std::queue<Entity>> m_interceptionHistory;
     };
 }
 

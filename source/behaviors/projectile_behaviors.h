@@ -25,9 +25,16 @@ namespace pleep
             // fetch Projectile
             try
             {
+                TransformComponent& trans = cosmos->get_component<TransformComponent>(entity);
                 ProjectileComponent& proj = cosmos->get_component<ProjectileComponent>(entity);
 
                 proj.currLifetime += deltaTime;
+
+                double sin = glm::sin(proj.currLifetime * proj.hz);
+                // sin has min of -1, and amplitude of 1
+
+                double scaleAmplitude = (proj.scaleMax - proj.scaleMin) / 2.0;
+                trans.scale = glm::vec3(static_cast<float>(sin * scaleAmplitude + (proj.scaleMin + 1.0)));
 
                 if (proj.currLifetime > proj.maxLifetime)
                 {

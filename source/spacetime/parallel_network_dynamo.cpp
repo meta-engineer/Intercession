@@ -452,6 +452,8 @@ namespace pleep
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         if (m_workingCosmos.expired()) return;
 
+        assert(jumpEvent.header.id == events::network::JUMP_REQUEST);
+
         // our own cosmos has triggered a jump request
         // Will the timestream or the cosmos request happen first?
 

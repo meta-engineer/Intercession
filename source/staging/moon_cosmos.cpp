@@ -125,6 +125,7 @@ namespace pleep
         // remember this is relative to exposure
         cosmos->add_component(spot, LightSourceComponent(glm::vec3(6.0f, 3.0f, 2.0f)));
         cosmos->get_component<LightSourceComponent>(spot).type = LightSourceType::spot;
+        cosmos->get_component<LightSourceComponent>(spot).composition.x = 0.2f;
         cosmos->get_component<LightSourceComponent>(spot).attributes = glm::vec2{0.90f, 0.70f};
 
         RenderableComponent spot_renderable;

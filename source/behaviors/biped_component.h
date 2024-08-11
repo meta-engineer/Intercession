@@ -16,6 +16,7 @@ namespace pleep
     // storage component used by biped behaviours
     struct BipedComponent
     {
+        // State-machine to be read by animation system
         // state must be protected for any on-transition side effects
         BipedState state;
 
@@ -27,9 +28,6 @@ namespace pleep
         float horizontalRotationFactor = 1.2f;
         float verticalRotationFactor   = 1.0f;
         float rotationGimbalLimit      = 0.1f;
-
-        // State-machine to be read by animation system
-        //BipedState state;
 
         bool isGrounded = true;
         glm::vec3 groundNormal = glm::vec3(0.0f, 1.0f, 0.0f);

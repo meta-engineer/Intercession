@@ -3,6 +3,7 @@
 
 //#include "intercession_pch.h"
 #include <memory>
+#include <glm/gtc/random.hpp>
 
 #include "staging/cosmos_builder.h"
 #include "behaviors/projectile_component.h"
@@ -19,9 +20,11 @@ namespace pleep
     {
         assert(cosmos);
 
+        UNREFERENCED_PARAMETER(shooter);
         Entity thrown = cosmos->create_entity(true, shooter);
+        //Entity thrown = cosmos->create_entity();
         TransformComponent thrown_transform(origin);
-        thrown_transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+        thrown_transform.scale = glm::vec3(0.5f, 0.5f, 0.5f);
         cosmos->add_component(thrown, thrown_transform);
         
         RenderableComponent thrown_renderable;
@@ -29,9 +32,9 @@ namespace pleep
         if (ModelCache::fetch_material("thrown_mat") == nullptr)
         {
             ModelCache::create_material("thrown_mat", std::unordered_map<TextureType, std::string>{
-                {TextureType::diffuse, "resources/snow-packed12-Base_Color.png"},
-                {TextureType::specular, "resources/snow-packed12-Specular.png"},
-                {TextureType::normal, "resources/snow-packed12-Normal-ogl.png"}
+                {TextureType::diffuse, "resources/checker.png"},
+                {TextureType::specular, "resources/checker.png"},
+                {TextureType::normal, "resources/flat_normal.jpg"}
             });
         }
         thrown_renderable.materials.push_back(ModelCache::fetch_material("thrown_mat"));
@@ -40,8 +43,8 @@ namespace pleep
         
         PhysicsComponent thrown_physics;
         thrown_physics.velocity = direction;
-        thrown_physics.angularVelocity = glm::vec3(1.1f, 2.1f, 0.2f);
-        thrown_physics.mass = 10.0f;
+        thrown_physics.angularVelocity = glm::sphericalRand(2.0f);
+        thrown_physics.mass = 100.0f;
         cosmos->add_component(thrown, thrown_physics);
         cosmos->add_component(thrown, ColliderComponent{
             { Collider(ColliderType::box, CollisionType::rigid) }

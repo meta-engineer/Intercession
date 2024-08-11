@@ -33,21 +33,26 @@ namespace pleep
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;
-        //pc_renderable.meshData = ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube);
-        for (auto meshname : olimar_import.meshNames)
-            pc_renderable.meshData.push_back(ModelCache::fetch_mesh(meshname));
-        for (auto matname : olimar_import.materialNames)
-            pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
-        //pc_renderable.localTransform.origin.y = -0.5f;
-        pc_renderable.localTransform.scale = { 0.15f, 0.15f, 0.15f };
-        if (olimar_import.armatureNames.size())
-            pc_renderable.armature = ModelCache::fetch_armature(*(olimar_import.armatureNames.begin()));
+        // for (auto meshname : olimar_import.meshNames)
+        //     pc_renderable.meshData.push_back(ModelCache::fetch_mesh(meshname));
+        // for (auto matname : olimar_import.materialNames)
+        //     pc_renderable.materials.push_back(ModelCache::fetch_material(matname));
+        // pc_renderable.localTransform.scale = { 0.15f, 0.15f, 0.15f };
+        // if (olimar_import.armatureNames.size())
+        //     pc_renderable.armature = ModelCache::fetch_armature(*(olimar_import.armatureNames.begin()));
+        pc_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::cube));
+        ModelCache::create_material("pc_mat", std::unordered_map<TextureType, std::string>{
+            {TextureType::diffuse, "resources/checker.png"},
+            {TextureType::specular, "resources/checker.png"},
+            {TextureType::normal, "resources/flat_normal.jpg"}
+        });
+        pc_renderable.materials.push_back(ModelCache::fetch_material("pc_mat"));
         cosmos->add_component(pc, pc_renderable);
 
-        AnimationComponent pc_animation;
-        for (auto animeName : olimar_import.animationNames)
-            pc_animation.animations[animeName] = ModelCache::fetch_animation(animeName);
-        cosmos->add_component(pc, pc_animation);
+        //AnimationComponent pc_animation;
+        // for (auto animeName : olimar_import.animationNames)
+        //     pc_animation.animations[animeName] = ModelCache::fetch_animation(animeName);
+        //cosmos->add_component(pc, pc_animation);
 
         PhysicsComponent pc_physics;
         //pc_physics.velocity = glm::vec3(-0.2f, 0.1f, 0.0f);

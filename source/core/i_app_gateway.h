@@ -18,7 +18,9 @@
 // these should be defined in some use config file and part of a window abstraction layer
 #define DEFAULT_WINDOW_WIDTH 1290
 #define DEFAULT_WINDOW_HEIGHT 540
-#define DEFAULT_WINDOW_TITLE "Intercession"
+#define XSTR(s) STR(s)
+#define STR(s) #s
+#define DEFAULT_WINDOW_TITLE "Intercession v" XSTR(BUILD_VERSION_MAJOR) "." XSTR(BUILD_VERSION_MINOR) "." XSTR(BUILD_VERSION_PATCH)
 #define CONFIG_DIRECTORY "config/"  //starts in pwd
 
 namespace pleep

@@ -4,14 +4,15 @@
 #include "ecs/ecs_types.h"
 #include "staging/cosmos_builder.h"
 #include "staging/client_focal_entity.h"
+#include "staging/jump_vfx.h"
 #include "core/i_cosmos_context.h"
 
 namespace pleep
 {
     // number of frames a forking state has lasted where it becomes a candidate for resolution
-    constexpr uint16_t FORKING_THRESHOLD = static_cast<uint16_t>(0.5 * pleep::FRAMERATE);
+    constexpr uint16_t FORKING_THRESHOLD = static_cast<uint16_t>(0.3 * pleep::FRAMERATE);
     // number of frames a forked state has lasted which triggers a resolution
-    constexpr uint16_t FORKED_THRESHOLD = static_cast<uint16_t>(0.5 * pleep::FRAMERATE);
+    constexpr uint16_t FORKED_THRESHOLD = static_cast<uint16_t>(0.3 * pleep::FRAMERATE);
     // FORKING_THRESHOLD + FORKED_THREASHOLD == total time until an interception triggers resolution
 
     ServerNetworkDynamo::ServerNetworkDynamo(std::shared_ptr<EventBroker> sharedBroker, TimelineApi localTimelineApi)
@@ -881,6 +882,7 @@ namespace pleep
     {
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         if (m_workingCosmos.expired()) return;
+        assert(jumpEvent.header.id == events::network::JUMP_REQUEST);
 
         // some behavior has called for an entity to jump
         // Message should not yet have serialized data!
@@ -920,6 +922,12 @@ namespace pleep
         
         // good to send request now
         m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
+
+        // request is successful so we'll spawn vfx (departure may not happen but thats fine)
+        if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+        {
+            create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+        }
 
         // push request to timestream so that it can be validated during parallel
         if (m_timelineApi.has_past())
@@ -962,5 +970,12 @@ namespace pleep
         assert(cosmos->entity_exists(jumpInfo.entity));
         // entity exists, write components to it
         cosmos->deserialize_entity_components(jumpInfo.entity, jumpInfo.sign, jumpEvent, ComponentCategory::all);
+
+        
+        // request is successful so we'll spawn vfx
+        if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+        {
+            create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+        }
     }
 }
