@@ -72,17 +72,19 @@ namespace pleep
         void _on_frame(double deltaTime) override;
         void _clean_frame() override;
 
-        // timepoint when we should stop ourselves
-        uint16_t m_coherencyTarget;
-        // flag indicates when present frontier is reached, start again from the past
-        bool m_resolutionNeeded = false;
-
         // past & future should not be able to access simultaneously, however future can access during internal thread running
-        std::mutex m_accessMux;
+        std::mutex m_cosmosMux;
+        // control flags and signal setting during simulation (below)
+        std::mutex m_runtimeMux;
 
-        // which timeslice are we paralleling?
+        // timepoint when we should stop ourselves
+        uint16_t    m_coherencyTarget;
+        // flag indicates when present frontier is reached, start again from the past
+        bool        m_isRecycleNeeded = false;
+        // which timeslice cosmos are we paralleling
         TimesliceId m_currentTimeslice = NULL_TIMESLICEID;
-        size_t m_timelineSize = 0;
+        // use to start new simulation cycle
+        const size_t m_pastmostTimeslice; // default 0?
 
         // remember condemned entities during simulation for "extraction"
         std::unordered_set<Entity> m_condemnedEntities;

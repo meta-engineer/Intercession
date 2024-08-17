@@ -9,7 +9,7 @@ namespace pleep
 {
     ParallelCosmosContext::ParallelCosmosContext(TimelineApi localTimelineApi)
         : I_CosmosContext()
-        , m_timelineSize{ localTimelineApi.get_num_timeslices() }
+        , m_pastmostTimeslice{ localTimelineApi.get_num_timeslices() > 0 ? localTimelineApi.get_num_timeslices() - 1U : 0U }
     {
         // dynamos should only be for headless simulation
         m_dynamoCluster.networker = std::make_shared<ParallelNetworkDynamo>(m_eventBroker, localTimelineApi);
@@ -43,34 +43,40 @@ namespace pleep
     
     void ParallelCosmosContext::set_coherency_target(uint16_t coherency) 
     {
-        const std::lock_guard<std::mutex> lk(m_accessMux);
+        const std::lock_guard<std::mutex> rLk(m_runtimeMux);
         
         m_coherencyTarget = coherency;
     }
     
     TimesliceId ParallelCosmosContext::get_current_timeslice()
     {
-        const std::lock_guard<std::mutex> lk(m_accessMux);
+        const std::lock_guard<std::mutex> rLk(m_runtimeMux);
 
         return m_currentTimeslice;
     }
     
     bool ParallelCosmosContext::load_and_link(const std::shared_ptr<Cosmos> sourceCosmos, const std::shared_ptr<EntityTimestreamMap> sourceFutureTimestreams)
     {
-        PLEEPLOG_DEBUG("Loading parallel from timeslice " + std::to_string(sourceCosmos->get_host_id()));
-        // not running does not guarentee simulation is ready (extraction is complete)
-        // but it prevents the thread blowing up at least
-        if (is_running()) return false;
-
         assert(sourceCosmos != nullptr);
         assert(sourceFutureTimestreams != nullptr);
+        PLEEPLOG_DEBUG("Loading parallel from timeslice " + std::to_string(sourceCosmos->get_host_id()));
 
-        const std::lock_guard<std::mutex> lk(m_accessMux);
+        {
+            const std::lock_guard<std::mutex> rLk(m_runtimeMux);
 
-        // if we were already init by someone else first then skip:
-        if (m_currentTimeslice != NULL_TIMESLICEID) return false;
-        
-        m_currentTimeslice = sourceCosmos->get_host_id();
+            // not running does not guarentee simulation is ready (extraction is complete)
+            // but it prevents the thread blowing up at least
+            if (is_running()) return false;
+
+            // if we were already init by someone else first then skip:
+            if (m_currentTimeslice != NULL_TIMESLICEID) return false;
+            
+            m_currentTimeslice = sourceCosmos->get_host_id();
+
+            // release runtime lock
+        }
+
+        const std::lock_guard<std::mutex> cLk(m_cosmosMux);
 
         // keep parallel's ID as NULL_TIMESLICEID, and register local entities as foreign
         // then convert NULL_TIMESLICEID entities to local upon extraction
@@ -114,7 +120,8 @@ namespace pleep
                 entityUpdate
             );
 
-            PLEEPLOG_DEBUG("Loading parallel entity " + std::to_string(signMapIt.first));
+            PLEEPLOG_DEBUG("Loading parallel entity " + std::to_string(signMapIt.first) + " | " + signMapIt.second.to_string());
+
             if (!m_currentCosmos->register_entity(signMapIt.first, signMapIt.second))
             {
                 PLEEPLOG_DEBUG("Entity registration failed?");
@@ -135,6 +142,7 @@ namespace pleep
             if (sourceCosmos->get_timestream_state(signMapIt.first).first == TimestreamState::forked)
             {
                 m_currentCosmos->set_timestream_state(signMapIt.first, TimestreamState::forked);
+                PLEEPLOG_DEBUG("Setting it as FORKED");
                 sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merged);
             }
         }
@@ -151,21 +159,27 @@ namespace pleep
     {
         PLEEPLOG_DEBUG("Extracting parallel to timeslice " + std::to_string(dstCosmos->get_host_id()));
 
-        const std::lock_guard<std::mutex> lk(m_accessMux);
+        {
+            const std::lock_guard<std::mutex> rLk(m_runtimeMux);
+            
+            // ensure cosmos is stopped (it should already be)
+            assert(!is_running());
+            if (is_running())
+            {
+                PLEEPLOG_WARN("Called extract while Cosmos is still running");
+                return false;
+            }
+            
+            // release runtime lock
+        }
+
+        const std::lock_guard<std::mutex> cLk(m_cosmosMux);
 
         // ensure cosmos exists!?
         assert(m_currentCosmos != nullptr);
         if (m_currentCosmos == nullptr)
         {
             PLEEPLOG_WARN("Called extract while Cosmos does not exist?! Something went wrong!");
-            return false;
-        }
-
-        // ensure cosmos is stopped (it should already be)
-        assert(!is_running());
-        if (is_running())
-        {
-            PLEEPLOG_WARN("Called extract while Cosmos is still running");
             return false;
         }
 
@@ -198,6 +212,7 @@ namespace pleep
                 /// TODO: locally created entities to be extracted to destination with new id
                 // (once we have the ability to create entities at all)
                 /// use parallel entity as source for local entity
+                PLEEPLOG_CRITICAL("Ignored extracting entity " + std::to_string(localEntity) + " because it was created during parallel runtime!!!!");
                 continue;
             }
             else if (m_readingSteinerEntities.count(localEntity))
@@ -220,7 +235,7 @@ namespace pleep
                 // how to access the timestream from here...?
                 m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
                 
-                PLEEPLOG_TRACE("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+                PLEEPLOG_DEBUG("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
 
 
 
@@ -234,14 +249,13 @@ namespace pleep
                 // How do I get information about the readingStienerEntity's divergence event. Collision meta-data?
                 // context can store every interaction event during the cycle
                 // may need more information about interception history (position/velocity at event time?)
-/*
+
                 // entity values in history are down a chainlink level
                 Entity sourceEntity = m_interceptionHistory.count(signMapIt.first) ? m_interceptionHistory.at(signMapIt.first).front() : signMapIt.first;
-                if (signMapIt.first == sourceEntity)
+                if (m_interceptionHistory.empty())
                 {
-                    PLEEPLOG_CRITICAL("UH OH interception history has itself!!!! NOT PROSSIBLE");
+                    PLEEPLOG_CRITICAL("UH OH interception history is empty!!!! HOW IS THAT PROSSIBLE");
                 }
-                assert(signMapIt.first != sourceEntity);
 
                 auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
                 auto targetTrans = m_currentCosmos->get_component<TransformComponent>(signMapIt.first);
@@ -263,13 +277,13 @@ namespace pleep
                 // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
 
                 // velocity may be 0 at this time? derive displacement between both possible entities
-                // Entity mandella = create_test_projectile(
-                //     dstCosmos, NULL_ENTITY,
-                //     sourceTrans.origin + (newVel/5.0f), // give 0.2 sec head start
-                //     newVel
-                // );
-                //PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
-*/
+                Entity mandella = create_test_projectile(
+                    dstCosmos,
+                    NULL_ENTITY, // pretend to be the timeslice we're extracting to?
+                    targetTrans.origin, // give headstart?
+                    newVel
+                );
+                PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
 
 
 
@@ -294,12 +308,12 @@ namespace pleep
                 // carry over their forked state to ensure copying to next parallel
                 dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
 
-                PLEEPLOG_TRACE("Extracted entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+                PLEEPLOG_DEBUG("Extracted entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
             }
             else
             {
                 // entity was not created nor forked during parallel
-                PLEEPLOG_TRACE("Ignoring entity: " + std::to_string(localEntity));
+                PLEEPLOG_DEBUG("Ignoring entity: " + std::to_string(localEntity));
             }
 
             // if this is timeslice 0 then clear all forked entity states NOW
@@ -326,38 +340,45 @@ namespace pleep
         // condemned entities won't exist upon next init
         m_condemnedEntities.clear();
 
+        // cleaup cosmos
+        m_currentCosmos = nullptr;
+        // unlink current timestreams
+        m_dynamoCluster.networker->link_timestreams(nullptr); 
 
         // EXTRACTION COMPLETE!
-        m_currentCosmos = nullptr;
-        m_currentTimeslice = NULL_TIMESLICEID;
-        m_dynamoCluster.networker->link_timestreams(nullptr); // this will unlink current timestreams
 
-        // if this is timeslice 0 AND m_resolutionNeeded is true,
-        //   then send new init request to past-most timeslice
-        if (dstCosmos->get_host_id() == 0U && m_resolutionNeeded)
         {
-            EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_timelineSize - 1U) };
-            initMessage << initInfo;
-            m_eventBroker->send_event(initMessage);
-            m_resolutionNeeded = false;
-        }
-        // otherwise send init request to same timesliceId until we reach timeslice 0
-        else if (dstCosmos->get_host_id() > 0U)
-        {
-            EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ dstCosmos->get_host_id() };
-            initMessage << initInfo;
-            m_eventBroker->send_event(initMessage);
-        }
-        // otherwise we're done until later requests
-        else
-        {
-            // any cleanup needed at end of parallel cyclings:
+            const std::lock_guard<std::mutex> rLk(m_runtimeMux);
 
-            // just incase there are leftovers somehow
-            m_readingSteinerEntities.clear();
-            m_interceptionHistory.clear();
+            m_currentTimeslice = NULL_TIMESLICEID;
+
+            // if this is timeslice 0 AND m_isRecycleNeeded is true,
+            //   then send new init request to past-most timeslice
+            if (dstCosmos->get_host_id() == 0U && m_isRecycleNeeded)
+            {
+                EventMessage initMessage(events::parallel::INIT);
+                events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_pastmostTimeslice) };
+                initMessage << initInfo;
+                m_eventBroker->send_event(initMessage);
+                m_isRecycleNeeded = false;
+            }
+            // otherwise send init request to same timesliceId until we reach timeslice 0
+            else if (dstCosmos->get_host_id() > 0U)
+            {
+                EventMessage initMessage(events::parallel::INIT);
+                events::parallel::INIT_params initInfo{ dstCosmos->get_host_id() };
+                initMessage << initInfo;
+                m_eventBroker->send_event(initMessage);
+            }
+            // otherwise we're done until later requests
+            else
+            {
+                // any cleanup needed at end of parallel cyclings:
+
+                // just incase there are leftovers somehow
+                m_readingSteinerEntities.clear();
+                m_interceptionHistory.clear();
+            }
         }
 
         return true;
@@ -367,12 +388,12 @@ namespace pleep
     {
         events::parallel::DIVERGENCE_params divInfo;
         divEvent >> divInfo;
+
+        const std::lock_guard<std::mutex> rLk(m_runtimeMux);
         PLEEPLOG_DEBUG("Timeslice " + std::to_string(divInfo.sourceTimeslice) + " has a divergence, we are running parallel timeslice " + std::to_string(m_currentTimeslice));
 
-        // no lock needed for m_currentTimeslice?
-        const std::lock_guard<std::mutex> lk(m_accessMux);
-
-        // if already simulating, note for recycle
+        // if simulating my past, do nothing
+        // if simulating me or my future, flag for recycle
         // if not simulating send init request to requester
         // simulating != running
         // use cosmos existing as indication???
@@ -380,7 +401,7 @@ namespace pleep
         {
             // send init request back to requesterId via event to network dynamo
             EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_timelineSize - 1U) };
+            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_pastmostTimeslice) };
             // always start from beginning?
             //events::parallel::INIT_params initInfo{ divInfo.sourceTimeslice };
             initMessage << initInfo;
@@ -390,7 +411,7 @@ namespace pleep
         {
             // if we are at or behind requesterId then we need another cycle
             /// set dirty bit to be checked at the end of a cycle, so that we start another cycle to resolve it
-            m_resolutionNeeded = true;
+            m_isRecycleNeeded = true;
         }
         // if we haven't reached requesterId then no worries, we'll get there this cycle
     }

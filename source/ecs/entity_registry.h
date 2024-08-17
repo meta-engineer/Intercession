@@ -157,7 +157,7 @@ namespace pleep
         assert(entityCountsIt->second != 0);
 
         entityCountsIt->second += 1;
-        PLEEPLOG_DEBUG("HostedEntity " + std::to_string(hostedEntity) + " host count has incremented to " + std::to_string(entityCountsIt->second) + " from creation of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
+        PLEEPLOG_TRACE("HostedEntity " + std::to_string(hostedEntity) + " host count has incremented to " + std::to_string(entityCountsIt->second) + " from creation of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
     }
     inline void EntityRegistry::decrement_hosted_entity_count(Entity entity)
     {
@@ -173,7 +173,7 @@ namespace pleep
         // count of 0 means decrementer failed to clear entry when it reached 0
         assert(entityCountsIt->second != 0);
         entityCountsIt->second -= 1;
-        PLEEPLOG_DEBUG("HostedEntity " + std::to_string(hostedEntity) + " host count has decremented to " + std::to_string(entityCountsIt->second) + " from removal of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
+        PLEEPLOG_TRACE("HostedEntity " + std::to_string(hostedEntity) + " host count has decremented to " + std::to_string(entityCountsIt->second) + " from removal of Entity " + std::to_string(entity) + " (link " + std::to_string(ccl) + ")");
 
         // ensure all counts of 0 become unlisted and re-added to pool
         if (entityCountsIt->second == 0) 

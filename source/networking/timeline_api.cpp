@@ -186,7 +186,7 @@ namespace pleep
         // deep copy cosmos and timestream into parallel
         if (!m_sharedParallel->load_and_link(sourceCosmos, m_futureTimestreams))
         {
-            PLEEPLOG_WARN("parallel loading failed... somehow? Ignoring...");
+            PLEEPLOG_WARN("parallel loading failed... somehow? Moving on...");
         }
     }
 

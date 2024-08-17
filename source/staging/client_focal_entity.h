@@ -12,12 +12,11 @@ namespace pleep
     // client is signalled to use this entity as its main entity;
     inline Entity create_client_focal_entity(
         std::shared_ptr<Cosmos> cosmos,
-        std::shared_ptr<EventBroker> eventBroker
+        glm::vec3 position
     )
     {
         // we have to implicitly know what components are registered
         assert(cosmos);
-        UNREFERENCED_PARAMETER(eventBroker);
 
         // ***************************************************************************
         // ModelCache::ImportReceipt olimar_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\Wii - Super Smash Bros Brawl - Olimar & Pikmin\\Pikmin (Yellow).obj");
@@ -29,7 +28,7 @@ namespace pleep
         //ModelManager::debug_receipt(olimar_import);
 
         Entity pc = cosmos->create_entity();
-        TransformComponent pc_transform(glm::vec3(0.0f, 3.0f, 0.0f));
+        TransformComponent pc_transform(position);
         cosmos->add_component(pc, pc_transform);
 
         RenderableComponent pc_renderable;

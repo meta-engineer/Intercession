@@ -611,8 +611,12 @@ namespace pleep
                     // Server will create client character and then pass it its Entity
                     // Client may have to do predictive entity creation in the future,
                     // but we'll avoid that here for now because client has to wait anyways
-                    clientInfo.entity = create_client_focal_entity(cosmos, m_sharedBroker);
+                    glm::vec3 spawnPoint = glm::vec3(0.0f, 3.0f, 0.0f);
+
+                    clientInfo.entity = create_client_focal_entity(cosmos, spawnPoint);
                     PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
+                    // "jump" into the simulation
+                    create_jump_vfx(cosmos, clientInfo.entity, spawnPoint);
                 }
 
                 // send client upstream signture update for its focal entity
@@ -690,6 +694,9 @@ namespace pleep
         // Fifth: Check and update timestream states, and update parallel cosmos as appropriate
         if (cosmos)
         {
+            // TODO: short circuit if parallel is already simulating our past
+
+
             bool resolutionNeeded = false;
             for (auto signIt : cosmos->get_signatures_ref())
             {

@@ -17,7 +17,7 @@
 #endif
 
 // 2. change minimum displayed log level
-#define PLEEPLOG_LEVEL spdlog::level::trace
+#define PLEEPLOG_LEVEL spdlog::level::debug
 
 // TODO: sink logging to file?
 //#define PLEEPLOG_FILE

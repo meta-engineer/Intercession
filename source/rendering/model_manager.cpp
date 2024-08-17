@@ -77,7 +77,7 @@ namespace pleep
         // check for possible assets and load into receipt
         ImportReceipt scan = this->_scan_scene(scene, filestem, true);
         scan.importSourceFilepath = filepath;
-        debug_receipt(scan);
+        //debug_receipt(scan);
         
         // process materials and armatures first for meshes to reference
         this->_process_materials(scene, scan, directory);
@@ -693,7 +693,7 @@ namespace pleep
             {
                 animationName = receipt.importName + "_animation_" + std::to_string(i);
             }
-            PLEEPLOG_DEBUG("Loading anime-tion " + animationName);
+            //PLEEPLOG_DEBUG("Loading anime-tion " + animationName);
 
             m_animationMap[animationName] = _build_animation(animation);
 
