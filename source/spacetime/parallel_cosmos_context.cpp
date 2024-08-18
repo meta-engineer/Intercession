@@ -100,8 +100,6 @@ namespace pleep
         //      - maybe... just use them as-is, but don't extract them, so they stay the same, but affect the simulation correctly 
         // - remove timestreamstate of all entities which aren't forked
 
-        //PLEEPLOG_DEBUG("Copying over entities");
-
         // CosmosConfig should setup all synchros, dynamos, and eventbroker
         // Then we can simply copy every entity over through serialization
         for (auto signMapIt : sourceCosmos->get_signatures_ref())

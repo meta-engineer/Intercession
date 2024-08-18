@@ -428,23 +428,7 @@ namespace pleep
                         /// if this is divergent entity, then only read upstream components
                         if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
                         {
-                            Signature upstreamSign = cosmos->get_category_signature(ComponentCategory::upstream);
-                            
-                            for (ComponentType i = 0; i < MAX_COMPONENT_TYPES; i++)
-                            {
-                                if (!updateInfo.sign.test(i))
-                                {
-                                    continue;
-                                }
-                                if (upstreamSign.test(i))
-                                {
-                                    cosmos->deserialize_single_component(updateInfo.entity, i, evnt);
-                                }
-                                else
-                                {
-                                    cosmos->discard_single_component(i, evnt);
-                                }
-                            }
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
                         }
                         else
                         {
@@ -830,19 +814,20 @@ namespace pleep
         interceptionEvent >> interceptionInfo;
         interceptionEvent << interceptionInfo;
 
-        CausalChainlink link = derive_causal_chain_link(interceptionInfo.recipient);
-        if (link <= 0)
+        //CausalChainlink agentlink = derive_causal_chain_link(interceptionInfo.agent);
+        CausalChainlink recipientlink = derive_causal_chain_link(interceptionInfo.recipient);
+        if (recipientlink <= 0)
         {
             PLEEPLOG_ERROR("Something went wrong, a link-0 entity (" + std::to_string(interceptionInfo.recipient) + ") cannot have been interrupted. Ignoring...");
             return;
         }
-        
-        PLEEPLOG_TRACE("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
 
         std::shared_ptr<Cosmos> cosmos = m_workingCosmos.lock();
         if (m_workingCosmos.expired()) return;
 
-        // Put the entity into a forking timestream state (stop receiving from future)
+        PLEEPLOG_DEBUG("Detected interaction event from entity " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
+
+        // Promote/refresh the entity into a forking timestream state (stop receiving from future)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forking);
         // "Divergent" state (forking) now restricts reading downstream components from the timestream
     }

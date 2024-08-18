@@ -163,30 +163,72 @@ namespace pleep
                     const TimestreamState thisState = cosmos->get_timestream_state(dataA.collidee).first;
                     const TimestreamState otherState = cosmos->get_timestream_state(dataB.collidee).first;
 
-                    // Interception can only happen if
-                    //      neither entity has null chainlink
-                    //  AND either
-                    //      one entity has chainlink 0 AND the other is not chainlink 0
-                    //  OR
-                    //      neither entity is chainlink 0 and one entity has a "forked" state AND the other is not forked
-                    if ((thisLink  != NULL_CAUSALCHAINLINK) && (otherLink != NULL_CAUSALCHAINLINK) && (
-                            ((thisLink==0) ^ (otherLink==0))
-                            ||
-                            (thisLink!=0 && otherLink!=0 && (is_divergent(thisState) ^ is_divergent(otherState)))
-                        )
-                       )
+                    // Interception can only happen if chainlink values are different
+                    // OR (chainlink values are the same but,) ONE entity is forked (other is not)
+
+                    // we want link-0 entities to continuously trigger interceptions when affecting non-link-0 entities (because they can be non-deterministically changing) 
+                    // we want non-link-0 entites to trigger interceptions only once when affecting higher-link entities (both parties becoming forked)
+                    // we want forked entities to trigger interceptions only once when affecting non-forked entities (turning the other one forked)
+
+                    /*    
+                                =0 & F  =0 & M  >0 & F  >0 & M
+                        =0 & F    X       X       !       !
+                        =0 & M    X       X       !       !
+                        >0 & F    !       !       X       !
+                        >0 & M    !       !       !       X
+
+                        (All entities become forked if interception occurs, except link-0 entities)
+                        (agent priority is: link0 entity, if not, forked entity)
+                    */
+
+                    // Parallel cosmos' never have link-0 entities, so they will never receive that case
+
+                    // Server cosmos` do not want to trigger divergences for entities following their timestream, so they should only consider cases with link0 or forked
+
+                    // no timestream response if either are null chainlink (non-temporal)
+                    if (thisLink == NULL_CAUSALCHAINLINK || otherLink == NULL_CAUSALCHAINLINK)
                     {
-                        // Signal to NetworkDynamo put this entity's future into superposition
-                        // (and propagate up the timeline from there)
-                        EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
-                        // select the 0 link or forked state entity as the "agent"
-                        events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo {
-                            thisLink==0 || otherLink!=0 && is_divergent(thisState) ? dataA.collidee :  dataB.collidee
-                        };
-                        interceptionInfo.recipient = interceptionInfo.agent == dataA.collidee ? dataB.collidee : dataA.collidee;
-                        interceptionMessage << interceptionInfo;
-                        m_sharedBroker->send_event(interceptionMessage);
+                        continue;
                     }
+
+                    //PLEEPLOG_DEBUG("Potential interception between: " + std::to_string(dataA.collidee) + "(" + std::to_string(thisState) + ") and " + std::to_string(dataB.collidee) + "(" + std::to_string(thisState) + ")");
+
+                    // easier to check negative case
+                    if (!(
+                        ((thisLink == 0) ^ (otherLink == 0)) ||
+                        (thisLink != 0 && otherLink != 0 && is_divergent(thisState) ^ is_divergent(otherState))
+                        ))
+                    {
+                        continue;
+                    }
+
+                    // Signal to NetworkDynamo put this entity's future into superposition
+                    // (and propagate up the timeline from there)
+                    EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
+                    events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
+                    // agent priority is link0 -> forked -> lower-link
+                    if ((thisLink == 0) ^ (otherLink == 0))
+                    {
+                        interceptionInfo.agent = thisLink == 0 ? dataA.collidee : dataB.collidee;
+                    }
+                    else if (is_divergent(thisState) ^ is_divergent(otherState))
+                    {
+                        interceptionInfo.agent = is_divergent(thisState) ? dataA.collidee : dataB.collidee;
+                    }
+                    else if (thisLink != otherLink)
+                    {
+                        interceptionInfo.agent = thisLink < otherLink ? dataA.collidee : dataB.collidee;
+                    }
+                    else
+                    {
+                        PLEEPLOG_ERROR("You fucked up, not all cases were captured, this code should never run");
+                        interceptionInfo.agent = NULL_ENTITY;
+                        assert(true);
+                    }
+                    // set recipient to be reciprocal
+                    interceptionInfo.recipient = interceptionInfo.agent == dataA.collidee ? dataB.collidee : dataA.collidee;
+                    interceptionMessage << interceptionInfo;
+                    m_sharedBroker->send_event(interceptionMessage);
                 }
             }
         }

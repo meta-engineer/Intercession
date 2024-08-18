@@ -73,8 +73,15 @@ namespace pleep
                         /// Then we can set it to merged when we know it is causing a paradox
                         /// Thus, if something new comes along, it will re-fork it and it will behave inline with upstream only... (possibly causing another paradox)
 
-                        // only extract upstream components
-                        cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        // only extract upstream components for forked entities
+                        if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
+                        {
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        }
+                        else
+                        {
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                        }
 
                         /// Check for divergent/forked timestream state?
                         /// Entities which have a "lack" of interaction will not be marked as forked, but we want them to be upstream only after their non-interaction... instead just make everything always upstream?
@@ -426,6 +433,7 @@ namespace pleep
 
         // Promote directly to forked (no need to have any forking delay while already in parallel)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forked);
+        PLEEPLOG_DEBUG("Entity " + std::to_string(interceptionInfo.recipient) + " became forked");
     }
   
     
