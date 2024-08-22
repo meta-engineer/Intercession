@@ -21,6 +21,7 @@ namespace pleep
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
+        m_eventBroker->add_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ParallelCosmosContext::_entity_created_handler));
     }
 
     ParallelCosmosContext::~ParallelCosmosContext()
@@ -29,6 +30,7 @@ namespace pleep
         m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::TIMESTREAM_INTERCEPTION, ParallelCosmosContext::_timestream_interception_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::parallel::WORLDLINE_SHIFT, ParallelCosmosContext::_worldline_shift_handler));
         m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_REMOVED, ParallelCosmosContext::_entity_removed_handler));
+        m_eventBroker->remove_listener(METHOD_LISTENER(events::cosmos::ENTITY_CREATED, ParallelCosmosContext::_entity_created_handler));
     }
 
     void ParallelCosmosContext::request_resolution(TimesliceId requesterId)
@@ -69,86 +71,97 @@ namespace pleep
             if (is_running()) return false;
 
             // if we were already init by someone else first then skip:
-            if (m_currentTimeslice != NULL_TIMESLICEID) return false;
-            
-            m_currentTimeslice = sourceCosmos->get_host_id();
+            if (m_currentState != State::initializing) return false;
+
+            m_currentState = State::busy;
 
             // release runtime lock
         }
 
-        const std::lock_guard<std::mutex> cLk(m_cosmosMux);
-
-        // keep parallel's ID as NULL_TIMESLICEID, and register local entities as foreign
-        // then convert NULL_TIMESLICEID entities to local upon extraction
-
-        // build new cosmos
-        //PLEEPLOG_DEBUG("Initializing cosmos");
-        /// TEMP: use hard-coded cosmos config
-        m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
-        m_currentCosmos->set_coherency(sourceCosmos->get_coherency());
-        PLEEPLOG_DEBUG("Setting cosmos to start at coherency " + std::to_string(m_currentCosmos->get_coherency()));
-
-        // I can't just copy cosmos as it is because any time travellers aren't in the future...
-        // I need to copy the cosmos as it is in the timestream, 
-        // EXCEPT the resolution candidates need to be how they are in the cosmos directly...
-        // so that excludes any forkING entities, and time-travellers
-
-        // copy the cosmos as it is now, BUT:
-        // - delete/omit any entities which do not have a future timestream (time-travellers)
-        // - for any forking entities, use their timestream states instead?
-        //      - Can we run out of timestream, can it not be available after a recent interception?
-        //      - maybe... just use them as-is, but don't extract them, so they stay the same, but affect the simulation correctly 
-        // - remove timestreamstate of all entities which aren't forked
-
-        // CosmosConfig should setup all synchros, dynamos, and eventbroker
-        // Then we can simply copy every entity over through serialization
-        for (auto signMapIt : sourceCosmos->get_signatures_ref())
         {
-            // omit anything that doesn't exist in the future at all (time travellers)
-            if (!sourceFutureTimestreams->entity_has_timestream(signMapIt.first))
+            const std::lock_guard<std::mutex> cLk(m_cosmosMux);
+
+            // keep parallel's ID as NULL_TIMESLICEID, and register local entities as foreign
+            // then convert NULL_TIMESLICEID entities to local upon extraction
+
+            // build new cosmos
+            //PLEEPLOG_DEBUG("Initializing cosmos");
+            /// TEMP: use hard-coded cosmos config
+            m_currentCosmos = construct_hard_config_cosmos(m_eventBroker, m_dynamoCluster);
+            m_currentCosmos->set_coherency(sourceCosmos->get_coherency());
+            PLEEPLOG_DEBUG("Setting cosmos to start at coherency " + std::to_string(m_currentCosmos->get_coherency()));
+
+            // I can't just copy cosmos as it is because any time travellers aren't in the future...
+            // I need to copy the cosmos as it is in the timestream, 
+            // EXCEPT the resolution candidates need to be how they are in the cosmos directly...
+            // so that excludes any forkING entities, and time-travellers
+
+            // copy the cosmos as it is now, BUT:
+            // - delete/omit any entities which do not have a future timestream (time-travellers)
+            // - for any forking entities, use their timestream states instead?
+            //      - Can we run out of timestream, can it not be available after a recent interception?
+            //      - maybe... just use them as-is, but don't extract them, so they stay the same, but affect the simulation correctly 
+            // - remove timestreamstate of all entities which aren't forked
+
+            // CosmosConfig should setup all synchros, dynamos, and eventbroker
+            // Then we can simply copy every entity over through serialization
+            for (auto signMapIt : sourceCosmos->get_signatures_ref())
             {
-                PLEEPLOG_DEBUG("Skipping entity " + std::to_string(signMapIt.first) + " because it has no future");
-                continue;
+                // omit anything that doesn't exist in the future at all (time travellers)
+                if (!sourceFutureTimestreams->entity_has_timestream(signMapIt.first))
+                {
+                    PLEEPLOG_DEBUG("Skipping entity " + std::to_string(signMapIt.first) + " because it has no future");
+                    continue;
+                }
+
+                EventMessage entityUpdate(events::cosmos::ENTITY_UPDATE);
+                sourceCosmos->serialize_entity_components(
+                    signMapIt.first,
+                    signMapIt.second,
+                    entityUpdate
+                );
+
+                PLEEPLOG_DEBUG("Loading parallel entity " + std::to_string(signMapIt.first) + " | " + signMapIt.second.to_string());
+
+                if (!m_currentCosmos->register_entity(signMapIt.first, signMapIt.second))
+                {
+                    PLEEPLOG_DEBUG("Entity registration failed?");
+                    continue;
+                }
+                m_currentCosmos->deserialize_entity_components(
+                    signMapIt.first,
+                    signMapIt.second,
+                    entityUpdate,
+                    ComponentCategory::all
+                );
+                assert(m_currentCosmos->entity_exists(signMapIt.first));
+
+                // after transferring components timestream state should be transferred as well
+                // meaning setting forked entities in parallel, and re-merge them in source
+                // (as we are about to resolve them)
+                // should this be forkING entities as well? kinda defeats the point of having another state
+                if (sourceCosmos->get_timestream_state(signMapIt.first).first == TimestreamState::forked)
+                {
+                    m_currentCosmos->set_timestream_state(signMapIt.first, TimestreamState::forked);
+                    PLEEPLOG_DEBUG("Setting it as FORKED");
+                    sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merged);
+                }
             }
-
-            EventMessage entityUpdate(events::cosmos::ENTITY_UPDATE);
-            sourceCosmos->serialize_entity_components(
-                signMapIt.first,
-                signMapIt.second,
-                entityUpdate
-            );
-
-            PLEEPLOG_DEBUG("Loading parallel entity " + std::to_string(signMapIt.first) + " | " + signMapIt.second.to_string());
-
-            if (!m_currentCosmos->register_entity(signMapIt.first, signMapIt.second))
-            {
-                PLEEPLOG_DEBUG("Entity registration failed?");
-                continue;
-            }
-            m_currentCosmos->deserialize_entity_components(
-                signMapIt.first,
-                signMapIt.second,
-                entityUpdate,
-                ComponentCategory::all
-            );
-            assert(m_currentCosmos->entity_exists(signMapIt.first));
-
-            // after transferring components timestream state should be transferred as well
-            // meaning setting forked entities in parallel, and re-merge them in source
-            // (as we are about to resolve them)
-            // should this be forkING entities as well? kinda defeats the point of having another state
-            if (sourceCosmos->get_timestream_state(signMapIt.first).first == TimestreamState::forked)
-            {
-                m_currentCosmos->set_timestream_state(signMapIt.first, TimestreamState::forked);
-                PLEEPLOG_DEBUG("Setting it as FORKED");
-                sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merged);
-            }
+            
+            //PLEEPLOG_DEBUG("Copying over timestreams");
+            // do this AFTER entities to avoid passing any init events into timestream
+            // link timestreams together to maintain sync after load
+            m_dynamoCluster.networker->link_timestreams(sourceFutureTimestreams);
         }
-        
-        //PLEEPLOG_DEBUG("Copying over timestreams");
-        // do this AFTER entities to avoid passing any init events into timestream
-        // link timestreams together to maintain sync after load
-        m_dynamoCluster.networker->link_timestreams(sourceFutureTimestreams);
+
+        {
+            const std::lock_guard<std::mutex> rLk(m_runtimeMux);
+
+            m_currentState = State::ready;
+            m_currentTimeslice = sourceCosmos->get_host_id();
+
+            // release runtime lock
+        }
         
         return true;
     }
@@ -161,221 +174,230 @@ namespace pleep
             const std::lock_guard<std::mutex> rLk(m_runtimeMux);
             
             // ensure cosmos is stopped (it should already be)
-            assert(!is_running());
-            if (is_running())
-            {
-                PLEEPLOG_WARN("Called extract while Cosmos is still running");
-                return false;
-            }
+            if (is_running()) return false;
+
+            if (m_currentState != State::ready) return false;
             
+            // stop anyone from interrupting us.
+            m_currentState = State::busy;
+
             // release runtime lock
         }
 
-        const std::lock_guard<std::mutex> cLk(m_cosmosMux);
-
-        // ensure cosmos exists!?
-        assert(m_currentCosmos != nullptr);
-        if (m_currentCosmos == nullptr)
         {
-            PLEEPLOG_WARN("Called extract while Cosmos does not exist?! Something went wrong!");
-            return false;
-        }
+            const std::lock_guard<std::mutex> cLk(m_cosmosMux);
 
-        // coherency values must be same or syncronization has messed up
-        assert(m_currentCosmos->get_coherency() == dstCosmos->get_coherency());
-        if (m_currentCosmos->get_coherency() != dstCosmos->get_coherency())
-        {
-            PLEEPLOG_ERROR("Called extract while Cosmos' are not synced, something went wrong. Ignoring...");
-            return false;
-        }
-
-        // add/update existing entities
-        for (auto signMapIt : m_currentCosmos->get_signatures_ref())
-        {
-            EventMessage extraction(events::cosmos::ENTITY_UPDATE);
-            
-            Entity localEntity = signMapIt.first;
-            if (!decrement_causal_chain_link(localEntity))
+            // ensure cosmos exists!?
+            if (m_currentCosmos == nullptr)
             {
-                // ignore non-temporal entities
-                // (or entities with chainlink 0, how did they even get forked to begin with?)
-                PLEEPLOG_ERROR("Failed to extract entity " + std::to_string(localEntity) + " because its causal chain link value is: " + std::to_string(derive_causal_chain_link(localEntity)));
-                continue;
+                PLEEPLOG_WARN("Called extract while Cosmos does not exist?! Something went wrong!");
+                assert(m_currentCosmos != nullptr);
             }
 
-            // create any new entities (with NULL_TIMESLICEID)
-            // and extract any entity local entities which have diverged during simulation
-            if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
+            // coherency values must be same or syncronization has messed up
+            if (m_currentCosmos->get_coherency() != dstCosmos->get_coherency())
             {
-                /// TODO: locally created entities to be extracted to destination with new id
-                // (once we have the ability to create entities at all)
-                /// use parallel entity as source for local entity
-                PLEEPLOG_CRITICAL("Ignored extracting entity " + std::to_string(localEntity) + " because it was created during parallel runtime!!!!");
-                continue;
+                PLEEPLOG_ERROR("Called extract while Cosmos' are not synced, something went wrong. Ignoring...");
+                assert(m_currentCosmos->get_coherency() == dstCosmos->get_coherency());
             }
-            else if (m_readingSteinerEntities.count(localEntity))
+
+            // add/update existing entities
+            for (auto signMapIt : m_currentCosmos->get_signatures_ref())
             {
-                // ignore this entity extraction and keep current timeline's version
-                m_readingSteinerEntities.erase(localEntity);
-
-                // after decrement this can be a chainlink 0 entity
-                assert(derive_causal_chain_link(localEntity) == 0);
-
-                // up until this point this entity's timestream will be in parallel's worldline
-                // by ignoring it on extraction this causes it to shift to the physizalized worldline
-                // we need to add an event to the timestream to ensure this discontinuous state change is maintained over cycles
-
-                // we need to fetch the state of localEntity in dstCosmos and push this into a worldline shift event
-                EventMessage shiftEvent(events::parallel::WORLDLINE_SHIFT, dstCosmos->get_coherency());
-                events::parallel::WORLDLINE_SHIFT_params shiftInfo{ localEntity, dstCosmos->get_entity_signature(localEntity) };
-                dstCosmos->serialize_entity_components(shiftInfo.entity, shiftInfo.sign, shiftEvent);
-                shiftEvent << shiftInfo;
-                // how to access the timestream from here...?
-                m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
+                EventMessage extraction(events::cosmos::ENTITY_UPDATE);
                 
-                PLEEPLOG_DEBUG("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
-
-
-
-
-
-                // create mandella effect for this shift at this moment as well?
-                // worldline shift event happens at arrival time
-                // worldline shift timestream happens here at extraction (shortly after divergence)
-                // create mandella entity directly in dstCosmos? What about other mandella effects?
-                // entity needs to be based on localEntity at the time of the collision?
-                // How do I get information about the readingStienerEntity's divergence event. Collision meta-data?
-                // context can store every interaction event during the cycle
-                // may need more information about interception history (position/velocity at event time?)
-
-                // entity values in history are down a chainlink level
-                Entity sourceEntity = m_interceptionHistory.count(signMapIt.first) ? m_interceptionHistory.at(signMapIt.first).front() : signMapIt.first;
-                if (m_interceptionHistory.empty())
+                Entity localEntity = signMapIt.first;
+                if (!decrement_causal_chain_link(localEntity))
                 {
-                    PLEEPLOG_CRITICAL("UH OH interception history is empty!!!! HOW IS THAT PROSSIBLE");
+                    // ignore non-temporal entities
+                    // (or entities with chainlink 0, how did they even get forked to begin with?)
+                    PLEEPLOG_ERROR("Ignored extracting entity " + std::to_string(localEntity) + " because its causal chain link value is: " + std::to_string(derive_causal_chain_link(localEntity)));
+                    continue;
                 }
 
-                auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
-                auto targetTrans = m_currentCosmos->get_component<TransformComponent>(signMapIt.first);
-                auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
-                auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(signMapIt.first);
-                glm::vec3 diff = targetTrans.origin - sourceTrans.origin;
-                diff = glm::length2(diff) == 0 ? glm::sphericalRand(1.0f) : glm::normalize(diff);
-
-                glm::vec3 newVel = glm::sphericalRand(1.0f);
-                // clip velocity to moving away from source
-                if (glm::dot(diff, newVel) < 0.0f)
+                // create any new entities (with NULL_TIMESLICEID)
+                // and extract any entity local entities which have diverged during simulation
+                if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
                 {
-                    newVel += diff;
+                    /// TODO: locally created entities to be extracted to destination with new id
+                    // (once we have the ability to create entities at all)
+                    /// use parallel entity as source for local entity
+                    PLEEPLOG_CRITICAL("Ignored extracting entity " + std::to_string(localEntity) + " because it was created during parallel runtime!!!!");
+                    continue;
                 }
-                newVel *= 10.0f;
-                newVel += -sourcePhysics.velocity;
-                
-                // TODO: ensure this isn't clipping inside of source? or inside of anything for that matter? raycast from source?
-                // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
-
-                // velocity may be 0 at this time? derive displacement between both possible entities
-                Entity mandella = create_test_projectile(
-                    dstCosmos,
-                    NULL_ENTITY, // pretend to be the timeslice we're extracting to?
-                    targetTrans.origin, // give headstart?
-                    newVel
-                );
-                PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
-
-
-
-
-                continue;
-            }
-            // easier to extract ALL local entities, than to compute non-divergences somehow
-            else if (true)//(is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
-            {
-                m_currentCosmos->serialize_entity_components(signMapIt.first, signMapIt.second, extraction);
-
-                // entity should already exist
-                if (!dstCosmos->entity_exists(localEntity))
+                else if (m_readingSteinerEntities.count(localEntity))
                 {
-                    PLEEPLOG_ERROR("Entity " + std::to_string(localEntity) + " with non-null-host from past does not already exist in future.");
+                    // ignore this entity extraction and keep current timeline's version
+                    m_readingSteinerEntities.erase(localEntity);
+
+                    // after decrement this can be a chainlink 0 entity
+                    assert(derive_causal_chain_link(localEntity) == 0);
+
+                    // up until this point this entity's timestream will be in parallel's worldline
+                    // by ignoring it on extraction this causes it to shift to the physizalized worldline
+                    // we need to add an event to the timestream to ensure this discontinuous state change is maintained over cycles
+
+                    // we need to fetch the state of localEntity in dstCosmos and push this into a worldline shift event
+                    EventMessage shiftEvent(events::parallel::WORLDLINE_SHIFT, dstCosmos->get_coherency());
+                    events::parallel::WORLDLINE_SHIFT_params shiftInfo{ localEntity, dstCosmos->get_entity_signature(localEntity) };
+                    dstCosmos->serialize_entity_components(shiftInfo.entity, shiftInfo.sign, shiftEvent);
+                    shiftEvent << shiftInfo;
+                    // how to access the timestream from here...?
+                    m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
+                    
+                    PLEEPLOG_DEBUG("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+
+
+
+
+
+                    // create mandella effect for this shift at this moment as well?
+                    // worldline shift event happens at arrival time
+                    // worldline shift timestream happens here at extraction (shortly after divergence)
+                    // create mandella entity directly in dstCosmos? What about other mandella effects?
+                    // entity needs to be based on localEntity at the time of the collision?
+                    // How do I get information about the readingStienerEntity's divergence event. Collision meta-data?
+                    // context can store every interaction event during the cycle
+                    // may need more information about interception history (position/velocity at event time?)
+
+                    // entity values in history are down a chainlink level
+                    Entity sourceEntity = m_interceptionHistory.count(signMapIt.first) ? m_interceptionHistory.at(signMapIt.first).front() : signMapIt.first;
+                    if (m_interceptionHistory.empty())
+                    {
+                        PLEEPLOG_CRITICAL("UH OH interception history is empty!!!! HOW IS THAT PROSSIBLE");
+                    }
+
+                    auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
+                    auto targetTrans = m_currentCosmos->get_component<TransformComponent>(signMapIt.first);
+                    auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
+                    auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(signMapIt.first);
+                    glm::vec3 diff = targetTrans.origin - sourceTrans.origin;
+                    diff = glm::length2(diff) == 0 ? glm::sphericalRand(1.0f) : glm::normalize(diff);
+
+                    glm::vec3 newVel = glm::sphericalRand(1.0f);
+                    // clip velocity to moving away from source
+                    if (glm::dot(diff, newVel) < 0.0f)
+                    {
+                        newVel += diff;
+                    }
+                    newVel *= 10.0f;
+                    newVel += -sourcePhysics.velocity;
+                    
+                    // TODO: ensure this isn't clipping inside of source? or inside of anything for that matter? raycast from source?
+                    // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
+
+                    // velocity may be 0 at this time? derive displacement between both possible entities
+                    Entity mandella = create_test_projectile(
+                        dstCosmos,
+                        NULL_ENTITY, // pretend to be the timeslice we're extracting to?
+                        targetTrans.origin, // give headstart?
+                        newVel
+                    );
+                    PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
+
+
+
+
+                    continue;
                 }
-                assert(dstCosmos->entity_exists(localEntity));
+                // easier to extract ALL local entities, than to compute non-divergences somehow
+                else if (true)//(is_divergent(m_currentCosmos->get_timestream_state(signMapIt.first).first))
+                {
+                    m_currentCosmos->serialize_entity_components(signMapIt.first, signMapIt.second, extraction);
 
-                /// parallel forked entities to be extracted to destination
-                dstCosmos->deserialize_entity_components(localEntity, signMapIt.second, extraction, ComponentCategory::all);
-                
-                // carry over their forked state to ensure copying to next parallel
-                dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
+                    // entity should already exist
+                    if (!dstCosmos->entity_exists(localEntity))
+                    {
+                        PLEEPLOG_ERROR("Entity " + std::to_string(localEntity) + " with non-null-host from past does not already exist in future.");
+                    }
+                    assert(dstCosmos->entity_exists(localEntity));
 
-                PLEEPLOG_DEBUG("Extracted entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+                    /// parallel forked entities to be extracted to destination
+                    dstCosmos->deserialize_entity_components(localEntity, signMapIt.second, extraction, ComponentCategory::all);
+                    
+                    // carry over their forked state to ensure copying to next parallel
+                    if (derive_causal_chain_link(localEntity) > 0) dstCosmos->set_timestream_state(localEntity, m_currentCosmos->get_timestream_state(signMapIt.first).first);
+
+                    PLEEPLOG_DEBUG("Extracted entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
+                }
+                else
+                {
+                    // entity was not created nor forked during parallel
+                    PLEEPLOG_DEBUG("Ignoring entity: " + std::to_string(localEntity));
+                }
+
+                // if this is timeslice 0 then clear all forked entity states NOW
+                // (this usually happens during state transfer in next init, but timeslice 0 will deflect init call)
+                if (dstCosmos->get_host_id() == 0U)
+                {
+                    dstCosmos->set_timestream_state(localEntity, TimestreamState::merged);
+                }
             }
-            else
+
+            // remove any local entities from the destination which were condemned during the run
+            for (auto dead : m_condemnedEntities)
             {
-                // entity was not created nor forked during parallel
-                PLEEPLOG_DEBUG("Ignoring entity: " + std::to_string(localEntity));
+                if (!decrement_causal_chain_link(dead))
+                {
+                    // ignore entities which could not exist anyways
+                    continue;
+                }
+                if (derive_timeslice_id(dead) != NULL_TIMESLICEID)
+                {
+                    dstCosmos->condemn_entity(dead);
+                }
             }
+            // condemned entities won't exist upon next init
+            m_condemnedEntities.clear();
 
-            // if this is timeslice 0 then clear all forked entity states NOW
-            // (this usually happens during state transfer in next init, but timeslice 0 will deflect init call)
-            if (dstCosmos->get_host_id() == 0U)
-            {
-                dstCosmos->set_timestream_state(localEntity, TimestreamState::merged);
-            }
+            // cleaup cosmos
+            m_currentCosmos = nullptr;
+            // unlink current timestreams
+            m_dynamoCluster.networker->link_timestreams(nullptr);
         }
-
-        // remove any local entities from the destination which were condemned during the run
-        for (auto dead : m_condemnedEntities)
-        {
-            if (!decrement_causal_chain_link(dead))
-            {
-                // ignore entities which could not exist anyways
-                continue;
-            }
-            if (derive_timeslice_id(dead) != NULL_TIMESLICEID)
-            {
-                dstCosmos->condemn_entity(dead);
-            }
-        }
-        // condemned entities won't exist upon next init
-        m_condemnedEntities.clear();
-
-        // cleaup cosmos
-        m_currentCosmos = nullptr;
-        // unlink current timestreams
-        m_dynamoCluster.networker->link_timestreams(nullptr); 
 
         // EXTRACTION COMPLETE!
 
         {
             const std::lock_guard<std::mutex> rLk(m_runtimeMux);
-
+            
             m_currentTimeslice = NULL_TIMESLICEID;
 
             // if this is timeslice 0 AND m_isRecycleNeeded is true,
             //   then send new init request to past-most timeslice
             if (dstCosmos->get_host_id() == 0U && m_isRecycleNeeded)
             {
+                PLEEPLOG_DEBUG("Finished extraction; starting recycle");
                 EventMessage initMessage(events::parallel::INIT);
                 events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_pastmostTimeslice) };
                 initMessage << initInfo;
                 m_eventBroker->send_event(initMessage);
+
                 m_isRecycleNeeded = false;
+                m_currentState = State::initializing;
             }
             // otherwise send init request to same timesliceId until we reach timeslice 0
             else if (dstCosmos->get_host_id() > 0U)
             {
+                PLEEPLOG_DEBUG("Finished extraction; moving to next timeslice");
                 EventMessage initMessage(events::parallel::INIT);
                 events::parallel::INIT_params initInfo{ dstCosmos->get_host_id() };
                 initMessage << initInfo;
                 m_eventBroker->send_event(initMessage);
+
+                m_currentState = State::initializing;
             }
             // otherwise we're done until later requests
             else
             {
+                PLEEPLOG_DEBUG("Finished extraction; going idle");
                 // any cleanup needed at end of parallel cyclings:
 
                 // just incase there are leftovers somehow
                 m_readingSteinerEntities.clear();
                 m_interceptionHistory.clear();
+
+                m_currentState = State::idle;
             }
         }
 
@@ -387,31 +409,29 @@ namespace pleep
         events::parallel::DIVERGENCE_params divInfo;
         divEvent >> divInfo;
 
+        // need lock because this handler can also be used by the api
         const std::lock_guard<std::mutex> rLk(m_runtimeMux);
-        PLEEPLOG_DEBUG("Timeslice " + std::to_string(divInfo.sourceTimeslice) + " has a divergence, we are running parallel timeslice " + std::to_string(m_currentTimeslice));
 
-        // if simulating my past, do nothing
-        // if simulating me or my future, flag for recycle
-        // if not simulating send init request to requester
-        // simulating != running
-        // use cosmos existing as indication???
-        if (m_currentTimeslice == NULL_TIMESLICEID)
+        PLEEPLOG_DEBUG("Timeslice " + std::to_string(divInfo.sourceTimeslice) + " has a divergence, we are " + std::to_string(m_currentState) + " on parallel timeslice " + std::to_string(m_currentTimeslice));
+
+        if (m_currentState == State::idle)
         {
-            // send init request back to requesterId via event to network dynamo
+            // send init request immediately via event to network dynamo
             EventMessage initMessage(events::parallel::INIT);
-            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_pastmostTimeslice) };
             // always start from beginning?
+            events::parallel::INIT_params initInfo{ static_cast<uint16_t>(m_pastmostTimeslice) }; 
             //events::parallel::INIT_params initInfo{ divInfo.sourceTimeslice };
             initMessage << initInfo;
             m_eventBroker->send_event(initMessage);
+
+            m_currentState = State::initializing;
         }
-        else if (m_currentTimeslice <= divInfo.sourceTimeslice)
+        /// TODO: this will trigger if it is caught between extract and init while timeslice is null (null == 14 >= sourceTimeslice)
+        else if (m_currentTimeslice >= divInfo.sourceTimeslice || divInfo.sourceTimeslice == NULL_TIMESLICEID)
         {
-            // if we are at or behind requesterId then we need another cycle
-            /// set dirty bit to be checked at the end of a cycle, so that we start another cycle to resolve it
             m_isRecycleNeeded = true;
         }
-        // if we haven't reached requesterId then no worries, we'll get there this cycle
+        // if we are simulating the past of the divergent timeslice then we will get there in the current cycle
     }
 
     void ParallelCosmosContext::_entity_removed_handler(EventMessage removalEvent)
@@ -424,6 +444,16 @@ namespace pleep
         removalEvent >> removalInfo;
 
         m_condemnedEntities.insert(removalInfo.entity);
+    }
+    
+    void ParallelCosmosContext::_entity_created_handler(EventMessage creationEvent)
+    {
+        // removed from running condemned list if it has been set
+
+        events::cosmos::ENTITY_CREATED_params creationInfo;
+        creationEvent >> creationInfo;
+
+        m_condemnedEntities.erase(creationInfo.entity);
     }
 
     void ParallelCosmosContext::_worldline_shift_handler(EventMessage shiftEvent)
@@ -471,8 +501,13 @@ namespace pleep
             finishedEvent << finishedInfo;
             m_eventBroker->send_event(finishedEvent);
 
+            m_currentState = State::ready;
+
             return;
         }
+        
+        // ensure state is busy while running
+        m_currentState = State::busy;
 
         // artifically give ample time to reach target without waiting
         // pretend we are always behind in simulation time, and need to catch up

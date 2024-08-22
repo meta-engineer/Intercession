@@ -81,6 +81,7 @@ namespace pleep
                         else
                         {
                             cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                            //cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
                         }
 
                         /// Check for divergent/forked timestream state?
@@ -254,6 +255,8 @@ namespace pleep
 
                             // write new state into cosmos
                             cosmos->deserialize_entity_components(jumpInfo.entity, cachedJumpInfo.sign, cachedJump);
+                            // if you arrive in a diverged jump you will have to not abide by the timestream
+                            cosmos->set_timestream_state(jumpInfo.entity, TimestreamState::forked);
                             // we've extracted everything, so pop the cache (cachedJump is no longer defined)
                             m_divergentJumpRequests.erase(jumpInfo.tripId);
                         }
@@ -433,7 +436,9 @@ namespace pleep
 
         // Promote directly to forked (no need to have any forking delay while already in parallel)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forked);
-        PLEEPLOG_DEBUG("Entity " + std::to_string(interceptionInfo.recipient) + " became forked");
+        PLEEPLOG_DEBUG("Recipient Entity " + std::to_string(interceptionInfo.recipient) + " became forked");
+        cosmos->set_timestream_state(interceptionInfo.agent, TimestreamState::forked);
+        PLEEPLOG_DEBUG("Agent Entity " + std::to_string(interceptionInfo.agent) + " became forked");
     }
   
     

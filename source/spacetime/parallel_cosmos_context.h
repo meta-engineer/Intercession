@@ -64,6 +64,7 @@ namespace pleep
         // event handlers
         void _divergence_handler(EventMessage divEvent);
         void _entity_removed_handler(EventMessage removalEvent);
+        void _entity_created_handler(EventMessage creationEvent);
         void _worldline_shift_handler(EventMessage shiftEvent);
         void _timestream_interception_handler(EventMessage interceptionEvent);
 
@@ -77,14 +78,21 @@ namespace pleep
         // control flags and signal setting during simulation (below)
         std::mutex m_runtimeMux;
 
+        // state for orchestrating the content of the current cosmos
+        enum State
+        {
+            idle,
+            initializing,
+            ready,       // ready for extraction or ready to start
+            busy
+        };
+        ParallelCosmosContext::State m_currentState = State::idle;
         // timepoint when we should stop ourselves
         uint16_t    m_coherencyTarget;
         // flag indicates when present frontier is reached, start again from the past
         bool        m_isRecycleNeeded = false;
-        // which timeslice cosmos are we paralleling
+        // which timeslice cosmos are we paralleling (set after init, while simulating, and while waiting for extract)
         TimesliceId m_currentTimeslice = NULL_TIMESLICEID;
-        // use to start new simulation cycle
-        const size_t m_pastmostTimeslice; // default 0?
 
         // remember condemned entities during simulation for "extraction"
         std::unordered_set<Entity> m_condemnedEntities;
@@ -97,6 +105,9 @@ namespace pleep
         // records the entities each entity has intercepted over the course of this history cycle
         // should reset at the end of each cycle
         std::unordered_map<Entity, std::queue<Entity>> m_interceptionHistory;
+        
+        // use to start new simulation cycle
+        const size_t m_pastmostTimeslice; // default 0?
     };
 }
 

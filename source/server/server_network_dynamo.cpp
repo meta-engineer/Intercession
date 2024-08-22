@@ -337,13 +337,10 @@ namespace pleep
             {
                 PLEEPLOG_DEBUG("Received init request from parallel context");
                 // parallel is ready to start and has requested we init it
-                m_timelineApi.parallel_load_and_link(cosmos);
-
-                // check if load was successful
-                if (m_timelineApi.parallel_get_timeslice() != m_timelineApi.get_timeslice_id())
+                if (!m_timelineApi.parallel_load_and_link(cosmos))
                 {
                     // someone else beat us, parallel is not mirroring us...
-                    PLEEPLOG_WARN("Someone: " + std::to_string(m_timelineApi.parallel_get_timeslice()) + " beat us to initing... this doesn't seem right.");
+                    PLEEPLOG_WARN("Parallel load failed. It is currently running: " + std::to_string(m_timelineApi.parallel_get_timeslice()) + " something doesn't seem right.");
                     break;
                 }
 

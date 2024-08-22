@@ -91,13 +91,13 @@ namespace pleep
         // notify parallel that forked entities are available to be resolved
         void parallel_notify_divergence();
         // deep copy cosmos, deep copy & link parallel to m_futureTimestreams
-        void parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos);
+        bool parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos);
         // sets parallel simulation target coherency.
         // must be greater than current or sets to current
         void parallel_retarget(uint16_t newTarget);
         // if simulation has reached target and stopped, restarts it
         // ideally set coherency target to be: current + 1 + delay to next (in frames)
-        void parallel_start();
+        bool parallel_start();
         // return the timeslice that parallel is currently simulating
         // returns NULL_TIMESLICEID if not running
         TimesliceId parallel_get_timeslice();

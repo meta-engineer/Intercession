@@ -176,18 +176,15 @@ namespace pleep
         m_sharedParallel->request_resolution(m_timesliceId);
     }
 
-    void TimelineApi::parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos)
+    bool TimelineApi::parallel_load_and_link(const std::shared_ptr<Cosmos> sourceCosmos)
     {
-        if (m_sharedParallel == nullptr) return;
+        if (m_sharedParallel == nullptr) return true;
         // parallel should stop us if it is already running for some reason
 
         PLEEPLOG_TRACE("Initing parallel cosmos");
 
         // deep copy cosmos and timestream into parallel
-        if (!m_sharedParallel->load_and_link(sourceCosmos, m_futureTimestreams))
-        {
-            PLEEPLOG_WARN("parallel loading failed... somehow? Moving on...");
-        }
+        return m_sharedParallel->load_and_link(sourceCosmos, m_futureTimestreams);
     }
 
     void TimelineApi::parallel_retarget(uint16_t newTarget)
@@ -197,17 +194,20 @@ namespace pleep
         m_sharedParallel->set_coherency_target(newTarget);
     }
 
-    void TimelineApi::parallel_start()
+    bool TimelineApi::parallel_start()
     {
-        if (m_sharedParallel == nullptr) return;
+        if (m_sharedParallel == nullptr) return false;
 
         // try restart thread only if it had stopped
-        if (!m_sharedParallel->is_running())
+        if (m_sharedParallel->is_running())
         {
-            PLEEPLOG_DEBUG("Restarting parallel...");
-            // start() is idempotent if already running
-            m_sharedParallel->start();
+            PLEEPLOG_WARN("Called to start parallel while it is already running... ignoring.");
+            return false;
         }
+        PLEEPLOG_DEBUG("Restarting parallel...");
+        // start() is idempotent if already running
+        m_sharedParallel->start();
+        return true;
     }
     
     TimesliceId TimelineApi::parallel_get_timeslice()

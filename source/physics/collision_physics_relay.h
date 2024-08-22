@@ -175,7 +175,7 @@ namespace pleep
                         =0 & F    X       X       !       !
                         =0 & M    X       X       !       !
                         >0 & F    !       !       X       !
-                        >0 & M    !       !       !       X
+                        >0 & M    !       !       !       X* (! if not a server and link values are not equal)
 
                         (All entities become forked if interception occurs, except link-0 entities)
                         (agent priority is: link0 entity, if not, forked entity)
@@ -195,8 +195,9 @@ namespace pleep
 
                     // easier to check negative case
                     if (!(
-                        ((thisLink == 0) ^ (otherLink == 0)) ||
-                        (thisLink != 0 && otherLink != 0 && is_divergent(thisState) ^ is_divergent(otherState))
+                        ((thisLink == 0) ^ (otherLink == 0))
+                        || (thisLink != 0 && otherLink != 0 && is_divergent(thisState) ^ is_divergent(otherState))
+                        //|| (thisLink != otherLink && (!is_divergent(thisState) || !is_divergent(otherState)) && cosmos->get_host_id() == NULL_TIMESLICEID)
                         ))
                     {
                         continue;
