@@ -4,14 +4,14 @@
 # push working directory
 START_PWD=$(pwd)
 
-if [[ $(basename $START_PWD) == "Intercession" ]]
+if [[ $(basename $START_PWD) == "Intercession_dev" ]]
 then
     true
 elif [[ $(basename $START_PWD) == "cmake_scripts" ]]
 then
     cd ..
 else
-    echo "-- Please run script from directory cmake_scripts/ or project root Intercession/"
+    echo "-- Please run script from directory cmake_scripts/ or project root Intercession_dev/"
     exit
 fi
 
@@ -26,7 +26,7 @@ if [ -f "./build/Release/INTERCESSION_CLIENT.exe" ]
 then
     echo ""
     echo "-- Build success!"
-    echo "-- Release executable: Intercession/build/Release/INTERCESSION_CLIENT.exe"
+    echo "-- Release executable: Intercession_dev/build/Release/INTERCESSION_CLIENT.exe"
     echo "-- Run debug_build_cmake.sh to build Debug version as well."
     echo "-- Run package.sh to build program installer."
     echo ""

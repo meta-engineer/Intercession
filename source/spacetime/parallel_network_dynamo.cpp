@@ -80,8 +80,8 @@ namespace pleep
                         }
                         else
                         {
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
-                            //cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
+                            //cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
                         }
 
                         /// Check for divergent/forked timestream state?
@@ -103,6 +103,9 @@ namespace pleep
                         
                         // shift event was noted at this time, we need to overwrite with all components
                         cosmos->deserialize_entity_components(shiftInfo.entity, shiftInfo.sign, evnt, ComponentCategory::all);
+
+                        // should always be forked after shifting worldlines?
+                        cosmos->set_timestream_state(shiftInfo.entity, TimestreamState::forked);
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
@@ -112,9 +115,22 @@ namespace pleep
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
-                        PLEEPLOG_DEBUG("Parallel Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
-                        cosmos->register_entity(createInfo.entity, createInfo.sign);
+                        // ignore creations from valid sources
+                        if (createInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(createInfo.source).first))
+                        {
+                            PLEEPLOG_DEBUG("Parallel Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+                            cosmos->register_entity(createInfo.entity, createInfo.sign);
+                        }
+                        else
+                        {
+                            // we were asked to register this, but we decided against it...
+                            // make sure it is removed upon extraction
+                            EventMessage removeEvent(events::cosmos::ENTITY_REMOVED);
+                            events::cosmos::ENTITY_REMOVED_params removeInfo{ createInfo.entity };
+                            removeEvent << removeInfo;
+                            m_sharedBroker->send_event(removeEvent);
+                        }
                     }
                     break;
                     case events::cosmos::ENTITY_REMOVED:
@@ -255,8 +271,13 @@ namespace pleep
 
                             // write new state into cosmos
                             cosmos->deserialize_entity_components(jumpInfo.entity, cachedJumpInfo.sign, cachedJump);
-                            // if you arrive in a diverged jump you will have to not abide by the timestream
-                            cosmos->set_timestream_state(jumpInfo.entity, TimestreamState::forked);
+
+                            // if you arrive in a diverged jump you will have to not abide by the timestream, nor will your past-selves
+                            Entity pasts = jumpInfo.entity;
+                            do {
+                                cosmos->set_timestream_state(pasts, TimestreamState::forked);
+                            } while (increment_causal_chain_link(pasts));
+
                             // we've extracted everything, so pop the cache (cachedJump is no longer defined)
                             m_divergentJumpRequests.erase(jumpInfo.tripId);
                         }

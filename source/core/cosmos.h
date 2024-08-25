@@ -249,11 +249,17 @@ namespace pleep
     
     inline Entity Cosmos::create_entity(bool isTemporal, Entity source) 
     {
-        // do not allow clients/servers to create any entities from external sources
-        // (external source should register them via network dynamo instead)
-        if (source != NULL_ENTITY &&
-            (m_hostId == NULL_TIMESLICEID && derive_timeslice_id(source) != NULL_TIMESLICEID 
-            || m_hostId != NULL_TIMESLICEID && derive_causal_chain_link(source) != 0))
+        // create entity in cosmos if either:
+        //  - source is NULL (meaning creation is forced to happen)
+        //  - source is link=0 and we're on a server
+        //  - source is forked
+        if (source == NULL_ENTITY ||
+            (derive_causal_chain_link(source) == 0 && m_hostId != NULL_TIMESLICEID) ||
+            (is_divergent(get_timestream_state(source).first) && m_hostId != NULL_TIMESLICEID)) // ignore parallel right now because the local entity will get added to the timestream and not properly extracted
+        {
+            // proceed
+        }
+        else
         {
             return NULL_ENTITY;
         }
@@ -269,7 +275,9 @@ namespace pleep
         // broadcast that new entity exists
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
-            entity
+            entity,
+            {},
+            source
         };
         newEntityEvent << newEntityParams;
         m_sharedBroker->send_event(newEntityEvent);

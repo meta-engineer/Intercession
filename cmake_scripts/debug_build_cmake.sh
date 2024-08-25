@@ -6,14 +6,14 @@
 # push working directory
 START_PWD=$(pwd)
 
-if [[ $(basename $START_PWD) == "Intercession" ]]
+if [[ $(basename $START_PWD) == "Intercession_dev" ]]
 then
     true
 elif [[ $(basename $START_PWD) == "cmake_scripts" ]]
 then
     cd ..
 else
-    echo "-- Please run script from directory cmake_scripts/ or project root Intercession/"
+    echo "-- Please run script from directory cmake_scripts/ or project root Intercession_dev/"
     exit
 fi
 

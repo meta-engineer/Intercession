@@ -7,6 +7,7 @@
 
 #include "staging/cosmos_builder.h"
 #include "behaviors/projectile_component.h"
+#include "logging/pleep_log.h"
 
 namespace pleep
 {
@@ -20,7 +21,13 @@ namespace pleep
         assert(cosmos);
 
         Entity vfx = cosmos->create_entity(true, jumper);
-        //Entity vfx = cosmos->create_entity();
+        if (vfx == NULL_ENTITY)
+        {
+            PLEEPLOG_DEBUG("VFX creation for source " + std::to_string(jumper) + " eschewed on this thread");
+            return vfx;
+        }
+        PLEEPLOG_DEBUG("VFX creation for source " + std::to_string(jumper) + " produced entity " + std::to_string(vfx) + " on this thread");
+
         TransformComponent vfx_transform(origin);
         //vfx_transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
         cosmos->add_component(vfx, vfx_transform);

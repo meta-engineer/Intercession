@@ -197,7 +197,7 @@ namespace pleep
                     if (!(
                         ((thisLink == 0) ^ (otherLink == 0))
                         || (thisLink != 0 && otherLink != 0 && is_divergent(thisState) ^ is_divergent(otherState))
-                        //|| (thisLink != otherLink && (!is_divergent(thisState) || !is_divergent(otherState)) && cosmos->get_host_id() == NULL_TIMESLICEID)
+                        || (thisLink != otherLink && (!is_divergent(thisState) || !is_divergent(otherState)) && cosmos->get_host_id() == NULL_TIMESLICEID)
                         ))
                     {
                         continue;

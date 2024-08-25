@@ -117,6 +117,8 @@ namespace pleep
 
     inline bool increment_causal_chain_link(Entity& e)
     {
+        if (e == NULL_ENTITY) return false;
+
         TimesliceId timeId = derive_timeslice_id(e);
         GenesisId genId = derive_genesis_id(e);
         CausalChainlink link = derive_causal_chain_link(e);
@@ -136,6 +138,8 @@ namespace pleep
 
     inline bool decrement_causal_chain_link(Entity& e)
     {
+        if (e == NULL_ENTITY) return false;
+
         TimesliceId timeId = derive_timeslice_id(e);
         GenesisId genId = derive_genesis_id(e);
         CausalChainlink link = derive_causal_chain_link(e);

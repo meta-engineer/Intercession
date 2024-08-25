@@ -75,6 +75,10 @@ namespace pleep
                     Entity entity = NULL_ENTITY;
                     // initialize components after creation
                     Signature sign;
+
+                    // entity which caused the creation of this one (cannot be the same as entity)
+                    // null implies this entity was created by something outside of the cosmos (forces creation to be valid)
+                    Entity source = NULL_ENTITY;
                 };
             
             // upon deleting an entity we may need to notify its host

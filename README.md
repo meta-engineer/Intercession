@@ -32,7 +32,7 @@ Additionally, non-massive peer-to-peer multiplayer would again increase the poss
 ### Definitions
 - Entity: A thing which exists
 - Worldline: Progression of causality an entity follows through time
-- Temporal-Entity: The collection of all states of an entity throughout a single worldline
+- Worldline-Entity: The collection of all states of an entity throughout a single worldline
 - Timeslice: a server, maintaining the simulation of a particular moment in time
 - Timeline: A series of timeslices, which cover a window of time
 - Interaction: any circumstance where one entity changes another

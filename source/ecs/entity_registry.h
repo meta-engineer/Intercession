@@ -167,7 +167,7 @@ namespace pleep
         auto entityCountsIt = m_hostedEntityCounts.find(hostedEntity);
         if (entityCountsIt == m_hostedEntityCounts.end())
         {
-            PLEEPLOG_ERROR("Tried to decrement the count of a hosted entity which doesn't exist");
+            PLEEPLOG_ERROR("Tried to decrement the count of a hosted entity " + std::to_string(hostedEntity) + " which doesn't exist");
             throw std::range_error("EntityRegistry tried to decrement the count of a hosted entity which doesn't exist");
         }
         // count of 0 means decrementer failed to clear entry when it reached 0

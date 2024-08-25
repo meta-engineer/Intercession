@@ -29,7 +29,6 @@ namespace pleep
 
         // ***************************************************************************
         ModelCache::ImportReceipt frog_import = ModelCache::import("..\\intercession_design\\adult-maloncremia-oot3dmm3d\\source\\3DS - The Legend of Zelda Majoras Mask 3D - Cremia\\cremia.dae");
-        //ModelCache::import("C:/Users/Stephen/Repos/Intercession/resources/vampire/dancing_vampire3.dae");
         //ModelCache::import("./resources/12268_banjofrog_v1_L3.obj");
         //return;
         //ModelManager::debug_receipt(frog_import);

@@ -25,7 +25,6 @@ namespace pleep
         //ModelCache::ImportReceipt nana_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - Ball Kirby Trophy\\Ball Kirby\\ballkirby.obj");
         ModelCache::ImportReceipt gamecube_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - Super Smash Bros Melee - GameCube\\Gamecube\\gamecube.obj");
         //ModelCache::ImportReceipt nana_import = ModelCache::import("..\\intercession_design\\adult-maloncremia-oot3dmm3d\\source\\3DS - The Legend of Zelda Majoras Mask 3D - Cremia\\cremia.dae");
-        //ModelCache::ImportReceipt nana_import = ModelCache::import("C:/Users/Stephen/Repos/Intercession/resources/vampire/dancing_vampire3.dae");
         //ModelCache::ImportReceipt nana_import = ModelCache::import("./resources/12268_banjofrog_v1_L3.obj");
         
         //ModelManager::debug_receipt(nana_import);

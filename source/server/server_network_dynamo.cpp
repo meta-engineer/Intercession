@@ -300,6 +300,12 @@ namespace pleep
                     break;
                 }
                 
+                // arrival is successful so we'll spawn vfx
+                if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+                {
+                    create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+                }
+                
                 // How do we ensure that host count does not reach 0 prematurely?
                 // We must only delete jumping entity now that they are guarenteed to exist elsewhere
                 cosmos->condemn_entity(jumpInfo.entity);
@@ -317,7 +323,6 @@ namespace pleep
                     // MUST still contain serialized data from initial JUMP_REQUEST!
                     m_timelineApi.push_past_timestream(jumpInfo.entity, msg);
                 }
-
             }
             break;
             case events::cosmos::CONDEMN_ENTITY:
@@ -440,9 +445,14 @@ namespace pleep
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
-                        PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
 
-                        cosmos->register_entity(createInfo.entity, createInfo.sign);
+                        // follow timestream if source entity is NULL (force creation)
+                        // or the source exists and is not forked
+                        if (createInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(createInfo.source).first))
+                        {
+                            PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
+                            cosmos->register_entity(createInfo.entity, createInfo.sign);
+                        }
                     }
                     break;
                     case events::cosmos::ENTITY_REMOVED:
@@ -597,7 +607,7 @@ namespace pleep
                     clientInfo.entity = create_client_focal_entity(cosmos, spawnPoint);
                     PLEEPLOG_DEBUG("Created new entity " + std::to_string(clientInfo.entity) + " for client " + std::to_string(remoteMsg.remote->get_id()));
                     // "jump" into the simulation
-                    create_jump_vfx(cosmos, clientInfo.entity, spawnPoint);
+                    create_jump_vfx(cosmos, NULL_ENTITY, spawnPoint);
                 }
 
                 // send client upstream signture update for its focal entity
@@ -759,6 +769,7 @@ namespace pleep
         {
             events::cosmos::ENTITY_CREATED_params propogateNewEntityParams = newEntityParams;
             increment_causal_chain_link(propogateNewEntityParams.entity);
+            increment_causal_chain_link(propogateNewEntityParams.source);
             creationEvent << propogateNewEntityParams;
 
             m_timelineApi.push_past_timestream(propogateNewEntityParams.entity, creationEvent);
@@ -911,12 +922,6 @@ namespace pleep
         
         // good to send request now
         m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
-
-        // request is successful so we'll spawn vfx (departure may not happen but thats fine)
-        if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
-        {
-            create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
-        }
 
         // push request to timestream so that it can be validated during parallel
         if (m_timelineApi.has_past())

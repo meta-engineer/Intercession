@@ -220,8 +220,7 @@ namespace pleep
                 if (derive_timeslice_id(localEntity) == NULL_TIMESLICEID)
                 {
                     /// TODO: locally created entities to be extracted to destination with new id
-                    // (once we have the ability to create entities at all)
-                    /// use parallel entity as source for local entity
+                    /// TODO: The local entity will also be added to the timestream, which will break the simulation...
                     PLEEPLOG_CRITICAL("Ignored extracting entity " + std::to_string(localEntity) + " because it was created during parallel runtime!!!!");
                     continue;
                 }
@@ -260,28 +259,49 @@ namespace pleep
                     // context can store every interaction event during the cycle
                     // may need more information about interception history (position/velocity at event time?)
 
-                    // entity values in history are down a chainlink level
-                    Entity sourceEntity = m_interceptionHistory.count(signMapIt.first) ? m_interceptionHistory.at(signMapIt.first).front() : signMapIt.first;
-                    if (m_interceptionHistory.empty())
+                    Entity sourceEntity = signMapIt.first;
+                    Entity targetEntity = NULL_ENTITY;
+
+                    // search all history entries from present to past (incrementing) until there is a match
                     {
-                        PLEEPLOG_CRITICAL("UH OH interception history is empty!!!! HOW IS THAT PROSSIBLE");
+                        int timesliceDelta = 0;
+                        Entity t = sourceEntity;
+                        Entity s = NULL_ENTITY;
+                        do
+                        {
+                            if (m_interceptionHistory.count(t) == 0) continue;
+                            if (m_interceptionHistory.at(t).empty()) continue;
+
+                            s = m_interceptionHistory.at(t).front();
+
+                            assert(derive_causal_chain_link(s) >= timesliceDelta);
+                            for (int i = 0; i < timesliceDelta; i++) decrement_causal_chain_link(s);
+
+                            if (m_currentCosmos->entity_exists(s))
+                            {
+                                targetEntity = s;
+                                break;
+                            }
+                        } while (increment_causal_chain_link(t) && timesliceDelta++);
                     }
 
+                    if (targetEntity == NULL_ENTITY)
+                    {
+                        PLEEPLOG_WARN("UH OH! could not find anything in interception history, defaulting to nothing!");
+                        targetEntity = sourceEntity;
+                    }
+
+                    auto targetTrans = m_currentCosmos->get_component<TransformComponent>(targetEntity);
                     auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
-                    auto targetTrans = m_currentCosmos->get_component<TransformComponent>(signMapIt.first);
+                    auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(targetEntity);
                     auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
-                    auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(signMapIt.first);
-                    glm::vec3 diff = targetTrans.origin - sourceTrans.origin;
+                    glm::vec3 diff = sourceTrans.origin - targetTrans.origin;
                     diff = glm::length2(diff) == 0 ? glm::sphericalRand(1.0f) : glm::normalize(diff);
 
-                    glm::vec3 newVel = glm::sphericalRand(1.0f);
-                    // clip velocity to moving away from source
-                    if (glm::dot(diff, newVel) < 0.0f)
-                    {
-                        newVel += diff;
-                    }
-                    newVel *= 10.0f;
-                    newVel += -sourcePhysics.velocity;
+                    // create mandella moving towards source
+                    glm::vec3 newVel = (diff * -2.0f) + glm::sphericalRand(1.0f);
+                    newVel *= 2.0f;
+                    newVel += -targetPhysics.velocity;
                     
                     // TODO: ensure this isn't clipping inside of source? or inside of anything for that matter? raycast from source?
                     // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
@@ -289,11 +309,11 @@ namespace pleep
                     // velocity may be 0 at this time? derive displacement between both possible entities
                     Entity mandella = create_test_projectile(
                         dstCosmos,
-                        NULL_ENTITY, // pretend to be the timeslice we're extracting to?
-                        targetTrans.origin, // give headstart?
+                        sourceEntity, // source should always be forked
+                        targetTrans.origin - newVel,
                         newVel
                     );
-                    PLEEPLOG_DEBUG("A result of worldline shift created entity: " + std::to_string(mandella));
+                    PLEEPLOG_DEBUG("A result of worldline shift created mandella entity: " + std::to_string(mandella));
 
 
 
