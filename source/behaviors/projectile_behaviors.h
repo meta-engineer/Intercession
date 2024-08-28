@@ -21,6 +21,7 @@ namespace pleep
             std::shared_ptr<Cosmos> cosmos = owner.lock();
             // how was owner null, but BehaviorsPacket has a component REFERENCE?
             assert(!owner.expired());
+            assert(deltaTime >= 0);
 
             // fetch Projectile
             try

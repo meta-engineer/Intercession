@@ -89,25 +89,6 @@ namespace pleep
                         /// this may also be useful in intercession resolution to ensure entity follows self-consistent history
                     }
                     break;
-                    case events::parallel::WORLDLINE_SHIFT:
-                    {
-                        events::parallel::WORLDLINE_SHIFT_params shiftInfo;
-                        evnt >> shiftInfo;
-                        
-                        assert(shiftInfo.entity == evntEntity);
-                        if (!cosmos->entity_exists(shiftInfo.entity)) break;
-
-                        // should we check if this entity has diverged and then ignore the worldline shift?
-                        PLEEPLOG_DEBUG("Worldline shifting entity: " + std::to_string(shiftInfo.entity) + ". BTW its timestream state was: " + std::to_string(cosmos->get_timestream_state(shiftInfo.entity).first));
-
-                        
-                        // shift event was noted at this time, we need to overwrite with all components
-                        cosmos->deserialize_entity_components(shiftInfo.entity, shiftInfo.sign, evnt, ComponentCategory::all);
-
-                        // should always be forked after shifting worldlines?
-                        cosmos->set_timestream_state(shiftInfo.entity, TimestreamState::forked);
-                    }
-                    break;
                     case events::cosmos::ENTITY_CREATED:
                     {
                         // this could be an entity created after jumping
@@ -124,6 +105,7 @@ namespace pleep
                         }
                         else
                         {
+                            PLEEPLOG_DEBUG("Ignoring timestream creation for entity " + std::to_string(createInfo.entity) + " because its source " + std::to_string(createInfo.source) + " was divergent");
                             // we were asked to register this, but we decided against it...
                             // make sure it is removed upon extraction
                             EventMessage removeEvent(events::cosmos::ENTITY_REMOVED);
@@ -455,11 +437,10 @@ namespace pleep
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
 
-        // Promote directly to forked (no need to have any forking delay while already in parallel)
+        // Promote recipient directly to forked (no need to have any forking delay while already in parallel)
         cosmos->set_timestream_state(interceptionInfo.recipient, TimestreamState::forked);
         PLEEPLOG_DEBUG("Recipient Entity " + std::to_string(interceptionInfo.recipient) + " became forked");
-        cosmos->set_timestream_state(interceptionInfo.agent, TimestreamState::forked);
-        PLEEPLOG_DEBUG("Agent Entity " + std::to_string(interceptionInfo.agent) + " became forked");
+        // Do not promote agent to forked
     }
   
     

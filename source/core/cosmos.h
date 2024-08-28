@@ -255,7 +255,7 @@ namespace pleep
         //  - source is forked
         if (source == NULL_ENTITY ||
             (derive_causal_chain_link(source) == 0 && m_hostId != NULL_TIMESLICEID) ||
-            (is_divergent(get_timestream_state(source).first) && m_hostId != NULL_TIMESLICEID)) // ignore parallel right now because the local entity will get added to the timestream and not properly extracted
+            (is_divergent(get_timestream_state(source).first)))
         {
             // proceed
         }
@@ -378,7 +378,7 @@ namespace pleep
     
     inline bool Cosmos::entity_exists(Entity entity)
     {
-        return m_entityRegistry->get_signatures_ref().count(entity);
+        return m_entityRegistry->get_signatures_ref().count(entity) != 0;
     }
     
     inline std::unordered_map<Entity, Signature>& Cosmos::get_signatures_ref()

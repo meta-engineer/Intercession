@@ -108,7 +108,7 @@ namespace pleep
             for (auto signMapIt : sourceCosmos->get_signatures_ref())
             {
                 // omit anything that doesn't exist in the future at all (time travellers)
-                if (!sourceFutureTimestreams->entity_has_timestream(signMapIt.first))
+                if (!sourceFutureTimestreams->entity_has_timestream(signMapIt.first) && derive_causal_chain_link(signMapIt.first) == 0)
                 {
                     PLEEPLOG_DEBUG("Skipping entity " + std::to_string(signMapIt.first) + " because it has no future");
                     continue;
@@ -234,18 +234,8 @@ namespace pleep
 
                     // up until this point this entity's timestream will be in parallel's worldline
                     // by ignoring it on extraction this causes it to shift to the physizalized worldline
-                    // we need to add an event to the timestream to ensure this discontinuous state change is maintained over cycles
 
-                    // we need to fetch the state of localEntity in dstCosmos and push this into a worldline shift event
-                    EventMessage shiftEvent(events::parallel::WORLDLINE_SHIFT, dstCosmos->get_coherency());
-                    events::parallel::WORLDLINE_SHIFT_params shiftInfo{ localEntity, dstCosmos->get_entity_signature(localEntity) };
-                    dstCosmos->serialize_entity_components(shiftInfo.entity, shiftInfo.sign, shiftEvent);
-                    shiftEvent << shiftInfo;
-                    // how to access the timestream from here...?
-                    m_dynamoCluster.networker->push_to_linked_timestream(shiftEvent, shiftInfo.entity);
-                    
                     PLEEPLOG_DEBUG("Worldline shift entity: " + std::to_string(localEntity) + " | " + signMapIt.second.to_string());
-
 
 
 
@@ -307,12 +297,13 @@ namespace pleep
                     // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
 
                     // velocity may be 0 at this time? derive displacement between both possible entities
-                    Entity mandella = create_test_projectile(
+                    const Entity mandella = create_test_projectile(
                         dstCosmos,
-                        sourceEntity, // source should always be forked
+                        localEntity,
                         targetTrans.origin - newVel,
                         newVel
                     );
+                    UNREFERENCED_PARAMETER(mandella);
                     PLEEPLOG_DEBUG("A result of worldline shift created mandella entity: " + std::to_string(mandella));
 
 
@@ -325,10 +316,13 @@ namespace pleep
                 {
                     m_currentCosmos->serialize_entity_components(signMapIt.first, signMapIt.second, extraction);
 
+                    // entity may not yet exist (entities created in the past being carried forwards)
+
                     // entity should already exist
                     if (!dstCosmos->entity_exists(localEntity))
                     {
-                        PLEEPLOG_ERROR("Entity " + std::to_string(localEntity) + " with non-null-host from past does not already exist in future.");
+                        PLEEPLOG_WARN("Entity " + std::to_string(localEntity) + " with non-null-host from past does not already exist in future, registering it...");
+                        dstCosmos->register_entity(localEntity, signMapIt.second);
                     }
                     assert(dstCosmos->entity_exists(localEntity));
 
@@ -364,6 +358,7 @@ namespace pleep
                 }
                 if (derive_timeslice_id(dead) != NULL_TIMESLICEID)
                 {
+                    PLEEPLOG_DEBUG("Expunge entity: " + std::to_string(dead));
                     dstCosmos->condemn_entity(dead);
                 }
             }

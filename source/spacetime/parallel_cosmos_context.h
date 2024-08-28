@@ -103,6 +103,7 @@ namespace pleep
         std::unordered_set<Entity> m_readingSteinerEntities;
 
         // records the entities each entity has intercepted over the course of this history cycle
+        // along with a _relevant_ coordinate for that interception (or other meta-data)
         // should reset at the end of each cycle
         std::unordered_map<Entity, std::queue<Entity>> m_interceptionHistory;
         

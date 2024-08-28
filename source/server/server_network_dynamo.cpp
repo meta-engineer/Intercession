@@ -424,7 +424,7 @@ namespace pleep
                         if (!cosmos->entity_exists(updateInfo.entity))
                         {
                             PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
-                            break;
+                            assert(cosmos->entity_exists(updateInfo.entity));
                         }
 
                         /// if this is divergent entity, then only read upstream components
@@ -445,6 +445,19 @@ namespace pleep
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
+
+                        // entity could have been created in the past and is not propogating back down from the future
+                        // so it may already exist if its host id is <= ours
+                        if (cosmos->entity_exists(createInfo.entity) && derive_timeslice_id(createInfo.entity) > cosmos->get_host_id())
+                        {
+                            PLEEPLOG_ERROR("Entity " + std::to_string(createInfo.entity) + " creation propogating through timestream already exists on this timeslice?");
+                            assert(derive_timeslice_id(createInfo.entity) <= cosmos->get_host_id());
+                        }
+                        else if (cosmos->entity_exists(createInfo.entity))
+                        {
+                            // Even though it exists, maybe need to update components?
+                            break;
+                        }
 
                         // follow timestream if source entity is NULL (force creation)
                         // or the source exists and is not forked

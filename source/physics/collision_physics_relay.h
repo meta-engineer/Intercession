@@ -207,22 +207,18 @@ namespace pleep
                     // (and propagate up the timeline from there)
                     EventMessage interceptionMessage(events::cosmos::TIMESTREAM_INTERCEPTION);
                     events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
-                    // agent priority is link0 -> forked -> lower-link
-                    if ((thisLink == 0) ^ (otherLink == 0))
+                    // agent priority is lower-link -> forked
+                    if (thisLink != otherLink)
                     {
-                        interceptionInfo.agent = thisLink == 0 ? dataA.collidee : dataB.collidee;
+                        interceptionInfo.agent = thisLink < otherLink ? dataA.collidee : dataB.collidee;
                     }
                     else if (is_divergent(thisState) ^ is_divergent(otherState))
                     {
                         interceptionInfo.agent = is_divergent(thisState) ? dataA.collidee : dataB.collidee;
                     }
-                    else if (thisLink != otherLink)
-                    {
-                        interceptionInfo.agent = thisLink < otherLink ? dataA.collidee : dataB.collidee;
-                    }
                     else
                     {
-                        PLEEPLOG_ERROR("You fucked up, not all cases were captured, this code should never run");
+                        PLEEPLOG_ERROR("You fucked up. Not all cases were captured. This code should never run");
                         interceptionInfo.agent = NULL_ENTITY;
                         assert(true);
                     }

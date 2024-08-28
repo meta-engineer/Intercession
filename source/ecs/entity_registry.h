@@ -115,7 +115,11 @@ namespace pleep
     inline bool EntityRegistry::register_entity(Entity entity)
     {
         // If non empty signature already exists for this entity then something has gone wrong
-        assert(m_signatures.find(entity) == m_signatures.end());
+        if (m_signatures.count(entity) != 0)
+        {
+            PLEEPLOG_DEBUG("Trying to register entity " + std::to_string(entity) + " which already exists?!");
+        }
+        assert(m_signatures.count(entity) == 0);
 
         // add empty signature
         this->set_signature(entity, Signature{});
