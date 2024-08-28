@@ -240,58 +240,57 @@ namespace pleep
 
 
 
-                    // create mandella effect for this shift at this moment as well?
-                    // worldline shift event happens at arrival time
-                    // worldline shift timestream happens here at extraction (shortly after divergence)
-                    // create mandella entity directly in dstCosmos? What about other mandella effects?
-                    // entity needs to be based on localEntity at the time of the collision?
-                    // How do I get information about the readingStienerEntity's divergence event. Collision meta-data?
-                    // context can store every interaction event during the cycle
-                    // may need more information about interception history (position/velocity at event time?)
+                    // create mandella effect for this shift at this moment directly in dstCosmos
+                    // worldline shift event happened at arrival time
+                    // entity needs to be based on localEntity at the time of the collision
+                    // TODO: better strategy than just using most recent interception
 
                     Entity sourceEntity = signMapIt.first;
+                    auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
+                    auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
+
                     Entity targetEntity = NULL_ENTITY;
+                    glm::vec3 targetCoord;
 
                     // search all history entries from present to past (incrementing) until there is a match
                     {
                         int timesliceDelta = 0;
-                        Entity t = sourceEntity;
-                        Entity s = NULL_ENTITY;
+                        Entity ss = sourceEntity;
+                        Entity tt = NULL_ENTITY;
                         do
                         {
-                            if (m_interceptionHistory.count(t) == 0) continue;
-                            if (m_interceptionHistory.at(t).empty()) continue;
+                            if (m_interceptionHistory.count(ss) == 0) continue;
 
-                            s = m_interceptionHistory.at(t).front();
+                            tt = m_interceptionHistory.at(ss).first;
 
-                            assert(derive_causal_chain_link(s) >= timesliceDelta);
-                            for (int i = 0; i < timesliceDelta; i++) decrement_causal_chain_link(s);
+                            assert(derive_causal_chain_link(tt) >= timesliceDelta);
+                            for (int i = 0; i < timesliceDelta; i++) decrement_causal_chain_link(tt);
 
-                            if (m_currentCosmos->entity_exists(s))
+                            if (m_currentCosmos->entity_exists(tt))
                             {
-                                targetEntity = s;
+                                targetEntity = tt;
+                                targetCoord = m_interceptionHistory.at(ss).second;
                                 break;
                             }
-                        } while (increment_causal_chain_link(t) && timesliceDelta++);
+                        } while (increment_causal_chain_link(ss) && timesliceDelta++);
                     }
 
                     if (targetEntity == NULL_ENTITY)
                     {
                         PLEEPLOG_WARN("UH OH! could not find anything in interception history, defaulting to nothing!");
                         targetEntity = sourceEntity;
+                        targetCoord = sourceTrans.origin;
                     }
 
                     auto targetTrans = m_currentCosmos->get_component<TransformComponent>(targetEntity);
-                    auto sourceTrans = m_currentCosmos->get_component<TransformComponent>(sourceEntity);
                     auto targetPhysics = m_currentCosmos->get_component<PhysicsComponent>(targetEntity);
-                    auto sourcePhysics = m_currentCosmos->get_component<PhysicsComponent>(sourceEntity);
-                    glm::vec3 diff = sourceTrans.origin - targetTrans.origin;
+                    glm::vec3 diff = targetCoord - targetTrans.origin;
                     diff = glm::length2(diff) == 0 ? glm::sphericalRand(1.0f) : glm::normalize(diff);
 
                     // create mandella moving towards source
-                    glm::vec3 newVel = (diff * -2.0f) + glm::sphericalRand(1.0f);
-                    newVel *= 2.0f;
-                    newVel += -targetPhysics.velocity;
+                    glm::vec3 newVel = (diff * 2.0f) + glm::sphericalRand(1.0f);
+                    newVel *= -1.0f;
+                    newVel += targetPhysics.velocity;
                     
                     // TODO: ensure this isn't clipping inside of source? or inside of anything for that matter? raycast from source?
                     // calculate some energy estimate of the collision? create projectile mass/velocity accordingly
@@ -300,7 +299,7 @@ namespace pleep
                     const Entity mandella = create_test_projectile(
                         dstCosmos,
                         localEntity,
-                        targetTrans.origin - newVel,
+                        targetCoord,   // give one second headstart?
                         newVel
                     );
                     UNREFERENCED_PARAMETER(mandella);
@@ -484,10 +483,14 @@ namespace pleep
         events::cosmos::TIMESTREAM_INTERCEPTION_params interceptionInfo;
         interceptionEvent >> interceptionInfo;
 
+        if (m_currentCosmos == nullptr) return;
+        glm::vec3 agentPos = m_currentCosmos->has_component<TransformComponent>(interceptionInfo.agent) ? m_currentCosmos->get_component<TransformComponent>(interceptionInfo.agent).origin : glm::vec3(0.0f);
+        glm::vec3 recipientPos = m_currentCosmos->has_component<TransformComponent>(interceptionInfo.recipient) ? m_currentCosmos->get_component<TransformComponent>(interceptionInfo.recipient).origin : glm::vec3(0.0f);
+
         // cache interaction from agent -> recipient
         PLEEPLOG_DEBUG("RECORDING interception from " + std::to_string(interceptionInfo.agent) + " to " + std::to_string(interceptionInfo.recipient));
-        m_interceptionHistory[interceptionInfo.agent].push(interceptionInfo.recipient);
-        m_interceptionHistory[interceptionInfo.recipient].push(interceptionInfo.agent);
+        m_interceptionHistory[interceptionInfo.agent] = { interceptionInfo.recipient, recipientPos };
+        m_interceptionHistory[interceptionInfo.recipient] = { interceptionInfo.agent, agentPos };
     }
 
 

@@ -300,7 +300,7 @@ namespace pleep
                     break;
                 }
                 
-                // arrival is successful so we'll spawn vfx
+                // arrival is successful so we'll spawn vfx for departure
                 if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
                 {
                     create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
@@ -423,19 +423,19 @@ namespace pleep
                         // ensure entity exists
                         if (!cosmos->entity_exists(updateInfo.entity))
                         {
-                            PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist, skipping...");
+                            PLEEPLOG_ERROR("Received ENTITY_UPDATE for entity " + std::to_string(updateInfo.entity) + " which does not exist?!");
                             assert(cosmos->entity_exists(updateInfo.entity));
                         }
 
-                        /// if this is divergent entity, then only read upstream components
-                        if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
-                        {
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
-                        }
-                        else
+                        if (cosmos->get_entity_signature(updateInfo.entity).none() || !is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
                         {
                             // if non-divergent entity, then read update into Cosmos as normal
                             cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
+                        }
+                        else
+                        {
+                            /// if this is divergent entity, then only read upstream components
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
                         }
                     }
                     break;
@@ -497,7 +497,7 @@ namespace pleep
                         //assert(jumpInfo.entity == evntEntity);
                         if (jumpInfo.entity != evntEntity)
                         {
-                            PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " on stream for entity: " + std::to_string(evntEntity));
+                            PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " somehow on stream for entity: " + std::to_string(evntEntity));
                             break;
                         }
 

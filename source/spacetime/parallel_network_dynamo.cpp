@@ -73,20 +73,17 @@ namespace pleep
                         /// Then we can set it to merged when we know it is causing a paradox
                         /// Thus, if something new comes along, it will re-fork it and it will behave inline with upstream only... (possibly causing another paradox)
 
-                        // only extract upstream components for forked entities
-                        if (is_divergent(cosmos->get_timestream_state(updateInfo.entity).first))
+                        // first update should be all?
+
+                        if (cosmos->get_entity_signature(updateInfo.entity).none())
                         {
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
                         }
                         else
                         {
-                            //cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
-                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, updateInfo.category);
+                            // only extract upstream components, regardless of timestream state
+                            cosmos->deserialize_entity_components(updateInfo.entity, updateInfo.sign, evnt, ComponentCategory::upstream);
                         }
-
-                        /// Check for divergent/forked timestream state?
-                        /// Entities which have a "lack" of interaction will not be marked as forked, but we want them to be upstream only after their non-interaction... instead just make everything always upstream?
-                        /// this may also be useful in intercession resolution to ensure entity follows self-consistent history
                     }
                     break;
                     case events::cosmos::ENTITY_CREATED:
