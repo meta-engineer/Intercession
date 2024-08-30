@@ -53,7 +53,7 @@ namespace pleep
         // Can there be an edge case where another host passes us our own entity?
         // Returns true when entity is valid to use and register components to
         // initialize all components in initSign before sending creation event
-        bool register_entity(Entity entity, Signature initSign = {});
+        bool register_entity(Entity entity, Signature initSign = {}, Entity source = NULL_ENTITY);
 
         // flag entity to be destroyed before next update cycle
         // source: can specify an entity deletion was triggered by.
@@ -202,7 +202,7 @@ namespace pleep
     private:
         // remove entity & related components, and clear it from any synchros
         // angerous if references have been submitted to dynamos
-        void destroy_entity(Entity entity);
+        void destroy_entity(Entity entity, Entity source = NULL_ENTITY);
 
         // event handlers
         void _condemn_all_handler(EventMessage condemnEvent);
@@ -231,9 +231,10 @@ namespace pleep
         TimesliceId m_hostId = NULL_TIMESLICEID;
 
         // Set containing entities who were requested to be deleted.
+        // and the source of their removal
         // They will be deleted directly before next update,
         // so all component references should be cleared by then
-        std::set<Entity> m_condemned;
+        std::set<std::pair<Entity, Entity>> m_condemned;
 
         // store TimestreamState information locally so it is not propogated into the past
         // uint16_t is "time"stamp for last update to this entity's state
@@ -267,8 +268,9 @@ namespace pleep
         // starting link value depends on parameters
         /// NOTE: this means nonTemporal entities can only create nonTemporal entities
         CausalChainlink link = !isTemporal ? NULL_CAUSALCHAINLINK :
-                                source == NULL_ENTITY ? 0 :
-                                derive_causal_chain_link(source);
+                                m_hostId != NULL_TIMESLICEID ? m_hostId :
+                                source != NULL_ENTITY ? derive_causal_chain_link(source) :
+                                0;
 
         Entity entity = m_entityRegistry->create_entity(link);
 
@@ -285,7 +287,7 @@ namespace pleep
         return entity;
     }
     
-    inline bool Cosmos::register_entity(Entity entity, Signature initSign)
+    inline bool Cosmos::register_entity(Entity entity, Signature initSign, Entity source)
     {
         if (entity == NULL_ENTITY) return false;
 
@@ -303,7 +305,8 @@ namespace pleep
         EventMessage newEntityEvent(events::cosmos::ENTITY_CREATED, m_stateCoherency);
         events::cosmos::ENTITY_CREATED_params newEntityParams {
             entity,
-            initSign
+            initSign,
+            source
         };
         newEntityEvent << newEntityParams;
         m_sharedBroker->send_event(newEntityEvent);
@@ -315,21 +318,12 @@ namespace pleep
     {
         if (entity == NULL_ENTITY) return;
 
-        // do not allow clients/servers to delete any entities from external sources
-        // (external source should condemn them via network dynamo instead)
-        if (source != NULL_ENTITY &&
-            (m_hostId == NULL_TIMESLICEID && derive_timeslice_id(source) != NULL_TIMESLICEID 
-            || m_hostId != NULL_TIMESLICEID && derive_causal_chain_link(source) != 0))
-        {
-            return;
-        }
-
         PLEEPLOG_TRACE("Entity " + std::to_string(entity) + " was condemned to deletion.");
-        m_condemned.insert(entity);
+        m_condemned.insert({ entity, source });
     }
     
     // private:
-    inline void Cosmos::destroy_entity(Entity entity) 
+    inline void Cosmos::destroy_entity(Entity entity, Entity source) 
     {
         if (entity == NULL_ENTITY) return;
 
@@ -360,7 +354,8 @@ namespace pleep
         // broadcast entity no longer exists
         EventMessage removedEntityEvent(events::cosmos::ENTITY_REMOVED, m_stateCoherency);
         events::cosmos::ENTITY_REMOVED_params removedEntityParams {
-            entity
+            entity,
+            source
         };
         removedEntityEvent << removedEntityParams;
         m_sharedBroker->send_event(removedEntityEvent);

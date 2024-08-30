@@ -325,19 +325,6 @@ namespace pleep
                 }
             }
             break;
-            case events::cosmos::CONDEMN_ENTITY:
-            {
-                PLEEPLOG_DEBUG("Received explicit condemn from a server");
-                // another timeslice has called for us to destroy an entity
-                // this is likely after a successfull timeslice jump
-                // forward it to our cosmos
-                
-                events::cosmos::CONDEMN_ENTITY_params condemnInfo;
-                msg >> condemnInfo;
-
-                cosmos->condemn_entity(condemnInfo.entity);
-            }
-            break;
             case events::parallel::INIT:
             {
                 PLEEPLOG_DEBUG("Received init request from parallel context");
@@ -446,15 +433,10 @@ namespace pleep
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
 
-                        // entity could have been created in the past and is not propogating back down from the future
-                        // so it may already exist if its host id is <= ours
-                        if (cosmos->entity_exists(createInfo.entity) && derive_timeslice_id(createInfo.entity) > cosmos->get_host_id())
+                        // entity could have been created in the past and is propogating into us and then the future.
+                        if (cosmos->entity_exists(createInfo.entity))
                         {
-                            PLEEPLOG_ERROR("Entity " + std::to_string(createInfo.entity) + " creation propogating through timestream already exists on this timeslice?");
-                            assert(derive_timeslice_id(createInfo.entity) <= cosmos->get_host_id());
-                        }
-                        else if (cosmos->entity_exists(createInfo.entity))
-                        {
+                            PLEEPLOG_WARN("Excessive creation for entity " + std::to_string(createInfo.entity) + " assuming this is propogating into the future, ignoring...");
                             // Even though it exists, maybe need to update components?
                             break;
                         }
@@ -464,7 +446,7 @@ namespace pleep
                         if (createInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(createInfo.source).first))
                         {
                             PLEEPLOG_DEBUG("Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
-                            cosmos->register_entity(createInfo.entity, createInfo.sign);
+                            cosmos->register_entity(createInfo.entity, createInfo.sign, createInfo.source);
                         }
                     }
                     break;
@@ -475,10 +457,14 @@ namespace pleep
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
                         assert(removeInfo.entity == evntEntity);
-                        PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
 
-                        // use condemn event to avoid double deletion
-                        cosmos->condemn_entity(removeInfo.entity);
+                        // if source is not divergent, follow the timestream
+                        if (removeInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(removeInfo.source).first))
+                        {
+                            PLEEPLOG_TRACE("Remove Entity: " + std::to_string(removeInfo.entity));
+                            // use condemn event to avoid double deletion
+                            cosmos->condemn_entity(removeInfo.entity, removeInfo.source);
+                        }
                     }
                     break;
                     case events::network::JUMP_REQUEST:
@@ -500,6 +486,8 @@ namespace pleep
                             PLEEPLOG_CRITICAL("Jump departure for entity " + std::to_string(jumpInfo.entity) + " somehow on stream for entity: " + std::to_string(evntEntity));
                             break;
                         }
+
+                        cosmos->condemn_entity(jumpInfo.entity);
 
                         // forward this departure into the timestream with the same tripId
                         // but relative to our present entity
@@ -818,6 +806,7 @@ namespace pleep
             events::cosmos::ENTITY_REMOVED_params propogateRemovedEntityParams;
             removalEvent >> propogateRemovedEntityParams;
             increment_causal_chain_link(propogateRemovedEntityParams.entity);
+            increment_causal_chain_link(propogateRemovedEntityParams.source);
             removalEvent << propogateRemovedEntityParams;
 
             m_timelineApi.push_past_timestream(propogateRemovedEntityParams.entity, removalEvent);

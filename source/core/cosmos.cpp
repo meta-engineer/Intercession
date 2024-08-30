@@ -29,9 +29,9 @@ namespace pleep
     void Cosmos::update() 
     {
         // delete all condemned entities
-        for (Entity e : m_condemned)
+        for (auto condemned : m_condemned)
         {
-            this->destroy_entity(e);
+            this->destroy_entity(condemned.first, condemned.second);
         }
         m_condemned.clear();
 

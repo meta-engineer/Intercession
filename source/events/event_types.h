@@ -87,13 +87,10 @@ namespace pleep
                 struct ENTITY_REMOVED_params
                 {
                     Entity entity = NULL_ENTITY;
-                };
-            // Request for an entity to be removed at the end of the frame
-            // once all unsafe references are cleared
-            const EventId CONDEMN_ENTITY = __LINE__;
-                struct CONDEMN_ENTITY_params
-                {
-                    Entity entity = NULL_ENTITY;
+
+                    // entity which cause the deletion of the one (CAN be the same as entity)
+                    // null implies this entity was deleted by something outside of the cosmos (forces deletion to be valid)
+                    Entity source = NULL_ENTITY;
                 };
             // Request for all entities to be removed from cosmos
             const EventId CONDEMN_ALL = __LINE__;

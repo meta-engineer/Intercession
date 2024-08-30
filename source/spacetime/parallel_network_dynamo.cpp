@@ -94,11 +94,11 @@ namespace pleep
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
 
-                        // ignore creations from valid sources
+                        // ignore creations from non-divergent sources (they will happen in local cosmos)
                         if (createInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(createInfo.source).first))
                         {
                             PLEEPLOG_DEBUG("Parallel Create Entity: " + std::to_string(createInfo.entity) + " | " + createInfo.sign.to_string());
-                            cosmos->register_entity(createInfo.entity, createInfo.sign);
+                            cosmos->register_entity(createInfo.entity, createInfo.sign, createInfo.source);
                         }
                         else
                         {
@@ -118,10 +118,15 @@ namespace pleep
                         events::cosmos::ENTITY_REMOVED_params removeInfo;
                         evnt >> removeInfo;
                         assert(removeInfo.entity == evntEntity);
-                        PLEEPLOG_TRACE("Parallel Remove Entity: " + std::to_string(removeInfo.entity));
 
-                        // use condemn event to avoid double deletion
-                        cosmos->condemn_entity(removeInfo.entity);
+                        // if source is not divergent, follow the timestream
+                        if (removeInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(removeInfo.source).first))
+                        {
+                            PLEEPLOG_TRACE("Parallel Remove Entity: " + std::to_string(removeInfo.entity));
+                            // use condemn event to avoid double deletion
+                            cosmos->condemn_entity(removeInfo.entity, removeInfo.source);
+                        }
+                        // Ignoring timestream deletion
                     }
                     break;
                     case events::network::JUMP_REQUEST:
@@ -167,6 +172,9 @@ namespace pleep
                         assert(jumpInfo.entity == evntEntity);
                         PLEEPLOG_WARN("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ PARALLEL TIMESTREAM DEPARTURE FOR: " + std::to_string(jumpInfo.entity) + " | " + std::to_string(jumpInfo.tripId));
 
+                        // condemn will appear on timeline, but if we are divergent it will be ignored
+                        cosmos->condemn_entity(jumpInfo.entity, jumpInfo.entity);
+
                         // nothing to do without past, just ignore it
                         if (!m_timelineApi.has_past()) break;
 
@@ -193,13 +201,14 @@ namespace pleep
 
                                 // push the diverged jump (to match the diverged request that just occured)
                                 m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, newJump);
-                                break;
                             }
                         }
-
-                        // if no divergent jump (or jump was too old) then push existing departure (to match existing request which was pushed)
-                        PLEEPLOG_DEBUG("No divergent departure to use");
-                        m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, evnt);
+                        else
+                        {
+                            // if no divergent jump (or jump was too old) then push existing departure (to match existing request which was pushed)
+                            PLEEPLOG_DEBUG("No divergent departure to use");
+                            m_timelineApi.push_timestream_at_breakpoint(jumpInfo.entity, evnt);
+                        }
                     }
                     break;
                     case events::network::JUMP_ARRIVAL:
