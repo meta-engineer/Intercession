@@ -57,7 +57,7 @@ You can see that this interpretation lends much more coherently to be simulated.
 
 To get our feet wet, lets examine what it looks like to change travel into the past, and then return _back to the future_.
 
-<video src="./documentation/case_1.mp4" type="video/mp4" width="1280" height="540" controls></video>
+https://github.com/user-attachments/assets/68b77b12-b7cc-43dd-9e30-0c675f00786e
 
 In this example we push a _frictionless_ (for the purposes of demonstration) sphere, and set it in motion. Then we time-travel backwards to observe the moment of interaction. Next we travel forwards and we can see that the sphere has continued to slide during our subjective [skipped time](https://www.youtube.com/watch?v=gM5zAQFl5k4&t=24s).
 
@@ -71,7 +71,7 @@ Note that every entity _inside_ the simulation only has memories (or ANY lasting
 
 Typically it is recommended to be [cautious with past-ward time travel](https://www.youtube.com/watch?v=vCoXnTqUTbI). But like the previous example, not all divergences of the past need to cause shifts into drastically different world-lines:
 
-<video src="./documentation/case_2.mp4" type="video/mp4" width="1280" height="540" controls></video>
+https://github.com/user-attachments/assets/022a9b1e-48c9-4d91-abf5-472b458b8ab8
 
 In this example we spend some time moving in circles before moving to the centre of the platform and then travelling back in time. After travelling we diverge our own history _trivially_ by knocking ourselves off course. However, despite this our (subjective) present remains unchanged, why? Lets examine how the world-lines of this case might look:
 
@@ -83,7 +83,7 @@ Like the resolution of Polchinski's Paradox, the changes in the past are trivial
 
 Now let's examine a case where a time-traveller creates a non-trivial divergence in the past:
 
-<video src="./documentation/case_3.mp4" type="video/mp4" width="1280" height="540" controls></video>
+https://github.com/user-attachments/assets/660cc2e0-bde4-4f52-8ffd-910c34f36419
 
 Does that make sense?
 
