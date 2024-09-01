@@ -426,7 +426,7 @@ namespace pleep
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
 
-                        //PLEEPLOG_DEBUG("Received ENTITY_CREATE for entity " + std::to_string(createInfo.entity) + " on the timestream");
+                        //PLEEPLOG_DEBUG("Timestream Entity creation for " + std::to_string(createInfo.entity) + " @ " + std::to_string(createInfo.source));
 
                         // entity could have been created in the past and is propogating into us and then the future.
                         if (cosmos->entity_exists(createInfo.entity))
@@ -753,7 +753,7 @@ namespace pleep
         events::cosmos::ENTITY_CREATED_params newEntityParams;
         creationEvent >> newEntityParams;
         
-        //PLEEPLOG_DEBUG("Handling ENTITY_CREATED event for entity " + std::to_string(newEntityParams.entity));
+        //PLEEPLOG_DEBUG("Cosmos Entity creation for " + std::to_string(newEntityParams.entity) + " @ " + std::to_string(newEntityParams.source));
 
         // Entity cannot be created in a non-normal timestreamState?
 
@@ -919,6 +919,11 @@ namespace pleep
         
         // good to send request now
         m_timelineApi.send_message(static_cast<TimesliceId>(destination), jumpEvent);
+        
+        if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+        {
+            create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+        }
 
         // push request to timestream so that it can be validated during parallel
         if (m_timelineApi.has_past())

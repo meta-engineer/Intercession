@@ -3,6 +3,7 @@
 #include "logging/pleep_log.h"
 #include "ecs/ecs_types.h"
 #include "networking/pleep_crypto.h"
+#include "staging/jump_vfx.h"
 
 namespace pleep
 {
@@ -93,6 +94,8 @@ namespace pleep
                         events::cosmos::ENTITY_CREATED_params createInfo;
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
+
+                        //PLEEPLOG_DEBUG("Timestream Entity creation for " + std::to_string(createInfo.entity) + " @ " + std::to_string(createInfo.source));
 
                         // entity could have been created in the past and is propogating into us and then the future.
                         if (cosmos->entity_exists(createInfo.entity))
@@ -417,6 +420,8 @@ namespace pleep
         events::cosmos::ENTITY_CREATED_params creationParams;
         creationEvent >> creationParams;
         
+        //PLEEPLOG_DEBUG("Cosmos Entity creation for " + std::to_string(creationParams.entity) + " @ " + std::to_string(creationParams.source));
+        
         // forward to past
         if (m_timelineApi.has_past())
         {
@@ -528,6 +533,11 @@ namespace pleep
             // use tripId from original timestream jump?
             jumpInfo.tripId = m_jumpConditions[jumpInfo.entity].tripId;
             jumpEvent << jumpInfo;
+            
+            if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+            {
+                create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+            }
         }
         else if (m_resolvedTrips.count(m_jumpConditions[jumpInfo.entity].tripId))
         {
@@ -539,6 +549,11 @@ namespace pleep
 
             // also clear the resolved set
             m_resolvedTrips.erase(m_jumpConditions[jumpInfo.entity].tripId);
+            
+            if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
+            {
+                create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
+            }
         }
         else // newConditions != m_jumpConditions[jumpInfo.entity])
         {

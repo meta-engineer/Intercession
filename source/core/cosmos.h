@@ -258,20 +258,6 @@ namespace pleep
     
     inline Entity Cosmos::create_entity(bool isTemporal, Entity source) 
     {
-        if (m_linkedCosmos != nullptr)
-        {
-            // threadsafe?
-            Entity deferredEntity = m_linkedCosmos->create_entity(isTemporal, NULL_ENTITY);
-            PLEEPLOG_DEBUG("Defferred entity creation to produce: " + std::to_string(deferredEntity));
-            if (this->register_entity(deferredEntity, {}, source))
-            {
-                return deferredEntity;
-            }
-
-            return NULL_ENTITY;
-        }
-        // don't proceed if we deferred to a linked cosmos
-
         // create entity in cosmos if either:
         //  - source is NULL (meaning creation is forced to happen)
         //  - source is link=0 and we're on a server
@@ -286,6 +272,20 @@ namespace pleep
         {
             return NULL_ENTITY;
         }
+
+        if (m_linkedCosmos != nullptr)
+        {
+            // threadsafe?
+            Entity deferredEntity = m_linkedCosmos->create_entity(isTemporal, NULL_ENTITY);
+            PLEEPLOG_DEBUG("Defferred entity creation to produce: " + std::to_string(deferredEntity));
+            if (this->register_entity(deferredEntity, {}, source))
+            {
+                return deferredEntity;
+            }
+
+            return NULL_ENTITY;
+        }
+        // don't proceed if we deferred to a linked cosmos
 
         // starting link value depends on parameters
         /// NOTE: this means nonTemporal entities can only create nonTemporal entities
