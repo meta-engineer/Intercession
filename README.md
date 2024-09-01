@@ -15,7 +15,7 @@ This project implements a simplified simulation following the "Attractor Field T
 
 ## Introduction
 
-First, a disclaimer: this project and the following document are not concerned with the fact or fiction of _how_ time-travel would physically work, be it [black hole gravity](https://www.youtube.com/watch?v=SYoR_aRRhAs), faster-than-light travel, [tachyons and flux particles](https://www.youtube.com/watch?v=I5cYgRnfFDA), magic, [crystals](https://www.youtube.com/watch?v=L3LHAlcrTRA), or any other [convoluted means](https://youtu.be/Pu6ixyJ_Y-0?si=kdpcCFkUQesLCPCv&t=204s). We'll suspend our disbelief of that detail and assume that some form of discontinuous "travel" through time is possible. We _will_ concern ourselves with the subsiquent physical consequences, given such a thing existed. Just remember, [parabolas are important](https://www.youtube.com/watch?v=Fkj6m8-Rg0Y).
+First, a disclaimer: this project and the following document are not concerned with the fact or fiction of _how_ time-travel would physically work, be it [black hole gravity](https://www.youtube.com/watch?v=SYoR_aRRhAs), faster-than-light travel, [tachyons and flux particles](https://www.youtube.com/watch?v=I5cYgRnfFDA), magic, [crystals](https://www.youtube.com/watch?v=L3LHAlcrTRA), or any other [convoluted means](https://youtu.be/Pu6ixyJ_Y-0?si=kdpcCFkUQesLCPCv&t=204s). We'll suspend our disbelief of that detail and assume that some form of discontinuous "travel" through time is possible. We _will_ concern ourselves with the subsequent physical consequences, given such a thing existed. Just remember, [parabolas are important](https://www.youtube.com/watch?v=Fkj6m8-Rg0Y).
 
 ### What Doesn't Work
 
@@ -51,7 +51,7 @@ You can see that this interpretation lends much more coherently to be simulated.
 
 ## Case Studies
 
->Note that we must practically limit the minimum length of time-travels to at least a few seconds. For these demonstrations we just a jump delta of 10 seconds. <br> Trips too near into the past or future often create [trivial and/or silly effects](https://www.youtube.com/watch?v=0-6GhgpVo9g).
+>Note that we must practically limit the minimum length of time-travels to at least a few seconds. For these demonstrations we'll use a jump delta of 5 seconds. <br> Trips too near into the past or future often create [trivial and/or silly effects](https://www.youtube.com/watch?v=0-6GhgpVo9g).
 
 ### Moving Forward & [Leeward](https://www.youtube.com/watch?v=JbTT5b-wDYs) Through Time
 
@@ -59,7 +59,7 @@ To get our feet wet, lets examine what it looks like to change travel into the p
 
 <video src="./documentation/case_1.mp4" type="video/mp4" width="1280" height="540" controls></video>
 
-In this example we push a _fictionless_ (for the purposes of demonstration) sphere, and set it in motion. Then we time-travel backwards to observe the moment of interaction. Next we travel forwards and we can see that the sphere has continued to slide during our subjective [skipped time](https://www.youtube.com/watch?v=gM5zAQFl5k4&t=24s).
+In this example we push a _frictionless_ (for the purposes of demonstration) sphere, and set it in motion. Then we time-travel backwards to observe the moment of interaction. Next we travel forwards and we can see that the sphere has continued to slide during our subjective [skipped time](https://www.youtube.com/watch?v=gM5zAQFl5k4&t=24s).
 
 This is what the progression of the world-line might look like in this trivial case:
 
@@ -69,11 +69,11 @@ Note that every entity _inside_ the simulation only has memories (or ANY lasting
 
 ### Changing the Past within an Attractor Field
 
-Typically it is reccommended to be [cautious with pastward time travel](https://www.youtube.com/watch?v=vCoXnTqUTbI). But like the previous example, not all divergences of the past need to cause shifts into drastically different world-lines:
+Typically it is recommended to be [cautious with past-ward time travel](https://www.youtube.com/watch?v=vCoXnTqUTbI). But like the previous example, not all divergences of the past need to cause shifts into drastically different world-lines:
 
 <video src="./documentation/case_2.mp4" type="video/mp4" width="1280" height="540" controls></video>
 
-In this example we spend some time moving in circles before moving to the centre of the platform and then travelling back in time. After travelling we diverge our own history _trivially_ by knocking ourselves off course a few times. However, despite this our (subjective) present remains unchanged, why? Lets examine how the world-lines of this case might look:
+In this example we spend some time moving in circles before moving to the centre of the platform and then travelling back in time. After travelling we diverge our own history _trivially_ by knocking ourselves off course. However, despite this our (subjective) present remains unchanged, why? Lets examine how the world-lines of this case might look:
 
 ![image](./documentation/case_2.PNG)
 
@@ -81,7 +81,7 @@ Like the resolution of Polchinski's Paradox, the changes in the past are trivial
 
 ### Changing the Past and Resolving Paradoxes
 
-Now let's examine a case where a time-traveller creates a non-trival divergence in the past:
+Now let's examine a case where a time-traveller creates a non-trivial divergence in the past:
 
 <video src="./documentation/case_3.mp4" type="video/mp4" width="1280" height="540" controls></video>
 
@@ -93,7 +93,7 @@ First, note that the ledge is too high for our controlled observer to "walk" ove
 
 This world-line is no longer self-consistent.
 
-So instead we are taken to a new one! We find ourselves in a new course of history where not only ourselves and the platforms exist (there was no reason why only those three entities existed. The existence of the delta world-line is no less plausable than the existence of alpha). In this world-line this cube-shaped debris also exists, and it **just so happened** to fall and push us at the exact moment we would otherwise have been pushed from the ledge ourselves. Here on this world-line, we instead depart into the past from the lower platform resulting in our new position in the present.
+So instead we are taken to a new one! We find ourselves in a new course of history where not only ourselves and the platforms exist (there was no reason why only those three entities existed. The existence of the delta world-line is no less plausible than the existence of alpha). In this world-line this cube-shaped debris also exists, and it **just so happened** to fall and push us at the exact moment we would otherwise have been pushed from the ledge ourselves. Here on this world-line, we instead depart into the past from the lower platform resulting in our new position in the present.
 
 Thus, the timeline is self-consistent. This is what the progression of the world-line might look like:
 
@@ -117,13 +117,13 @@ Each entity is represented by a 32 bit identifier which is composed of 3 pieces 
 
 If we mask out just the Timeslice Host Id and the Genesis Id, we get an identifier for all entities who are part of one world-line-entity. From those entities we can mask out the Causal Chainlink Id to determine the place of each entity in time. When an the state of an entity propagates into the past (I.E. your state of sleeping has propagated into the past, since you are now awake) its chainlink value is incremented by one.
 
-What does it mean to "propagate into the past"? We divide up an accessable range of time into a (configurable) number of partitions. Each partition is bookended by a simulation of that particular cross-section in time, we call this the "timeslice". In between each timeslice is a buffer of unsubstantiated time. This continuous series of buffers we call the "timestream". Let's see how one world-line-entity moves through the timestream in a typical, non-paradoxical scenario:
+What does it mean to "propagate into the past"? We divide up an accessible range of time into a (configurable) number of partitions. Each partition is bookended by a simulation of that particular cross-section in time, we call this the "timeslice". In between each timeslice is a buffer of unsubstantiated time. This continuous series of buffers we call the "timestream". Let's see how one world-line-entity moves through the timestream in a typical, non-paradoxical scenario:
 
 ![chainlink design](./documentation/chainlink.PNG)
 
 You can see by using this strategy we can avoid any single entity colliding with itself in the timestream buffer. By the time entity _a_ (link 1, bottom row) arrives in timeslice 1, entity _a_ (link 1, top row) will necessarily have departed from timeslice 1 to become entity _a_ (link 1, middle row).
 
-Furthermore, these link values allow us to perform one other crutial component, which we'll get to later
+Furthermore, these link values allow us to perform one other crucial component, which we'll get to later
 
 ----
 
@@ -137,11 +137,11 @@ Above you can see where each timeslice simulation accesses the timestream from a
 
 When an entity requests to directly time-travel, its current timeslice will delete it and send it directly to its destination timeslice (avoiding waiting in the timestream)
 
-Now here's where the magic happens. Because we have access to the chainlink value of all entities during the simulation we can _compare_ chainlink values between them when they interact. If two entities of _different_ chainlink values interact we detect this as a divergence of history. When this happens we can mark the entity of **higher** chainlink as divergent and let it stop following its future from the timestream. The current timeslice will begin simulating it independantly. Of course this could then create knock-on effects. If a divergent entity interacts with a non-divergent entity we similarly detect this as a divergence of history.
+Now here's where the magic happens. Because we have access to the chainlink value of all entities during the simulation we can _compare_ chainlink values between them when they interact. If two entities of _different_ chainlink values interact we detect this as a divergence of history. When this happens we can mark the entity of **higher** chainlink as divergent and let it stop following its future from the timestream. The current timeslice will begin simulating it independently. Of course this could then create knock-on effects. If a divergent entity interacts with a non-divergent entity we similarly detect this as a divergence of history.
 
 Now that the timeline is beginning to unravel, and some divergent entities have forked from their fate, we need to reconstruct the timestream to follow this new world-line. This is where the "Parallel Timeline" component comes into play.
 
-When a divergence event occurs, the Parallel Timeline is woken up. It attaches a dynamic breakpoint into the timestream and re-simulates the whole timeline from past to future. This breakpoint continuously consumes future events as fast as possible (as fast as the cpu can), rather than staying fixed like the timeslice breakpoints (consuming 1 second per 1 second).
+When a divergence event occurs, the Parallel Timeline is woken up. It attaches a dynamic breakpoint into the timestream and re-simulates the whole timeline from past to future. This breakpoint continuously consumes future events as fast as possible (as fast as the CPU can), rather than staying fixed like the timeslice breakpoints (consuming 1 second per 1 second).
 
 Once the parallel timeline catches up with timeslice 0 (farthest into the future), in its wake it has written out a contiguous history.
 
@@ -153,19 +153,19 @@ So [rather than a river](https://youtu.be/qjm5eNlXln4?si=PBS3By3deMEUoLa4&t=30),
 
 ### Intercessions
 
-A natural issue arrises by using this past-to-future reconstruction: we cannot guarantee **future-to-past** self-consistency. For example, if a pastward time-traveller is re-simulated and is found to depart in a different location from where it arrived, this is no longer self-consistent.
+A natural issue arises by using this past-to-future reconstruction: we cannot guarantee **future-to-past** self-consistency. For example, if a past-ward time-traveller is re-simulated and is found to depart in a different location from where it arrived, this is no longer self-consistent.
 
 To combat this we can cycle the parallel timeline **again** and use information of future events to reconstruct the timeline such that the past is corrected. In the previous example, we can change the time-travelers arrival location to match its departure. However, this new reconstruction can just lead to another inconsistency, and so on, and so on, flipping back and forth between different world-lines due to the paradox.
 
 This is where the final piece of the puzzle comes into play, the **Intercession**.
 
-During the parallel timeline reconstruction we cache meta-data about the divergent entities. When we detect this paradoxical loop, we can query the history of interactions, positions, and behaviours of the paradoxical entity(s) to get a picture of the state of the timeline at the inciting incident. Because we don't have access to the infinite space of all possible world-lines to draw from (TBD), using some human assumptions we can categorize these situations into different categories which we can map to certain modifications of the cosmos (adding, changing, or removing entities) to make it self-consistent. As of now, this process must be manually tailored to create plausible reconstructions, but further investigation could disover a more flexible method.
+During the parallel timeline reconstruction we cache meta-data about the divergent entities. When we detect this paradoxical loop, we can query the history of interactions, positions, and behaviours of the paradoxical entity(s) to get a picture of the state of the timeline at the inciting incident. Because we don't have access to the infinite space of all possible world-lines to draw from (TBD), using some human assumptions we can categorize these situations into different categories which we can map to certain modifications of the cosmos (adding, changing, or removing entities) to make it self-consistent. As of now, this process must be manually tailored to create plausible reconstructions, but further investigation could discover a more flexible method.
 
 [In the earlier example](#changing-the-past-and-resolving-paradoxes) we replaced the collision between the user entity (link 0) and the user entity (link 1), with an equivalent collision between debris (link 1) and the user entity (link 1). Who _really_ pushed them? In some sense, it was both. But only one history is ultimately true.
 
 ![jon](./documentation/i_shot_johnny.png)
 
-Because of this, the fate of the user entity (link 0) is no longer dependant on itself, avoiding a paradox. Plus, since both world-lines contain the same resultant collision effect on the user entity (link 1), its fate (falling off the ledge) becomes what was expected by the time-travelers inital actions.
+Because of this, the fate of the user entity (link 0) is no longer dependent on itself, avoiding a paradox. Plus, since both world-lines contain the same resultant collision effect on the user entity (link 1), its fate (falling off the ledge) becomes what was expected by the time-travelers initial actions.
 
 
 ## [To Be Continued](https://www.youtube.com/watch?v=fiwcZ0pg3xM)
@@ -176,7 +176,7 @@ Special thanks to the following resources, programmers, and teachers for their i
 
 It is amazing what you can learn for free on the internet.
 
-* https://learnopengl.com/ - Fundamentals of Opengl and graphics concepts
+* https://learnopengl.com/ - Fundamentals of OpenGL and graphics concepts
 * http://www.opengl-tutorial.org/ - Geometry and graphics concepts/resources
 * https://www.thecherno.com/ - Extensive resources and topics related to game engines, based on the Hazel project
 * https://community.onelonecoder.com/ - Aka Javidx9. Extensive c++ topics and inspiration to build things yourself

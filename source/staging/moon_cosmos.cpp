@@ -132,6 +132,24 @@ namespace pleep
         spot_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
         spot_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
         cosmos->add_component(spot, spot_renderable);
+        
+
+        Entity spottier = cosmos->create_entity();
+        cosmos->add_component(spottier, TransformComponent(glm::vec3(12.0f, 4.0f, 0.0f)));
+        cosmos->get_component<TransformComponent>(spottier).scale = glm::vec3(0.2f);
+        cosmos->get_component<TransformComponent>(spottier).orientation = 
+            glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        // remember this is relative to exposure
+        cosmos->add_component(spottier, LightSourceComponent(glm::vec3(6.0f, 3.0f, 2.0f)));
+        cosmos->get_component<LightSourceComponent>(spottier).type = LightSourceType::spot;
+        cosmos->get_component<LightSourceComponent>(spottier).composition.x = 0.2f;
+        cosmos->get_component<LightSourceComponent>(spottier).attributes = glm::vec2{0.90f, 0.70f};
+
+        RenderableComponent spottier_renderable;
+        spottier_renderable.meshData.push_back(ModelCache::fetch_mesh(ModelCache::BasicMeshType::icosahedron));
+        spottier_renderable.materials.push_back(ModelCache::fetch_material("lightbulb_mat"));
+        cosmos->add_component(spottier, spottier_renderable);
+
         // *************************************************************************** */
         /***************************************************************************
         ModelCache::ImportReceipt picto_import = ModelCache::import("C:\\Users\\Stephen\\Repos\\Intercession_design\\GameCube - The Legend of Zelda The Wind Waker - Picto Box\\pictobox.obj");
