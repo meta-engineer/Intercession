@@ -31,9 +31,9 @@ namespace pleep
         // number of seconds between each timeslice
         // total timeline duration can be inferred as timesliceDelay * numTimeslices
         // (explicitly define delay means total duration is always cleanly divisible)
-        uint16_t timesliceDelay = 10;
+        uint16_t timesliceDelay = 5;
         // must not exceed TIMESLICEID_SIZE
-        TimesliceId numTimeslices = 2;
+        TimesliceId numTimeslices = 4;
     };
 }
 
