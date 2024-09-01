@@ -176,6 +176,11 @@ namespace pleep
     {
         return m_timestreamStates[entity];
     }
+    
+    void Cosmos::link_cosmos(std::shared_ptr<Cosmos> sourceCosmos)
+    {
+        m_linkedCosmos = sourceCosmos;
+    }
 
     
     std::vector<std::string> Cosmos::stringify_synchro_registry() 

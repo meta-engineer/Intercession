@@ -192,6 +192,11 @@ namespace pleep
         // return state and coherency when set was called
         // returns merged, 0 if entity did not exist
         std::pair<TimestreamState, uint16_t> get_timestream_state(Entity entity);
+
+        // defers entity id management to given cosmos, registers it locally instead
+        // owns shared pointer keeping cosmos alive
+        // pass nullptr to un-link
+        void link_cosmos(std::shared_ptr<Cosmos> sourceCosmos = nullptr);
         
         // Ordered vector of all synchro typeid names
         std::vector<std::string> stringify_synchro_registry();
@@ -241,6 +246,9 @@ namespace pleep
         // No entry implies TimestreamState::merged
         std::unordered_map<Entity, std::pair<TimestreamState, uint16_t>> m_timestreamStates;
         /// TODO: how do we inform clients of timestream states... if any? Send updates upon parallel extraction?
+
+        // if not nullptr, defer entity id creation to this cosmos instead
+        std::shared_ptr<Cosmos> m_linkedCosmos = nullptr;
     };
 
 
@@ -250,6 +258,20 @@ namespace pleep
     
     inline Entity Cosmos::create_entity(bool isTemporal, Entity source) 
     {
+        if (m_linkedCosmos != nullptr)
+        {
+            // threadsafe?
+            Entity deferredEntity = m_linkedCosmos->create_entity(isTemporal, NULL_ENTITY);
+            PLEEPLOG_DEBUG("Defferred entity creation to produce: " + std::to_string(deferredEntity));
+            if (this->register_entity(deferredEntity, {}, source))
+            {
+                return deferredEntity;
+            }
+
+            return NULL_ENTITY;
+        }
+        // don't proceed if we deferred to a linked cosmos
+
         // create entity in cosmos if either:
         //  - source is NULL (meaning creation is forced to happen)
         //  - source is link=0 and we're on a server

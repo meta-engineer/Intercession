@@ -62,12 +62,15 @@ namespace pleep
         // ***** Post Processing *****
         // top ui layer in context for debug
         // TODO: abstract this to ui layer
-        // TODO: implment some fetchable stats in Dynamos to show here
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        // show ui window
+        
+//#define DEBUG_UI
+#if defined(DEBUG_UI)
         {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            // show ui window
+
             ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
             static bool p_open;
             
@@ -161,6 +164,49 @@ namespace pleep
 
             ImGui::End();
         }
+#else
+        {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            
+            ImGui::NewFrame();
+            // show ui window
+
+            ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+            static bool p_open;
+
+            static int location = 2;
+            const float PAD = 10.0f;
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+            ImVec2 work_size = viewport->WorkSize;
+            ImVec2 window_pos, window_pos_pivot;
+            int widgetWidth = 33;   // how to derive this?
+            window_pos.x = (location & 1) ? (work_pos.x + work_size.x/2 + widgetWidth) : (work_pos.x + work_size.x/2 - widgetWidth);
+            window_pos.y = (location & 2) ? (work_pos.y + work_size.y - PAD) : (work_pos.y + PAD);
+            window_pos_pivot.x = (location & 1) ? 1.0f : 0.0f;
+            window_pos_pivot.y = (location & 2) ? 1.0f : 0.0f;
+            ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+
+            ImGui::Begin("Client Context Debug", &p_open, overlayFlags);
+
+            int tFrame = m_currentCosmos->get_coherency();
+
+            std::string tSeconds = std::to_string((tFrame / pleep::FRAMERATE) % 60);
+            tSeconds.insert(0, 2 - tSeconds.length(), '0');
+            std::string tMinutes = std::to_string((tFrame / pleep::FRAMERATE) / 60);
+            tMinutes.insert(0, 2 - tMinutes.length(), '0');
+            std::string tHours   = std::to_string((tFrame / pleep::FRAMERATE) / 3600);
+
+            assert(tMinutes.length() == 2);
+            assert(tSeconds.length() == 2);
+
+            ImGui::Text((tHours + ":" + tMinutes + ":" + tSeconds).c_str());
+            
+            ImGui::End();
+        }
+#endif // defined(DEBUG_UI)
+
         // Render out ui
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -250,7 +250,7 @@ namespace pleep
                     // because it is already done upon pushing that creation event to the timestream
                     // but in this case we need to specially invoke host count increment
                     // (this is in addition to host increment in event handler if we have a past)
-                    EventMessage createMsg(events::cosmos::ENTITY_CREATED);
+                    EventMessage createMsg(events::cosmos::ENTITY_CREATED, currentCoherency);
                     events::cosmos::ENTITY_CREATED_params createInfo{
                         jumpInfo.entity,
                         jumpInfo.sign
@@ -299,13 +299,6 @@ namespace pleep
                 {
                     break;
                 }
-                
-                // arrival is successful so we'll spawn vfx for departure
-                if (cosmos->has_component<TransformComponent>(jumpInfo.entity))
-                {
-                    create_jump_vfx(cosmos, jumpInfo.entity, cosmos->get_component<TransformComponent>(jumpInfo.entity).origin);
-                }
-                
                 // How do we ensure that host count does not reach 0 prematurely?
                 // We must only delete jumping entity now that they are guarenteed to exist elsewhere
                 cosmos->condemn_entity(jumpInfo.entity);
@@ -433,6 +426,8 @@ namespace pleep
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
 
+                        //PLEEPLOG_DEBUG("Received ENTITY_CREATE for entity " + std::to_string(createInfo.entity) + " on the timestream");
+
                         // entity could have been created in the past and is propogating into us and then the future.
                         if (cosmos->entity_exists(createInfo.entity))
                         {
@@ -487,7 +482,7 @@ namespace pleep
                             break;
                         }
 
-                        cosmos->condemn_entity(jumpInfo.entity);
+                        cosmos->condemn_entity(jumpInfo.entity, jumpInfo.entity);
 
                         // forward this departure into the timestream with the same tripId
                         // but relative to our present entity

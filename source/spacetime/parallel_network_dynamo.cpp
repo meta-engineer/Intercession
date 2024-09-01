@@ -94,6 +94,14 @@ namespace pleep
                         evnt >> createInfo;
                         assert(createInfo.entity == evntEntity);
 
+                        // entity could have been created in the past and is propogating into us and then the future.
+                        if (cosmos->entity_exists(createInfo.entity))
+                        {
+                            PLEEPLOG_WARN("Excessive creation for entity " + std::to_string(createInfo.entity) + " assuming this is propogating into the future, ignoring...");
+                            // Even though it exists, maybe need to update components?
+                            break;
+                        }
+
                         // ignore creations from non-divergent sources (they will happen in local cosmos)
                         if (createInfo.source == NULL_ENTITY || !is_divergent(cosmos->get_timestream_state(createInfo.source).first))
                         {
@@ -105,7 +113,7 @@ namespace pleep
                             PLEEPLOG_DEBUG("Ignoring timestream creation for entity " + std::to_string(createInfo.entity) + " because its source " + std::to_string(createInfo.source) + " was divergent");
                             // we were asked to register this, but we decided against it...
                             // make sure it is removed upon extraction
-                            EventMessage removeEvent(events::cosmos::ENTITY_REMOVED);
+                            EventMessage removeEvent(events::cosmos::ENTITY_REMOVED, currentCoherency);
                             events::cosmos::ENTITY_REMOVED_params removeInfo{ createInfo.entity };
                             removeEvent << removeInfo;
                             m_sharedBroker->send_event(removeEvent);
@@ -415,6 +423,8 @@ namespace pleep
             // parallel is in same timeframe as past, so no increment chain link
             creationEvent << creationParams;
 
+            //PLEEPLOG_DEBUG("Pushing creation event to timestream for entity " + std::to_string(creationParams.entity));
+
             m_timelineApi.push_timestream_at_breakpoint(creationParams.entity, creationEvent);
         }
     }
@@ -424,6 +434,8 @@ namespace pleep
     {
         events::cosmos::ENTITY_REMOVED_params removalParams;
         removalEvent >> removalParams;
+
+        //PLEEPLOG_DEBUG("Removed Entity: " + std::to_string(removalParams.entity) + " | " + std::to_string(removalParams.source));
 
         // forward to past
         if (m_timelineApi.has_past())

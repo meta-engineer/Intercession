@@ -59,6 +59,12 @@ namespace pleep
         void push_to_timestream(Entity entity, const EventMessage& msg)
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
+            
+            if (m_areBreakpointsActive && m_timestreams.count(entity) == 0)
+            {
+                // create and set breakpoint for new timestream
+                m_timestreams[entity].set_breakpoint_at_begin();
+            }
 
             // TODO: detect when timstreams has gone way beyond expected capacity and stop pushing
             //PLEEPLOG_DEBUG("Pushing event: " + std::to_string(msg.header.id) + " for entity: " + std::to_string(entity) + " at coherency: " + std::to_string(msg.header.coherency));
@@ -70,8 +76,17 @@ namespace pleep
         {
             const std::lock_guard<std::mutex> lk(m_mapMux);
 
+            if (m_areBreakpointsActive && m_timestreams.count(entity) == 0)
+            {
+                // create and set breakpoint for new timestream
+                m_timestreams[entity].set_breakpoint_at_begin();
+            }
+
             // operator[] emplaces with default constructor for TsBreakpointQueue
-            m_timestreams[entity].push_at_breakpoint(msg);
+            if (m_timestreams[entity].push_at_breakpoint(msg) == false)
+            {
+                PLEEPLOG_CRITICAL("BREAKPOINT FAILED?!");
+            }
         }
 
         // check if timestream exists for an entity, if it is non-empty,
@@ -165,18 +180,22 @@ namespace pleep
         // ativate all mapped Timestream breakpoints
         void set_breakpoints()
         {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
             for (auto& timestreamIt : m_timestreams)
             {
                 timestreamIt.second.set_breakpoint_at_begin();
             }
+            m_areBreakpointsActive = true;
         }
         // remove all mapped Timestream breakpoints
         void remove_breakpoints()
         {
+            const std::lock_guard<std::mutex> lk(m_mapMux);
             for (auto& timestreamIt : m_timestreams)
             {
                 timestreamIt.second.remove_breakpoint();
             }
+            m_areBreakpointsActive = false;
         }
 
     private:
@@ -205,6 +224,9 @@ namespace pleep
         std::unordered_map<Entity, Timestream> m_timestreams;
 
         std::mutex m_mapMux;
+
+        // ensure newly emplaces timestreams get breakpoints
+        bool m_areBreakpointsActive = false;
     };
 }
 

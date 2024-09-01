@@ -11,6 +11,7 @@
 #include "behaviors/biped_component.h"
 #include "inputting/spacial_input_component.h"
 #include "staging/test_projectile.h"
+#include "staging/jump_vfx.h"
 #include "rendering/animation_component.h"
 
 namespace pleep
@@ -247,6 +248,9 @@ namespace pleep
                     input.clear();
 
                     sharedBroker->send_event(jumpMessage);
+                    
+                    // spawn vfx for departure
+                    create_jump_vfx(cosmos, jumpInfo.entity, transform.origin);
                 }
 
                 // forward mouse button
@@ -264,6 +268,9 @@ namespace pleep
                     input.clear();
 
                     sharedBroker->send_event(jumpMessage);
+                    
+                    // spawn vfx for departure
+                    create_jump_vfx(cosmos, jumpInfo.entity, transform.origin);
                 }
 
 

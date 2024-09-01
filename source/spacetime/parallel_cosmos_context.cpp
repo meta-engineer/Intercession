@@ -147,6 +147,8 @@ namespace pleep
                     sourceCosmos->set_timestream_state(signMapIt.first, TimestreamState::merged);
                 }
             }
+            // link cosmos entity management
+            m_currentCosmos->link_cosmos(sourceCosmos);
             
             //PLEEPLOG_DEBUG("Copying over timestreams");
             // do this AFTER entities to avoid passing any init events into timestream
@@ -259,9 +261,11 @@ namespace pleep
                         Entity tt = NULL_ENTITY;
                         do
                         {
+                            //PLEEPLOG_DEBUG("Check if entity " + std::to_string(ss) + " has any history");
                             if (m_interceptionHistory.count(ss) == 0) continue;
 
                             tt = m_interceptionHistory.at(ss).first;
+                            //PLEEPLOG_DEBUG("Found " + std::to_string(tt) + " in history");
 
                             assert(derive_causal_chain_link(tt) >= timesliceDelta);
                             for (int i = 0; i < timesliceDelta; i++) decrement_causal_chain_link(tt);
@@ -272,7 +276,7 @@ namespace pleep
                                 targetCoord = m_interceptionHistory.at(ss).second;
                                 break;
                             }
-                        } while (increment_causal_chain_link(ss) && timesliceDelta++);
+                        } while (increment_causal_chain_link(ss) && ++timesliceDelta);
                     }
 
                     if (targetEntity == NULL_ENTITY)
@@ -364,7 +368,7 @@ namespace pleep
             // condemned entities won't exist upon next init
             m_condemnedEntities.clear();
 
-            // cleaup cosmos
+            // cleaup cosmos (and unlink)
             m_currentCosmos = nullptr;
             // unlink current timestreams
             m_dynamoCluster.networker->link_timestreams(nullptr);
