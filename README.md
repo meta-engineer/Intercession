@@ -93,7 +93,7 @@ First, note that the ledge is too high for our controlled observer to "walk" ove
 
 This world-line is no longer self-consistent.
 
-So instead we are taken to a new one! We find ourselves in a new course of history where not only ourselves and the platforms exist (there was no reason why only those three entities existed. The existence of the delta world-line is no less plausible than the existence of alpha). In this world-line this cube-shaped debris also exists, and it **just so happened** to fall and push us at the exact moment we would otherwise have been pushed from the ledge ourselves. Here on this world-line, we instead depart into the past from the lower platform resulting in our new position in the present.
+So instead we are taken to a new one! We find ourselves in a new course of history where not only ourselves and the platforms exist (there was no reason why only those three entities existed. The existence of the one particular world-line is no less plausible than the existence of another). In this world-line this cube-shaped debris also exists, and it **just so happened** to fall and push us at the exact moment we would otherwise have been pushed from the ledge ourselves. Here on this world-line, we instead depart into the past from the lower platform resulting in our new position in the present.
 
 Thus, the timeline is self-consistent. This is what the progression of the world-line might look like:
 
@@ -123,7 +123,7 @@ What does it mean to "propagate into the past"? We divide up an accessible range
 
 You can see by using this strategy we can avoid any single entity colliding with itself in the timestream buffer. By the time entity _a_ (link 1, bottom row) arrives in timeslice 1, entity _a_ (link 1, top row) will necessarily have departed from timeslice 1 to become entity _a_ (link 1, middle row).
 
-Furthermore, these link values allow us to perform one other crucial component, which we'll get to later
+Furthermore, these link values allow us to perform one other crucial component, which we'll get to later.
 
 ----
 
@@ -133,19 +133,19 @@ Now, when an entity starts to mess with the past we need a way to resolve any di
 
 ![architecture](./documentation/architecture.PNG)
 
-Above you can see where each timeslice simulation accesses the timestream from a fixed point in time. At the start of each from each simulation will read in the state above it and update its simulation "cosmos" as necessary. At the end of each from the simulation will write out its state to the timestream. This reading above and writing below cause the events of the timestream to _flow_ into the past.
+Above you can see where each timeslice simulation accesses the timestream from a fixed point in time. At the start of every frame each simulation will read in the state above it and update its simulation "cosmos" as necessary. At the end of each frame the simulation will write out its state to the timestream below it. This reading above and writing below cause the events of the timestream to _flow_ into the past.
 
-When an entity requests to directly time-travel, its current timeslice will delete it and send it directly to its destination timeslice (avoiding waiting in the timestream)
+When an entity requests to time-travel, its current timeslice will delete it and send it directly to its destination timeslice (avoiding waiting in the timestream).
 
-Now here's where the magic happens. Because we have access to the chainlink value of all entities during the simulation we can _compare_ chainlink values between them when they interact. If two entities of _different_ chainlink values interact we detect this as a divergence of history. When this happens we can mark the entity of **higher** chainlink as divergent and let it stop following its future from the timestream. The current timeslice will begin simulating it independently. Of course this could then create knock-on effects. If a divergent entity interacts with a non-divergent entity we similarly detect this as a divergence of history.
+Now here's where the magic happens. Because we have access to the chainlink value of all entities during the simulation we can _compare_ chainlink values between them when they interact. If two entities of _different_ chainlink values interact we detect this as a divergence of history. When this happens we can mark the entity of **higher** chainlink as divergent and allow it to ignore its pre-determined fate in the timestream. The current timeslice will begin simulating it independently, and of course this could then create knock-on effects. If a divergent entity interacts with a non-divergent entity we similarly detect this as a divergence of history, marking the non-divergent entity as divergent.
 
 Now that the timeline is beginning to unravel, and some divergent entities have forked from their fate, we need to reconstruct the timestream to follow this new world-line. This is where the "Parallel Timeline" component comes into play.
 
-When a divergence event occurs, the Parallel Timeline is woken up. It attaches a dynamic breakpoint into the timestream and re-simulates the whole timeline from past to future. This breakpoint continuously consumes future events as fast as possible (as fast as the CPU can), rather than staying fixed like the timeslice breakpoints (consuming 1 second per 1 second).
+When a divergence event occurs, the parallel timeline is woken up. It attaches a dynamic breakpoint into the timestream and re-simulates the whole timeline from past to future. This breakpoint continuously consumes future events as fast as possible (as fast as the CPU can), rather than staying fixed like the timeslice breakpoints (consuming 1 second per 1 second).
 
-Once the parallel timeline catches up with timeslice 0 (farthest into the future), in its wake it has written out a contiguous history.
+Once the parallel timeline catches up with timeslice 0 (farthest into the future), in its wake it has written out a new contiguous history.
 
-So [rather than a river](https://youtu.be/qjm5eNlXln4?si=PBS3By3deMEUoLa4&t=30), we can think about time like a VHS tape. We can splice in a new tape as it plays and it will begin to replace the old one, until it has played all the way through and the old tape has been completely ejected.
+So [rather than a river](https://youtu.be/qjm5eNlXln4?si=PBS3By3deMEUoLa4&t=30), we can think about time like a VHS tape. We can splice in a new tape as it plays and it will begin to replace the old one, until it has played all the way through and the old tape has been completely ejected and overridden.
 
 ![vhs](./documentation/vhs.jpg)
 
@@ -159,7 +159,7 @@ To combat this we can cycle the parallel timeline **again** and use information 
 
 This is where the final piece of the puzzle comes into play, the **Intercession**.
 
-During the parallel timeline reconstruction we cache meta-data about the divergent entities. When we detect this paradoxical loop, we can query the history of interactions, positions, and behaviours of the paradoxical entity(s) to get a picture of the state of the timeline at the inciting incident. Because we don't have access to the infinite space of all possible world-lines to draw from (TBD), using some human assumptions we can categorize these situations into different categories which we can map to certain modifications of the cosmos (adding, changing, or removing entities) to make it self-consistent. As of now, this process must be manually tailored to create plausible reconstructions, but further investigation could discover a more flexible method.
+During the parallel timeline reconstruction we cache meta-data about the divergent entities. When we detect this paradoxical loop, we can query the history of interactions, positions, and behaviours of the paradoxical entity(s) to get a picture of the state of the timeline at the inciting incident. Because we don't have access to the infinite space of all possible world-lines to draw from (TBD), using some human assumptions we can categorize these situations and map them onto a finite list of ways to **intercede** the course of history and modify the cosmos (adding, changing, or removing entities) to make it self-consistent. As of now, this process must be manually tailored to create plausible reconstructions, but further investigation could discover a more flexible method.
 
 [In the earlier example](#changing-the-past-and-resolving-paradoxes) we replaced the collision between the user entity (link 0) and the user entity (link 1), with an equivalent collision between debris (link 1) and the user entity (link 1). Who _really_ pushed them? In some sense, it was both. But only one history is ultimately true.
 
