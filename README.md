@@ -133,7 +133,7 @@ Now, when an entity starts to mess with the past we need a way to resolve any di
 
 ![architecture](./documentation/architecture.PNG)
 
-Above you can see where each timeslice simulation accesses the timestream from a fixed point in time. At the start of every frame each simulation will read in the state above it and update its simulation "cosmos" as necessary. At the end of each frame the simulation will write out its state to the timestream below it. This reading above and writing below cause the events of the timestream to _flow_ into the past.
+Above you can see where each timeslice simulation accesses the timestream from a fixed point. At the start of every frame each simulation will read in the state above it and update its simulation "cosmos" as necessary. At the end of each frame the simulation will write out its state to the timestream below it. This reading above and writing below cause the events of the timestream to _flow_ into the past.
 
 When an entity requests to time-travel, its current timeslice will delete it and send it directly to its destination timeslice (avoiding waiting in the timestream).
 
