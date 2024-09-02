@@ -55,7 +55,7 @@ You can see that this interpretation lends much more coherently to be simulated.
 
 ### Moving Forward & [Leeward](https://www.youtube.com/watch?v=JbTT5b-wDYs) Through Time
 
-To get our feet wet, lets examine what it looks like to change the past, and then travel _back to the future_.
+To get our feet wet, lets examine what it looks like to move into the past and return _back to the future_.
 
 https://github.com/user-attachments/assets/68b77b12-b7cc-43dd-9e30-0c675f00786e
 
